@@ -60,7 +60,7 @@ export default function TrendAnalysisChart({
     const firstAvg = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length
     const secondAvg = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length
     
-    const trendDirection = secondAvg > firstAvg * 1.1 ? 'up' : 
+    const trendDirection: 'up' | 'down' | 'stable' = secondAvg > firstAvg * 1.1 ? 'up' : 
                           secondAvg < firstAvg * 0.9 ? 'down' : 'stable'
     
     const trendStrength = Math.abs((secondAvg - firstAvg) / firstAvg) * 100

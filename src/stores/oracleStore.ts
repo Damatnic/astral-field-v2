@@ -56,6 +56,7 @@ interface OracleState {
   saveConversation: () => void
   deleteConversation: (conversationId: string) => void
   clearCurrentConversation: () => void
+  addToConversation: (query: OracleQuery, response: OracleResponse) => void
   
   // Settings
   updatePersonality: (personality: Partial<OraclePersonality>) => void

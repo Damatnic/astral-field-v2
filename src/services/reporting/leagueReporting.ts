@@ -266,7 +266,7 @@ export interface MemberActivityReport {
       lineupChanges: number
       optimalLineupsSet: number
       lineupDeadlinesMissed: number
-      averageTimeBefore Deadline: number
+      averageTimeBeforeDeadline: number
     }
     
     tradeActivity: {
@@ -284,7 +284,7 @@ export interface MemberActivityReport {
     }
     
     socialActivity: {
-      messagessent: number
+      messagesSent: number
       trashTalkScore: number
       forumPosts: number
     }

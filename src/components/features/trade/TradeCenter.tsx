@@ -23,6 +23,37 @@ interface TradeCenterProps {
   leagueId: string
 }
 
+// Helper functions
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case 'pending':
+      return 'border-yellow-500 text-yellow-400 bg-yellow-900/20'
+    case 'accepted':
+      return 'border-green-500 text-green-400 bg-green-900/20'
+    case 'rejected':
+      return 'border-red-500 text-red-400 bg-red-900/20'
+    case 'expired':
+      return 'border-gray-500 text-gray-400 bg-gray-900/20'
+    default:
+      return 'border-gray-500 text-gray-400 bg-gray-900/20'
+  }
+}
+
+const getStatusIcon = (status: string) => {
+  switch (status) {
+    case 'pending':
+      return <Clock className="h-3 w-3" />
+    case 'accepted':
+      return <CheckCircle className="h-3 w-3" />
+    case 'rejected':
+      return <XCircle className="h-3 w-3" />
+    case 'expired':
+      return <AlertTriangle className="h-3 w-3" />
+    default:
+      return <Clock className="h-3 w-3" />
+  }
+}
+
 export default function TradeCenter({ leagueId }: TradeCenterProps) {
   const { user } = useAuthStore()
   const { teams } = useLeagueStore()
