@@ -1,7 +1,7 @@
 'use client'
 
 import { create } from 'zustand'
-import rosterService, { TeamRoster, OptimalLineup, PlayerWithDetails } from '@/services/api/rosterService'
+import rosterService, { TeamRoster, OptimalLineup } from '@/services/api/rosterService'
 
 interface RosterState {
   roster: TeamRoster | null

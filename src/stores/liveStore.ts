@@ -1,7 +1,7 @@
 'use client'
 
 import { create } from 'zustand'
-import liveScoreService, { type LeagueLiveScoring, type TeamLiveScore, type PlayerLiveStats } from '@/services/api/liveScoreService'
+import liveScoreService, { type LeagueLiveScoring } from '@/services/api/liveScoreService'
 import socketService from '@/services/websocket/socketService'
 import notificationService, { type Notification, type PushNotificationConfig } from '@/services/notification/notificationService'
 

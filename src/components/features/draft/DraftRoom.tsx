@@ -65,7 +65,7 @@ export default function DraftRoom({ leagueId }: DraftRoomProps) {
       
       return () => disconnect()
     }
-  }, [leagueId])
+  }, [leagueId, loadDraftState, connect, disconnect])
 
   useEffect(() => {
     // Find user's team
@@ -91,7 +91,7 @@ export default function DraftRoom({ leagueId }: DraftRoomProps) {
         
         if (remaining === 0) {
           // Auto pick logic would go here
-          console.log('Time expired - should auto pick')
+          // TODO: Implement auto-pick functionality
         }
       }, 1000)
     }
@@ -106,7 +106,7 @@ export default function DraftRoom({ leagueId }: DraftRoomProps) {
     if (draftState?.currentTeamId === userTeam?.id && userTeam) {
       loadRecommendations(leagueId, userTeam.id)
     }
-  }, [draftState?.currentTeamId, userTeam, leagueId])
+  }, [draftState?.currentTeamId, userTeam, leagueId, loadRecommendations])
 
   const handleStartDraft = async () => {
     const success = await startDraft(leagueId)

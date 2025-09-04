@@ -91,12 +91,12 @@ class RosterService {
       }
 
       // Transform roster data
-      const players: PlayerWithDetails[] = (rosterData || []).map(rosterPlayer => ({
-        id: (rosterPlayer.players as any).id,
-        name: (rosterPlayer.players as any).name,
-        position: (rosterPlayer.players as any).position,
-        nfl_team: (rosterPlayer.players as any).nfl_team,
-        injury_status: (rosterPlayer.players as any).injury_status,
+      const players: PlayerWithDetails[] = (rosterData || []).map((rosterPlayer: any) => ({
+        id: rosterPlayer.players.id,
+        name: rosterPlayer.players.name,
+        position: rosterPlayer.players.position,
+        nfl_team: rosterPlayer.players.nfl_team,
+        injury_status: rosterPlayer.players.injury_status,
         bye_week: (rosterPlayer.players as any).bye_week,
         projections: (rosterPlayer.players as any).player_projections?.[0] ? {
           fantasy_points: (rosterPlayer.players as any).player_projections[0].fantasy_points,

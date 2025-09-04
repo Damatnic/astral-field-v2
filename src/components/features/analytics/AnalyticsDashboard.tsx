@@ -650,7 +650,7 @@ function AdvancedChartsView({
               playerName={teamAnalytics ? "Team Performance" : "No Team Data"}
               showProjections={true}
               showConfidence={true}
-              onTrendClick={(trend) => console.log('Trend clicked:', trend)}
+              onTrendClick={(trend) => { /* TODO: Handle trend click */ }}
             />
           )}
 
@@ -662,7 +662,7 @@ function AdvancedChartsView({
               yAxisLabel="Position"
               colorScheme="blue"
               showValues={true}
-              onCellClick={(cell) => console.log('Cell clicked:', cell)}
+              onCellClick={(cell) => { /* TODO: Handle cell click */ }}
             />
           )}
 
@@ -673,7 +673,7 @@ function AdvancedChartsView({
               myTeamName="My Team"
               opponentTeamName="Opponent"
               week={13}
-              onPlayerClick={(player) => console.log('Player clicked:', player)}
+              onPlayerClick={(player) => { /* TODO: Handle player click */ }}
             />
           )}
 
@@ -691,7 +691,7 @@ function AdvancedChartsView({
                 showGrid={true}
                 showTooltip={true}
                 interactive={true}
-                onPointClick={(point, index) => console.log('Point clicked:', point, index)}
+                onPointClick={(point, index) => { /* TODO: Handle point click */ }}
               />
 
               <AdvancedChart
@@ -706,7 +706,7 @@ function AdvancedChartsView({
                 showGrid={false}
                 showTooltip={true}
                 interactive={true}
-                onPointClick={(point, index) => console.log('Bar clicked:', point, index)}
+                onPointClick={(point, index) => { /* TODO: Handle bar click */ }}
               />
 
               <AdvancedChart

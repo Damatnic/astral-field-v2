@@ -175,7 +175,7 @@ class PlayerService {
 
   async updatePlayer(playerId: string, updates: Partial<Player>): Promise<PlayerResponse> {
     try {
-      const { data: player, error } = await this.supabase
+      const { data: player, error } = await (this.supabase as any)
         .from('players')
         .update(updates)
         .eq('id', playerId)
@@ -193,7 +193,7 @@ class PlayerService {
 
   async updatePlayerStats(playerId: string, stats: PlayerStats): Promise<PlayerResponse> {
     try {
-      const { data: player, error } = await this.supabase
+      const { data: player, error } = await (this.supabase as any)
         .from('players')
         .update({
           stats: stats,
@@ -214,7 +214,7 @@ class PlayerService {
 
   async updatePlayerProjections(playerId: string, projections: PlayerProjections): Promise<PlayerResponse> {
     try {
-      const { data: player, error } = await this.supabase
+      const { data: player, error } = await (this.supabase as any)
         .from('players')
         .update({
           projections: projections,
@@ -285,7 +285,7 @@ class PlayerService {
 
           if (existingPlayer) {
             // Update existing player
-            await this.supabase
+            await (this.supabase as any)
               .from('players')
               .update({
                 nfl_team: playerData.nfl_team,
@@ -295,7 +295,7 @@ class PlayerService {
                 projections: playerData.projections,
                 updated_at: new Date().toISOString(),
               })
-              .eq('id', existingPlayer.id)
+              .eq('id', (existingPlayer as any).id)
           } else {
             // Create new player
             await this.createPlayer(playerInsert)

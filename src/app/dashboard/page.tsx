@@ -21,7 +21,7 @@ import {
 export default function DashboardPage() {
   const router = useRouter()
   const { user, logout, checkAuth } = useAuthStore()
-  const { leagues, fetchUserLeagues, isLoading: leaguesLoading } = useLeagueStore()
+  const { leagues, fetchUserLeagues } = useLeagueStore()
 
   useEffect(() => {
     checkAuth()

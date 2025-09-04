@@ -71,7 +71,7 @@ const nextConfig: NextConfig = {
 
   // Environment variables validation
   env: {
-    CUSTOM_KEY: process.env.CUSTOM_KEY,
+    NEXT_PUBLIC_SPORTSDATA_API_KEY: process.env.NEXT_PUBLIC_SPORTSDATA_API_KEY,
   },
 
   // Bundle optimization

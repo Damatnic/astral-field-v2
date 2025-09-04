@@ -78,7 +78,7 @@ class SportsDataService {
   private baseUrl = 'https://api.sportsdata.io/v3/nfl'
 
   constructor() {
-    this.apiKey = process.env.VITE_SPORTS_IO_API_KEY || ''
+    this.apiKey = process.env.NEXT_PUBLIC_SPORTSDATA_API_KEY || ''
   }
 
   private async fetchData<T>(endpoint: string): Promise<T> {
