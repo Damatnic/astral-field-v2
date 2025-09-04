@@ -161,7 +161,7 @@ class LiveScoreService {
       const teamScores: TeamLiveScore[] = []
 
       for (const team of teams) {
-        const lineupEntries = team.lineup_entries as any[]
+        const lineupEntries = (team as any).lineup_entries as any[]
         const starters: PlayerLiveStats[] = []
         const bench: PlayerLiveStats[] = []
 
@@ -184,8 +184,8 @@ class LiveScoreService {
         }
 
         teamScores.push({
-          teamId: team.id,
-          teamName: team.team_name,
+          teamId: (team as any).id,
+          teamName: (team as any).team_name,
           totalPoints,
           projectedPoints: totalProjected,
           playersActive: starters.filter(p => p.gameStatus === 'live').length,
@@ -227,19 +227,19 @@ class LiveScoreService {
       if (!player) throw new Error('Player not found')
 
       // Simulate live stats (in production, this would come from real NFL data)
-      const gameStatus = this.getGameStatus(player.nfl_team)
-      const fantasyPoints = this.calculateLiveFantasyPoints(player.position, gameStatus)
-      const projectedPoints = (player.player_projections as any)?.[0]?.fantasy_points || 0
+      const gameStatus = this.getGameStatus((player as any).nfl_team)
+      const fantasyPoints = this.calculateLiveFantasyPoints((player as any).position, gameStatus)
+      const projectedPoints = ((player as any).player_projections as any)?.[0]?.fantasy_points || 0
 
       return {
-        playerId: player.id,
-        gameId: `${player.nfl_team}_${new Date().toISOString().split('T')[0]}`,
-        name: player.name,
-        position: player.position,
-        nflTeam: player.nfl_team,
+        playerId: (player as any).id,
+        gameId: `${(player as any).nfl_team}_${new Date().toISOString().split('T')[0]}`,
+        name: (player as any).name,
+        position: (player as any).position,
+        nflTeam: (player as any).nfl_team,
         fantasyPoints,
         projectedPoints,
-        stats: this.generateLiveStats(player.position, gameStatus),
+        stats: this.generateLiveStats((player as any).position, gameStatus),
         gameStatus,
         lastUpdate: new Date().toISOString()
       }

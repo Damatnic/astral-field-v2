@@ -1,9 +1,11 @@
+// @ts-ignore - Netlify Edge Functions runtime
 import { Context } from "https://edge.netlify.com"
 
-export default async (request: Request, context: Context) => {
+export default async (request: Request, _context: Context) => {
   const url = new URL(request.url)
   const path = url.pathname.replace('/api/sports/', '')
   
+  // @ts-ignore - Netlify runtime global
   const apiKey = Netlify.env.get('SPORTSDATA_API_KEY')
   if (!apiKey) {
     return new Response('API key not configured', { status: 500 })

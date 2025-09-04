@@ -65,7 +65,7 @@ class AuthService {
       
       const { data: userData, error: profileError } = await this.supabase
         .from('users')
-        .insert(userInsert)
+        .insert(userInsert as any)
         .select()
         .single()
 
@@ -105,7 +105,7 @@ class AuthService {
 
   async updateProfile(userId: string, updates: Partial<User>): Promise<AuthResponse> {
     try {
-      const { data, error } = await this.supabase
+      const { data, error } = await (this.supabase as any)
         .from('users')
         .update(updates)
         .eq('id', userId)

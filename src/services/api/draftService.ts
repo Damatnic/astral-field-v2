@@ -62,7 +62,7 @@ class DraftService {
         .from('teams')
         .select('*')
         .eq('league_id', leagueId)
-        .order('draft_position', { nullsLast: true })
+        .order('draft_position', { nullsFirst: false })
 
       if (teamsError) throw teamsError
       if (!teams || teams.length === 0) throw new Error('No teams found in league')
@@ -70,7 +70,7 @@ class DraftService {
       // Create draft order if not provided
       let draftOrder = settings.draftOrder
       if (!draftOrder || draftOrder.length === 0) {
-        draftOrder = teams.map(team => team.id)
+        draftOrder = teams.map((team: any) => team.id)
       }
 
       // Create draft state record (we'll need to add this table)
@@ -175,7 +175,7 @@ class DraftService {
 
       const { data: draftPick, error: pickError } = await this.supabase
         .from('draft_picks')
-        .insert(draftPickInsert)
+        .insert(draftPickInsert as any)
         .select()
         .single()
 
@@ -297,10 +297,10 @@ class DraftService {
 
       if (draftsError) throw draftsError
 
-      const draftedPlayerIds = new Set(draftedPlayers?.map(pick => pick.player_id) || [])
+      const draftedPlayerIds = new Set(draftedPlayers?.map((pick: any) => pick.player_id) || [])
 
       // Transform to draft board players
-      const availablePlayers: DraftBoardPlayer[] = (allPlayers || []).map((player, index) => ({
+      const availablePlayers: DraftBoardPlayer[] = (allPlayers || []).map((player: any, index) => ({
         ...player,
         isAvailable: !draftedPlayerIds.has(player.id),
         adp: index + 1, // Simple ADP based on order

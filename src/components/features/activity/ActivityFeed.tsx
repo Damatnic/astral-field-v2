@@ -11,12 +11,7 @@ import {
   Zap,
   TrendingUp,
   Clock,
-  CheckCircle,
-  XCircle,
-  AlertTriangle,
-  User,
-  Calendar,
-  Star
+  User
 } from 'lucide-react'
 import { useLiveStore } from '@/stores/liveStore'
 import { useLeagueStore } from '@/stores/leagueStore'
@@ -31,7 +26,7 @@ export interface ActivityEvent {
   playerName?: string
   timestamp: string
   priority: 'low' | 'normal' | 'high'
-  data?: any
+  data?: Record<string, unknown>
   iconType: string
 }
 

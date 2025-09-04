@@ -208,7 +208,7 @@ class TradeAnalyzerService {
     if (player.injuryRisk > 30) factors.push('High injury risk')
     if (player.consistencyScore < 60) factors.push('Inconsistent performance')
     if (player.scheduleStrength > 70) factors.push('Difficult remaining schedule')
-    if (prediction && prediction.projectedPoints < prediction.seasonAverage * 0.9) {
+    if (prediction && (prediction as any).projectedPoints < (prediction as any).seasonAverage * 0.9) {
       factors.push('Declining performance trend')
     }
 
@@ -283,7 +283,7 @@ class TradeAnalyzerService {
       reasons.push('Unfavorable trade value')
     }
 
-    const timing = fairnessScore > 70 ? 'accept_now' : 
+    const timing: 'accept_now' | 'wait' | 'reject' = fairnessScore > 70 ? 'accept_now' : 
                    fairnessScore > 50 ? 'wait' : 'reject'
 
     return {
@@ -466,8 +466,8 @@ class TradeAnalyzerService {
     }))
 
     const sorted = playerWithIndex.sort((a, b) => {
-      const aPoints = a.prediction?.projectedPoints || a.player.projectedValue
-      const bPoints = b.prediction?.projectedPoints || b.player.projectedValue
+      const aPoints = (a.prediction as any)?.projectedPoints || a.player.projectedValue
+      const bPoints = (b.prediction as any)?.projectedPoints || b.player.projectedValue
       return bPoints - aPoints
     })
 
@@ -481,8 +481,8 @@ class TradeAnalyzerService {
         prediction: predictions.find(p => p?.playerId === player.playerId)
       }))
       .sort((a, b) => {
-        const aPoints = a.prediction?.projectedPoints || a.player.projectedValue
-        const bPoints = b.prediction?.projectedPoints || b.player.projectedValue
+        const aPoints = (a.prediction as any)?.projectedPoints || a.player.projectedValue
+        const bPoints = (b.prediction as any)?.projectedPoints || b.player.projectedValue
         return bPoints - aPoints
       })
 
@@ -500,7 +500,7 @@ class TradeAnalyzerService {
       if (typeof playerId === 'string' && playerId) {
         const prediction = predictions.find(p => p?.playerId === playerId)
         const player = players.find(p => p.playerId === playerId)
-        total += prediction?.projectedPoints || player?.projectedValue || 0
+        total += (prediction as any)?.projectedPoints || player?.projectedValue || 0
       }
     })
     

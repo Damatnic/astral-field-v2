@@ -549,30 +549,28 @@ function AdvancedChartsView({
   const [selectedVisualization, setSelectedVisualization] = useState<'trends' | 'heatmap' | 'matchup' | 'performance'>('trends')
 
   // Generate sample data for demonstrations
-  const performanceData = teamAnalytics?.trends.weeklyScores.map((score, index) => ({
+  const performanceData = teamAnalytics?.trends?.lastFiveGames?.map((game, index) => ({
     x: index + 1,
-    y: score,
-    label: `Week ${index + 1}`,
+    y: game.points,
+    label: `Week ${game.week}`,
     metadata: { opponent: `Team ${index + 2}` }
   })) || []
 
-  const trendData = teamAnalytics ? teamAnalytics.trends.weeklyScores.map((score, index) => ({
+  const trendData = teamAnalytics?.trends?.lastFiveGames?.map((game, index) => ({
     week: index + 1,
-    value: score,
-    projection: score * 1.05 + (Math.random() - 0.5) * 10,
+    value: game.points,
+    projection: game.points * 1.05 + (Math.random() - 0.5) * 10,
     confidence: 75 + Math.random() * 20,
     factors: ['Matchup Rating', 'Player Health', 'Weather']
-  })) : []
+  })) || []
 
-  const heatmapData = leagueAnalytics ? leagueAnalytics.positionAnalysis.map(pos => 
-    ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5'].map(week => ({
-      x: week,
-      y: pos.position,
-      value: pos.averagePoints + (Math.random() - 0.5) * 10,
-      label: `${pos.position} - ${week}`,
-      metadata: { position: pos.position, week }
-    }))
-  ).flat() : []
+  const heatmapData = ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5'].map(week => ({
+    x: week,
+    y: 'QB',
+    value: 15 + (Math.random() - 0.5) * 10,
+    label: `QB - ${week}`,
+    metadata: { position: 'QB', week }
+  }))
 
   // Generate mock matchup data
   const myTeamPlayers = [

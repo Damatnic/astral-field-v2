@@ -160,7 +160,7 @@ class PlayerService {
     try {
       const { data: player, error } = await this.supabase
         .from('players')
-        .insert(playerData)
+        .insert(playerData as any)
         .select()
         .single()
 

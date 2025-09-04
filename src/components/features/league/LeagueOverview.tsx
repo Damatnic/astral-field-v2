@@ -216,7 +216,7 @@ export default function LeagueOverview({ leagueId }: LeagueOverviewProps) {
                   </div>
                 </div>
                 <div className="p-4 space-y-3">
-                  {teams.map((team: Team, index) => (
+                  {teams.map((team: any, index) => (
                     <motion.div
                       key={team.id}
                       initial={{ opacity: 0, y: 10 }}

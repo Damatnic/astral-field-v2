@@ -96,15 +96,15 @@ class LeagueService {
       const leagueInsert: LeagueInsert = {
         name: data.name,
         commissioner_id: userId,
-        settings: data.settings,
-        scoring_system: data.scoringSystem,
+        settings: data.settings as any,
+        scoring_system: data.scoringSystem as any,
         draft_date: data.draftDate || null,
         season_year: data.seasonYear,
       }
 
       const { data: league, error } = await this.supabase
         .from('leagues')
-        .insert(leagueInsert)
+        .insert(leagueInsert as any)
         .select()
         .single()
 
@@ -156,7 +156,7 @@ class LeagueService {
 
   async updateLeague(leagueId: string, updates: LeagueUpdate): Promise<LeagueResponse> {
     try {
-      const { data: league, error } = await this.supabase
+      const { data: league, error } = await (this.supabase as any)
         .from('leagues')
         .update(updates)
         .eq('id', leagueId)
@@ -206,19 +206,19 @@ class LeagueService {
 
       if (leagueError) throw leagueError
 
-      const settings = league.settings as LeagueSettings
+      const settings = (league as any).settings as LeagueSettings
       if (teams && teams.length >= settings.maxTeams) {
         throw new Error('League is full')
       }
 
       // Check if user already has a team in this league
-      const existingTeam = teams?.find(team => team.user_id === userId)
+      const existingTeam = teams?.find((team: any) => team.user_id === userId)
       if (existingTeam) {
         throw new Error('You already have a team in this league')
       }
 
       // Create team
-      const { error: insertError } = await this.supabase
+      const { error: insertError } = await (this.supabase as any)
         .from('teams')
         .insert({
           league_id: leagueId,
@@ -245,7 +245,7 @@ class LeagueService {
           users!inner(username, email, avatar_url)
         `)
         .eq('league_id', leagueId)
-        .order('draft_position', { nullsLast: true })
+        .order('draft_position', { nullsFirst: false })
 
       if (error) throw error
 

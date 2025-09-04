@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/stores/authStore'
 import { useLeagueStore } from '@/stores/leagueStore'
@@ -184,7 +184,7 @@ export default function DashboardPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {leagues.map((league, index) => {
-                const settings = league.settings as any
+                const settings = league.settings as Record<string, unknown>
                 const teamCount = 8 // This would come from a real query
                 const status = league.draft_date ? 'draft' : 'active'
                 const nextEvent = league.draft_date 

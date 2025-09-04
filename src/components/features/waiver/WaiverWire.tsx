@@ -329,7 +329,7 @@ export default function WaiverWire({ leagueId }: WaiverWireProps) {
             setShowClaimModal(false)
             setSelectedPlayer(null)
           }}
-          onSubmit={async (data) => {
+          onSubmit={async (data: any) => {
             if (!userTeam) return false
             const success = await submitWaiverClaim(userTeam.id, data)
             if (success) {

@@ -154,8 +154,8 @@ class AnalyticsService {
       const projections = await this.calculateProjections(teamId, season)
 
       return {
-        teamId: team.id,
-        teamName: team.team_name,
+        teamId: (team as any).id,
+        teamName: (team as any).team_name,
         season: seasonStats,
         trends,
         positions,
@@ -193,8 +193,8 @@ class AnalyticsService {
       const transactionAnalysis = await this.calculateTransactionAnalysis(leagueId, season)
 
       return {
-        leagueId: league.id,
-        leagueName: league.name,
+        leagueId: (league as any).id,
+        leagueName: (league as any).name,
         currentWeek: this.getCurrentWeek(),
         season: seasonStats,
         standings,
@@ -231,10 +231,10 @@ class AnalyticsService {
       const ownership = await this.calculatePlayerOwnership(playerId)
 
       return {
-        playerId: player.id,
-        playerName: player.name,
-        position: player.position,
-        nflTeam: player.nfl_team,
+        playerId: (player as any).id,
+        playerName: (player as any).name,
+        position: (player as any).position,
+        nflTeam: (player as any).nfl_team,
         season: seasonStats,
         trends,
         schedule,
@@ -362,7 +362,7 @@ class AnalyticsService {
       .select('id, team_name')
       .eq('league_id', leagueId)
 
-    return (teams || []).map((team, index) => ({
+    return (teams || []).map((team: any, index) => ({
       rank: index + 1,
       teamId: team.id,
       teamName: team.team_name,

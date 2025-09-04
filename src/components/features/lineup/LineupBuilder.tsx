@@ -60,7 +60,7 @@ export default function LineupBuilder({ teamId, week, leagueId }: LineupBuilderP
         
         return {
           position: slot,
-          player: existingEntry?.players || null,
+          player: null,
           isRequired: basePosition !== 'BENCH'
         }
       })

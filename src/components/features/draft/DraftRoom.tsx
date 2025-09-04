@@ -482,15 +482,15 @@ export default function DraftRoom({ leagueId }: DraftRoomProps) {
                           {pick.overall_pick}
                         </div>
                         <div>
-                          <p className="text-white font-medium">{pick.players.name}</p>
+                          <p className="text-white font-medium">{pick.player.name}</p>
                           <p className="text-sm text-gray-400">
-                            {pick.players.position} - {pick.players.nfl_team} • Round {pick.round}, Pick {pick.pick}
+                            {pick.player.position} - {pick.player.nfl_team} • Round {pick.round}, Pick {pick.pick}
                           </p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-white font-medium">{pick.teams.users.username}</p>
-                        <p className="text-xs text-gray-400">{pick.teams.team_name}</p>
+                        <p className="text-white font-medium">{pick.team.users.username}</p>
+                        <p className="text-xs text-gray-400">{pick.team.team_name}</p>
                       </div>
                     </motion.div>
                   ))}

@@ -15,7 +15,9 @@
       "Bash(git clean:*)",
       "Bash(git init:*)",
       "Bash(npm run type-check:*)",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "Bash(grep:*)",
+      "Bash(npm run lint)"
     ],
     "deny": [],
     "ask": []

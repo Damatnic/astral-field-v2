@@ -163,7 +163,7 @@ class PredictionEngine {
       const scheduleAnalysis = await this.analyzeTeamSchedule(teamId)
       
       const playoffPrediction = this.predictPlayoffOdds(teamData, rosterAnalysis)
-      const performancePrediction = this.predictTeamPerformance(teamData, scheduleAnalysis)
+      const performancePrediction = this.calculateTeamPerformance(teamData, scheduleAnalysis)
       const trendAnalysis = this.analyzeTeamTrends(teamData)
       const recommendations = await this.generateTeamRecommendations(teamId, rosterAnalysis)
 
@@ -263,7 +263,7 @@ class PredictionEngine {
       confidence: Math.round(confidence),
       ceiling: Math.round(fantasyPoints * 1.4 * 10) / 10,
       floor: Math.round(fantasyPoints * 0.6 * 10) / 10,
-      projectedStats: this.generateStatProjections(playerData.position, fantasyPoints)
+      projectedStats: this.generateStatProjectections(playerData.position, fantasyPoints)
     }
   }
 
@@ -379,7 +379,7 @@ class PredictionEngine {
     }
   }
 
-  private predictTeamPerformance(teamData: any, schedule: any) {
+  private calculateTeamPerformance(teamData: any, schedule: any) {
     const remainingWeeks = 18 - this.getCurrentWeek()
     return {
       projectedWins: Math.round((8 + Math.random() * 4) * 10) / 10,
