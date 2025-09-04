@@ -1,0 +1,61 @@
+[build]
+  publish = ".next"
+  command = "npm run build"
+
+[build.environment]
+  NODE_VERSION = "18"
+  NEXT_TELEMETRY_DISABLED = "1"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[functions]
+  node_bundler = "esbuild"
+
+# Redirect rules for SPA
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  conditions = {Role = [""], "Country" = [""]}
+
+# API proxying for SportsDataIO
+[[redirects]]
+  from = "/api/sportsdata/*"
+  to = "https://api.sportsdata.io/v3/nfl/:splat"
+  status = 200
+  force = true
+  headers = {X-Forwarded-Host = "api.sportsdata.io"}
+
+# Security headers
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' *.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: *.supabase.co api.sportsdata.io; font-src 'self' data:; connect-src 'self' *.supabase.co api.sportsdata.io wss://*.supabase.co; frame-ancestors 'none';"
+
+# Cache optimization
+[[headers]]
+  for = "/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/_next/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Environment-specific redirects for development
+[context.deploy-preview]
+  command = "npm run build"
+
+[context.branch-deploy]
+  command = "npm run build"
+
+# Development context
+[context.development]
+  command = "npm run dev"
+  publish = ".next"
