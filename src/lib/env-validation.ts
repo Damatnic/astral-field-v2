@@ -3,7 +3,6 @@ export interface EnvConfig {
   // Database
   DATABASE_URL: string
   NEON_DATABASE_URL?: string
-  NETLIFY_DATABASE_URL?: string
   
   // Authentication
   ADMIN_SETUP_KEY: string
@@ -39,11 +38,10 @@ class EnvironmentValidator {
     
     // Database - at least one must be present
     const dbUrl = process.env.DATABASE_URL || 
-                  process.env.NEON_DATABASE_URL || 
-                  process.env.NETLIFY_DATABASE_URL
+                  process.env.NEON_DATABASE_URL
     
     if (!dbUrl) {
-      this.addError('DATABASE_URL', 'At least one database URL must be provided (DATABASE_URL, NEON_DATABASE_URL, or NETLIFY_DATABASE_URL)')
+      this.addError('DATABASE_URL', 'At least one database URL must be provided (DATABASE_URL or NEON_DATABASE_URL)')
     } else {
       config.DATABASE_URL = dbUrl
     }

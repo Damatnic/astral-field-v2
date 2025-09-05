@@ -18,8 +18,7 @@ class NeonDatabaseClient {
     
     // Check for database URL with fallbacks
     const connectionString = process.env.DATABASE_URL || 
-                            process.env.NEON_DATABASE_URL || 
-                            process.env.NETLIFY_DATABASE_URL
+                            process.env.NEON_DATABASE_URL
     
     // During build time, database connection might not be available - that's OK
     if (!connectionString) {
