@@ -1,11 +1,8 @@
-import { createBrowserClient } from '@supabase/ssr'
+import { neonDb } from './neon-database'
 import type { Database, Tables, TablesInsert, TablesUpdate } from '@/types/database'
 
 export class DatabaseClient {
-  private client = createBrowserClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  private client = neonDb
 
   // Type-safe query methods
   async select<T extends keyof Database['public']['Tables']>(
@@ -17,23 +14,12 @@ export class DatabaseClient {
       limit?: number
     }
   ): Promise<{ data: Tables<T>[] | null; error: any }> {
-    let query = this.client.from(table).select(options?.select || '*')
-
-    if (options?.eq) {
-      Object.entries(options.eq).forEach(([key, value]) => {
-        query = query.eq(key, value)
-      })
-    }
-
-    if (options?.order) {
-      query = query.order(options.order.column, { ascending: options.order.ascending ?? true })
-    }
-
-    if (options?.limit) {
-      query = query.limit(options.limit)
-    }
-
-    return query as any
+    return this.client.select(table, {
+      select: options?.select,
+      where: options?.eq,
+      orderBy: options?.order,
+      limit: options?.limit
+    })
   }
 
   async selectSingle<T extends keyof Database['public']['Tables']>(
@@ -43,22 +29,17 @@ export class DatabaseClient {
       eq?: Record<string, any>
     }
   ): Promise<{ data: Tables<T> | null; error: any }> {
-    let query = this.client.from(table).select(options?.select || '*')
-
-    if (options?.eq) {
-      Object.entries(options.eq).forEach(([key, value]) => {
-        query = query.eq(key, value)
-      })
-    }
-
-    return (query as any).single()
+    return this.client.selectSingle(table, {
+      select: options?.select,
+      where: options?.eq
+    })
   }
 
   async insert<T extends keyof Database['public']['Tables']>(
     table: T,
     data: any
   ): Promise<{ data: Tables<T> | null; error: any }> {
-    return this.client.from(table).insert(data).select().single() as any
+    return this.client.insert(table, data)
   }
 
   async update<T extends keyof Database['public']['Tables']>(
@@ -66,26 +47,14 @@ export class DatabaseClient {
     data: any,
     eq: Record<string, any>
   ): Promise<{ data: Tables<T> | null; error: any }> {
-    let query = this.client.from(table).update(data)
-
-    Object.entries(eq).forEach(([key, value]) => {
-      query = query.eq(key, value)
-    })
-
-    return (query as any).select().single()
+    return this.client.update(table, data, eq)
   }
 
   async delete<T extends keyof Database['public']['Tables']>(
     table: T,
     eq: Record<string, any>
   ): Promise<{ error: any }> {
-    let query = this.client.from(table).delete()
-
-    Object.entries(eq).forEach(([key, value]) => {
-      query = query.eq(key, value)
-    })
-
-    return query as any
+    return this.client.delete(table, eq)
   }
 
   // Complex queries with joins

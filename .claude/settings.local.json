@@ -20,7 +20,8 @@
       "Bash(npm run lint)",
       "Bash(npm run lint:*)",
       "Bash(npx tsc:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(npm install:*)"
     ],
     "deny": [],
     "ask": []
