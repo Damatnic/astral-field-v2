@@ -9,9 +9,15 @@ export async function POST(request: NextRequest) {
     const isDev = process.env.NODE_ENV === 'development'
     const hasAdminKey = request.headers.get('Authorization') === `Bearer ${process.env.ADMIN_SETUP_KEY || 'astral2025'}`
     
-    if (!isDev && !hasAdminKey) {
+    // Also check for setup key in URL query parameter (for browser access)
+    const url = new URL(request.url)
+    const queryKey = url.searchParams.get('key')
+    const hasQueryKey = queryKey === (process.env.ADMIN_SETUP_KEY || 'astral2025')
+    
+    if (!isDev && !hasAdminKey && !hasQueryKey) {
       return NextResponse.json({ 
-        error: 'Unauthorized. Use Authorization: Bearer <ADMIN_SETUP_KEY>' 
+        error: 'Unauthorized. Use Authorization: Bearer <ADMIN_SETUP_KEY> or ?key=<ADMIN_SETUP_KEY>',
+        hint: 'Try visiting: /api/setup-users?key=astral2025'
       }, { status: 401 })
     }
 
