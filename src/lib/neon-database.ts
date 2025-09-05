@@ -18,15 +18,13 @@ class NeonDatabaseClient {
         throw new Error('Database connection string not found')
       }
       
-      console.log('Using database connection from:', 
-        process.env.DATABASE_URL ? 'DATABASE_URL' :
-        process.env.NETLIFY_DATABASE_URL ? 'NETLIFY_DATABASE_URL' : 
-        'NEON_DATABASE_URL'
-      )
-      
+      // Optimize for serverless environments like Vercel
       this.pool = new Pool({
         connectionString,
-        ssl: { rejectUnauthorized: false }
+        ssl: { rejectUnauthorized: false },
+        max: 1, // Limit connections for serverless
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 2000,
       })
     }
   }
