@@ -24,6 +24,7 @@ export default function LoginForm() {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -35,6 +36,11 @@ export default function LoginForm() {
     if (success) {
       router.push('/dashboard')
     }
+  }
+
+  const fillDemoCredentials = () => {
+    setValue('email', 'nicholas.damato@astralfield.com')
+    setValue('password', 'astral2025')
   }
 
   return (
@@ -209,15 +215,22 @@ export default function LoginForm() {
 
           {/* Demo Account Helper */}
           <div className="bg-blue-600/10 border border-blue-600/30 rounded-lg p-3 text-center">
-            <p className="text-sm text-blue-300 mb-2">
+            <p className="text-sm text-blue-300 mb-3">
               <strong>Demo Account:</strong> Try the app with these credentials
             </p>
-            <p className="text-xs text-blue-400">
-              Email: <code className="bg-gray-700 px-1 rounded">nicholas.damato@astralfield.com</code>
-            </p>
-            <p className="text-xs text-blue-400">
-              Password: <code className="bg-gray-700 px-1 rounded">astral2025</code>
-            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-blue-400 mb-3">
+              <p>Email: <code className="bg-gray-700 px-1 rounded">nicholas.damato@astralfield.com</code></p>
+              <p>Password: <code className="bg-gray-700 px-1 rounded">astral2025</code></p>
+            </div>
+            <motion.button
+              type="button"
+              onClick={fillDemoCredentials}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="px-4 py-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-600/50 text-blue-300 text-sm rounded-lg transition-all duration-200"
+            >
+              Auto-fill Demo Credentials
+            </motion.button>
           </div>
 
           {/* Sign Up Link */}

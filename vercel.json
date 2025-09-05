@@ -2,9 +2,9 @@
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
   "framework": "nextjs",
-  "installCommand": "npm ci",
+  "installCommand": "npm ci --prefer-offline --no-audit",
   "devCommand": "npm run dev",
-  "regions": ["iad1"],
+  "regions": ["iad1", "sfo1", "lhr1"],
   "functions": {
     "src/app/api/**/*": {
       "maxDuration": 30,
@@ -13,6 +13,14 @@
     "src/app/api/setup-users/route.ts": {
       "maxDuration": 60,
       "memory": 1024
+    },
+    "src/app/api/cleanup/route.ts": {
+      "maxDuration": 60,
+      "memory": 1024
+    },
+    "src/app/api/health/route.ts": {
+      "maxDuration": 15,
+      "memory": 512
     }
   },
   "headers": [
@@ -30,6 +38,28 @@
         {
           "key": "Access-Control-Allow-Headers",
           "value": "Content-Type, Authorization"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/api/health",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, s-maxage=60, stale-while-revalidate=300"
+        }
+      ]
+    },
+    {
+      "source": "/(.*\\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot))",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
         }
       ]
     }
@@ -38,6 +68,39 @@
     {
       "source": "/health",
       "destination": "/api/health"
+    },
+    {
+      "source": "/api-status",
+      "destination": "/api/info"
+    },
+    {
+      "source": "/demo",
+      "destination": "/auth/login"
+    },
+    {
+      "source": "/health",
+      "destination": "/api/health"
+    },
+    {
+      "source": "/uptime",
+      "destination": "/status"
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/login",
+      "destination": "/auth/login",
+      "permanent": true
+    },
+    {
+      "source": "/register",
+      "destination": "/auth/register",
+      "permanent": true
+    },
+    {
+      "source": "/setup",
+      "destination": "/api/info",
+      "permanent": false
     }
   ],
   "env": {
@@ -47,13 +110,14 @@
   "build": {
     "env": {
       "NODE_ENV": "production",
-      "NEXT_TELEMETRY_DISABLED": "1"
+      "NEXT_TELEMETRY_DISABLED": "1",
+      "SKIP_ENV_VALIDATION": "true"
     }
   },
   "crons": [
     {
       "path": "/api/health",
-      "schedule": "0 */12 * * *"
+      "schedule": "0 */6 * * *"
     }
   ]
 }

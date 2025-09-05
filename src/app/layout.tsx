@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+import { GlobalErrorHandler } from "@/components/GlobalErrorHandler";
+import { PerformanceMonitor } from "@/components/PerformanceMonitor";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -18,12 +20,10 @@ export const metadata: Metadata = {
   description: "The future of fantasy football. Built with cutting-edge AI, real-time analytics, and the most intuitive interface in the galaxy.",
   keywords: ["fantasy football", "NFL", "AI assistant", "analytics", "draft", "trades"],
   authors: [{ name: "Astral Field Team" }],
-  viewport: "width=device-width, initial-scale=1, maximum-scale=5",
-  themeColor: "#111827",
   manifest: "/manifest.json",
   icons: {
-    icon: "/favicon.ico",
-    apple: "/apple-touch-icon.png",
+    icon: "/icon.svg",
+    apple: "/icon.svg",
   },
   openGraph: {
     title: "Astral Field - Elite Fantasy Football Platform",
@@ -39,6 +39,15 @@ export const metadata: Metadata = {
   },
 };
 
+export function generateViewport() {
+  return {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 5,
+    themeColor: '#111827',
+  }
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -49,6 +58,8 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-900 text-white`}
       >
+        <GlobalErrorHandler />
+        <PerformanceMonitor />
         <ErrorBoundary>
           {children}
         </ErrorBoundary>

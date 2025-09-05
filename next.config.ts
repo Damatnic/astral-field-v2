@@ -10,6 +10,10 @@ const nextConfig: NextConfig = {
       'react-hook-form',
       'zustand'
     ],
+    // Enable memory usage tracking
+    memoryBasedWorkersCount: true,
+    // Precompile React components
+    ppr: false, // Partial Prerendering is still experimental
   },
 
   // Turbopack configuration (moved from experimental)

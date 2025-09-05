@@ -19,9 +19,18 @@ let initializationPromise: Promise<boolean> | null = null
 let isInitialized = false
 
 export async function ensureInitialized(): Promise<boolean> {
-  // If already initialized, return immediately
-  if (isInitialized) {
-    return true
+  // Always check database state - don't trust cache in serverless
+  try {
+    const existingUser = await neonDb.selectSingle('users', {
+      where: { email: DEMO_USERS[0].email }
+    })
+
+    if (existingUser.data) {
+      isInitialized = true
+      return true
+    }
+  } catch (error) {
+    console.warn('Could not check existing users:', error)
   }
 
   // If initialization is already in progress, wait for it

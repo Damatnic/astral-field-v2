@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/stores/authStore'
 import { motion } from 'framer-motion'
-import { Trophy, Users, Zap, Shield, TrendingUp, Play } from 'lucide-react'
+import { Trophy, Users, Zap, Shield, TrendingUp, Play, Monitor, Info } from 'lucide-react'
 
 export default function HomePage() {
   const router = useRouter()
@@ -64,6 +64,29 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <div className="absolute inset-0 bg-grid-white/[0.05] opacity-40"></div>
+      
+      {/* Demo Access Banner */}
+      <div className="relative z-20 bg-gradient-to-r from-blue-600/80 to-purple-600/80 backdrop-blur-sm border-b border-white/20">
+        <div className="max-w-6xl mx-auto px-4 py-3">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <Info className="w-5 h-5 text-white" />
+              <span className="text-white font-medium">
+                🚀 Demo Ready! Login with: <code className="bg-white/20 px-2 py-1 rounded text-sm ml-1">nicholas.damato@astralfield.com</code> / <code className="bg-white/20 px-2 py-1 rounded text-sm">astral2025</code>
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => router.push('/status')}
+                className="flex items-center gap-2 px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white text-sm rounded-lg transition-all duration-200"
+              >
+                <Monitor className="w-4 h-4" />
+                System Status
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
       
       {/* Hero Section */}
       <section className="relative z-10 pt-20 pb-20 px-4">
@@ -172,9 +195,39 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="relative z-10 border-t border-white/10 py-8 px-4">
-        <div className="max-w-6xl mx-auto text-center text-gray-400">
-          <p>&copy; 2024 Astral Field. The future of fantasy football.</p>
+      <footer className="relative z-10 border-t border-white/10 py-12 px-4">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="text-center md:text-left">
+              <h3 className="text-lg font-semibold text-white mb-2">Astral Field</h3>
+              <p className="text-gray-400">The future of fantasy football.</p>
+            </div>
+            
+            <div className="flex items-center gap-6">
+              <button
+                onClick={() => router.push('/status')}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                System Status
+              </button>
+              <button
+                onClick={() => router.push('/api-status')}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                API Info
+              </button>
+              <button
+                onClick={() => router.push('/health')}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                Health Check
+              </button>
+            </div>
+          </div>
+          
+          <div className="mt-8 pt-8 border-t border-white/10 text-center text-gray-500">
+            <p>&copy; 2025 Astral Field. Built with Next.js, deployed on Vercel.</p>
+          </div>
         </div>
       </footer>
     </div>

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { neonDb } from '@/lib/neon-database'
 import { ensureInitialized } from '@/lib/auto-init'
+import { createCachedResponse, cachedQuery, CacheDurations } from '@/lib/cache'
 
 export async function GET() {
   try {
@@ -9,8 +10,12 @@ export async function GET() {
     // Auto-initialize demo users if they don't exist
     await ensureInitialized()
     
-    // Check database connectivity
-    const dbCheck = await neonDb.query('SELECT 1 as health_check')
+    // Check database connectivity with caching
+    const dbCheck = await cachedQuery(
+      'health-db-check',
+      () => neonDb.query('SELECT 1 as health_check'),
+      30 // Cache for 30 seconds
+    )
     const dbHealthy = !dbCheck.error && dbCheck.data?.length === 1
     
     // Check environment variables
@@ -40,14 +45,19 @@ export async function GET() {
     
     const statusCode = dbHealthy ? 200 : 503
     
-    return NextResponse.json(health, { 
-      status: statusCode,
-      headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
-      }
-    })
+    // For healthy responses, use short caching; for errors, no cache
+    if (dbHealthy) {
+      return createCachedResponse(health, CacheDurations.SHORT, { status: statusCode })
+    } else {
+      return NextResponse.json(health, { 
+        status: statusCode,
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      })
+    }
     
   } catch (error: any) {
     return NextResponse.json({
