@@ -19,6 +19,7 @@ const nextConfig: NextConfig = {
   // Turbopack configuration (moved from experimental)
   turbopack: {
     rules: {
+      // SVG handling for Turbopack
       '*.svg': {
         loaders: ['@svgr/webpack'],
         as: '*.js',
@@ -39,13 +40,13 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '**.supabase.co',
+        hostname: 'api.sportsdata.io',
         port: '',
-        pathname: '/storage/v1/object/public/**',
+        pathname: '/**',
       },
       {
         protocol: 'https',
-        hostname: 'api.sportsdata.io',
+        hostname: '*.vercel.app',
         port: '',
         pathname: '/**',
       }
@@ -83,17 +84,7 @@ const nextConfig: NextConfig = {
   // Redirects for SEO
   async redirects() {
     return [
-      {
-        source: '/dashboard',
-        destination: '/',
-        permanent: false,
-        missing: [
-          {
-            type: 'cookie',
-            key: 'sb-access-token',
-          },
-        ],
-      },
+      // Add any future redirects here
     ]
   },
 

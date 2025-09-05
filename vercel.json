@@ -6,21 +6,21 @@
   "devCommand": "npm run dev",
   "regions": ["iad1", "sfo1", "lhr1"],
   "functions": {
-    "src/app/api/**/*": {
+    "app/api/**/*.ts": {
       "maxDuration": 30,
-      "memory": 1024
-    },
-    "src/app/api/setup-users/route.ts": {
-      "maxDuration": 60,
-      "memory": 1024
-    },
-    "src/app/api/cleanup/route.ts": {
-      "maxDuration": 60,
-      "memory": 1024
-    },
-    "src/app/api/health/route.ts": {
-      "maxDuration": 15,
       "memory": 512
+    },
+    "app/api/setup-users/route.ts": {
+      "maxDuration": 60,
+      "memory": 1024
+    },
+    "app/api/cleanup/route.ts": {
+      "maxDuration": 60,
+      "memory": 1024
+    },
+    "app/api/health/route.ts": {
+      "maxDuration": 15,
+      "memory": 256
     }
   },
   "headers": [
@@ -76,10 +76,6 @@
     {
       "source": "/demo",
       "destination": "/auth/login"
-    },
-    {
-      "source": "/health",
-      "destination": "/api/health"
     },
     {
       "source": "/uptime",
