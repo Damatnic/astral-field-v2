@@ -25,16 +25,17 @@ export class NeonServerless {
     }
   }
 
-  async selectSingle(table: string, options: { where?: Record<string, any> } = {}) {
+  async selectSingle(table: string, options: { where?: Record<string, any>, eq?: Record<string, any> } = {}) {
     try {
-      const { where } = options
+      const { where, eq } = options
+      const conditions = where || eq
 
-      if (where) {
-        const keys = Object.keys(where)
-        const values = Object.values(where)
-        const conditions = keys.map(key => `${key} = $${keys.indexOf(key) + 1}`).join(' AND ')
+      if (conditions) {
+        const keys = Object.keys(conditions)
+        const values = Object.values(conditions)
+        const whereClause = keys.map(key => `${key} = $${keys.indexOf(key) + 1}`).join(' AND ')
         
-        const result = await sql(`SELECT * FROM ${table} WHERE ${conditions} LIMIT 1` as any, ...values)
+        const result = await sql(`SELECT * FROM ${table} WHERE ${whereClause} LIMIT 1` as any, ...values)
         const data = Array.isArray(result) && result.length > 0 ? result[0] : null
 
         return { data, error: null }
@@ -99,26 +100,90 @@ export class NeonServerless {
     }
   }
 
-  async select(table: string, options: { where?: Record<string, any> } = {}) {
+  async select(table: string, options: { where?: Record<string, any>, eq?: Record<string, any>, order?: { column: string, ascending?: boolean }, limit?: number } = {}) {
     try {
-      const { where } = options
+      const { where, eq, order, limit } = options
+      const conditions = where || eq
 
-      if (where) {
-        const keys = Object.keys(where)
-        const values = Object.values(where)
-        const conditions = keys.map(key => `${key} = $${keys.indexOf(key) + 1}`).join(' AND ')
-        
-        const result = await sql(`SELECT * FROM ${table} WHERE ${conditions}` as any, ...values)
-        return { data: result, error: null }
-      } else {
-        const result = await sql(`SELECT * FROM ${table}` as any)
-        return { data: result, error: null }
+      let query = `SELECT * FROM ${table}`
+      const values: any[] = []
+
+      if (conditions) {
+        const keys = Object.keys(conditions)
+        const whereClause = keys.map(key => {
+          values.push(conditions[key])
+          return `${key} = $${values.length}`
+        }).join(' AND ')
+        query += ` WHERE ${whereClause}`
       }
+
+      if (order) {
+        query += ` ORDER BY ${order.column} ${order.ascending !== false ? 'ASC' : 'DESC'}`
+      }
+
+      if (limit) {
+        query += ` LIMIT ${limit}`
+      }
+      
+      const result = await sql(query as any, ...values)
+      return { data: result, error: null }
     } catch (error: any) {
       console.error('Neon serverless select error:', error)
       return {
         data: null,
         error: error.message || 'Database select failed'
+      }
+    }
+  }
+
+  async selectWithJoins(table: string, selectQuery: string, options: { eq?: Record<string, any>, where?: Record<string, any>, order?: { column: string, ascending?: boolean }, limit?: number } = {}) {
+    try {
+      const { where, eq, order, limit } = options
+      const conditions = where || eq
+
+      let query = `SELECT ${selectQuery} FROM ${table}`
+      const values: any[] = []
+
+      if (conditions) {
+        const keys = Object.keys(conditions)
+        const whereClause = keys.map(key => {
+          values.push(conditions[key])
+          return `${key} = $${values.length}`
+        }).join(' AND ')
+        query += ` WHERE ${whereClause}`
+      }
+
+      if (order) {
+        query += ` ORDER BY ${order.column} ${order.ascending !== false ? 'ASC' : 'DESC'}`
+      }
+
+      if (limit) {
+        query += ` LIMIT ${limit}`
+      }
+      
+      const result = await sql(query as any, ...values)
+      return { data: result, error: null }
+    } catch (error: any) {
+      console.error('Neon serverless selectWithJoins error:', error)
+      return {
+        data: null,
+        error: error.message || 'Database selectWithJoins failed'
+      }
+    }
+  }
+
+  async delete(table: string, where: Record<string, any>) {
+    try {
+      const keys = Object.keys(where)
+      const values = Object.values(where)
+      const whereClause = keys.map(key => `${key} = $${keys.indexOf(key) + 1}`).join(' AND ')
+      
+      const result = await sql(`DELETE FROM ${table} WHERE ${whereClause}` as any, ...values)
+      return { error: null }
+    } catch (error: any) {
+      console.error('Neon serverless delete error:', error)
+      return {
+        error: error.message || 'Database delete failed'
       }
     }
   }
