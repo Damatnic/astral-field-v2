@@ -10,16 +10,20 @@ const nextConfig: NextConfig = {
       'react-hook-form',
       'zustand'
     ],
-    turbo: {
-      rules: {
-        '*.svg': {
-          loaders: ['@svgr/webpack'],
-          as: '*.js',
-        },
+  },
+
+  // Turbopack configuration (moved from experimental)
+  turbopack: {
+    rules: {
+      '*.svg': {
+        loaders: ['@svgr/webpack'],
+        as: '*.js',
       },
     },
-    serverComponentsExternalPackages: ['pg', 'bcryptjs'],
   },
+
+  // Server external packages (moved from experimental)
+  serverExternalPackages: ['pg', 'bcryptjs', 'pg-connection-string', 'pgpass'],
 
   // Compiler optimizations
   compiler: {
@@ -96,6 +100,33 @@ const nextConfig: NextConfig = {
 
   // Bundle optimization
   webpack: (config, { dev, isServer }) => {
+    // Handle Node.js modules properly
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+        dns: false,
+        child_process: false,
+        crypto: false,
+        stream: false,
+        url: false,
+        zlib: false,
+        http: false,
+        https: false,
+        assert: false,
+        os: false,
+        path: false,
+      }
+    }
+
+    // Ignore optional pg-native module
+    config.externals = {
+      ...config.externals,
+      'pg-native': 'commonjs pg-native',
+    }
+
     // Optimize bundle size
     if (!dev && !isServer) {
       config.optimization.splitChunks = {
