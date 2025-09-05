@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server'
 import { neonDb } from '@/lib/neon-database'
+import { ensureInitialized } from '@/lib/auto-init'
 
 export async function GET() {
   try {
     const startTime = Date.now()
+    
+    // Auto-initialize demo users if they don't exist
+    await ensureInitialized()
     
     // Check database connectivity
     const dbCheck = await neonDb.query('SELECT 1 as health_check')

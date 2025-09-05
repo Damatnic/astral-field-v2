@@ -1,9 +1,13 @@
 import { NextResponse, NextRequest } from 'next/server'
 import { neonDb } from '@/lib/neon-database'
 import bcrypt from 'bcryptjs'
+import { ensureInitialized } from '@/lib/auto-init'
 
 export async function POST(request: NextRequest) {
   try {
+    // Auto-initialize demo users if they don't exist
+    await ensureInitialized()
+    
     const { email, password } = await request.json()
     
     if (!email || !password) {

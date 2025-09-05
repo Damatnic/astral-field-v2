@@ -1,0 +1,37 @@
+import { NextResponse } from 'next/server'
+import { getDemoUserInfo, ensureInitialized } from '@/lib/auto-init'
+import { neonDb } from '@/lib/neon-database'
+
+export async function GET() {
+  try {
+    // Ensure users are initialized
+    const initSuccess = await ensureInitialized()
+    
+    // Get current user count from database
+    const userCountResult = await neonDb.query('SELECT COUNT(*) as count FROM users')
+    const userCount = userCountResult.data?.[0]?.count || 0
+    
+    // Get demo user info
+    const demoInfo = getDemoUserInfo()
+    
+    return NextResponse.json({
+      status: 'ready',
+      deployment: {
+        autoInitialized: initSuccess,
+        usersInDatabase: parseInt(userCount),
+        demoUsersAvailable: demoInfo.count
+      },
+      demoCredentials: demoInfo.testCredentials,
+      loginUrl: '/auth/login',
+      message: initSuccess 
+        ? 'Demo users are ready! You can log in immediately.'
+        : 'Auto-initialization may have failed. Check logs or use /api/setup-users.'
+    })
+  } catch (error: any) {
+    return NextResponse.json({
+      status: 'error',
+      error: error.message,
+      message: 'Could not get application info'
+    }, { status: 500 })
+  }
+}
