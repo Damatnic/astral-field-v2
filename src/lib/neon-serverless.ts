@@ -18,8 +18,8 @@ export class NeonServerless {
     }
 
     try {
-      // Neon serverless uses template literals with array spread
-      const result = await sql(text as any, ...params)
+      // Use sql.query for parameterized queries
+      const result = params.length > 0 ? await sql.query(text, params) : await sql.query(text)
       return {
         data: result,
         error: null,
@@ -53,12 +53,12 @@ export class NeonServerless {
         const values = Object.values(conditions)
         const whereClause = keys.map(key => `${key} = $${keys.indexOf(key) + 1}`).join(' AND ')
         
-        const result = await sql(`SELECT * FROM ${table} WHERE ${whereClause} LIMIT 1` as any, ...values)
+        const result = await sql.query(`SELECT * FROM ${table} WHERE ${whereClause} LIMIT 1`, values)
         const data = Array.isArray(result) && result.length > 0 ? result[0] : null
 
         return { data, error: null }
       } else {
-        const result = await sql(`SELECT * FROM ${table} LIMIT 1` as any)
+        const result = await sql.query(`SELECT * FROM ${table} LIMIT 1`)
         const data = Array.isArray(result) && result.length > 0 ? result[0] : null
         return { data, error: null }
       }
@@ -85,7 +85,7 @@ export class NeonServerless {
       const values = Object.values(data)
       const placeholders = keys.map((_, index) => `$${index + 1}`).join(', ')
       
-      const result = await sql(`INSERT INTO ${table} (${keys.join(', ')}) VALUES (${placeholders}) RETURNING *` as any, ...values)
+      const result = await sql.query(`INSERT INTO ${table} (${keys.join(', ')}) VALUES (${placeholders}) RETURNING *`, values)
       
       return {
         data: Array.isArray(result) ? result[0] : result,
@@ -119,7 +119,7 @@ export class NeonServerless {
       const setClause = updateKeys.map(key => `${key} = $${valueIndex++}`).join(', ')
       const whereClause = whereKeys.map(key => `${key} = $${valueIndex++}`).join(' AND ')
       
-      const result = await sql(`UPDATE ${table} SET ${setClause} WHERE ${whereClause} RETURNING *` as any, ...updateValues, ...whereValues)
+      const result = await sql.query(`UPDATE ${table} SET ${setClause} WHERE ${whereClause} RETURNING *`, [...updateValues, ...whereValues])
       
       return {
         data: Array.isArray(result) ? result[0] : result,
@@ -167,7 +167,7 @@ export class NeonServerless {
         query += ` LIMIT ${limit}`
       }
       
-      const result = await sql(query as any, ...values)
+      const result = values.length > 0 ? await sql.query(query, values) : await sql.query(query)
       return { data: result, error: null }
     } catch (error: any) {
       console.error('Neon serverless select error:', error)
@@ -211,7 +211,7 @@ export class NeonServerless {
         query += ` LIMIT ${limit}`
       }
       
-      const result = await sql(query as any, ...values)
+      const result = values.length > 0 ? await sql.query(query, values) : await sql.query(query)
       return { data: result, error: null }
     } catch (error: any) {
       console.error('Neon serverless selectWithJoins error:', error)
@@ -235,7 +235,7 @@ export class NeonServerless {
       const values = Object.values(where)
       const whereClause = keys.map(key => `${key} = $${keys.indexOf(key) + 1}`).join(' AND ')
       
-      const result = await sql(`DELETE FROM ${table} WHERE ${whereClause}` as any, ...values)
+      const result = await sql.query(`DELETE FROM ${table} WHERE ${whereClause}`, values)
       return { error: null }
     } catch (error: any) {
       console.error('Neon serverless delete error:', error)
