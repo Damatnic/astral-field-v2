@@ -26,36 +26,25 @@ export class StackAuthService {
 
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
-      // Check if user exists in our database
-      const result = await neonDb.selectSingle('users', {
-        where: { email: credentials.email }
+      // Call the authentication API endpoint
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(credentials),
       })
 
-      if (result.error || !result.data) {
-        return { user: null, error: 'Invalid email or password' }
+      const result = await response.json()
+
+      if (!response.ok) {
+        return { user: null, error: result.error || 'Login failed' }
       }
 
-      const user = result.data
-
-      // Check if user has a password set
-      if (!user.password_hash) {
-        return { user: null, error: 'Password not set for this user' }
-      }
-
-      // Verify password
-      const isPasswordValid = await bcrypt.compare(credentials.password, user.password_hash)
-      
-      if (!isPasswordValid) {
-        return { user: null, error: 'Invalid email or password' }
-      }
-
-      // Return user without password hash for security
-      const { password_hash, ...userWithoutPassword } = user
-      return { user: { ...userWithoutPassword, password_hash: null } as User, error: null }
-
+      return result
     } catch (error: any) {
       console.error('Login error:', error)
-      return { user: null, error: error.message || 'Login failed' }
+      return { user: null, error: 'Network error. Please try again.' }
     }
   }
 
