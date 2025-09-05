@@ -13,9 +13,11 @@ class NeonDatabaseClient {
                               process.env.NETLIFY_DATABASE_URL || 
                               process.env.NEON_DATABASE_URL
       
+      // During build time, database connection might not be available - that's OK
       if (!connectionString) {
-        console.error('No database connection string found. Checked: DATABASE_URL, NETLIFY_DATABASE_URL, NEON_DATABASE_URL')
-        throw new Error('Database connection string not found')
+        console.warn('No database connection string found during initialization. This is expected during build time.')
+        this.pool = null
+        return
       }
       
       // Optimize for serverless environments like Vercel
@@ -42,6 +44,11 @@ class NeonDatabaseClient {
     // Browser fallback - database operations should be done via API routes
     if (typeof window !== 'undefined') {
       return { data: null, error: { message: 'Database operations must be performed server-side' } }
+    }
+
+    // Check if database connection is available
+    if (!this.pool) {
+      return { data: null, error: { message: 'Database connection not available' } }
     }
 
     try {
@@ -102,6 +109,11 @@ class NeonDatabaseClient {
       return { data: null, error: { message: 'Database operations must be performed server-side' } }
     }
 
+    // Check if database connection is available
+    if (!this.pool) {
+      return { data: null, error: { message: 'Database connection not available' } }
+    }
+
     try {
       const keys = Object.keys(data)
       const values = Object.values(data)
@@ -128,6 +140,11 @@ class NeonDatabaseClient {
     // Browser fallback
     if (typeof window !== 'undefined') {
       return { data: null, error: { message: 'Database operations must be performed server-side' } }
+    }
+
+    // Check if database connection is available
+    if (!this.pool) {
+      return { data: null, error: { message: 'Database connection not available' } }
     }
 
     try {
@@ -168,6 +185,11 @@ class NeonDatabaseClient {
       return { error: { message: 'Database operations must be performed server-side' } }
     }
 
+    // Check if database connection is available
+    if (!this.pool) {
+      return { error: { message: 'Database connection not available' } }
+    }
+
     try {
       const keys = Object.keys(where)
       const values = Object.values(where)
@@ -196,6 +218,11 @@ class NeonDatabaseClient {
     // Browser fallback
     if (typeof window !== 'undefined') {
       return { data: null, error: { message: 'Database operations must be performed server-side' } }
+    }
+
+    // Check if database connection is available
+    if (!this.pool) {
+      return { data: null, error: { message: 'Database connection not available' } }
     }
 
     try {
@@ -233,6 +260,11 @@ class NeonDatabaseClient {
     // Browser fallback
     if (typeof window !== 'undefined') {
       return { data: null, error: { message: 'Database operations must be performed server-side' } }
+    }
+
+    // Check if database connection is available
+    if (!this.pool) {
+      return { data: null, error: { message: 'Database connection not available' } }
     }
 
     try {
