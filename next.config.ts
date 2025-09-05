@@ -122,9 +122,13 @@ const nextConfig: NextConfig = {
     }
 
     // Ignore optional pg-native module
-    config.externals = {
-      ...config.externals,
-      'pg-native': 'commonjs pg-native',
+    if (!isServer) {
+      config.externals = config.externals || []
+      if (Array.isArray(config.externals)) {
+        config.externals.push('pg-native')
+      } else {
+        config.externals = [config.externals, 'pg-native']
+      }
     }
 
     // Optimize bundle size
