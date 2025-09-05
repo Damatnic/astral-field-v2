@@ -1,9 +1,20 @@
 import { create } from 'zustand'
 import { devtools } from 'zustand/middleware'
-import playerService, { PlayerFilters, PlayerSortOptions } from '@/services/api/playerService'
+import playerService from '@/services/api/playerService'
 import type { Database } from '@/types/database'
 
 type Player = Database['public']['Tables']['players']['Row']
+
+interface PlayerFilters {
+  position?: string
+  team?: string
+  search?: string
+}
+
+interface PlayerSortOptions {
+  field: string
+  direction: 'asc' | 'desc'
+}
 
 interface PlayerState {
   players: Player[]
@@ -50,12 +61,13 @@ export const usePlayerStore = create<PlayerState>()(
         set({ isLoading: true, error: null })
         
         const offset = (currentPage - 1) * pageSize
-        const { players, total, error } = await playerService.getPlayers(
-          filters,
-          sortOptions,
-          pageSize,
-          offset
-        )
+        const { players, error } = await playerService.getPlayers({
+          position: filters.position,
+          team: filters.team,
+          limit: pageSize,
+          search: filters.search
+        })
+        const total = players?.length || 0
         
         if (error) {
           set({ error, isLoading: false })
@@ -81,7 +93,7 @@ export const usePlayerStore = create<PlayerState>()(
       selectPlayer: async (playerId) => {
         set({ isLoading: true, error: null })
         
-        const { player, error } = await playerService.getPlayerById(playerId)
+        const { player, error } = await playerService.getPlayer(playerId)
         
         if (error) {
           set({ error, isLoading: false })

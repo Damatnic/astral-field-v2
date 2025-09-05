@@ -92,7 +92,7 @@ class SocketService {
         schema: 'public',
         table: 'trades',
         filter: `league_id=eq.${leagueId}`
-      }, (payload) => {
+      }, (payload: any) => {
         this.handleEvent({
           type: 'trade_proposal',
           leagueId,
@@ -105,7 +105,7 @@ class SocketService {
         schema: 'public',
         table: 'trades',
         filter: `league_id=eq.${leagueId}`
-      }, (payload) => {
+      }, (payload: any) => {
         const status = (payload.new as any).status
         if (status === 'accepted') {
           this.handleEvent({
@@ -128,7 +128,7 @@ class SocketService {
         schema: 'public',
         table: 'waiver_claims',
         filter: `status=eq.successful`
-      }, (payload) => {
+      }, (payload: any) => {
         this.handleEvent({
           type: 'waiver_processed',
           leagueId,
@@ -140,7 +140,7 @@ class SocketService {
         event: '*',
         schema: 'public',
         table: 'lineup_entries'
-      }, (payload) => {
+      }, (payload: any) => {
         this.handleEvent({
           type: 'lineup_updated',
           leagueId,
@@ -184,7 +184,7 @@ class SocketService {
         schema: 'public',
         table: 'roster_players',
         filter: `team_id=eq.${teamId}`
-      }, (payload) => {
+      }, (payload: any) => {
         this.handleEvent({
           type: 'league_activity',
           leagueId: '', // Would need to be derived

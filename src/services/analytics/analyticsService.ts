@@ -362,7 +362,7 @@ class AnalyticsService {
       .select('id, team_name')
       .eq('league_id', leagueId)
 
-    return (teams || []).map((team: any, index) => ({
+    return (teams || []).map((team: any, index: number) => ({
       rank: index + 1,
       teamId: team.id,
       teamName: team.team_name,

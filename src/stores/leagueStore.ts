@@ -21,7 +21,7 @@ interface LeagueState {
   leaveLeague: (leagueId: string, userId: string) => Promise<boolean>
   fetchLeagueTeams: (leagueId: string) => Promise<void>
   updateLeague: (leagueId: string, updates: Partial<League>) => Promise<boolean>
-  deleteLeague: (leagueId: string) => Promise<boolean>
+  deleteLeague: (leagueId: string, userId: string) => Promise<boolean>
   clearError: () => void
   clearCurrentLeague: () => void
 }
@@ -73,7 +73,7 @@ export const useLeagueStore = create<LeagueState>()(
       selectLeague: async (leagueId) => {
         set({ isLoading: true, error: null })
         
-        const { league, error } = await leagueService.getLeagueById(leagueId)
+        const { league, error } = await leagueService.getLeague(leagueId)
         
         if (error) {
           set({ error, isLoading: false })
@@ -159,10 +159,10 @@ export const useLeagueStore = create<LeagueState>()(
         return true
       },
 
-      deleteLeague: async (leagueId) => {
+      deleteLeague: async (leagueId, userId) => {
         set({ isLoading: true, error: null })
         
-        const { error } = await leagueService.deleteLeague(leagueId)
+        const { error } = await leagueService.deleteLeague(leagueId, userId)
         
         if (error) {
           set({ error, isLoading: false })

@@ -211,7 +211,7 @@ class TeamService {
 
       if (error) throw error
 
-      const totalPoints = lineup?.reduce((sum, entry) => {
+      const totalPoints = lineup?.reduce((sum: number, entry: any) => {
         return sum + (entry.points_scored || 0)
       }, 0) || 0
 

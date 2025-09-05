@@ -85,7 +85,7 @@ export interface Database {
           user_id: string
           team_name: string
           draft_position?: number | null
-          waiver_priority?: number
+          waiver_priority: number
           created_at?: string
           updated_at?: string
         }
@@ -136,184 +136,35 @@ export interface Database {
           updated_at?: string
         }
       }
-      draft_picks: {
+      rosters: {
         Row: {
           id: string
-          league_id: string
           team_id: string
           player_id: string
-          round: number
-          pick: number
-          overall_pick: number
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          league_id: string
-          team_id: string
-          player_id: string
-          round: number
-          pick: number
-          overall_pick: number
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          league_id?: string
-          team_id?: string
-          player_id?: string
-          round?: number
-          pick?: number
-          overall_pick?: number
-        }
-      }
-      trades: {
-        Row: {
-          id: string
-          league_id: string
-          initiator_team_id: string
-          receiver_team_id: string
-          status: 'pending' | 'accepted' | 'rejected' | 'cancelled' | 'expired'
-          message: string | null
-          expires_at: string
-          processed_at: string | null
+          position_slot: string
+          acquired_date: string
+          dropped_date: string | null
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: string
-          league_id: string
-          initiator_team_id: string
-          receiver_team_id: string
-          status?: 'pending' | 'accepted' | 'rejected' | 'cancelled' | 'expired'
-          message?: string | null
-          expires_at: string
-          processed_at?: string | null
+          team_id: string
+          player_id: string
+          position_slot: string
+          acquired_date?: string
+          dropped_date?: string | null
           created_at?: string
           updated_at?: string
         }
         Update: {
           id?: string
-          league_id?: string
-          initiator_team_id?: string
-          receiver_team_id?: string
-          status?: 'pending' | 'accepted' | 'rejected' | 'cancelled' | 'expired'
-          message?: string | null
-          expires_at?: string
-          processed_at?: string | null
+          team_id?: string
+          player_id?: string
+          position_slot?: string
+          acquired_date?: string
+          dropped_date?: string | null
           updated_at?: string
-        }
-      }
-      trade_items: {
-        Row: {
-          id: string
-          trade_id: string
-          player_id: string
-          from_team_id: string
-          to_team_id: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          trade_id: string
-          player_id: string
-          from_team_id: string
-          to_team_id: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          trade_id?: string
-          player_id?: string
-          from_team_id?: string
-          to_team_id?: string
-        }
-      }
-      roster_players: {
-        Row: {
-          id: string
-          team_id: string
-          player_id: string
-          acquired_date: string
-          acquisition_type: 'draft' | 'waiver' | 'trade' | 'free_agent'
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          team_id: string
-          player_id: string
-          acquired_date?: string
-          acquisition_type?: 'draft' | 'waiver' | 'trade' | 'free_agent'
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          team_id?: string
-          player_id?: string
-          acquired_date?: string
-          acquisition_type?: 'draft' | 'waiver' | 'trade' | 'free_agent'
-        }
-      }
-      player_projections: {
-        Row: {
-          id: string
-          player_id: string
-          week: number | null
-          season_year: number
-          fantasy_points: number
-          adp: number | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          player_id: string
-          week?: number | null
-          season_year: number
-          fantasy_points: number
-          adp?: number | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          player_id?: string
-          week?: number | null
-          season_year?: number
-          fantasy_points?: number
-          adp?: number | null
-        }
-      }
-      waiver_claims: {
-        Row: {
-          id: string
-          team_id: string
-          player_id: string
-          drop_player_id: string | null
-          bid_amount: number | null
-          priority: number
-          status: 'pending' | 'processed' | 'successful' | 'failed'
-          processed_at: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          team_id: string
-          player_id: string
-          drop_player_id?: string | null
-          bid_amount?: number | null
-          priority: number
-          status?: 'pending' | 'processed' | 'successful' | 'failed'
-          processed_at?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          team_id?: string
-          player_id?: string
-          drop_player_id?: string | null
-          bid_amount?: number | null
-          priority?: number
-          status?: 'pending' | 'processed' | 'successful' | 'failed'
-          processed_at?: string | null
         }
       }
       lineup_entries: {
@@ -347,6 +198,173 @@ export interface Database {
           updated_at?: string
         }
       }
+      draft_picks: {
+        Row: {
+          id: string
+          league_id: string
+          team_id: string
+          player_id: string
+          round: number
+          pick: number
+          overall_pick: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          league_id: string
+          team_id: string
+          player_id: string
+          round: number
+          pick: number
+          overall_pick: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          league_id?: string
+          team_id?: string
+          player_id?: string
+          round?: number
+          pick?: number
+          overall_pick?: number
+        }
+      }
+      waiver_claims: {
+        Row: {
+          id: string
+          team_id: string
+          player_add_id: string
+          player_drop_id: string | null
+          waiver_priority: number
+          status: string
+          processed_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          team_id: string
+          player_add_id: string
+          player_drop_id?: string | null
+          waiver_priority: number
+          status?: string
+          processed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          team_id?: string
+          player_add_id?: string
+          player_drop_id?: string | null
+          waiver_priority?: number
+          status?: string
+          processed_at?: string | null
+          updated_at?: string
+        }
+      }
+      trades: {
+        Row: {
+          id: string
+          proposing_team_id: string
+          receiving_team_id: string
+          proposed_players: Json
+          requested_players: Json
+          status: string
+          expires_at: string
+          processed_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          proposing_team_id: string
+          receiving_team_id: string
+          proposed_players: Json
+          requested_players: Json
+          status?: string
+          expires_at: string
+          processed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          proposing_team_id?: string
+          receiving_team_id?: string
+          proposed_players?: Json
+          requested_players?: Json
+          status?: string
+          expires_at?: string
+          processed_at?: string | null
+          updated_at?: string
+        }
+      }
+      player_projections: {
+        Row: {
+          id: string
+          player_id: string
+          season_year: number
+          week: number | null
+          fantasy_points: number
+          adp: number | null
+          projected_stats: Json
+          confidence: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          player_id: string
+          season_year: number
+          week?: number | null
+          fantasy_points: number
+          adp?: number | null
+          projected_stats?: Json
+          confidence?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          player_id?: string
+          season_year?: number
+          week?: number | null
+          fantasy_points?: number
+          adp?: number | null
+          projected_stats?: Json
+          confidence?: number
+          updated_at?: string
+        }
+      }
+      player_stats: {
+        Row: {
+          id: string
+          player_id: string
+          season_year: number
+          week: number
+          game_stats: Json
+          fantasy_points: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          player_id: string
+          season_year: number
+          week: number
+          game_stats?: Json
+          fantasy_points: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          player_id?: string
+          season_year?: number
+          week?: number
+          game_stats?: Json
+          fantasy_points?: number
+        }
+      }
     }
     Views: {
       [_ in never]: never
@@ -357,5 +375,13 @@ export interface Database {
     Enums: {
       [_ in never]: never
     }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
 }
+
+// Type helpers for database operations
+export type Tables<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Row']
+export type TablesInsert<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Insert']
+export type TablesUpdate<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Update']

@@ -1,7 +1,9 @@
+import { db, wrapResult } from '@/lib/database'
+import type { Tables, TablesInsert } from '@/types/database'
 import { createClient } from '@/lib/supabase'
-import type { Database } from '@/types/database'
 
-type User = Database['public']['Tables']['users']['Row']
+type User = Tables<'users'>
+type UserInsert = TablesInsert<'users'>
 
 export interface LoginCredentials {
   email: string
@@ -17,37 +19,35 @@ export interface AuthResponse {
   error: string | null
 }
 
-class AuthService {
+export class AuthService {
   private supabase = createClient()
 
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
-      const { data, error } = await this.supabase.auth.signInWithPassword({
+      const { data: authData, error: authError } = await this.supabase.auth.signInWithPassword({
         email: credentials.email,
         password: credentials.password,
       })
 
-      if (error) throw error
+      if (authError) throw authError
+      if (!authData.user) throw new Error('Authentication failed')
 
-      // Fetch user profile
-      const { data: userData, error: userError } = await this.supabase
-        .from('users')
-        .select('*')
-        .eq('id', data.user.id)
-        .single()
+      // Get user profile
+      const result = await db.selectSingle('users', {
+        eq: { id: authData.user.id }
+      })
 
-      if (userError) throw userError
+      if (result.error) throw result.error
 
-      return { user: userData, error: null }
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'An unexpected error occurred'
-      return { user: null, error: message }
+      return { user: result.data, error: null }
+    } catch (error: any) {
+      console.error('Login error:', error)
+      return { user: null, error: error.message || 'Login failed' }
     }
   }
 
   async register(data: RegisterData): Promise<AuthResponse> {
     try {
-      // Create auth user
       const { data: authData, error: authError } = await this.supabase.auth.signUp({
         email: data.email,
         password: data.password,
@@ -57,110 +57,82 @@ class AuthService {
       if (!authData.user) throw new Error('Failed to create user')
 
       // Create user profile
-      const userInsert: Database['public']['Tables']['users']['Insert'] = {
+      const userInsert: UserInsert = {
         id: authData.user.id,
         email: data.email,
         username: data.username,
       }
+
+      const result = await db.insert('users', userInsert)
       
-      const { data: userData, error: profileError } = await this.supabase
-        .from('users')
-        .insert(userInsert as any)
-        .select()
-        .single()
+      if (result.error) throw result.error
 
-      if (profileError) throw profileError
-
-      return { user: userData, error: null }
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'An unexpected error occurred'
-      return { user: null, error: message }
+      return { user: result.data, error: null }
+    } catch (error: any) {
+      console.error('Registration error:', error)
+      return { user: null, error: error.message || 'Registration failed' }
     }
   }
 
-  async logout(): Promise<void> {
-    await this.supabase.auth.signOut()
+  async logout(): Promise<{ error: string | null }> {
+    try {
+      const { error } = await this.supabase.auth.signOut()
+      if (error) throw error
+      
+      return { error: null }
+    } catch (error: any) {
+      console.error('Logout error:', error)
+      return { error: error.message || 'Logout failed' }
+    }
   }
 
   async getCurrentUser(): Promise<User | null> {
     try {
-      const { data: { user } } = await this.supabase.auth.getUser()
+      const { data: { user: authUser }, error } = await this.supabase.auth.getUser()
       
-      if (!user) return null
+      if (error || !authUser) return null
 
-      const { data: userData, error } = await this.supabase
-        .from('users')
-        .select('*')
-        .eq('id', user.id)
-        .single()
+      const result = await db.selectSingle('users', {
+        eq: { id: authUser.id }
+      })
 
-      if (error) throw error
-
-      return userData
+      return result.data
     } catch (error) {
-      console.error('Error fetching current user:', error)
+      console.error('Get current user error:', error)
       return null
     }
   }
 
   async updateProfile(userId: string, updates: Partial<User>): Promise<AuthResponse> {
     try {
-      const { data, error } = await (this.supabase as any)
-        .from('users')
-        .update(updates)
-        .eq('id', userId)
-        .select()
-        .single()
+      const result = await db.update('users', updates, { id: userId })
+      
+      if (result.error) throw result.error
 
-      if (error) throw error
-
-      return { user: data, error: null }
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'An unexpected error occurred'
-      return { user: null, error: message }
+      return { user: result.data, error: null }
+    } catch (error: any) {
+      console.error('Update profile error:', error)
+      return { user: null, error: error.message || 'Profile update failed' }
     }
   }
 
-  async sendPasswordReset(email: string): Promise<{ error: string | null }> {
+  async resetPassword(email: string): Promise<{ error: string | null }> {
     try {
-      const { error } = await this.supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/reset-password`,
-      })
-
+      const { error } = await this.supabase.auth.resetPasswordForEmail(email)
       if (error) throw error
-
+      
       return { error: null }
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'An unexpected error occurred'
-      return { error: message }
-    }
-  }
-
-  async updatePassword(newPassword: string): Promise<{ error: string | null }> {
-    try {
-      const { error } = await this.supabase.auth.updateUser({
-        password: newPassword,
-      })
-
-      if (error) throw error
-
-      return { error: null }
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'An unexpected error occurred'
-      return { error: message }
+    } catch (error: any) {
+      console.error('Reset password error:', error)
+      return { error: error.message || 'Password reset failed' }
     }
   }
 
   onAuthStateChange(callback: (user: User | null) => void) {
-    return this.supabase.auth.onAuthStateChange(async (event, session) => {
+    return this.supabase.auth.onAuthStateChange(async (event: any, session: any) => {
       if (session?.user) {
-        const { data } = await this.supabase
-          .from('users')
-          .select('*')
-          .eq('id', session.user.id)
-          .single()
-        
-        callback(data)
+        const user = await this.getCurrentUser()
+        callback(user)
       } else {
         callback(null)
       }
@@ -168,5 +140,4 @@ class AuthService {
   }
 }
 
-const authService = new AuthService()
-export default authService
+export default new AuthService()

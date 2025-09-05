@@ -300,7 +300,7 @@ class DraftService {
       const draftedPlayerIds = new Set(draftedPlayers?.map((pick: any) => pick.player_id) || [])
 
       // Transform to draft board players
-      const availablePlayers: DraftBoardPlayer[] = (allPlayers || []).map((player: any, index) => ({
+      const availablePlayers: DraftBoardPlayer[] = (allPlayers || []).map((player: any, index: number) => ({
         ...player,
         isAvailable: !draftedPlayerIds.has(player.id),
         adp: index + 1, // Simple ADP based on order

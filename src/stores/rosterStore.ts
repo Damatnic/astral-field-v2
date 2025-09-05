@@ -50,15 +50,19 @@ export const useRosterStore = create<RosterState>((set, get) => ({
     set({ isLoading: true, error: null })
     
     try {
-      const result = await rosterService.setLineup(teamId, week, lineup)
+      const lineupData = lineup.reduce((acc, slot) => {
+        acc[slot.position] = slot.playerId
+        return acc
+      }, {} as Record<string, string | null>)
+      const result = await rosterService.setLineup(teamId, week, lineupData)
       
-      if (result.success) {
+      if (!result.error) {
         // Refresh roster to get updated lineup
         await get().fetchRoster(teamId, week)
         set({ isLoading: false })
         return true
       } else {
-        set({ error: result.error || 'Failed to set lineup', isLoading: false })
+        set({ error: result.error, isLoading: false })
         return false
       }
     } catch (error) {
@@ -93,15 +97,15 @@ export const useRosterStore = create<RosterState>((set, get) => ({
     set({ isLoading: true, error: null })
     
     try {
-      const result = await rosterService.addPlayer(teamId, playerId, acquisitionType)
+      const result = await rosterService.addPlayerToRoster(teamId, playerId, acquisitionType)
       
-      if (result.success) {
+      if (!result.error) {
         // Refresh roster to include new player
         await get().fetchRoster(teamId, get().currentWeek)
         set({ isLoading: false })
         return true
       } else {
-        set({ error: result.error || 'Failed to add player', isLoading: false })
+        set({ error: result.error, isLoading: false })
         return false
       }
     } catch (error) {
@@ -117,15 +121,15 @@ export const useRosterStore = create<RosterState>((set, get) => ({
     set({ isLoading: true, error: null })
     
     try {
-      const result = await rosterService.dropPlayer(teamId, playerId)
+      const result = await rosterService.removePlayerFromRoster(teamId, playerId)
       
-      if (result.success) {
+      if (!result.error) {
         // Refresh roster to remove dropped player
         await get().fetchRoster(teamId, get().currentWeek)
         set({ isLoading: false })
         return true
       } else {
-        set({ error: result.error || 'Failed to drop player', isLoading: false })
+        set({ error: result.error, isLoading: false })
         return false
       }
     } catch (error) {

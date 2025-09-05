@@ -323,7 +323,7 @@ export default function WaiverWire({ leagueId }: WaiverWireProps) {
       {showClaimModal && selectedPlayer && (
         <WaiverClaimModal
           player={selectedPlayer}
-          roster={roster?.bench || []}
+          roster={roster?.players || []}
           faabBudget={faabBudget}
           onClose={() => {
             setShowClaimModal(false)

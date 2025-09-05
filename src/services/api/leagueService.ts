@@ -1,68 +1,52 @@
-import { createClient } from '@/lib/supabase'
-import type { Database } from '@/types/database'
+import { db } from '@/lib/database'
+import type { Tables, TablesInsert, TablesUpdate } from '@/types/database'
 
-type League = Database['public']['Tables']['leagues']['Row']
-type LeagueInsert = Database['public']['Tables']['leagues']['Insert']
-type LeagueUpdate = Database['public']['Tables']['leagues']['Update']
-type Team = Database['public']['Tables']['teams']['Row']
+export type League = Tables<'leagues'>
+export type LeagueInsert = TablesInsert<'leagues'>
+export type LeagueUpdate = TablesUpdate<'leagues'>
+export type Team = Tables<'teams'>
+export type User = Tables<'users'>
 
 export interface LeagueSettings {
-  rosterSize: number
+  maxTeams: number
+  rounds: number
+  playoffTeams: number
+  playoffWeeks: number
+  regularSeasonWeeks: number
+  tradeDeadline: string
+  waiverPeriod: number
+  draftType: 'snake' | 'linear'
+  draftOrder: string[]
+  benchSlots: number
   startingLineup: {
     QB: number
     RB: number
     WR: number
     TE: number
     FLEX: number
-    DST: number
     K: number
-    BENCH: number
+    DST: number
   }
-  waiverType: 'FAAB' | 'Rolling' | 'Reverse'
-  tradeDeadline: string
-  playoffWeeks: number[]
-  maxTeams: number
 }
 
 export interface ScoringSystem {
-  passing: {
-    yards: number
-    touchdowns: number
-    interceptions: number
-  }
-  rushing: {
-    yards: number
-    touchdowns: number
-  }
-  receiving: {
-    yards: number
-    touchdowns: number
-    receptions: number
-  }
-  kicking: {
-    fieldGoals: {
-      '0-39': number
-      '40-49': number
-      '50+': number
-    }
-    extraPoints: number
-  }
-  defense: {
-    touchdown: number
-    interception: number
-    fumbleRecovery: number
-    sack: number
-    safety: number
-    pointsAllowed: {
-      '0': number
-      '1-6': number
-      '7-13': number
-      '14-20': number
-      '21-27': number
-      '28-34': number
-      '35+': number
-    }
-  }
+  passingYards: number
+  passingTD: number
+  passingINT: number
+  rushingYards: number
+  rushingTD: number
+  receivingYards: number
+  receivingTD: number
+  receptions: number
+  fumblesLost: number
+  kickingFG: number
+  kickingXP: number
+  defenseINT: number
+  defenseFumble: number
+  defenseSack: number
+  defenseTD: number
+  defenseYardsAllowed: number
+  defensePointsAllowed: number
 }
 
 export interface CreateLeagueData {
@@ -70,7 +54,7 @@ export interface CreateLeagueData {
   settings: LeagueSettings
   scoringSystem: ScoringSystem
   draftDate?: string
-  seasonYear: number
+  seasonYear?: number
 }
 
 export interface LeagueResponse {
@@ -83,14 +67,21 @@ export interface LeaguesResponse {
   error: string | null
 }
 
-export interface TeamsResponse {
-  teams: Team[]
+export interface LeagueWithTeams extends League {
+  teams: (Team & { users: User })[]
+}
+
+export interface TeamResponse {
+  team: Team | null
   error: string | null
 }
 
-class LeagueService {
-  private supabase = createClient()
+export interface TeamsResponse {
+  teams: (Team & { users: User })[]
+  error: string | null
+}
 
+export class LeagueService {
   async createLeague(userId: string, data: CreateLeagueData): Promise<LeagueResponse> {
     try {
       const leagueInsert: LeagueInsert = {
@@ -99,243 +90,333 @@ class LeagueService {
         settings: data.settings as any,
         scoring_system: data.scoringSystem as any,
         draft_date: data.draftDate || null,
-        season_year: data.seasonYear,
+        season_year: data.seasonYear || new Date().getFullYear(),
       }
 
-      const { data: league, error } = await this.supabase
-        .from('leagues')
-        .insert(leagueInsert as any)
-        .select()
-        .single()
+      const result = await db.insert('leagues', leagueInsert)
+      
+      if (result.error) throw result.error
 
-      if (error) throw error
+      return { league: result.data, error: null }
+    } catch (error: any) {
+      console.error('Create league error:', error)
+      return { league: null, error: error.message || 'Failed to create league' }
+    }
+  }
 
-      return { league, error: null }
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to create league'
-      return { league: null, error: message }
+  async getLeague(leagueId: string): Promise<LeagueResponse> {
+    try {
+      const result = await db.selectSingle('leagues', {
+        eq: { id: leagueId }
+      })
+
+      if (result.error) throw result.error
+
+      return { league: result.data, error: null }
+    } catch (error: any) {
+      console.error('Get league error:', error)
+      return { league: null, error: error.message || 'Failed to get league' }
+    }
+  }
+
+  async getLeagueWithTeams(leagueId: string): Promise<{ league: LeagueWithTeams | null; error: string | null }> {
+    try {
+      const result = await db.selectWithJoins('leagues', `
+        *,
+        teams!inner (
+          *,
+          users!inner (username, email, avatar_url)
+        )
+      `, {
+        eq: { id: leagueId }
+      })
+
+      if (result.error) throw result.error
+      if (!result.data || result.data.length === 0) {
+        return { league: null, error: 'League not found' }
+      }
+
+      return { league: result.data[0], error: null }
+    } catch (error: any) {
+      console.error('Get league with teams error:', error)
+      return { league: null, error: error.message || 'Failed to get league details' }
     }
   }
 
   async getUserLeagues(userId: string): Promise<LeaguesResponse> {
     try {
-      // Get leagues where user is commissioner or has a team
-      const { data: leagues, error } = await this.supabase
-        .from('leagues')
-        .select(`
-          *,
-          teams!inner(user_id)
-        `)
-        .or(`commissioner_id.eq.${userId},teams.user_id.eq.${userId}`)
+      // Get leagues where user is commissioner
+      const commissionerResult = await db.select('leagues', {
+        eq: { commissioner_id: userId }
+      })
 
-      if (error) throw error
+      // Get leagues where user has a team
+      const teamResult = await db.selectWithJoins('teams', `
+        leagues (*)
+      `, {
+        eq: { user_id: userId }
+      })
 
-      return { leagues: leagues || [], error: null }
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to fetch leagues'
-      return { leagues: [], error: message }
-    }
-  }
+      if (commissionerResult.error || teamResult.error) {
+        throw commissionerResult.error || teamResult.error
+      }
 
-  async getLeagueById(leagueId: string): Promise<LeagueResponse> {
-    try {
-      const { data: league, error } = await this.supabase
-        .from('leagues')
-        .select('*')
-        .eq('id', leagueId)
-        .single()
+      const commissionerLeagues = commissionerResult.data || []
+      const teamLeagues = teamResult.data?.map((team: any) => team.leagues).filter(Boolean) || []
 
-      if (error) throw error
+      // Combine and deduplicate leagues
+      const allLeagues = [...commissionerLeagues, ...teamLeagues]
+      const uniqueLeagues = allLeagues.filter((league, index, self) =>
+        index === self.findIndex(l => l.id === league.id)
+      )
 
-      return { league, error: null }
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to fetch league'
-      return { league: null, error: message }
+      return { leagues: uniqueLeagues, error: null }
+    } catch (error: any) {
+      console.error('Get user leagues error:', error)
+      return { leagues: [], error: error.message || 'Failed to get leagues' }
     }
   }
 
   async updateLeague(leagueId: string, updates: LeagueUpdate): Promise<LeagueResponse> {
     try {
-      const { data: league, error } = await (this.supabase as any)
-        .from('leagues')
-        .update(updates)
-        .eq('id', leagueId)
-        .select()
-        .single()
+      const result = await db.update('leagues', updates, { id: leagueId })
+      
+      if (result.error) throw result.error
 
-      if (error) throw error
-
-      return { league, error: null }
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to update league'
-      return { league: null, error: message }
+      return { league: result.data, error: null }
+    } catch (error: any) {
+      console.error('Update league error:', error)
+      return { league: null, error: error.message || 'Failed to update league' }
     }
   }
 
-  async deleteLeague(leagueId: string): Promise<{ error: string | null }> {
+  async deleteLeague(leagueId: string, userId: string): Promise<{ error: string | null }> {
     try {
-      const { error } = await this.supabase
-        .from('leagues')
-        .delete()
-        .eq('id', leagueId)
+      // Verify user is commissioner
+      const leagueResult = await db.selectSingle('leagues', {
+        eq: { id: leagueId }
+      })
 
-      if (error) throw error
+      if (leagueResult.error) throw leagueResult.error
+      if (!leagueResult.data) throw new Error('League not found')
+      if (leagueResult.data.commissioner_id !== userId) {
+        throw new Error('Only the commissioner can delete the league')
+      }
+
+      const result = await db.delete('leagues', { id: leagueId })
+      
+      if (result.error) throw result.error
 
       return { error: null }
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to delete league'
-      return { error: message }
+    } catch (error: any) {
+      console.error('Delete league error:', error)
+      return { error: error.message || 'Failed to delete league' }
     }
   }
 
   async joinLeague(leagueId: string, userId: string, teamName: string): Promise<{ error: string | null }> {
     try {
-      // Check if league has space
-      const { data: teams, error: teamsError } = await this.supabase
-        .from('teams')
-        .select('*')
-        .eq('league_id', leagueId)
+      // Check if league exists and has space
+      const leagueResult = await db.selectSingle('leagues', {
+        eq: { id: leagueId }
+      })
 
-      if (teamsError) throw teamsError
+      if (leagueResult.error) throw leagueResult.error
+      if (!leagueResult.data) throw new Error('League not found')
 
-      const { data: league, error: leagueError } = await this.supabase
-        .from('leagues')
-        .select('settings')
-        .eq('id', leagueId)
-        .single()
+      const league = leagueResult.data
+      const settings = league.settings as unknown as LeagueSettings
 
-      if (leagueError) throw leagueError
+      // Get current teams
+      const teamsResult = await db.select('teams', {
+        eq: { league_id: leagueId }
+      })
 
-      const settings = (league as any).settings as LeagueSettings
-      if (teams && teams.length >= settings.maxTeams) {
+      if (teamsResult.error) throw teamsResult.error
+
+      const teams = teamsResult.data || []
+
+      if (teams.length >= settings.maxTeams) {
         throw new Error('League is full')
       }
 
       // Check if user already has a team in this league
-      const existingTeam = teams?.find((team: any) => team.user_id === userId)
+      const existingTeam = teams.find(team => team.user_id === userId)
       if (existingTeam) {
         throw new Error('You already have a team in this league')
       }
 
       // Create team
-      const { error: insertError } = await (this.supabase as any)
-        .from('teams')
-        .insert({
-          league_id: leagueId,
-          user_id: userId,
-          team_name: teamName,
-          waiver_priority: (teams?.length || 0) + 1,
-        })
+      const teamResult = await db.insert('teams', {
+        league_id: leagueId,
+        user_id: userId,
+        team_name: teamName,
+        waiver_priority: teams.length + 1,
+      })
 
-      if (insertError) throw insertError
+      if (teamResult.error) throw teamResult.error
 
       return { error: null }
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to join league'
-      return { error: message }
-    }
-  }
-
-  async getLeagueTeams(leagueId: string): Promise<TeamsResponse> {
-    try {
-      const { data: teams, error } = await this.supabase
-        .from('teams')
-        .select(`
-          *,
-          users!inner(username, email, avatar_url)
-        `)
-        .eq('league_id', leagueId)
-        .order('draft_position', { nullsFirst: false })
-
-      if (error) throw error
-
-      return { teams: teams || [], error: null }
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to fetch teams'
-      return { teams: [], error: message }
+    } catch (error: any) {
+      console.error('Join league error:', error)
+      return { error: error.message || 'Failed to join league' }
     }
   }
 
   async leaveLeague(leagueId: string, userId: string): Promise<{ error: string | null }> {
     try {
-      const { error } = await this.supabase
-        .from('teams')
-        .delete()
-        .eq('league_id', leagueId)
-        .eq('user_id', userId)
+      // Find user's team in the league
+      const teamResult = await db.selectSingle('teams', {
+        eq: { league_id: leagueId, user_id: userId }
+      })
 
-      if (error) throw error
+      if (teamResult.error) throw teamResult.error
+      if (!teamResult.data) throw new Error('Team not found')
+
+      // Delete the team (this should cascade to delete roster entries, etc.)
+      const deleteResult = await db.delete('teams', {
+        id: teamResult.data.id
+      })
+
+      if (deleteResult.error) throw deleteResult.error
 
       return { error: null }
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to leave league'
-      return { error: message }
+    } catch (error: any) {
+      console.error('Leave league error:', error)
+      return { error: error.message || 'Failed to leave league' }
+    }
+  }
+
+  async getLeagueTeams(leagueId: string): Promise<TeamsResponse> {
+    try {
+      const result = await db.selectWithJoins('teams', `
+        *,
+        users!inner(username, email, avatar_url)
+      `, {
+        eq: { league_id: leagueId },
+        order: { column: 'draft_position', ascending: true }
+      })
+
+      if (result.error) throw result.error
+
+      return { teams: result.data || [], error: null }
+    } catch (error: any) {
+      console.error('Get league teams error:', error)
+      return { teams: [], error: error.message || 'Failed to get league teams' }
+    }
+  }
+
+  async updateTeam(teamId: string, updates: { team_name?: string; draft_position?: number }): Promise<TeamResponse> {
+    try {
+      const result = await db.update('teams', updates, { id: teamId })
+      
+      if (result.error) throw result.error
+
+      return { team: result.data, error: null }
+    } catch (error: any) {
+      console.error('Update team error:', error)
+      return { team: null, error: error.message || 'Failed to update team' }
+    }
+  }
+
+  async searchPublicLeagues(query?: string, limit = 20): Promise<LeaguesResponse> {
+    try {
+      const result = await db.select('leagues', {
+        limit,
+        order: { column: 'created_at', ascending: false }
+      })
+
+      if (result.error) throw result.error
+
+      let leagues = result.data || []
+
+      // Filter by search query if provided
+      if (query) {
+        const searchTerm = query.toLowerCase()
+        leagues = leagues.filter(league =>
+          league.name.toLowerCase().includes(searchTerm)
+        )
+      }
+
+      return { leagues, error: null }
+    } catch (error: any) {
+      console.error('Search public leagues error:', error)
+      return { leagues: [], error: error.message || 'Failed to search leagues' }
+    }
+  }
+
+  async getLeagueStandings(leagueId: string): Promise<{ standings: any[]; error: string | null }> {
+    try {
+      // This would need to be implemented based on your scoring/matchup system
+      // For now, return mock standings
+      const teamsResult = await this.getLeagueTeams(leagueId)
+      
+      if (teamsResult.error) throw new Error(teamsResult.error)
+
+      const standings = teamsResult.teams.map((team, index) => ({
+        rank: index + 1,
+        teamId: team.id,
+        teamName: team.team_name,
+        wins: Math.max(0, 10 - index),
+        losses: Math.min(index + 2, 12),
+        ties: 0,
+        pointsFor: 1500 - (index * 50),
+        pointsAgainst: 1400 - (index * 30),
+        owner: team.users.username
+      }))
+
+      return { standings, error: null }
+    } catch (error: any) {
+      console.error('Get league standings error:', error)
+      return { standings: [], error: error.message || 'Failed to get standings' }
     }
   }
 
   getDefaultSettings(): LeagueSettings {
     return {
-      rosterSize: 16,
+      maxTeams: 10,
+      rounds: 16,
+      playoffTeams: 4,
+      playoffWeeks: 3,
+      regularSeasonWeeks: 14,
+      tradeDeadline: '2024-11-15',
+      waiverPeriod: 1,
+      draftType: 'snake',
+      draftOrder: [],
+      benchSlots: 6,
       startingLineup: {
         QB: 1,
         RB: 2,
         WR: 2,
         TE: 1,
         FLEX: 1,
-        DST: 1,
         K: 1,
-        BENCH: 6,
-      },
-      waiverType: 'FAAB',
-      tradeDeadline: '2024-11-19',
-      playoffWeeks: [15, 16, 17],
-      maxTeams: 12,
+        DST: 1
+      }
     }
   }
 
   getDefaultScoringSystem(): ScoringSystem {
     return {
-      passing: {
-        yards: 0.04,
-        touchdowns: 4,
-        interceptions: -2,
-      },
-      rushing: {
-        yards: 0.1,
-        touchdowns: 6,
-      },
-      receiving: {
-        yards: 0.1,
-        touchdowns: 6,
-        receptions: 1, // PPR
-      },
-      kicking: {
-        fieldGoals: {
-          '0-39': 3,
-          '40-49': 4,
-          '50+': 5,
-        },
-        extraPoints: 1,
-      },
-      defense: {
-        touchdown: 6,
-        interception: 2,
-        fumbleRecovery: 2,
-        sack: 1,
-        safety: 2,
-        pointsAllowed: {
-          '0': 10,
-          '1-6': 7,
-          '7-13': 4,
-          '14-20': 1,
-          '21-27': 0,
-          '28-34': -1,
-          '35+': -4,
-        },
-      },
+      passingYards: 0.04,
+      passingTD: 6,
+      passingINT: -2,
+      rushingYards: 0.1,
+      rushingTD: 6,
+      receivingYards: 0.1,
+      receivingTD: 6,
+      receptions: 1,
+      fumblesLost: -2,
+      kickingFG: 3,
+      kickingXP: 1,
+      defenseINT: 2,
+      defenseFumble: 2,
+      defenseSack: 1,
+      defenseTD: 6,
+      defenseYardsAllowed: 0,
+      defensePointsAllowed: 0
     }
   }
 }
 
-const leagueService = new LeagueService()
-export default leagueService
+export default new LeagueService()

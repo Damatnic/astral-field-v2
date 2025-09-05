@@ -590,7 +590,7 @@ class LeagueAutomationService {
         penaltySystem: {
           enabled: false,
           firstOffense: 'warning',
-          repeatOffense: 'lose_waiver_priority'
+          repeatOffense: 'fine'
         }
       },
       waiverProcessing: {

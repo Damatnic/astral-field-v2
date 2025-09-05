@@ -72,7 +72,7 @@ export default function CreateLeagueForm({ onCancel }: CreateLeagueFormProps) {
         maxTeams: data.maxTeams,
         waiverType: data.waiverType,
         tradeDeadline: data.tradeDeadline,
-        playoffWeeks: Array.from({ length: 3 }, (_, i) => 15 + i), // Weeks 15, 16, 17
+        playoffWeeks: 3, // 3 playoff weeks
       },
       scoringSystem: defaultScoring,
       draftDate: data.draftDate,

@@ -451,7 +451,7 @@ class LeagueReportingService {
         season,
         matchups,
         highlights,
-        transactions,
+        transactions: transactions as any,
         powerRankings
       }
     } catch (error) {
@@ -475,7 +475,7 @@ class LeagueReportingService {
         period: { startDate, endDate },
         memberStats,
         leagueBenchmarks,
-        alerts
+        alerts: alerts as any
       }
     } catch (error) {
       console.error('Error generating member activity report:', error)

@@ -1,35 +1,33 @@
-import { createClient } from '@/lib/supabase'
-import type { Database } from '@/types/database'
-import sportsDataService from '@/services/external/sportsDataService'
+import { db } from '@/lib/database'
+import type { Tables, TablesInsert, TablesUpdate } from '@/types/database'
 
-type Player = Database['public']['Tables']['players']['Row']
-type PlayerInsert = Database['public']['Tables']['players']['Insert']
+export type Player = Tables<'players'>
+export type PlayerInsert = TablesInsert<'players'>
+export type PlayerUpdate = TablesUpdate<'players'>
+export type PlayerProjection = Tables<'player_projections'>
+export type PlayerStat = Tables<'player_stats'>
 
 export interface PlayerStats {
-  week: number
   season: number
-  passingYards?: number
-  passingTDs?: number
-  passingINTs?: number
-  rushingYards?: number
-  rushingTDs?: number
-  receivingYards?: number
-  receivingTDs?: number
-  receptions?: number
+  week: number
+  passingYards: number
+  passingTDs: number
+  passingINTs: number
+  rushingYards: number
+  rushingTDs: number
+  receivingYards: number
+  receivingTDs: number
+  receptions: number
   fantasyPoints: number
 }
 
 export interface PlayerProjections {
   season: number
-  passingYards?: number
-  passingTDs?: number
-  rushingYards?: number
-  rushingTDs?: number
-  receivingYards?: number
-  receivingTDs?: number
-  receptions?: number
-  projectedPoints: number
+  week?: number
+  fantasyPoints: number
+  adp?: number
   confidence: number
+  projectedStats: Record<string, number>
 }
 
 export interface PlayerResponse {
@@ -39,360 +37,297 @@ export interface PlayerResponse {
 
 export interface PlayersResponse {
   players: Player[]
-  total: number
   error: string | null
 }
 
-export interface PlayerFilters {
-  position?: string
-  team?: string
-  search?: string
-  available?: boolean
-  leagueId?: string
+export interface PlayerWithProjections {
+  id: string
+  name: string
+  position: string
+  nfl_team: string
+  injury_status?: string | null
+  bye_week?: number
+  created_at?: string
+  updated_at?: string
+  projections?: PlayerProjection[]
+  stats?: PlayerStat[]
 }
 
-export interface PlayerSortOptions {
-  field: 'name' | 'position' | 'team' | 'projectedPoints' | 'fantasyPoints'
-  direction: 'asc' | 'desc'
-}
-
-class PlayerService {
-  private supabase = createClient()
-
-  async getPlayers(
-    filters: PlayerFilters = {},
-    sort: PlayerSortOptions = { field: 'name', direction: 'asc' },
-    limit: number = 50,
-    offset: number = 0
-  ): Promise<PlayersResponse> {
+export class PlayerService {
+  async getPlayer(playerId: string): Promise<PlayerResponse> {
     try {
-      let query = this.supabase
-        .from('players')
-        .select('*', { count: 'exact' })
+      const result = await db.selectSingle('players', {
+        eq: { id: playerId }
+      })
 
-      // Apply filters
-      if (filters.position) {
-        query = query.eq('position', filters.position)
-      }
+      if (result.error) throw result.error
 
-      if (filters.team) {
-        query = query.eq('nfl_team', filters.team)
-      }
-
-      if (filters.search) {
-        query = query.ilike('name', `%${filters.search}%`)
-      }
-
-      // Apply sorting
-      const ascending = sort.direction === 'asc'
-      if (sort.field === 'projectedPoints' || sort.field === 'fantasyPoints') {
-        // For JSON fields, we'd need custom sorting logic
-        query = query.order('name', { ascending })
-      } else {
-        query = query.order(sort.field, { ascending })
-      }
-
-      // Apply pagination
-      query = query.range(offset, offset + limit - 1)
-
-      const { data: players, error, count } = await query
-
-      if (error) throw error
-
-      return { players: players || [], total: count || 0, error: null }
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to fetch players'
-      return { players: [], total: 0, error: message }
+      return { player: result.data, error: null }
+    } catch (error: any) {
+      console.error('Get player error:', error)
+      return { player: null, error: error.message || 'Failed to get player' }
     }
   }
 
-  async getPlayerById(playerId: string): Promise<PlayerResponse> {
+  async getPlayerWithDetails(playerId: string): Promise<{ player: PlayerWithProjections | null; error: string | null }> {
     try {
-      const { data: player, error } = await this.supabase
-        .from('players')
-        .select('*')
-        .eq('id', playerId)
-        .single()
+      const result = await db.selectWithJoins('players', `
+        *,
+        player_projections (*),
+        player_stats (*)
+      `, {
+        eq: { id: playerId }
+      })
 
-      if (error) throw error
+      if (result.error) throw result.error
+      if (!result.data || result.data.length === 0) {
+        return { player: null, error: 'Player not found' }
+      }
 
-      return { player, error: null }
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to fetch player'
-      return { player: null, error: message }
+      return { player: result.data[0], error: null }
+    } catch (error: any) {
+      console.error('Get player with details error:', error)
+      return { player: null, error: error.message || 'Failed to get player details' }
     }
   }
 
-  async searchPlayers(searchTerm: string, limit: number = 20): Promise<PlayersResponse> {
+  async getPlayers(options?: {
+    position?: string
+    team?: string
+    limit?: number
+    search?: string
+  }): Promise<PlayersResponse> {
     try {
-      const { data: players, error } = await this.supabase
-        .from('players')
-        .select('*')
-        .or(`name.ilike.%${searchTerm}%,nfl_team.ilike.%${searchTerm}%`)
-        .limit(limit)
-        .order('name')
+      const queryOptions: any = {}
+      
+      if (options?.position) {
+        queryOptions.eq = { ...queryOptions.eq, position: options.position }
+      }
+      
+      if (options?.team) {
+        queryOptions.eq = { ...queryOptions.eq, nfl_team: options.team }
+      }
 
-      if (error) throw error
+      if (options?.limit) {
+        queryOptions.limit = options.limit
+      }
 
-      return { players: players || [], total: players?.length || 0, error: null }
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to search players'
-      return { players: [], total: 0, error: message }
-    }
-  }
+      // Add ordering by name
+      queryOptions.order = { column: 'name', ascending: true }
 
-  async getPlayersByPosition(position: string): Promise<PlayersResponse> {
-    return this.getPlayers({ position }, { field: 'name', direction: 'asc' }, 100)
-  }
+      const result = await db.select('players', queryOptions)
 
-  async getAvailablePlayers(leagueId: string, filters: PlayerFilters = {}): Promise<PlayersResponse> {
-    try {
-      // This would require a more complex query to exclude players already on teams
-      // For now, return all players with the filter applied
-      return this.getPlayers({ ...filters, available: true, leagueId })
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to fetch available players'
-      return { players: [], total: 0, error: message }
+      if (result.error) throw result.error
+
+      let players = result.data || []
+
+      // Filter by search term if provided
+      if (options?.search) {
+        const searchTerm = options.search.toLowerCase()
+        players = players.filter(player => 
+          player.name.toLowerCase().includes(searchTerm) ||
+          player.position.toLowerCase().includes(searchTerm) ||
+          player.nfl_team.toLowerCase().includes(searchTerm)
+        )
+      }
+
+      return { players, error: null }
+    } catch (error: any) {
+      console.error('Get players error:', error)
+      return { players: [], error: error.message || 'Failed to get players' }
     }
   }
 
   async createPlayer(playerData: PlayerInsert): Promise<PlayerResponse> {
     try {
-      const { data: player, error } = await this.supabase
-        .from('players')
-        .insert(playerData as any)
-        .select()
-        .single()
+      const result = await db.insert('players', playerData)
+      
+      if (result.error) throw result.error
 
-      if (error) throw error
-
-      return { player, error: null }
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to create player'
-      return { player: null, error: message }
+      return { player: result.data, error: null }
+    } catch (error: any) {
+      console.error('Create player error:', error)
+      return { player: null, error: error.message || 'Failed to create player' }
     }
   }
 
-  async updatePlayer(playerId: string, updates: Partial<Player>): Promise<PlayerResponse> {
+  async updatePlayer(playerId: string, updates: PlayerUpdate): Promise<PlayerResponse> {
     try {
-      const { data: player, error } = await (this.supabase as any)
-        .from('players')
-        .update(updates)
-        .eq('id', playerId)
-        .select()
-        .single()
+      const result = await db.update('players', updates, { id: playerId })
+      
+      if (result.error) throw result.error
 
-      if (error) throw error
-
-      return { player, error: null }
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to update player'
-      return { player: null, error: message }
+      return { player: result.data, error: null }
+    } catch (error: any) {
+      console.error('Update player error:', error)
+      return { player: null, error: error.message || 'Failed to update player' }
     }
   }
 
   async updatePlayerStats(playerId: string, stats: PlayerStats): Promise<PlayerResponse> {
     try {
-      const { data: player, error } = await (this.supabase as any)
-        .from('players')
-        .update({
-          stats: stats,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', playerId)
-        .select()
-        .single()
+      // First insert the stats
+      const statsResult = await db.insert('player_stats', {
+        player_id: playerId,
+        season_year: stats.season,
+        week: stats.week,
+        game_stats: stats as any, // Convert to JSON
+        fantasy_points: stats.fantasyPoints
+      })
 
-      if (error) throw error
+      if (statsResult.error) throw statsResult.error
 
-      return { player, error: null }
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to update player stats'
-      return { player: null, error: message }
+      // Then update the player's stats JSON field
+      const playerResult = await db.update('players', {
+        stats: stats as any,
+        updated_at: new Date().toISOString(),
+      }, { id: playerId })
+
+      if (playerResult.error) throw playerResult.error
+
+      return { player: playerResult.data, error: null }
+    } catch (error: any) {
+      console.error('Update player stats error:', error)
+      return { player: null, error: error.message || 'Failed to update player stats' }
     }
   }
 
   async updatePlayerProjections(playerId: string, projections: PlayerProjections): Promise<PlayerResponse> {
     try {
-      const { data: player, error } = await (this.supabase as any)
-        .from('players')
-        .update({
-          projections: projections,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', playerId)
-        .select()
-        .single()
+      // First insert/update the projections
+      const projectionsResult = await db.insert('player_projections', {
+        player_id: playerId,
+        season_year: projections.season,
+        week: projections.week || null,
+        fantasy_points: projections.fantasyPoints,
+        adp: projections.adp || null,
+        projected_stats: projections.projectedStats as any,
+        confidence: projections.confidence
+      })
 
-      if (error) throw error
+      if (projectionsResult.error) throw projectionsResult.error
 
-      return { player, error: null }
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to update player projections'
-      return { player: null, error: message }
+      // Then update the player's projections JSON field
+      const playerResult = await db.update('players', {
+        projections: projections as any,
+        updated_at: new Date().toISOString(),
+      }, { id: playerId })
+
+      if (playerResult.error) throw playerResult.error
+
+      return { player: playerResult.data, error: null }
+    } catch (error: any) {
+      console.error('Update player projections error:', error)
+      return { player: null, error: error.message || 'Failed to update player projections' }
     }
   }
 
-  getPositionDisplayName(position: string): string {
-    const positionMap: Record<string, string> = {
-      'QB': 'Quarterback',
-      'RB': 'Running Back',
-      'WR': 'Wide Receiver',
-      'TE': 'Tight End',
-      'K': 'Kicker',
-      'DST': 'Defense/ST',
-    }
-    return positionMap[position] || position
+  async getPlayersByPosition(position: string, limit = 50): Promise<PlayersResponse> {
+    return this.getPlayers({ position, limit })
   }
 
-  getPositionColor(position: string): string {
-    const colorMap: Record<string, string> = {
-      'QB': 'text-red-400',
-      'RB': 'text-green-400',
-      'WR': 'text-blue-400',
-      'TE': 'text-yellow-400',
-      'K': 'text-purple-400',
-      'DST': 'text-gray-400',
-    }
-    return colorMap[position] || 'text-gray-400'
+  async searchPlayers(query: string, limit = 20): Promise<PlayersResponse> {
+    return this.getPlayers({ search: query, limit })
   }
 
-  async syncPlayersFromSportsData(): Promise<{ synced: number; error: string | null }> {
+  async getTopPlayers(limit = 100): Promise<PlayersResponse> {
     try {
-      console.log('Starting player data sync from SportsDataIO...')
-      
-      const transformedPlayers = await sportsDataService.syncPlayersToDatabase()
-      let syncedCount = 0
+      const result = await db.selectWithJoins('players', `
+        *,
+        player_projections!inner(fantasy_points)
+      `, {
+        order: { column: 'player_projections.fantasy_points', ascending: false },
+        limit
+      })
 
-      for (const playerData of transformedPlayers) {
+      if (result.error) throw result.error
+
+      return { players: result.data || [], error: null }
+    } catch (error: any) {
+      console.error('Get top players error:', error)
+      return { players: [], error: error.message || 'Failed to get top players' }
+    }
+  }
+
+  async syncPlayersFromExternal(playersData: any[]): Promise<{ success: number; failed: number; error: string | null }> {
+    let success = 0
+    let failed = 0
+
+    try {
+      for (const playerData of playersData) {
         try {
-          // Check if player already exists by external_id
-          const { data: existingPlayer } = await this.supabase
-            .from('players')
-            .select('id')
-            .eq('name', playerData.name)
-            .single()
-
           const playerInsert: PlayerInsert = {
             name: playerData.name,
             position: playerData.position,
             nfl_team: playerData.nfl_team,
+            injury_status: playerData.injury_status || null,
             bye_week: playerData.bye_week || 0,
-            injury_status: playerData.injury_status,
-            stats: playerData.stats,
-            projections: playerData.projections,
+            stats: playerData.stats || null,
+            projections: playerData.projections || null,
           }
 
-          if (existingPlayer) {
+          // Check if player exists
+          const existingResult = await db.selectSingle('players', {
+            eq: { name: playerData.name, nfl_team: playerData.nfl_team }
+          })
+
+          if (existingResult.data) {
             // Update existing player
-            await (this.supabase as any)
-              .from('players')
-              .update({
-                nfl_team: playerData.nfl_team,
-                bye_week: playerData.bye_week || 0,
-                injury_status: playerData.injury_status,
-                stats: playerData.stats,
-                projections: playerData.projections,
-                updated_at: new Date().toISOString(),
-              })
-              .eq('id', (existingPlayer as any).id)
+            await db.update('players', {
+              nfl_team: playerData.nfl_team,
+              bye_week: playerData.bye_week || 0,
+              injury_status: playerData.injury_status || null,
+              stats: playerData.stats || null,
+              projections: playerData.projections || null,
+              updated_at: new Date().toISOString(),
+            }, { id: existingResult.data.id })
           } else {
             // Create new player
             await this.createPlayer(playerInsert)
           }
           
-          syncedCount++
-        } catch (playerError) {
-          console.warn(`Failed to sync player ${playerData.name}:`, playerError)
-          // Continue with other players
+          success++
+        } catch (error) {
+          console.error(`Failed to sync player ${playerData.name}:`, error)
+          failed++
         }
       }
 
-      console.log(`Successfully synced ${syncedCount} players`)
-      return { synced: syncedCount, error: null }
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to sync players from SportsData'
-      console.error('Player sync error:', message)
-      return { synced: 0, error: message }
+      return { success, failed, error: null }
+    } catch (error: any) {
+      console.error('Sync players error:', error)
+      return { success, failed, error: error.message || 'Failed to sync players' }
     }
   }
 
-  async initializeSamplePlayers(): Promise<{ error: string | null }> {
-    // Try to sync from SportsDataIO first
-    const { synced, error: syncError } = await this.syncPlayersFromSportsData()
-    
-    if (syncError || synced === 0) {
-      console.log('SportsData sync failed, using sample data...')
-      
-      try {
-        const samplePlayers: PlayerInsert[] = [
-          {
-            name: 'Josh Allen',
-            position: 'QB',
-            nfl_team: 'BUF',
-            bye_week: 12,
-            injury_status: 'Healthy',
-            stats: {
-              season: 2024,
-              passingYards: 3200,
-              passingTDs: 28,
-              passingINTs: 12,
-              rushingYards: 450,
-              rushingTDs: 8,
-              fantasyPoints: 285.5
-            },
-            projections: {
-              season: 2024,
-              passingYards: 4100,
-              passingTDs: 35,
-              rushingYards: 600,
-              rushingTDs: 10,
-              projectedPoints: 385,
-              confidence: 0.85
-            }
-          },
-          {
-            name: 'Christian McCaffrey',
-            position: 'RB',
-            nfl_team: 'SF',
-            bye_week: 9,
-            injury_status: 'Healthy',
-            stats: {
-              season: 2024,
-              rushingYards: 1150,
-              rushingTDs: 12,
-              receivingYards: 380,
-              receivingTDs: 3,
-              receptions: 42,
-              fantasyPoints: 245.8
-            },
-            projections: {
-              season: 2024,
-              rushingYards: 1400,
-              rushingTDs: 15,
-              receivingYards: 450,
-              receivingTDs: 4,
-              receptions: 55,
-              projectedPoints: 295,
-              confidence: 0.82
-            }
-          }
-        ]
-
-        for (const player of samplePlayers) {
-          await this.createPlayer(player)
-        }
-
-        return { error: null }
-      } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : 'Failed to initialize sample players'
-        return { error: message }
-      }
+  // Utility methods
+  getPositionColor(position: string): string {
+    const colors: Record<string, string> = {
+      QB: 'text-red-400',
+      RB: 'text-green-400',
+      WR: 'text-blue-400',
+      TE: 'text-yellow-400',
+      K: 'text-orange-400',
+      DST: 'text-purple-400'
     }
-    
-    return { error: null }
+    return colors[position] || 'text-gray-400'
+  }
+
+  getPositionPriority(position: string): number {
+    const priorities: Record<string, number> = {
+      QB: 1,
+      RB: 2,
+      WR: 3,
+      TE: 4,
+      K: 5,
+      DST: 6
+    }
+    return priorities[position] || 7
+  }
+
+  formatPlayerName(player: Player): string {
+    return `${player.name} (${player.position} - ${player.nfl_team})`
   }
 }
 
-const playerService = new PlayerService()
-export default playerService
+export default new PlayerService()

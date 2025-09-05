@@ -5,20 +5,15 @@ import { motion } from 'framer-motion'
 import { 
   Users, 
   TrendingUp,
-  RotateCcw,
   Star,
   AlertTriangle,
   CheckCircle,
-  Clock,
-  Zap,
-  ArrowRight,
-  Plus,
-  Minus
+  Zap
 } from 'lucide-react'
-import { useRosterStore } from '@/stores/rosterStore'
 import { useLeagueStore } from '@/stores/leagueStore'
 import { useAuthStore } from '@/stores/authStore'
-import type { PlayerWithDetails, LineupSlot } from '@/services/api/rosterService'
+import rosterService from '@/services/api/rosterService'
+import type { PlayerWithDetails, OptimalLineup } from '@/services/api/rosterService'
 
 interface RosterManagerProps {
   leagueId: string
@@ -27,72 +22,54 @@ interface RosterManagerProps {
 export default function RosterManager({ leagueId }: RosterManagerProps) {
   const { user } = useAuthStore()
   const { teams } = useLeagueStore()
-  const { 
-    roster, 
-    optimalLineup, 
-    currentWeek, 
-    isLoading, 
-    error, 
-    fetchRoster, 
-    setLineup,
-    getOptimalLineup,
-    addPlayer,
-    dropPlayer,
-    setCurrentWeek,
-    clearError 
-  } = useRosterStore()
+  const [roster, setRoster] = useState<any>(null)
+  const [optimalLineup, setOptimalLineup] = useState<OptimalLineup | null>(null)
+  const [currentWeek, setCurrentWeek] = useState(1)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  
+  const clearError = () => setError(null)
   
   const [activeTab, setActiveTab] = useState<'lineup' | 'bench' | 'optimize'>('lineup')
-  const [editingLineup, setEditingLineup] = useState(false)
-  const [tempLineup, setTempLineup] = useState<Array<{position: string, playerId: string | null}>>([])
 
   const userTeam = teams.find(team => team.user_id === user?.id)
 
+  const fetchRoster = async (teamId: string) => {
+    setIsLoading(true)
+    const result = await rosterService.getTeamRoster(teamId)
+    if (result.error) {
+      setError(result.error)
+    } else {
+      setRoster(result.roster)
+    }
+    setIsLoading(false)
+  }
+
+  const getOptimalLineup = async (teamId: string, week: number) => {
+    setIsLoading(true)
+    const result = await rosterService.getOptimalLineup(teamId, week)
+    if (result.error) {
+      setError(result.error)
+    } else {
+      setOptimalLineup(result.lineup)
+    }
+    setIsLoading(false)
+  }
+
   useEffect(() => {
     if (userTeam) {
-      fetchRoster(userTeam.id, currentWeek)
+      fetchRoster(userTeam.id)
     }
-  }, [userTeam, currentWeek, fetchRoster])
+  }, [userTeam, currentWeek])
 
   const handleWeekChange = (week: number) => {
     setCurrentWeek(week)
     if (userTeam) {
-      fetchRoster(userTeam.id, week)
+      fetchRoster(userTeam.id)
     }
   }
 
-  const startEditingLineup = () => {
-    if (!roster) return
-    setTempLineup(roster.starters.map(starter => ({
-      position: starter.position,
-      playerId: starter.player?.id || null
-    })))
-    setEditingLineup(true)
-  }
 
-  const cancelEditingLineup = () => {
-    setEditingLineup(false)
-    setTempLineup([])
-  }
-
-  const saveLineup = async () => {
-    if (!userTeam) return
-    
-    clearError()
-    const success = await setLineup(userTeam.id, currentWeek, tempLineup)
-    if (success) {
-      setEditingLineup(false)
-      setTempLineup([])
-    }
-  }
-
-  const swapPlayerInLineup = (position: string, playerId: string | null) => {
-    setTempLineup(prev => prev.map(slot =>
-      slot.position === position
-        ? { ...slot, playerId }
-        : slot
-    ))
-  }
 
   const handleOptimizeLineup = async () => {
     if (!userTeam) return
@@ -101,17 +78,15 @@ export default function RosterManager({ leagueId }: RosterManagerProps) {
   }
 
   const applyOptimalLineup = async () => {
-    if (!userTeam || !optimalLineup) return
-    
-    const lineup = optimalLineup.lineup.map(slot => ({
-      position: slot.position,
-      playerId: slot.player?.id || null
-    }))
+    if (!userTeam || !optimalLineup?.lineup) return
     
     clearError()
-    const success = await setLineup(userTeam.id, currentWeek, lineup)
-    if (success) {
+    const result = await rosterService.setLineup(userTeam.id, currentWeek, optimalLineup.lineup)
+    if (!result.error) {
       setActiveTab('lineup')
+      fetchRoster(userTeam.id)
+    } else {
+      setError(result.error)
     }
   }
 
@@ -221,7 +196,7 @@ export default function RosterManager({ leagueId }: RosterManagerProps) {
             }`}
           >
             <Users className="h-4 w-4 mr-2" />
-            Bench ({roster?.bench.length || 0})
+            Bench ({optimalLineup?.bench.length || 0})
           </button>
           <button
             onClick={() => setActiveTab('optimize')}
@@ -252,71 +227,61 @@ export default function RosterManager({ leagueId }: RosterManagerProps) {
               <div>
                 <h2 className="text-xl font-semibold text-white">Starting Lineup</h2>
                 <p className="text-gray-400">
-                  Projected Points: <span className="text-green-400 font-semibold">{roster.projectedPoints.toFixed(1)}</span>
+                  Projected Points: <span className="text-green-400 font-semibold">{roster.totalValue.toFixed(1)}</span>
                 </p>
               </div>
               
-              <div className="flex space-x-3">
-                {editingLineup ? (
-                  <>
-                    <button
-                      onClick={cancelEditingLineup}
-                      className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={saveLineup}
-                      disabled={isLoading}
-                      className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50"
-                    >
-                      Save Lineup
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    onClick={startEditingLineup}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-                  >
-                    Edit Lineup
-                  </button>
-                )}
-              </div>
             </div>
 
             <div className="grid gap-4">
-              {roster.starters.map((starter, index) => (
-                <LineupSlotCard
-                  key={`${starter.position}-${index}`}
-                  slot={starter}
-                  isEditing={editingLineup}
-                  availablePlayers={roster.bench}
-                  onPlayerSwap={(playerId) => swapPlayerInLineup(starter.position, playerId)}
-                />
+              {optimalLineup?.starters?.map((starter, index) => (
+                <div key={`${starter.position}-${index}`} className="bg-gray-800 rounded-lg border border-gray-700 p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className={`w-12 h-12 ${getPositionColor(starter.position)} rounded-lg flex items-center justify-center`}>
+                        <span className="text-white font-bold text-sm">{starter.position}</span>
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2">
+                          <p className="font-medium text-white">{starter.name}</p>
+                          {getInjuryStatusIcon(starter.injury_status || null)}
+                        </div>
+                        <p className="text-sm text-gray-400">
+                          {starter.nfl_team} • {starter.position}
+                          {starter.projections && (
+                            <span className="ml-2 text-green-400">
+                              {starter.projections.fantasy_points.toFixed(1)} pts
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
           </div>
         )}
 
         {/* Bench Tab */}
-        {activeTab === 'bench' && roster && (
+        {activeTab === 'bench' && optimalLineup && (
           <div>
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-semibold text-white">Bench Players</h2>
               <p className="text-gray-400">
-                Roster: {roster.rosterStatus.totalPlayers}/{roster.rosterStatus.maxRoster}
+                Roster: {roster?.players.length || 0}/16
               </p>
             </div>
 
             <div className="grid gap-4">
-              {roster.bench.length === 0 ? (
+              {optimalLineup.bench.length === 0 ? (
                 <div className="bg-gray-800 rounded-lg border border-gray-700 p-8 text-center">
                   <Users className="h-12 w-12 text-gray-500 mx-auto mb-4" />
                   <h3 className="text-lg font-semibold text-white mb-2">No Bench Players</h3>
                   <p className="text-gray-400">Your bench is empty.</p>
                 </div>
               ) : (
-                roster.bench.map((player) => (
+                optimalLineup.bench.map((player) => (
                   <PlayerCard key={player.id} player={player} showActions={false} />
                 ))
               )}
@@ -333,7 +298,7 @@ export default function RosterManager({ leagueId }: RosterManagerProps) {
                 <p className="text-gray-400">AI-powered lineup recommendations</p>
               </div>
               
-              {optimalLineup && optimalLineup.improvements.length > 0 && (
+              {optimalLineup && (
                 <button
                   onClick={applyOptimalLineup}
                   disabled={isLoading}
@@ -364,203 +329,58 @@ export default function RosterManager({ leagueId }: RosterManagerProps) {
                     </div>
                     <div className="text-center">
                       <p className="text-2xl font-bold text-blue-400">
-                        {roster?.projectedPoints.toFixed(1) || '0.0'}
+                        {roster?.totalValue.toFixed(1) || '0.0'}
                       </p>
                       <p className="text-sm text-gray-400">Current Points</p>
                     </div>
                     <div className="text-center">
                       <p className="text-2xl font-bold text-yellow-400">
-                        +{(optimalLineup.totalProjectedPoints - (roster?.projectedPoints || 0)).toFixed(1)}
+                        +{(optimalLineup.totalProjectedPoints - (roster?.totalValue || 0)).toFixed(1)}
                       </p>
                       <p className="text-sm text-gray-400">Potential Gain</p>
                     </div>
                   </div>
                 </div>
 
-                {/* Improvements */}
-                {optimalLineup.improvements.length > 0 && (
-                  <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
-                    <h3 className="text-lg font-semibold text-white mb-4">Recommended Changes</h3>
-                    <div className="space-y-4">
-                      {optimalLineup.improvements.map((improvement, index) => (
-                        <div key={index} className="flex items-center justify-between p-4 bg-gray-700 rounded-lg">
-                          <div className="flex items-center space-x-4">
-                            <div className="text-center">
-                              <p className="text-sm font-medium text-white">
-                                {improvement.currentPlayer?.name || 'Empty'}
-                              </p>
-                              <p className="text-xs text-gray-400">
-                                {improvement.currentPlayer?.projections?.fantasy_points.toFixed(1) || '0.0'} pts
-                              </p>
-                            </div>
-                            <ArrowRight className="h-4 w-4 text-gray-400" />
-                            <div className="text-center">
-                              <p className="text-sm font-medium text-white">
-                                {improvement.suggestedPlayer.name}
-                              </p>
-                              <p className="text-xs text-gray-400">
-                                {improvement.suggestedPlayer.projections?.fantasy_points.toFixed(1) || '0.0'} pts
-                              </p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-sm font-medium text-green-400">
-                              +{improvement.pointsGain.toFixed(1)} pts
-                            </p>
-                            <p className="text-xs text-gray-400">{improvement.reason}</p>
+                {/* Optimal Lineup Display */}
+                <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
+                  <h3 className="text-lg font-semibold text-white mb-4">Optimal Lineup</h3>
+                  <div className="space-y-3">
+                    {optimalLineup.starters.map((player, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
+                        <div className="flex items-center space-x-3">
+                          <span className="px-2 py-1 bg-blue-600 text-white text-xs font-bold rounded">
+                            {player.position}
+                          </span>
+                          <div>
+                            <p className="text-sm font-medium text-white">{player.name}</p>
+                            <p className="text-xs text-gray-400">{player.nfl_team}</p>
                           </div>
                         </div>
-                      ))}
-                    </div>
+                        <div className="text-right">
+                          <p className="text-sm font-medium text-green-400">
+                            {player.projections?.fantasy_points.toFixed(1) || '0.0'} pts
+                          </p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                )}
-
-                {optimalLineup.improvements.length === 0 && (
-                  <div className="bg-gray-800 rounded-lg border border-gray-700 p-8 text-center">
-                    <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-white mb-2">Lineup Already Optimized</h3>
-                    <p className="text-gray-400">Your current lineup is already optimal for projected points.</p>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
-// Lineup Slot Card Component
-interface LineupSlotCardProps {
-  slot: LineupSlot
-  isEditing: boolean
-  availablePlayers: PlayerWithDetails[]
-  onPlayerSwap: (playerId: string | null) => void
-}
-
-function LineupSlotCard({ slot, isEditing, availablePlayers, onPlayerSwap }: LineupSlotCardProps) {
-  const [showPlayerSelect, setShowPlayerSelect] = useState(false)
-
-  const getPositionColor = (position: string) => {
-    const colors: Record<string, string> = {
-      'QB': 'bg-red-600',
-      'RB': 'bg-green-600', 
-      'WR': 'bg-blue-600',
-      'TE': 'bg-yellow-600',
-      'FLEX': 'bg-purple-600',
-      'D/ST': 'bg-gray-600',
-      'K': 'bg-orange-600',
-    }
-    return colors[position] || 'bg-gray-600'
-  }
-
-  const getInjuryStatusIcon = (status: string | null) => {
-    switch (status) {
-      case 'OUT': return <div className="w-2 h-2 bg-red-500 rounded-full" />
-      case 'DOUBTFUL': return <div className="w-2 h-2 bg-red-400 rounded-full" />
-      case 'QUESTIONABLE': return <div className="w-2 h-2 bg-yellow-500 rounded-full" />
-      case 'PROBABLE': return <div className="w-2 h-2 bg-green-400 rounded-full" />
-      default: return <div className="w-2 h-2 bg-green-500 rounded-full" />
-    }
-  }
-
-  // Filter eligible players for this position
-  const eligiblePlayers = availablePlayers.filter(player => {
-    if (slot.isFlexible) {
-      return ['RB', 'WR', 'TE'].includes(player.position)
-    }
-    return player.position === slot.position
-  })
-
-  return (
-    <div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <div className={`w-12 h-12 ${getPositionColor(slot.position)} rounded-lg flex items-center justify-center`}>
-            <span className="text-white font-bold text-sm">{slot.position}</span>
-          </div>
-          
-          {slot.player ? (
-            <div className="flex-1">
-              <div className="flex items-center space-x-2">
-                <p className="font-medium text-white">{slot.player.name}</p>
-                {getInjuryStatusIcon(slot.player.injury_status)}
-              </div>
-              <p className="text-sm text-gray-400">
-                {slot.player.nfl_team} • {slot.player.position}
-                {slot.player.projections && (
-                  <span className="ml-2 text-green-400">
-                    {slot.player.projections.fantasy_points.toFixed(1)} pts
-                  </span>
-                )}
-              </p>
-            </div>
-          ) : (
-            <div className="flex-1">
-              <p className="font-medium text-gray-400">Empty Slot</p>
-              <p className="text-sm text-gray-500">No player assigned</p>
-            </div>
-          )}
-        </div>
-
-        {isEditing && (
-          <div className="flex space-x-2">
-            {slot.player && (
-              <button
-                onClick={() => onPlayerSwap(null)}
-                className="p-2 text-red-400 hover:text-red-300 rounded-lg hover:bg-gray-700 transition-colors"
-              >
-                <Minus className="h-4 w-4" />
-              </button>
-            )}
-            <button
-              onClick={() => setShowPlayerSelect(!showPlayerSelect)}
-              className="p-2 text-blue-400 hover:text-blue-300 rounded-lg hover:bg-gray-700 transition-colors"
-            >
-              <RotateCcw className="h-4 w-4" />
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Player Selection Dropdown */}
-      {showPlayerSelect && isEditing && (
-        <div className="mt-4 max-h-48 overflow-y-auto">
-          <div className="space-y-2">
-            {eligiblePlayers.map(player => (
-              <button
-                key={player.id}
-                onClick={() => {
-                  onPlayerSwap(player.id)
-                  setShowPlayerSelect(false)
-                }}
-                className="w-full text-left p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-white">{player.name}</p>
-                    <p className="text-sm text-gray-400">{player.nfl_team} • {player.position}</p>
-                  </div>
-                  {player.projections && (
-                    <span className="text-green-400 font-medium">
-                      {player.projections.fantasy_points.toFixed(1)}
-                    </span>
-                  )}
                 </div>
-              </button>
-            ))}
-            {eligiblePlayers.length === 0 && (
-              <p className="text-gray-400 text-sm text-center py-4">
-                No eligible players available
-              </p>
+
+                <div className="bg-gray-800 rounded-lg border border-gray-700 p-8 text-center">
+                  <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-white mb-2">Lineup Optimization Complete</h3>
+                  <p className="text-gray-400">Review the optimal lineup above and apply it if desired.</p>
+                </div>
+              </div>
             )}
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }
+
 
 // Player Card Component
 interface PlayerCardProps {
@@ -585,7 +405,7 @@ function PlayerCard({ player, showActions = true }: PlayerCardProps) {
         <div className="flex items-center space-x-3">
           <div className="flex items-center space-x-2">
             <p className="font-medium text-white">{player.name}</p>
-            {getInjuryStatusIcon(player.injury_status)}
+            {getInjuryStatusIcon(player.injury_status || null)}
           </div>
           <span className="px-2 py-1 bg-gray-700 rounded text-xs font-medium text-gray-300">
             {player.position}

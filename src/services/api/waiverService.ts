@@ -72,19 +72,19 @@ class WaiverService {
       if (error) throw error
 
       // Get claim counts for each player
-      const playerIds = players?.map(p => p.id) || []
+      const playerIds = players?.map((p: any) => p.id) || []
       const { data: claimCounts } = await supabase
         .from('waiver_claims')
         .select('player_id')
         .in('player_id', playerIds)
         .eq('status', 'pending')
 
-      const claimCountMap = (claimCounts || []).reduce((acc, claim) => {
+      const claimCountMap = (claimCounts || []).reduce((acc: any, claim: any) => {
         acc[claim.player_id] = (acc[claim.player_id] || 0) + 1
         return acc
       }, {} as Record<string, number>)
 
-      const waiverPlayers: WaiverPlayer[] = (players || []).map(player => ({
+      const waiverPlayers: WaiverPlayer[] = (players || []).map((player: any) => ({
         id: player.id,
         name: player.name,
         position: player.position,
@@ -132,7 +132,7 @@ class WaiverService {
 
       if (error) throw error
 
-      const formattedClaims: WaiverClaim[] = (claims || []).map(claim => ({
+      const formattedClaims: WaiverClaim[] = (claims || []).map((claim: any) => ({
         id: claim.id,
         teamId: claim.team_id,
         teamName: (claim.teams as any).team_name,
@@ -398,7 +398,7 @@ class WaiverService {
 
       if (error) throw error
 
-      const spent = (claims || []).reduce((total, claim) => total + (claim.bid_amount || 0), 0)
+      const spent = (claims || []).reduce((total: number, claim: any) => total + (claim.bid_amount || 0), 0)
       const remaining = totalBudget - spent
 
       return {

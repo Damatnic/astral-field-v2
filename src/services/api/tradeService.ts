@@ -7,8 +7,8 @@ import type { Database } from '@/types/database'
 
 type Trade = Database['public']['Tables']['trades']['Row']
 type TradeInsert = Database['public']['Tables']['trades']['Insert']
-type TradeParticipant = Database['public']['Tables']['trade_participants']['Row']
-type TradeItem = Database['public']['Tables']['trade_items']['Row']
+// type TradeParticipant = Database['public']['Tables']['trade_participants']['Row']
+// type TradeItem = Database['public']['Tables']['trade_items']['Row']
 
 export interface CreateTradeData {
   initiatorTeamId: string
@@ -76,7 +76,7 @@ class TradeService {
 
       if (teamsError) throw teamsError
 
-      if (!teams || teams.length !== 2 || !teams.every(team => team.league_id === leagueId)) {
+      if (!teams || teams.length !== 2 || !teams.every((team: any) => team.league_id === leagueId)) {
         return { success: false, error: 'Invalid teams for trade' }
       }
 
@@ -89,14 +89,14 @@ class TradeService {
       if (ownershipError) throw ownershipError
 
       // Verify offered players belong to initiator
-      const offeredOwnership = playerOwnerships?.filter(p => data.offeredPlayers.includes(p.player_id))
-      if (!offeredOwnership || !offeredOwnership.every(p => p.team_id === data.initiatorTeamId)) {
+      const offeredOwnership = playerOwnerships?.filter((p: any) => data.offeredPlayers.includes(p.player_id))
+      if (!offeredOwnership || !offeredOwnership.every((p: any) => p.team_id === data.initiatorTeamId)) {
         return { success: false, error: 'You can only trade players you own' }
       }
 
       // Verify requested players belong to receiver
-      const requestedOwnership = playerOwnerships?.filter(p => data.requestedPlayers.includes(p.player_id))
-      if (!requestedOwnership || !requestedOwnership.every(p => p.team_id === data.receiverTeamId)) {
+      const requestedOwnership = playerOwnerships?.filter((p: any) => data.requestedPlayers.includes(p.player_id))
+      if (!requestedOwnership || !requestedOwnership.every((p: any) => p.team_id === data.receiverTeamId)) {
         return { success: false, error: 'Requested players must belong to the other team' }
       }
 
@@ -105,11 +105,11 @@ class TradeService {
       expiresAt.setDate(expiresAt.getDate() + 7) // 7 day expiration
 
       const tradeInsert: TradeInsert = {
-        league_id: leagueId,
-        initiator_team_id: data.initiatorTeamId,
-        receiver_team_id: data.receiverTeamId,
+        proposing_team_id: data.initiatorTeamId,
+        receiving_team_id: data.receiverTeamId,
+        proposed_players: data.offeredPlayers as any,
+        requested_players: data.requestedPlayers as any,
         status: 'pending',
-        message: data.message || null,
         expires_at: expiresAt.toISOString(),
       }
 
@@ -190,7 +190,7 @@ class TradeService {
 
       if (error) throw error
 
-      const formattedTrades: TradeProposal[] = (trades || []).map(trade => ({
+      const formattedTrades: TradeProposal[] = (trades || []).map((trade: any) => ({
         id: trade.id,
         initiatorTeam: {
           id: (trade.initiator_team as any).id,
@@ -203,16 +203,16 @@ class TradeService {
           user: (trade.receiver_team as any).users.username,
         },
         offeredPlayers: trade.trade_items
-          .filter(item => item.from_team_id === (trade.initiator_team as any).id)
-          .map(item => ({
+          .filter((item: any) => item.from_team_id === (trade.initiator_team as any).id)
+          .map((item: any) => ({
             id: (item.players as any).id,
             name: (item.players as any).name,
             position: (item.players as any).position,
             team: (item.players as any).team,
           })),
         requestedPlayers: trade.trade_items
-          .filter(item => item.from_team_id === (trade.receiver_team as any).id)
-          .map(item => ({
+          .filter((item: any) => item.from_team_id === (trade.receiver_team as any).id)
+          .map((item: any) => ({
             id: (item.players as any).id,
             name: (item.players as any).name,
             position: (item.players as any).position,
@@ -318,16 +318,16 @@ class TradeService {
 
       if (error) throw error
 
-      const offeredData = players?.filter(p => offeredPlayers.includes(p.id)) || []
-      const requestedData = players?.filter(p => requestedPlayers.includes(p.id)) || []
+      const offeredData = players?.filter((p: any) => offeredPlayers.includes(p.id)) || []
+      const requestedData = players?.filter((p: any) => requestedPlayers.includes(p.id)) || []
 
       // Calculate values
-      const offeredValue = offeredData.reduce((sum, player) => {
+      const offeredValue = offeredData.reduce((sum: number, player: any) => {
         const projection = (player.projections as any)?.[0]
         return sum + (projection?.fantasy_points || 0)
       }, 0)
 
-      const requestedValue = requestedData.reduce((sum, player) => {
+      const requestedValue = requestedData.reduce((sum: number, player: any) => {
         const projection = (player.projections as any)?.[0]
         return sum + (projection?.fantasy_points || 0)
       }, 0)
