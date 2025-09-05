@@ -2,11 +2,21 @@ import { neon } from '@neondatabase/serverless'
 
 // Create the SQL client using Neon serverless driver
 // This is the recommended approach for Vercel deployments
-export const sql = neon(process.env.DATABASE_URL!)
+// Only initialize on server-side
+export const sql = typeof window === 'undefined' ? neon(process.env.DATABASE_URL!) : null
 
 // Simple query wrapper for compatibility with existing code
 export class NeonServerless {
   async query(text: string, params: any[] = []) {
+    // Browser fallback - database operations should be done via API routes
+    if (typeof window !== 'undefined' || !sql) {
+      return { 
+        data: null, 
+        error: 'Database operations must be performed server-side',
+        count: 0 
+      }
+    }
+
     try {
       // Neon serverless uses template literals with array spread
       const result = await sql(text as any, ...params)
@@ -26,6 +36,14 @@ export class NeonServerless {
   }
 
   async selectSingle(table: string, options: { where?: Record<string, any>, eq?: Record<string, any> } = {}) {
+    // Browser fallback - database operations should be done via API routes
+    if (typeof window !== 'undefined' || !sql) {
+      return { 
+        data: null, 
+        error: 'Database operations must be performed server-side'
+      }
+    }
+
     try {
       const { where, eq } = options
       const conditions = where || eq
@@ -54,6 +72,14 @@ export class NeonServerless {
   }
 
   async insert(table: string, data: Record<string, any>) {
+    // Browser fallback - database operations should be done via API routes
+    if (typeof window !== 'undefined' || !sql) {
+      return { 
+        data: null, 
+        error: 'Database operations must be performed server-side'
+      }
+    }
+
     try {
       const keys = Object.keys(data)
       const values = Object.values(data)
@@ -75,6 +101,14 @@ export class NeonServerless {
   }
 
   async update(table: string, data: Record<string, any>, where: Record<string, any>) {
+    // Browser fallback - database operations should be done via API routes
+    if (typeof window !== 'undefined' || !sql) {
+      return { 
+        data: null, 
+        error: 'Database operations must be performed server-side'
+      }
+    }
+
     try {
       const updateKeys = Object.keys(data)
       const updateValues = Object.values(data)
@@ -101,6 +135,14 @@ export class NeonServerless {
   }
 
   async select(table: string, options: { where?: Record<string, any>, eq?: Record<string, any>, order?: { column: string, ascending?: boolean }, limit?: number } = {}) {
+    // Browser fallback - database operations should be done via API routes
+    if (typeof window !== 'undefined' || !sql) {
+      return { 
+        data: null, 
+        error: 'Database operations must be performed server-side'
+      }
+    }
+
     try {
       const { where, eq, order, limit } = options
       const conditions = where || eq
@@ -137,6 +179,14 @@ export class NeonServerless {
   }
 
   async selectWithJoins(table: string, selectQuery: string, options: { eq?: Record<string, any>, where?: Record<string, any>, order?: { column: string, ascending?: boolean }, limit?: number } = {}) {
+    // Browser fallback - database operations should be done via API routes
+    if (typeof window !== 'undefined' || !sql) {
+      return { 
+        data: null, 
+        error: 'Database operations must be performed server-side'
+      }
+    }
+
     try {
       const { where, eq, order, limit } = options
       const conditions = where || eq
@@ -173,6 +223,13 @@ export class NeonServerless {
   }
 
   async delete(table: string, where: Record<string, any>) {
+    // Browser fallback - database operations should be done via API routes
+    if (typeof window !== 'undefined' || !sql) {
+      return { 
+        error: 'Database operations must be performed server-side'
+      }
+    }
+
     try {
       const keys = Object.keys(where)
       const values = Object.values(where)
