@@ -207,6 +207,19 @@ export default function LoginForm() {
             </motion.button>
           </div>
 
+          {/* Demo Account Helper */}
+          <div className="bg-blue-600/10 border border-blue-600/30 rounded-lg p-3 text-center">
+            <p className="text-sm text-blue-300 mb-2">
+              <strong>Demo Account:</strong> Try the app with these credentials
+            </p>
+            <p className="text-xs text-blue-400">
+              Email: <code className="bg-gray-700 px-1 rounded">nicholas.damato@astralfield.com</code>
+            </p>
+            <p className="text-xs text-blue-400">
+              Password: <code className="bg-gray-700 px-1 rounded">astral2025</code>
+            </p>
+          </div>
+
           {/* Sign Up Link */}
           <div className="text-center text-sm">
             <span className="text-gray-400">Don&apos;t have an account? </span>

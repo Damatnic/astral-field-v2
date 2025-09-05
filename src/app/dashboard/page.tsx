@@ -45,7 +45,23 @@ export default function DashboardPage() {
   if (!user) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        <div className="flex flex-col items-center space-y-4">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+            className="w-12 h-12 text-purple-500"
+          >
+            <Trophy className="w-full h-full" />
+          </motion.div>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="text-lg text-purple-400 font-medium"
+          >
+            Loading your dashboard...
+          </motion.p>
+        </div>
       </div>
     )
   }
@@ -55,26 +71,29 @@ export default function DashboardPage() {
       {/* Header */}
       <header className="bg-gray-800 border-b border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
+          <div className="flex justify-between items-center py-4 sm:py-6">
             <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-white">Astral Field</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-white">Astral Field</h1>
             </div>
-            <div className="flex items-center space-x-4">
-              <div className="text-white">
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <div className="text-white hidden sm:block">
                 <span className="text-gray-300">Welcome back,</span>
                 <span className="font-semibold ml-1">{user.username}</span>
+              </div>
+              <div className="text-white sm:hidden">
+                <span className="font-semibold text-sm">{user.username}</span>
               </div>
               <button
                 onClick={() => router.push('/settings')}
                 className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-gray-700 transition-colors"
               >
-                <Settings className="h-5 w-5" />
+                <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
               <button
                 onClick={handleLogout}
                 className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-gray-700 transition-colors"
               >
-                <LogOut className="h-5 w-5" />
+                <LogOut className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
             </div>
           </div>
@@ -84,18 +103,18 @@ export default function DashboardPage() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="bg-gray-800 rounded-lg p-6 border border-gray-700"
+            className="bg-gray-800 rounded-lg p-3 sm:p-6 border border-gray-700"
           >
             <div className="flex items-center">
-              <Trophy className="h-8 w-8 text-yellow-500" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-400">Active Leagues</p>
-                <p className="text-2xl font-bold text-white">{leagues.length}</p>
+              <Trophy className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-500" />
+              <div className="ml-2 sm:ml-4 min-w-0">
+                <p className="text-xs sm:text-sm font-medium text-gray-400 truncate">Active Leagues</p>
+                <p className="text-lg sm:text-2xl font-bold text-white">{leagues.length}</p>
               </div>
             </div>
           </motion.div>
@@ -104,13 +123,13 @@ export default function DashboardPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="bg-gray-800 rounded-lg p-6 border border-gray-700"
+            className="bg-gray-800 rounded-lg p-3 sm:p-6 border border-gray-700"
           >
             <div className="flex items-center">
-              <TrendingUp className="h-8 w-8 text-green-500" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-400">Win Rate</p>
-                <p className="text-2xl font-bold text-white">73%</p>
+              <TrendingUp className="h-6 w-6 sm:h-8 sm:w-8 text-green-500" />
+              <div className="ml-2 sm:ml-4 min-w-0">
+                <p className="text-xs sm:text-sm font-medium text-gray-400 truncate">Win Rate</p>
+                <p className="text-lg sm:text-2xl font-bold text-white">73%</p>
               </div>
             </div>
           </motion.div>
@@ -119,13 +138,13 @@ export default function DashboardPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="bg-gray-800 rounded-lg p-6 border border-gray-700"
+            className="bg-gray-800 rounded-lg p-3 sm:p-6 border border-gray-700"
           >
             <div className="flex items-center">
-              <Star className="h-8 w-8 text-blue-500" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-400">Total Points</p>
-                <p className="text-2xl font-bold text-white">2,847</p>
+              <Star className="h-6 w-6 sm:h-8 sm:w-8 text-blue-500" />
+              <div className="ml-2 sm:ml-4 min-w-0">
+                <p className="text-xs sm:text-sm font-medium text-gray-400 truncate">Total Points</p>
+                <p className="text-lg sm:text-2xl font-bold text-white">2,847</p>
               </div>
             </div>
           </motion.div>
@@ -134,13 +153,13 @@ export default function DashboardPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="bg-gray-800 rounded-lg p-6 border border-gray-700"
+            className="bg-gray-800 rounded-lg p-3 sm:p-6 border border-gray-700"
           >
             <div className="flex items-center">
-              <Clock className="h-8 w-8 text-purple-500" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-400">Next Game</p>
-                <p className="text-2xl font-bold text-white">2d</p>
+              <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-purple-500" />
+              <div className="ml-2 sm:ml-4 min-w-0">
+                <p className="text-xs sm:text-sm font-medium text-gray-400 truncate">Next Game</p>
+                <p className="text-lg sm:text-2xl font-bold text-white">2d</p>
               </div>
             </div>
           </motion.div>
