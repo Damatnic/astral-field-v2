@@ -110,3 +110,8 @@ export async function POST(request: NextRequest) {
     }, { status: 500 })
   }
 }
+
+// Also allow GET requests for easier browser access
+export async function GET(request: NextRequest) {
+  return POST(request)
+}
