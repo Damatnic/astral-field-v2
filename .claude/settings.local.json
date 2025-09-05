@@ -24,7 +24,8 @@
       "Bash(npm install:*)",
       "Bash(npm run dev:*)",
       "Bash(curl:*)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "Bash(npx vercel:*)"
     ],
     "deny": [],
     "ask": []

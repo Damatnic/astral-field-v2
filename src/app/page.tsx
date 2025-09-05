@@ -226,7 +226,7 @@ export default function HomePage() {
           </div>
           
           <div className="mt-8 pt-8 border-t border-white/10 text-center text-gray-500">
-            <p>&copy; 2025 Astral Field. Built with Next.js, deployed on Vercel.</p>
+            <p>&copy; 2025 Astral Field. Built with Next.js, deployed on Vercel. Latest: Production-Ready!</p>
           </div>
         </div>
       </footer>
