@@ -15,6 +15,7 @@ export interface Database {
           stack_user_id: string | null
           email: string
           username: string
+          password_hash: string | null
           avatar_url: string | null
           created_at: string
           updated_at: string
@@ -24,6 +25,7 @@ export interface Database {
           stack_user_id?: string | null
           email: string
           username: string
+          password_hash?: string | null
           avatar_url?: string | null
           created_at?: string
           updated_at?: string
@@ -33,6 +35,7 @@ export interface Database {
           stack_user_id?: string | null
           email?: string
           username?: string
+          password_hash?: string | null
           avatar_url?: string | null
           updated_at?: string
         }

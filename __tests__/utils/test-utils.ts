@@ -1,4 +1,5 @@
-import { vi } from 'vitest'
+import { jest } from '@jest/globals'
+const vi = jest
 import type { Database, Tables, TablesInsert, TablesUpdate } from '@/types/database'
 
 // Mock database client for testing
@@ -168,8 +169,10 @@ export class MockDatabaseClient {
 // Test data factories
 export const createTestUser = (overrides?: Partial<Tables<'users'>>): Tables<'users'> => ({
   id: 'test-user-1',
+  stack_user_id: null,
   email: 'test@example.com',
   username: 'testuser',
+  password_hash: null,
   avatar_url: null,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),

@@ -1,5 +1,6 @@
 import { neonDb } from '@/lib/neon-database'
 import type { Tables, TablesInsert } from '@/types/database'
+import bcrypt from 'bcryptjs'
 
 type User = Tables<'users'>
 type UserInsert = TablesInsert<'users'>
@@ -25,10 +26,7 @@ export class StackAuthService {
 
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
-      // For now, let's create a simplified login that works with our existing user system
-      // This will be replaced with proper Stack Auth integration
-      
-      // First, check if user exists in our database
+      // Check if user exists in our database
       const result = await neonDb.selectSingle('users', {
         where: { email: credentials.email }
       })
@@ -37,9 +35,23 @@ export class StackAuthService {
         return { user: null, error: 'Invalid email or password' }
       }
 
-      // In a real implementation, Stack Auth would handle password verification
-      // For now, we'll accept any password for existing users
-      return { user: result.data, error: null }
+      const user = result.data
+
+      // Check if user has a password set
+      if (!user.password_hash) {
+        return { user: null, error: 'Password not set for this user' }
+      }
+
+      // Verify password
+      const isPasswordValid = await bcrypt.compare(credentials.password, user.password_hash)
+      
+      if (!isPasswordValid) {
+        return { user: null, error: 'Invalid email or password' }
+      }
+
+      // Return user without password hash for security
+      const { password_hash, ...userWithoutPassword } = user
+      return { user: { ...userWithoutPassword, password_hash: null } as User, error: null }
 
     } catch (error: any) {
       console.error('Login error:', error)
@@ -67,18 +79,26 @@ export class StackAuthService {
         return { user: null, error: 'Username already taken' }
       }
 
+      // Hash the password
+      const passwordHash = await bcrypt.hash(data.password, 10)
+
       // Create new user
       const userInsert: UserInsert = {
         email: data.email,
         username: data.username,
+        password_hash: passwordHash,
         stack_user_id: null, // Will be set when Stack Auth is fully integrated
       }
 
       const result = await neonDb.insert('users', userInsert)
       
-      if (result.error) throw result.error
+      if (result.error || !result.data) {
+        throw result.error || new Error('Failed to create user')
+      }
 
-      return { user: result.data, error: null }
+      // Return user without password hash for security
+      const { password_hash, ...userWithoutPassword } = result.data
+      return { user: { ...userWithoutPassword, password_hash: null } as User, error: null }
     } catch (error: any) {
       console.error('Registration error:', error)
       return { user: null, error: error.message || 'Registration failed' }

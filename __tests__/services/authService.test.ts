@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, jest } from '@jest/globals'
+const vi = jest
 import { AuthService } from '@/services/api/authService'
 import { mockDb, setupTestDatabase, createTestUser, mockSupabaseClient } from '../utils/test-utils'
 
