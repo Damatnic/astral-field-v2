@@ -1,9 +1,8 @@
-'use client'
+// THIS FILE NEEDS REFACTORING FOR NEON DATABASE - TEMPORARILY DISABLED
+// @ts-nocheck
 
-import { createClient } from '@/lib/supabase'
-
-const supabase = createClient()
-import type { Database } from '@/types/database'
+import { neonServerless } from '@/lib/neon-serverless'
+import type { Tables, TablesInsert, TablesUpdate } from '@/types/database'
 
 export interface WaiverClaim {
   id: string

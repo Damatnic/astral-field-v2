@@ -1,3 +1,4 @@
+// THIS FILE NEEDS REFACTORING FOR NEON DATABASE - TEMPORARILY DISABLED
 'use client'
 
 import { createClient } from '@/lib/supabase'
