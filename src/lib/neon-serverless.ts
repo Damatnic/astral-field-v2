@@ -72,6 +72,56 @@ export class NeonServerless {
       }
     }
   }
+
+  async update(table: string, data: Record<string, any>, where: Record<string, any>) {
+    try {
+      const updateKeys = Object.keys(data)
+      const updateValues = Object.values(data)
+      const whereKeys = Object.keys(where)
+      const whereValues = Object.values(where)
+      
+      let valueIndex = 1
+      const setClause = updateKeys.map(key => `${key} = $${valueIndex++}`).join(', ')
+      const whereClause = whereKeys.map(key => `${key} = $${valueIndex++}`).join(' AND ')
+      
+      const result = await sql(`UPDATE ${table} SET ${setClause} WHERE ${whereClause} RETURNING *` as any, ...updateValues, ...whereValues)
+      
+      return {
+        data: Array.isArray(result) ? result[0] : result,
+        error: null
+      }
+    } catch (error: any) {
+      console.error('Neon serverless update error:', error)
+      return {
+        data: null,
+        error: error.message || 'Database update failed'
+      }
+    }
+  }
+
+  async select(table: string, options: { where?: Record<string, any> } = {}) {
+    try {
+      const { where } = options
+
+      if (where) {
+        const keys = Object.keys(where)
+        const values = Object.values(where)
+        const conditions = keys.map(key => `${key} = $${keys.indexOf(key) + 1}`).join(' AND ')
+        
+        const result = await sql(`SELECT * FROM ${table} WHERE ${conditions}` as any, ...values)
+        return { data: result, error: null }
+      } else {
+        const result = await sql(`SELECT * FROM ${table}` as any)
+        return { data: result, error: null }
+      }
+    } catch (error: any) {
+      console.error('Neon serverless select error:', error)
+      return {
+        data: null,
+        error: error.message || 'Database select failed'
+      }
+    }
+  }
 }
 
 // Export singleton instance

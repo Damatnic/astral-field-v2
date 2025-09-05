@@ -1,5 +1,5 @@
 import { NextResponse, NextRequest } from 'next/server'
-import { neonDb } from '@/lib/neon-database'
+import { neonServerless } from '@/lib/neon-serverless'
 import bcrypt from 'bcryptjs'
 import { ensureInitialized } from '@/lib/auto-init'
 import { handleApiError, CommonErrors, validateRequiredFields } from '@/lib/api-error-handler'
@@ -16,7 +16,7 @@ export const POST = handleApiError(async (request: NextRequest) => {
   const { email, password } = body
 
   // Check if user exists in our database
-  const result = await neonDb.selectSingle('users', {
+  const result = await neonServerless.selectSingle('users', {
     where: { email }
   })
 

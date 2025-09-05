@@ -1,4 +1,4 @@
-import { db, wrapResult } from '@/lib/database'
+import { neonServerless } from '@/lib/neon-serverless'
 import type { Tables, TablesInsert } from '@/types/database'
 import { createClient } from '@/lib/supabase'
 

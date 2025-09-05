@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { neonDb } from '@/lib/neon-database'
+import { neonServerless } from '@/lib/neon-serverless'
 
 // Debug endpoint to check database connection and users
 export async function GET() {
@@ -15,7 +15,7 @@ export async function GET() {
     console.log('Debug: Checking database connection...')
     
     // Test database connection by counting users
-    const result = await neonDb.select('users', {})
+    const result = await neonServerless.select('users', {})
     
     if (result.error) {
       console.error('Database query error:', result.error)

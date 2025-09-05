@@ -1,5 +1,5 @@
 import { NextResponse, NextRequest } from 'next/server'
-import { neonDb } from '@/lib/neon-database'
+import { neonServerless } from '@/lib/neon-serverless'
 
 // API endpoint to clean up old data and reset database
 export async function POST(request: NextRequest) {
@@ -23,11 +23,11 @@ export async function POST(request: NextRequest) {
     console.log('🧹 Starting database cleanup...')
 
     // Get current user count before cleanup
-    const beforeResult = await neonDb.query('SELECT COUNT(*) as count FROM users')
+    const beforeResult = await neonServerless.query('SELECT COUNT(*) as count FROM users')
     const beforeCount = beforeResult.data?.[0]?.count || 0
 
     // Clean up old users (keep only the @astralfield.com demo users)
-    const cleanupResult = await neonDb.query(`
+    const cleanupResult = await neonServerless.query(`
       DELETE FROM users 
       WHERE email NOT LIKE '%@astralfield.com' 
       OR created_at < NOW() - INTERVAL '30 days'
@@ -49,15 +49,15 @@ export async function POST(request: NextRequest) {
 
     // Remove any existing demo users first
     for (const email of demoEmails) {
-      await neonDb.query('DELETE FROM users WHERE email = $1', [email])
+      await neonServerless.query('DELETE FROM users WHERE email = $1', [email])
     }
 
     // Get count after cleanup
-    const afterResult = await neonDb.query('SELECT COUNT(*) as count FROM users')
+    const afterResult = await neonServerless.query('SELECT COUNT(*) as count FROM users')
     const afterCount = afterResult.data?.[0]?.count || 0
 
     // Clear any cached connections or stale data
-    await neonDb.query('VACUUM ANALYZE users')
+    await neonServerless.query('VACUUM ANALYZE users')
 
     console.log(`✅ Database cleanup complete: Removed ${beforeCount - afterCount} old records`)
 

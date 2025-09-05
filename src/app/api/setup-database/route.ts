@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { neonDb } from '@/lib/neon-database'
+import { neonServerless } from '@/lib/neon-serverless'
 
 export async function POST() {
   try {
@@ -67,16 +67,16 @@ export async function POST() {
     `
 
     // Enable UUID extension
-    await neonDb.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
+    await neonServerless.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
     
     // Create tables
-    await neonDb.query(createUsersTable)
-    await neonDb.query(createPlayersTable)
-    await neonDb.query(createLeaguesTable)
-    await neonDb.query(createTeamsTable)
+    await neonServerless.query(createUsersTable)
+    await neonServerless.query(createPlayersTable)
+    await neonServerless.query(createLeaguesTable)
+    await neonServerless.query(createTeamsTable)
 
     // Get table count to verify
-    const tablesResult = await neonDb.query(`
+    const tablesResult = await neonServerless.query(`
       SELECT table_name 
       FROM information_schema.tables 
       WHERE table_schema = 'public'
@@ -101,15 +101,15 @@ export async function POST() {
 export async function GET() {
   try {
     // Check database status
-    const tablesResult = await neonDb.query(`
+    const tablesResult = await neonServerless.query(`
       SELECT table_name 
       FROM information_schema.tables 
       WHERE table_schema = 'public'
       ORDER BY table_name
     `)
 
-    const usersCount = await neonDb.query('SELECT COUNT(*) FROM users')
-    const playersCount = await neonDb.query('SELECT COUNT(*) FROM players')
+    const usersCount = await neonServerless.query('SELECT COUNT(*) FROM users')
+    const playersCount = await neonServerless.query('SELECT COUNT(*) FROM players')
 
     return NextResponse.json({
       success: true,

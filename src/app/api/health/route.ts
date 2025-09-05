@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { neonDb } from '@/lib/neon-database'
+import { neonServerless } from '@/lib/neon-serverless'
 import { ensureInitialized } from '@/lib/auto-init'
 import { createCachedResponse, cachedQuery, CacheDurations } from '@/lib/cache'
 
@@ -13,7 +13,7 @@ export async function GET() {
     // Check database connectivity with caching
     const dbCheck = await cachedQuery(
       'health-db-check',
-      () => neonDb.query('SELECT 1 as health_check'),
+      () => neonServerless.query('SELECT 1 as health_check'),
       30 // Cache for 30 seconds
     )
     const dbHealthy = !dbCheck.error && dbCheck.data?.length === 1

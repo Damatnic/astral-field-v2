@@ -1,4 +1,4 @@
-import { db } from '@/lib/database'
+import { neonServerless } from '@/lib/neon-serverless'
 import type { Tables, TablesInsert, TablesUpdate } from '@/types/database'
 
 export type League = Tables<'leagues'>

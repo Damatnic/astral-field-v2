@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getDemoUserInfo, ensureInitialized } from '@/lib/auto-init'
-import { neonDb } from '@/lib/neon-database'
+import { neonServerless } from '@/lib/neon-serverless'
 import { createCachedResponse, cachedQuery, CacheDurations } from '@/lib/cache'
 
 export async function GET() {
@@ -11,7 +11,7 @@ export async function GET() {
     // Get current user count from database with caching
     const userCountResult = await cachedQuery(
       'user-count',
-      () => neonDb.query('SELECT COUNT(*) as count FROM users'),
+      () => neonServerless.query('SELECT COUNT(*) as count FROM users'),
       CacheDurations.MEDIUM // Cache for 5 minutes
     )
     const userCount = userCountResult.data?.[0]?.count || 0

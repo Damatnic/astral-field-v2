@@ -1,8 +1,8 @@
-import { neonDb } from './neon-database'
+import { neonServerless } from './neon-serverless'
 import type { Database, Tables, TablesInsert, TablesUpdate } from '@/types/database'
 
 export class DatabaseClient {
-  private client = neonDb
+  private client = neonServerless
 
   // Type-safe query methods
   async select<T extends keyof Database['public']['Tables']>(
