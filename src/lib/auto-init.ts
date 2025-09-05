@@ -1,4 +1,4 @@
-import { neonDb } from '@/lib/neon-database'
+import { neonServerless, sql as neonSql } from '@/lib/neon-serverless'
 import bcrypt from 'bcryptjs'
 
 // Demo users data - hardcoded for automatic initialization
@@ -21,7 +21,7 @@ let isInitialized = false
 export async function ensureInitialized(): Promise<boolean> {
   // Always check database state - don't trust cache in serverless
   try {
-    const existingUser = await neonDb.selectSingle('users', {
+    const existingUser = await neonServerless.selectSingle('users', {
       where: { email: DEMO_USERS[0].email }
     })
 
@@ -48,7 +48,7 @@ async function performInitialization(): Promise<boolean> {
     console.log('🔍 Checking if demo users need initialization...')
 
     // Check if any demo users already exist
-    const existingUser = await neonDb.selectSingle('users', {
+    const existingUser = await neonServerless.selectSingle('users', {
       where: { email: DEMO_USERS[0].email }
     })
 
@@ -68,7 +68,7 @@ async function performInitialization(): Promise<boolean> {
         const passwordHash = await bcrypt.hash(userData.password, 10)
         
         // Create the user
-        const result = await neonDb.insert('users', {
+        const result = await neonServerless.insert('users', {
           email: userData.email,
           username: userData.username,
           password_hash: passwordHash,
