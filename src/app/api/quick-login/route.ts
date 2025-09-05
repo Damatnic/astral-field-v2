@@ -2,16 +2,16 @@ import { NextResponse } from 'next/server'
 import { neonServerless } from '@/lib/neon-serverless'
 
 const demoUsers = [
-  { name: 'Alice Johnson', email: 'user1@demo.com', id: 1 },
-  { name: 'Bob Smith', email: 'user2@demo.com', id: 2 },
-  { name: 'Carol Davis', email: 'user3@demo.com', id: 3 },
-  { name: 'David Wilson', email: 'user4@demo.com', id: 4 },
-  { name: 'Emma Brown', email: 'user5@demo.com', id: 5 },
-  { name: 'Frank Miller', email: 'user6@demo.com', id: 6 },
-  { name: 'Grace Taylor', email: 'user7@demo.com', id: 7 },
-  { name: 'Henry Clark', email: 'user8@demo.com', id: 8 },
-  { name: 'Ivy Martinez', email: 'user9@demo.com', id: 9 },
-  { name: 'Jack Thompson', email: 'user10@demo.com', id: 10 }
+  { name: 'Nicholas D\'Amato', email: 'nicholas.damato@astralfield.com', id: 1 },
+  { name: 'Brittany Bergum', email: 'brittany.bergum@astralfield.com', id: 2 },
+  { name: 'Cason Minor', email: 'cason.minor@astralfield.com', id: 3 },
+  { name: 'David Jarvey', email: 'david.jarvey@astralfield.com', id: 4 },
+  { name: 'Jack McCaigue', email: 'jack.mccaigue@astralfield.com', id: 5 },
+  { name: 'Jon Kornbeck', email: 'jon.kornbeck@astralfield.com', id: 6 },
+  { name: 'Kaity Lorbiecki', email: 'kaity.lorbiecki@astralfield.com', id: 7 },
+  { name: 'Larry McCaigue', email: 'larry.mccaigue@astralfield.com', id: 8 },
+  { name: 'Nick Hartley', email: 'nick.hartley@astralfield.com', id: 9 },
+  { name: 'Renee McCaigue', email: 'renee.mccaigue@astralfield.com', id: 10 }
 ]
 
 export async function POST(request: Request) {

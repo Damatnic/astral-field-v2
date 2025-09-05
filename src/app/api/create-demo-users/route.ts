@@ -74,16 +74,16 @@ export async function POST() {
       results,
       loginCredentials: {
         users: [
-          { name: 'Alice Johnson', email: 'user1@demo.com', password: '1234' },
-          { name: 'Bob Smith', email: 'user2@demo.com', password: '2345' },
-          { name: 'Carol Davis', email: 'user3@demo.com', password: '3456' },
-          { name: 'David Wilson', email: 'user4@demo.com', password: '4567' },
-          { name: 'Emma Brown', email: 'user5@demo.com', password: '5678' },
-          { name: 'Frank Miller', email: 'user6@demo.com', password: '6789' },
-          { name: 'Grace Taylor', email: 'user7@demo.com', password: '7890' },
-          { name: 'Henry Clark', email: 'user8@demo.com', password: '8901' },
-          { name: 'Ivy Martinez', email: 'user9@demo.com', password: '9012' },
-          { name: 'Jack Thompson', email: 'user10@demo.com', password: '0123' }
+          { name: 'Nicholas D\'Amato', email: 'nicholas.damato@astralfield.com', password: '1234' },
+          { name: 'Brittany Bergum', email: 'brittany.bergum@astralfield.com', password: '2345' },
+          { name: 'Cason Minor', email: 'cason.minor@astralfield.com', password: '3456' },
+          { name: 'David Jarvey', email: 'david.jarvey@astralfield.com', password: '4567' },
+          { name: 'Jack McCaigue', email: 'jack.mccaigue@astralfield.com', password: '5678' },
+          { name: 'Jon Kornbeck', email: 'jon.kornbeck@astralfield.com', password: '6789' },
+          { name: 'Kaity Lorbiecki', email: 'kaity.lorbiecki@astralfield.com', password: '7890' },
+          { name: 'Larry McCaigue', email: 'larry.mccaigue@astralfield.com', password: '8901' },
+          { name: 'Nick Hartley', email: 'nick.hartley@astralfield.com', password: '9012' },
+          { name: 'Renee McCaigue', email: 'renee.mccaigue@astralfield.com', password: '0123' }
         ],
         note: 'Simple 4-digit passwords for quick testing - just click a name to login!'
       }
