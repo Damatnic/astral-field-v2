@@ -1,14 +1,17 @@
-import { Pool } from 'pg'
 import type { Database, Tables, TablesInsert, TablesUpdate } from '@/types/database'
 
 class NeonDatabaseClient {
-  private pool: Pool
+  private pool: any
 
   constructor() {
-    this.pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: { rejectUnauthorized: false }
-    })
+    // Only initialize PostgreSQL connection on server side
+    if (typeof window === 'undefined') {
+      const { Pool } = require('pg')
+      this.pool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: { rejectUnauthorized: false }
+      })
+    }
   }
 
   // Type-safe query methods
@@ -21,6 +24,11 @@ class NeonDatabaseClient {
       limit?: number
     }
   ): Promise<{ data: Tables<T>[] | null; error: any }> {
+    // Browser fallback - database operations should be done via API routes
+    if (typeof window !== 'undefined') {
+      return { data: null, error: { message: 'Database operations must be performed server-side' } }
+    }
+
     try {
       let query = `SELECT ${options?.select || '*'} FROM ${table}`
       const values: any[] = []
@@ -58,6 +66,11 @@ class NeonDatabaseClient {
       where?: Record<string, any>
     }
   ): Promise<{ data: Tables<T> | null; error: any }> {
+    // Browser fallback
+    if (typeof window !== 'undefined') {
+      return { data: null, error: { message: 'Database operations must be performed server-side' } }
+    }
+
     const result = await this.select(table, { ...options, limit: 1 })
     return {
       data: result.data?.[0] || null,
@@ -69,6 +82,11 @@ class NeonDatabaseClient {
     table: T,
     data: TablesInsert<T>
   ): Promise<{ data: Tables<T> | null; error: any }> {
+    // Browser fallback
+    if (typeof window !== 'undefined') {
+      return { data: null, error: { message: 'Database operations must be performed server-side' } }
+    }
+
     try {
       const keys = Object.keys(data)
       const values = Object.values(data)
@@ -92,6 +110,11 @@ class NeonDatabaseClient {
     data: TablesUpdate<T>,
     where: Record<string, any>
   ): Promise<{ data: Tables<T> | null; error: any }> {
+    // Browser fallback
+    if (typeof window !== 'undefined') {
+      return { data: null, error: { message: 'Database operations must be performed server-side' } }
+    }
+
     try {
       const updateKeys = Object.keys(data)
       const updateValues = Object.values(data)
@@ -115,7 +138,7 @@ class NeonDatabaseClient {
       `
       
       const result = await this.pool.query(query, [...updateValues, ...whereValues])
-      return { data: result.rows[0] as Tables<T], error: null }
+      return { data: result.rows[0] as Tables<T>, error: null }
     } catch (error: any) {
       return { data: null, error }
     }
@@ -125,6 +148,11 @@ class NeonDatabaseClient {
     table: T,
     where: Record<string, any>
   ): Promise<{ error: any }> {
+    // Browser fallback
+    if (typeof window !== 'undefined') {
+      return { error: { message: 'Database operations must be performed server-side' } }
+    }
+
     try {
       const keys = Object.keys(where)
       const values = Object.values(where)
@@ -150,6 +178,11 @@ class NeonDatabaseClient {
       limit?: number
     }
   ): Promise<{ data: any[] | null; error: any }> {
+    // Browser fallback
+    if (typeof window !== 'undefined') {
+      return { data: null, error: { message: 'Database operations must be performed server-side' } }
+    }
+
     try {
       let query = `SELECT ${selectQuery} FROM ${table}`
       const values: any[] = []
@@ -182,6 +215,11 @@ class NeonDatabaseClient {
 
   // Raw query for complex operations
   async query(sql: string, params?: any[]): Promise<{ data: any[] | null; error: any }> {
+    // Browser fallback
+    if (typeof window !== 'undefined') {
+      return { data: null, error: { message: 'Database operations must be performed server-side' } }
+    }
+
     try {
       const result = await this.pool.query(sql, params)
       return { data: result.rows, error: null }
@@ -192,7 +230,9 @@ class NeonDatabaseClient {
 
   // Close the pool when done
   async end() {
-    await this.pool.end()
+    if (typeof window === 'undefined' && this.pool) {
+      await this.pool.end()
+    }
   }
 }
 

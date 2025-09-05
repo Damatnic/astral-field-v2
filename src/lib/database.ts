@@ -67,28 +67,16 @@ export class DatabaseClient {
       limit?: number
     }
   ): Promise<{ data: any[] | null; error: any }> {
-    let query = this.client.from(table).select(selectQuery)
-
-    if (options?.eq) {
-      Object.entries(options.eq).forEach(([key, value]) => {
-        query = query.eq(key, value)
-      })
-    }
-
-    if (options?.order) {
-      query = query.order(options.order.column, { ascending: options.order.ascending ?? true })
-    }
-
-    if (options?.limit) {
-      query = query.limit(options.limit)
-    }
-
-    return query as any
+    return this.client.selectWithJoins(table, selectQuery, {
+      where: options?.eq,
+      orderBy: options?.order,
+      limit: options?.limit
+    })
   }
 
-  // Raw client access for complex operations
-  get raw() {
-    return this.client
+  // Raw query access for complex operations
+  async query(sql: string, params?: any[]): Promise<{ data: any[] | null; error: any }> {
+    return this.client.query(sql, params)
   }
 }
 

@@ -12,6 +12,7 @@ export interface Database {
       users: {
         Row: {
           id: string
+          stack_user_id: string | null
           email: string
           username: string
           avatar_url: string | null
@@ -20,6 +21,7 @@ export interface Database {
         }
         Insert: {
           id?: string
+          stack_user_id?: string | null
           email: string
           username: string
           avatar_url?: string | null
@@ -28,6 +30,7 @@ export interface Database {
         }
         Update: {
           id?: string
+          stack_user_id?: string | null
           email?: string
           username?: string
           avatar_url?: string | null
