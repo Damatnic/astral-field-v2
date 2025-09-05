@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
-import authService from '@/services/api/authService'
+import stackAuthService from '@/services/api/stackAuthService'
 import type { Database } from '@/types/database'
 
 type User = Database['public']['Tables']['users']['Row']
@@ -30,7 +30,7 @@ export const useAuthStore = create<AuthState>()(
         login: async (email, password) => {
           set({ isLoading: true, error: null })
           
-          const { user, error } = await authService.login({ email, password })
+          const { user, error } = await stackAuthService.login({ email, password })
           
           if (error) {
             set({ error, isLoading: false })
@@ -44,7 +44,7 @@ export const useAuthStore = create<AuthState>()(
         register: async (email, password, username) => {
           set({ isLoading: true, error: null })
           
-          const { user, error } = await authService.register({ 
+          const { user, error } = await stackAuthService.register({ 
             email, 
             password, 
             username 
@@ -61,13 +61,13 @@ export const useAuthStore = create<AuthState>()(
 
         logout: async () => {
           set({ isLoading: true })
-          await authService.logout()
+          await stackAuthService.logout()
           set({ user: null, isLoading: false, error: null })
         },
 
         checkAuth: async () => {
           set({ isLoading: true })
-          const user = await authService.getCurrentUser()
+          const user = await stackAuthService.getCurrentUser()
           set({ user, isLoading: false })
         },
 
@@ -77,7 +77,7 @@ export const useAuthStore = create<AuthState>()(
           
           set({ isLoading: true, error: null })
           
-          const { user: updatedUser, error } = await authService.updateProfile(
+          const { user: updatedUser, error } = await stackAuthService.updateProfile(
             user.id, 
             updates
           )
