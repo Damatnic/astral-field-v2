@@ -12,6 +12,7 @@ export async function POST() {
         stack_user_id TEXT UNIQUE,
         email TEXT UNIQUE NOT NULL,
         username TEXT UNIQUE NOT NULL,
+        password_hash TEXT,
         avatar_url TEXT,
         created_at TIMESTAMPTZ DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -74,6 +75,13 @@ export async function POST() {
     await neonServerless.query(createPlayersTable)
     await neonServerless.query(createLeaguesTable)
     await neonServerless.query(createTeamsTable)
+
+    // Add password_hash column if it doesn't exist
+    try {
+      await neonServerless.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT')
+    } catch (error) {
+      console.log('password_hash column may already exist:', error)
+    }
 
     // Get table count to verify
     const tablesResult = await neonServerless.query(`
