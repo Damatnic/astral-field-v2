@@ -7,8 +7,25 @@ class NeonDatabaseClient {
     // Only initialize PostgreSQL connection on server side
     if (typeof window === 'undefined') {
       const { Pool } = require('pg')
+      
+      // Check for database URL in multiple environment variable names
+      const connectionString = process.env.DATABASE_URL || 
+                              process.env.NETLIFY_DATABASE_URL || 
+                              process.env.NEON_DATABASE_URL
+      
+      if (!connectionString) {
+        console.error('No database connection string found. Checked: DATABASE_URL, NETLIFY_DATABASE_URL, NEON_DATABASE_URL')
+        throw new Error('Database connection string not found')
+      }
+      
+      console.log('Using database connection from:', 
+        process.env.DATABASE_URL ? 'DATABASE_URL' :
+        process.env.NETLIFY_DATABASE_URL ? 'NETLIFY_DATABASE_URL' : 
+        'NEON_DATABASE_URL'
+      )
+      
       this.pool = new Pool({
-        connectionString: process.env.DATABASE_URL,
+        connectionString,
         ssl: { rejectUnauthorized: false }
       })
     }
