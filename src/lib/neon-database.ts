@@ -2,33 +2,85 @@ import type { Database, Tables, TablesInsert, TablesUpdate } from '@/types/datab
 
 class NeonDatabaseClient {
   private pool: any
+  private connectionPromise: Promise<any> | null = null
+  private lastConnectAttempt: number = 0
+  private connectCooldown: number = 5000 // 5 seconds
 
   constructor() {
-    // Only initialize PostgreSQL connection on server side
+    // Only initialize on server side
     if (typeof window === 'undefined') {
-      const { Pool } = require('pg')
-      
-      // Check for database URL in multiple environment variable names
-      const connectionString = process.env.DATABASE_URL || 
-                              process.env.NETLIFY_DATABASE_URL || 
-                              process.env.NEON_DATABASE_URL
-      
-      // During build time, database connection might not be available - that's OK
-      if (!connectionString) {
-        console.warn('No database connection string found during initialization. This is expected during build time.')
-        this.pool = null
-        return
-      }
-      
-      // Optimize for serverless environments like Vercel
-      this.pool = new Pool({
-        connectionString,
-        ssl: { rejectUnauthorized: false },
-        max: 1, // Limit connections for serverless
-        idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 2000,
-      })
+      this.initializePool()
     }
+  }
+
+  private initializePool() {
+    const { Pool } = require('pg')
+    
+    // Check for database URL with fallbacks
+    const connectionString = process.env.DATABASE_URL || 
+                            process.env.NEON_DATABASE_URL || 
+                            process.env.NETLIFY_DATABASE_URL
+    
+    // During build time, database connection might not be available - that's OK
+    if (!connectionString) {
+      console.warn('🔶 No database connection string found. This is expected during build time.')
+      this.pool = null
+      return
+    }
+    
+    // Optimize for serverless environments
+    this.pool = new Pool({
+      connectionString,
+      ssl: { rejectUnauthorized: false },
+      max: 3, // Small pool for serverless
+      min: 0, // No idle connections
+      idleTimeoutMillis: 10000, // Close idle connections quickly
+      connectionTimeoutMillis: 5000, // Longer timeout for cold starts
+      acquireTimeoutMillis: 5000,
+      // Serverless optimizations
+      allowExitOnIdle: true,
+      keepAlive: false,
+    })
+
+    // Add connection event handlers
+    this.pool.on('error', (err: any) => {
+      console.error('🔴 Database pool error:', err.message)
+    })
+
+    this.pool.on('connect', (client: any) => {
+      console.log('🟢 Database client connected')
+    })
+
+    this.pool.on('remove', (client: any) => {
+      console.log('🔵 Database client removed')
+    })
+  }
+
+  private async ensureConnection(): Promise<boolean> {
+    if (!this.pool) return false
+
+    const now = Date.now()
+    
+    // Implement connection cooldown to prevent spam
+    if (this.lastConnectAttempt && (now - this.lastConnectAttempt) < this.connectCooldown) {
+      return false
+    }
+
+    if (!this.connectionPromise) {
+      this.lastConnectAttempt = now
+      this.connectionPromise = this.pool.query('SELECT 1')
+        .then(() => {
+          console.log('✅ Database connection verified')
+          return true
+        })
+        .catch((error: any) => {
+          console.error('❌ Database connection failed:', error.message)
+          this.connectionPromise = null
+          return false
+        })
+    }
+
+    return this.connectionPromise
   }
 
   // Type-safe query methods

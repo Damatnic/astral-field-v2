@@ -1,9 +1,29 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
-  // Enable experimental features
+  // Enable experimental features for better performance
   experimental: {
-    optimizePackageImports: ['lucide-react', 'framer-motion'],
+    optimizePackageImports: [
+      'lucide-react', 
+      'framer-motion', 
+      '@hookform/resolvers',
+      'react-hook-form',
+      'zustand'
+    ],
+    turbo: {
+      rules: {
+        '*.svg': {
+          loaders: ['@svgr/webpack'],
+          as: '*.js',
+        },
+      },
+    },
+    serverComponentsExternalPackages: ['pg', 'bcryptjs'],
+  },
+
+  // Compiler optimizations
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production',
   },
 
   // Image optimization

@@ -53,7 +53,22 @@ DEBUG_KEY=astral2025
 - Vercel will build and deploy your app automatically
 - First deployment takes 2-3 minutes
 
-### 5. Test Your App
+### 5. Initialize Database (IMPORTANT!)
+After deployment, you need to set up the demo users:
+
+**Option A: Using curl/Postman**
+```bash
+curl -X POST https://your-vercel-app.vercel.app/api/setup-users \
+  -H "Authorization: Bearer astral2025"
+```
+
+**Option B: Visit in browser**
+```
+https://your-vercel-app.vercel.app/api/setup-users
+```
+This will create all 10 demo users with proper password hashes.
+
+### 6. Test Your App
 Once deployed, test with these credentials:
 - **Email:** `nicholas.damato@astralfield.com`
 - **Password:** `astral2025`
