@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
           { status: 400 }
         );
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('[API] Database GET error:', error);
     
     return NextResponse.json(
@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[API] Database sync error:', error);
     
     return NextResponse.json(

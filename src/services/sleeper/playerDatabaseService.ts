@@ -2,7 +2,7 @@
 // Syncs Sleeper API player data with our database
 
 import { sleeperPlayerService } from './playerService';
-import { db } from '@/lib/db';
+import { prisma as db } from '@/lib/db';
 
 export interface DatabaseSyncResult {
   playersProcessed: number;
@@ -42,7 +42,7 @@ export class SleeperPlayerDatabaseService {
         try {
           await this.processBatch(batch, result);
           console.log(`[PlayerDatabaseService] Processed batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(fantasyPlayers.length/batchSize)}`);
-        } catch (error) {
+        } catch (error: any) {
           const errorMsg = `Batch ${Math.floor(i/batchSize) + 1} failed: ${error.message}`;
           result.errors.push(errorMsg);
           console.error(`[PlayerDatabaseService] ${errorMsg}`);
@@ -54,7 +54,7 @@ export class SleeperPlayerDatabaseService {
       console.log(`[PlayerDatabaseService] Created: ${result.playersCreated}, Updated: ${result.playersUpdated}, Errors: ${result.errors.length}`);
 
       return result;
-    } catch (error) {
+    } catch (error: any) {
       result.errors.push(`Sync failed: ${error.message}`);
       result.duration = Date.now() - startTime;
       console.error('[PlayerDatabaseService] Sync failed:', error);
@@ -77,7 +77,7 @@ export class SleeperPlayerDatabaseService {
         }
         
         result.playersProcessed++;
-      } catch (error) {
+      } catch (error: any) {
         result.errors.push(`Player ${player.id} (${player.name}): ${error.message}`);
       }
     }
@@ -132,7 +132,7 @@ export class SleeperPlayerDatabaseService {
         
         return { isNew: true, player: newPlayer };
       }
-    } catch (error) {
+    } catch (error: any) {
       throw new Error(`Database operation failed: ${error.message}`);
     }
   }
@@ -171,7 +171,7 @@ export class SleeperPlayerDatabaseService {
           
           result.playersUpdated++;
           result.playersProcessed++;
-        } catch (error) {
+        } catch (error: any) {
           result.errors.push(`Dynasty target ${player.id}: ${error.message}`);
         }
       }
@@ -180,7 +180,7 @@ export class SleeperPlayerDatabaseService {
       console.log(`[PlayerDatabaseService] Dynasty sync completed: ${result.playersUpdated} players marked`);
 
       return result;
-    } catch (error) {
+    } catch (error: any) {
       result.errors.push(`Dynasty sync failed: ${error.message}`);
       result.duration = Date.now() - startTime;
       return result;
@@ -241,7 +241,7 @@ export class SleeperPlayerDatabaseService {
 
       console.log(`[PlayerDatabaseService] Cleanup completed: ${deactivated} deactivated, ${removed} removed`);
       return { removed, deactivated };
-    } catch (error) {
+    } catch (error: any) {
       console.error('[PlayerDatabaseService] Cleanup failed:', error);
       return { removed: 0, deactivated: 0 };
     }
@@ -297,7 +297,7 @@ export class SleeperPlayerDatabaseService {
         lastSyncTime: lastSync?.lastUpdated || null,
         needsSync,
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('[PlayerDatabaseService] Stats query failed:', error);
       return {
         totalPlayers: 0,
@@ -329,7 +329,7 @@ export class SleeperPlayerDatabaseService {
 
       console.log('[PlayerDatabaseService] Full resync completed!');
       return result;
-    } catch (error) {
+    } catch (error: any) {
       console.error('[PlayerDatabaseService] Full resync failed:', error);
       return {
         playersProcessed: 0,

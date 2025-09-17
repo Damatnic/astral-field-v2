@@ -3,7 +3,7 @@
 
 import { sleeperPlayerService } from './playerService';
 import { nflStateService } from './nflStateService';
-import { db } from '@/lib/db';
+import { prisma as db } from '@/lib/db';
 
 export interface LeagueSyncResult {
   leagueId: string;
@@ -110,7 +110,7 @@ export class SleeperLeagueSyncService {
           }
 
           result.playersProcessed++;
-        } catch (error) {
+        } catch (error: any) {
           result.errors.push(`Failed to process ${rosterPlayer.player.name}: ${error.message}`);
         }
       }
@@ -123,7 +123,7 @@ export class SleeperLeagueSyncService {
       console.log(`[LeagueSyncService] Mapped: ${result.playersMapped}, Not found: ${result.playersNotFound}, Errors: ${result.errors.length}`);
 
       return result;
-    } catch (error) {
+    } catch (error: any) {
       result.errors.push(`League sync failed: ${error.message}`);
       result.duration = Date.now() - startTime;
       console.error(`[LeagueSyncService] League sync failed:`, error);
@@ -323,7 +323,7 @@ export class SleeperLeagueSyncService {
 
       for (const team of teams) {
         // Count players by position
-        const positionCounts = team.roster.reduce((counts, rosterPlayer) => {
+        const positionCounts = team.roster.reduce((counts: Record<string, number>, rosterPlayer: any) => {
           const position = rosterPlayer.player.position;
           counts[position] = (counts[position] || 0) + 1;
           return counts;
@@ -373,13 +373,13 @@ export class SleeperLeagueSyncService {
       });
 
       const totalPlayers = rosterPlayers.length;
-      const mappedPlayers = rosterPlayers.filter(rp => rp.player.sleeperPlayerId).length;
+      const mappedPlayers = rosterPlayers.filter((rp: any) => rp.player.sleeperPlayerId).length;
       const unmappedPlayers = totalPlayers - mappedPlayers;
 
       // Find most recent sync
       const lastSync = rosterPlayers
-        .map(rp => rp.player.lastUpdated)
-        .sort((a, b) => b.getTime() - a.getTime())[0] || null;
+        .map((rp: any) => rp.player.lastUpdated)
+        .sort((a: any, b: any) => b.getTime() - a.getTime())[0] || null;
 
       // Consider sync needed if <90% mapped or last sync > 24 hours ago
       const now = new Date();
@@ -417,7 +417,7 @@ export class SleeperLeagueSyncService {
         },
       });
 
-      const mappings: PlayerMapping[] = rosterPlayers.map(rp => ({
+      const mappings: PlayerMapping[] = rosterPlayers.map((rp: any) => ({
         databasePlayerId: rp.player.id,
         sleeperPlayerId: rp.player.sleeperPlayerId,
         playerName: rp.player.name,

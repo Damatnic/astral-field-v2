@@ -4,7 +4,7 @@
 import { sleeperClient } from './core/sleeperClient';
 import { nflStateService } from './nflStateService';
 import { sleeperCache, SleeperCacheManager } from './core/cacheManager';
-import { db } from '@/lib/db';
+import { prisma as db } from '@/lib/db';
 
 export interface LiveScoreUpdate {
   leagueId: string;
@@ -473,12 +473,12 @@ export class SleeperRealTimeScoringService {
       const nflState = await nflStateService.getCurrentState();
       
       // Week is complete if current NFL week is greater
-      if (nflState.currentWeek > week) {
+      if (nflState.week > week) {
         return true;
       }
       
       // Week is complete if it's the same week but we're past Tuesday
-      if (nflState.currentWeek === week) {
+      if (nflState.week === week) {
         const now = new Date();
         const dayOfWeek = now.getDay(); // 0 = Sunday, 2 = Tuesday
         return dayOfWeek >= 2; // Tuesday or later

@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
           { status: 400 }
         );
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('[API] League sync GET error:', error);
     
     return NextResponse.json(
@@ -164,7 +164,7 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[API] League sync POST error:', error);
     
     return NextResponse.json(

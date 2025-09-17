@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     const forceRefresh = searchParams.get('force') === 'true';
 
     let data;
-    let metadata = {
+    let metadata: any = {
       endpoint: '/api/sleeper/sync',
       timestamp: new Date().toISOString(),
       forceRefresh,
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
       metadata,
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[API] Sleeper sync error:', error);
     
     return NextResponse.json(
@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[API] Sleeper sync POST error:', error);
     
     return NextResponse.json(

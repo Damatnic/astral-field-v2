@@ -73,7 +73,7 @@ export class SleeperIntegrationService {
       // Step 2: Test NFL State
       console.log('2️⃣ Getting current NFL state...');
       const nflState = await nflStateService.getCurrentState();
-      console.log(`   ✅ Current season: ${nflState.season}, Week: ${nflState.currentWeek}`);
+      console.log(`   ✅ Current season: ${nflState.season}, Week: ${nflState.week}`);
 
       // Step 3: Test player data
       console.log('3️⃣ Testing player data access...');
@@ -105,8 +105,8 @@ export class SleeperIntegrationService {
           duration,
           nflState: {
             season: nflState.season,
-            week: nflState.currentWeek,
-            seasonType: nflState.seasonType,
+            week: nflState.week,
+            seasonType: nflState.season_type,
           },
           playerCount,
           database: dbStats,
@@ -114,7 +114,7 @@ export class SleeperIntegrationService {
           results,
         },
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Initialization failed:', error);
       
       return {
@@ -200,7 +200,7 @@ export class SleeperIntegrationService {
       console.log(`❌ Total errors: ${result.summary.errors.length}`);
 
       return result;
-    } catch (error) {
+    } catch (error: any) {
       result.summary.errors.push(`Full sync failed: ${error.message}`);
       result.summary.totalDuration = Date.now() - startTime;
       result.summary.success = false;
@@ -260,7 +260,7 @@ export class SleeperIntegrationService {
         },
         lastChecked: new Date().toISOString(),
       };
-    } catch (error) {
+    } catch (error: any) {
       return {
         name: 'Sleeper API',
         status: 'unhealthy',
@@ -283,7 +283,7 @@ export class SleeperIntegrationService {
         details: stats,
         lastChecked: new Date().toISOString(),
       };
-    } catch (error) {
+    } catch (error: any) {
       return {
         name: 'Database',
         status: 'unhealthy',
@@ -305,7 +305,7 @@ export class SleeperIntegrationService {
         details: { message: 'League sync service operational' },
         lastChecked: new Date().toISOString(),
       };
-    } catch (error) {
+    } catch (error: any) {
       return {
         name: 'League Sync',
         status: 'unhealthy',
@@ -326,7 +326,7 @@ export class SleeperIntegrationService {
         details: { message: 'Scoring service operational' },
         lastChecked: new Date().toISOString(),
       };
-    } catch (error) {
+    } catch (error: any) {
       return {
         name: 'Real-Time Scoring',
         status: 'unhealthy',
@@ -348,12 +348,12 @@ export class SleeperIntegrationService {
         status: 'healthy',
         details: {
           season: state.season,
-          week: state.currentWeek,
-          seasonType: state.seasonType,
+          week: state.week,
+          seasonType: state.season_type,
         },
         lastChecked: new Date().toISOString(),
       };
-    } catch (error) {
+    } catch (error: any) {
       return {
         name: 'NFL State',
         status: 'unhealthy',
@@ -376,7 +376,7 @@ export class SleeperIntegrationService {
         details: stats,
         lastChecked: new Date().toISOString(),
       };
-    } catch (error) {
+    } catch (error: any) {
       return {
         name: 'Cache System',
         status: 'unhealthy',
@@ -453,8 +453,8 @@ export class SleeperIntegrationService {
         },
         nfl: {
           season: nflState.season,
-          week: nflState.currentWeek,
-          seasonType: nflState.seasonType,
+          week: nflState.week,
+          seasonType: nflState.season_type,
         },
         database: dbStats,
         cache: cacheStats,
@@ -464,7 +464,7 @@ export class SleeperIntegrationService {
         },
         timestamp: new Date().toISOString(),
       };
-    } catch (error) {
+    } catch (error: any) {
       throw new Error(`Failed to get integration stats: ${error.message}`);
     }
   }

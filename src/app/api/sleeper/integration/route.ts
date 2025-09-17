@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
           { status: 400 }
         );
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('[API] Integration GET error:', error);
     
     return NextResponse.json(
@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[API] Integration POST error:', error);
     
     return NextResponse.json(
