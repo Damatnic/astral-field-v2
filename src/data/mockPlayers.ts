@@ -1,5 +1,13 @@
+/**
+ * DEPRECATED: This file is no longer used in production
+ * Real player data is now fetched from NFLDataService
+ * See: src/services/nfl/nflDataService.ts
+ */
+
 import { Player, Position, PlayerStatus, NewsImpact } from '@/types/fantasy';
 
+// This mock data is only used for development/testing
+// Production uses real NFL player data
 export const mockPlayers: Player[] = [
   // Quarterbacks
   {
@@ -573,8 +581,8 @@ export const mockRosterPlayers = [
   }
 ];
 
-// Function to get available players (not on any roster in the league)
+// DEPRECATED: Use NFLDataService.getAvailablePlayers() instead
 export const getAvailablePlayers = (leagueId?: string) => {
-  // In a real app, this would filter out rostered players
-  return mockPlayers.filter(player => !mockRosterPlayers.some(rp => rp.playerId === player.id));
+  console.warn('mockPlayers.getAvailablePlayers is deprecated. Use NFLDataService instead.');
+  return [];
 };
