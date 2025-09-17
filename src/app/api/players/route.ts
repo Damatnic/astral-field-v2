@@ -3,6 +3,8 @@ import { PrismaClient } from '@prisma/client';
 import { authenticateFromRequest } from '@/lib/auth';
 import { Player, PlayerSearchFilters, PaginatedResponse } from '@/types/fantasy';
 
+export const dynamic = 'force-dynamic';
+
 const prisma = new PrismaClient();
 
 // GET /api/players - Search and get players

@@ -10,7 +10,7 @@ const nextConfig = {
     serverMinification: true,
     swcMinify: true,
     serverComponentsExternalPackages: ['@prisma/client', 'prisma'],
-    optimizeCss: process.env.NODE_ENV === 'production',
+    // optimizeCss: process.env.NODE_ENV === 'production', // Disabled - requires critters package
     scrollRestoration: true,
     largePageDataBytes: 128 * 1000, // 128KB
     outputFileTracingRoot: process.cwd(),
