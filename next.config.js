@@ -80,10 +80,10 @@ const nextConfig = {
       }
     ];
 
-    // Development vs Production CSP
+    // Development vs Production CSP - Fixed for production deployment
     const cspHeader = process.env.NODE_ENV === 'production'
-      ? "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://vercel.live https://*.vercel-analytics.com https://*.sentry.io; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https:; font-src 'self' data:; connect-src 'self' https://*.sentry.io https://*.vercel-analytics.com wss://*.vercel.live; frame-ancestors 'none';"
-      : "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https:; font-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors 'none';";
+      ? "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://vercel.live https://*.vercel-analytics.com https://*.sentry.io; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' blob: data: https:; font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com; connect-src 'self' https://*.sentry.io https://*.vercel-analytics.com wss://*.vercel.live https://api.sportsdata.io; frame-ancestors 'none';"
+      : "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' blob: data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' ws: wss:; frame-ancestors 'none';";
 
     if (process.env.NODE_ENV === 'production') {
       securityHeaders.push({
