@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/db';
 import { authenticateFromRequest } from '@/lib/auth';
 import { League, CreateLeagueForm, ApiResponse, PaginatedResponse } from '@/types/fantasy';
-
-const prisma = new PrismaClient();
 
 // Default league settings
 const DEFAULT_ROSTER_SLOTS = {

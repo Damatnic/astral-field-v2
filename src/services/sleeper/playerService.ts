@@ -67,7 +67,7 @@ export class SleeperPlayerService {
         const playersData = await sleeperClient.getAllPlayers();
         
         // Convert object to array and transform
-        const playersArray = Object.values(playersData);
+        const playersArray = Object.values(playersData as Record<string, any>);
         return playersArray.map(player => SleeperDataTransformer.transformPlayer(player as any));
       },
       SleeperCacheManager.TTL.PLAYERS_ALL
@@ -189,11 +189,11 @@ export class SleeperPlayerService {
         const trendingData = await sleeperClient.getTrendingPlayers(type, lookbackHours, 50);
         
         // Get player details for trending players
-        const playerIds = trendingData.map((trend: any) => trend.player_id);
+        const playerIds = (trendingData as any[]).map((trend: any) => trend.player_id);
         const players = await this.getPlayers(playerIds);
         
         // Combine trending data with player details
-        return trendingData.map((trend: any) => {
+        return (trendingData as any[]).map((trend: any) => {
           const player = players.find(p => p.id === trend.player_id);
           return {
             player,
@@ -325,8 +325,8 @@ export class SleeperPlayerService {
         cache: cacheStats,
         rateLimit: rateLimitStatus,
         data: {
-          totalPlayers: playersCount ? playersCount.length : 0,
-          fantasyPlayers: fantasyCount ? fantasyCount.length : 0,
+          totalPlayers: playersCount ? (playersCount as any[]).length : 0,
+          fantasyPlayers: fantasyCount ? (fantasyCount as any[]).length : 0,
         },
         lastUpdated: new Date().toISOString(),
       };
@@ -336,7 +336,7 @@ export class SleeperPlayerService {
         cache: cacheStats,
         rateLimit: rateLimitStatus,
         data: { totalPlayers: 0, fantasyPlayers: 0 },
-        error: error.message,
+        error: (error as Error).message,
         lastUpdated: new Date().toISOString(),
       };
     }

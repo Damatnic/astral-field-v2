@@ -155,7 +155,7 @@ export class SleeperRealTimeScoringService {
           },
           matchups: {
             where: {
-              week: { not: null },
+              week: { gt: 0 },
             },
             orderBy: { week: 'desc' },
             take: 1,

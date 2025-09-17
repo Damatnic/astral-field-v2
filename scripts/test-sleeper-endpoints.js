@@ -131,7 +131,7 @@ async function testSleeperEndpoints() {
   console.log('Running core service tests...\n');
   
   let passed = 0;
-  let total = tests.length;
+  const total = tests.length;
 
   for (const test of tests) {
     try {

@@ -37,7 +37,7 @@ const SLEEPER_POSITION_MAP: Record<string, Position> = {
 // Status mapping from Sleeper to our schema
 const SLEEPER_STATUS_MAP: Record<string, PlayerStatus> = {
   'Active': PlayerStatus.ACTIVE,
-  'Inactive': PlayerStatus.INACTIVE,
+  'Inactive': PlayerStatus.OUT,
   'Injured Reserve': PlayerStatus.INJURED_RESERVE,
   'Physically Unable to Perform': PlayerStatus.PUP,
   'Practice Squad': PlayerStatus.PRACTICE_SQUAD
@@ -232,9 +232,9 @@ export class PlayerSyncService {
           status,
           yearsExperience: playerData.years_exp || 0,
           isRookie: (playerData.years_exp || 0) === 0,
-          updatedAt: new Date(),
+          updatedAt: new Date()
           // Store Sleeper-specific data in metadata
-          metadata: this.buildPlayerMetadata(sleeperPlayerId, playerData)
+          // metadata: this.buildPlayerMetadata(sleeperPlayerId, playerData)
         },
         create: {
           nflId: `sleeper_${sleeperPlayerId}`,
@@ -243,8 +243,8 @@ export class PlayerSyncService {
           nflTeam: playerData.team || 'FA',
           status,
           yearsExperience: playerData.years_exp || 0,
-          isRookie: (playerData.years_exp || 0) === 0,
-          metadata: this.buildPlayerMetadata(sleeperPlayerId, playerData)
+          isRookie: (playerData.years_exp || 0) === 0
+          // metadata: this.buildPlayerMetadata(sleeperPlayerId, playerData)
         }
       });
 
@@ -438,7 +438,7 @@ export class PlayerSyncService {
     await prisma.player.update({
       where: { id: player.id },
       data: { 
-        averagePoints: playerStats.pts_ppr || fantasyPoints,
+        // averagePoints: playerStats.pts_ppr || fantasyPoints,
         updatedAt: new Date()
       }
     });
@@ -464,29 +464,29 @@ export class PlayerSyncService {
     const projectedPoints = this.calculateFantasyPoints(projectionStats);
 
     // Store as a projection record
-    await prisma.playerProjection.upsert({
-      where: {
-        playerId_week_season: {
-          playerId: player.id,
-          week,
-          season
-        }
-      },
-      update: {
-        projectedPoints,
-        confidence: 75, // Default confidence for Sleeper projections
-        source: 'SLEEPER',
-        updatedAt: new Date()
-      },
-      create: {
-        playerId: player.id,
-        week,
-        season,
-        projectedPoints,
-        confidence: 75,
-        source: 'SLEEPER'
-      }
-    });
+    // await prisma.playerProjection.upsert({
+    //   where: {
+    //     playerId_week_season: {
+    //       playerId: player.id,
+    //       week,
+    //       season
+    //     }
+    //   },
+    //   update: {
+    //     projectedPoints,
+    //     confidence: 75, // Default confidence for Sleeper projections
+    //     source: 'SLEEPER',
+    //     updatedAt: new Date()
+    //   },
+    //   create: {
+    //     playerId: player.id,
+    //     week,
+    //     season,
+    //     projectedPoints,
+    //     confidence: 75,
+    //     source: 'SLEEPER'
+    //   }
+    // });
   }
 
   /**

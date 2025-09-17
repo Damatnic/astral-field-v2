@@ -4,6 +4,7 @@
 import { sleeperPlayerService } from './playerService';
 import { nflStateService } from './nflStateService';
 import { prisma as db } from '@/lib/db';
+import { Position, PlayerStatus } from '@/types/fantasy';
 
 export interface LeagueSyncResult {
   leagueId: string;
@@ -260,12 +261,12 @@ export class SleeperLeagueSyncService {
           name: sleeperPlayer.name,
           firstName: sleeperPlayer.firstName,
           lastName: sleeperPlayer.lastName,
-          position: sleeperPlayer.position,
+          position: sleeperPlayer.position as Position,
           nflTeam: sleeperPlayer.nflTeam,
           age: sleeperPlayer.age,
           status: this.mapPlayerStatus(sleeperPlayer.status),
           injuryStatus: sleeperPlayer.injuryStatus,
-          yearsExperience: sleeperPlayer.yearsExperience,
+          yearsExperience: sleeperPlayer.yearsExperience || 0,
           height: sleeperPlayer.height,
           weight: sleeperPlayer.weight,
           college: sleeperPlayer.college,
@@ -289,18 +290,18 @@ export class SleeperLeagueSyncService {
   /**
    * Map Sleeper player status to database PlayerStatus enum
    */
-  private mapPlayerStatus(sleeperStatus: string): string {
-    const statusMap: { [key: string]: string } = {
-      'ACTIVE': 'ACTIVE',
-      'INACTIVE': 'OUT',
-      'INJURED_RESERVE': 'INJURED_RESERVE',
-      'PUP': 'PUP',
-      'SUSPENDED': 'SUSPENDED',
-      'RETIRED': 'RETIRED',
-      'PRACTICE_SQUAD': 'PRACTICE_SQUAD',
+  private mapPlayerStatus(sleeperStatus: string): PlayerStatus {
+    const statusMap: { [key: string]: PlayerStatus } = {
+      'ACTIVE': PlayerStatus.ACTIVE,
+      'INACTIVE': PlayerStatus.OUT,
+      'INJURED_RESERVE': PlayerStatus.INJURED_RESERVE,
+      'PUP': PlayerStatus.PUP,
+      'SUSPENDED': PlayerStatus.SUSPENDED,
+      'RETIRED': PlayerStatus.RETIRED,
+      'PRACTICE_SQUAD': PlayerStatus.PRACTICE_SQUAD,
     };
 
-    return statusMap[sleeperStatus] || 'ACTIVE';
+    return statusMap[sleeperStatus] || PlayerStatus.ACTIVE;
   }
 
   /**
@@ -334,7 +335,6 @@ export class SleeperLeagueSyncService {
           where: { id: team.id },
           data: {
             // Could add roster composition metadata here if needed
-            updatedAt: new Date(),
           },
         });
 

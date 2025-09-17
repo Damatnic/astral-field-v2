@@ -208,7 +208,7 @@ export class SleeperPlayerDatabaseService {
       let removed = 0;
 
       for (const dbPlayer of dbPlayers) {
-        if (!currentPlayerIds.has(dbPlayer.sleeperPlayerId)) {
+        if (dbPlayer.sleeperPlayerId && !currentPlayerIds.has(dbPlayer.sleeperPlayerId)) {
           // Player no longer fantasy relevant
           await db.player.update({
             where: { id: dbPlayer.id },
