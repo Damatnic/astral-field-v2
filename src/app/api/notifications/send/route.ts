@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 export async function POST(request: NextRequest) {
   try {
@@ -84,6 +84,10 @@ export async function POST(request: NextRequest) {
   }
 }
 
+function checkResendAvailable(): boolean {
+  return resend !== null;
+}
+
 function checkNotificationPreferences(type: string, prefs: any): boolean {
   // Default to true if no preferences set
   if (!prefs || Object.keys(prefs).length === 0) return true;
@@ -103,6 +107,10 @@ function checkNotificationPreferences(type: string, prefs: any): boolean {
 }
 
 async function sendLineupReminder(user: any, leagueId: string, data: any) {
+  if (!checkResendAvailable()) {
+    return { success: false, error: 'Email service not configured' };
+  }
+  
   try {
     const league = await prisma.league.findUnique({
       where: { id: leagueId }
@@ -128,7 +136,7 @@ async function sendLineupReminder(user: any, leagueId: string, data: any) {
       </div>
     `;
 
-    const result = await resend.emails.send({
+    const result = await resend!.emails.send({
       from: 'AstralField <noreply@astralfield.com>',
       to: [user.email],
       subject: `🏈 Set Your Lineup - Week ${data.week} | ${league?.name}`,
@@ -142,6 +150,10 @@ async function sendLineupReminder(user: any, leagueId: string, data: any) {
 }
 
 async function sendTradeProposal(user: any, data: any) {
+  if (!checkResendAvailable()) {
+    return { success: false, error: 'Email service not configured' };
+  }
+  
   try {
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -177,7 +189,7 @@ async function sendTradeProposal(user: any, data: any) {
       </div>
     `;
 
-    const result = await resend.emails.send({
+    const result = await resend!.emails.send({
       from: 'AstralField <noreply@astralfield.com>',
       to: [user.email],
       subject: `🤝 Trade Proposal from ${data.proposerName} | ${data.leagueName}`,
@@ -191,6 +203,10 @@ async function sendTradeProposal(user: any, data: any) {
 }
 
 async function sendTradeAccepted(user: any, data: any) {
+  if (!checkResendAvailable()) {
+    return { success: false, error: 'Email service not configured' };
+  }
+  
   try {
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -225,7 +241,7 @@ async function sendTradeAccepted(user: any, data: any) {
       </div>
     `;
 
-    const result = await resend.emails.send({
+    const result = await resend!.emails.send({
       from: 'AstralField <noreply@astralfield.com>',
       to: [user.email],
       subject: `✅ Trade Completed with ${data.otherTeamName} | ${data.leagueName}`,
@@ -239,6 +255,10 @@ async function sendTradeAccepted(user: any, data: any) {
 }
 
 async function sendWaiverResult(user: any, data: any) {
+  if (!checkResendAvailable()) {
+    return { success: false, error: 'Email service not configured' };
+  }
+  
   try {
     const isSuccess = data.status === 'SUCCESSFUL';
     const emailHtml = `
@@ -278,7 +298,7 @@ async function sendWaiverResult(user: any, data: any) {
       </div>
     `;
 
-    const result = await resend.emails.send({
+    const result = await resend!.emails.send({
       from: 'AstralField <noreply@astralfield.com>',
       to: [user.email],
       subject: `📋 Waiver Results - Week ${data.week} | ${data.leagueName}`,
@@ -292,6 +312,10 @@ async function sendWaiverResult(user: any, data: any) {
 }
 
 async function sendInjuryAlert(user: any, data: any) {
+  if (!checkResendAvailable()) {
+    return { success: false, error: 'Email service not configured' };
+  }
+  
   try {
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -315,7 +339,7 @@ async function sendInjuryAlert(user: any, data: any) {
       </div>
     `;
 
-    const result = await resend.emails.send({
+    const result = await resend!.emails.send({
       from: 'AstralField <noreply@astralfield.com>',
       to: [user.email],
       subject: `🏥 Injury Alert: ${data.playerName} | ${data.leagueName}`,
@@ -329,6 +353,10 @@ async function sendInjuryAlert(user: any, data: any) {
 }
 
 async function sendDraftReminder(user: any, leagueId: string, data: any) {
+  if (!checkResendAvailable()) {
+    return { success: false, error: 'Email service not configured' };
+  }
+  
   try {
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -353,7 +381,7 @@ async function sendDraftReminder(user: any, leagueId: string, data: any) {
       </div>
     `;
 
-    const result = await resend.emails.send({
+    const result = await resend!.emails.send({
       from: 'AstralField <noreply@astralfield.com>',
       to: [user.email],
       subject: `🎯 Draft Starting Soon: ${data.leagueName}`,
@@ -367,6 +395,10 @@ async function sendDraftReminder(user: any, leagueId: string, data: any) {
 }
 
 async function sendMatchupReminder(user: any, leagueId: string, data: any) {
+  if (!checkResendAvailable()) {
+    return { success: false, error: 'Email service not configured' };
+  }
+  
   try {
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -400,7 +432,7 @@ async function sendMatchupReminder(user: any, leagueId: string, data: any) {
       </div>
     `;
 
-    const result = await resend.emails.send({
+    const result = await resend!.emails.send({
       from: 'AstralField <noreply@astralfield.com>',
       to: [user.email],
       subject: `⚡ Week ${data.week} Matchup: ${data.teamName} vs ${data.opponentName}`,

@@ -2,7 +2,7 @@
 // Gets player projections for the week from Sleeper and database
 
 import { NextRequest, NextResponse } from 'next/server';
-import { sleeperPlayerSyncService } from '@/services/sleeper/playerSyncService';
+import { playerSyncService } from '@/services/sleeper/playerSyncService';
 import { nflStateService } from '@/services/sleeper/nflStateService';
 import { SleeperApiService } from '@/services/sleeper/sleeperApiService';
 import { prisma as db } from '@/lib/db';

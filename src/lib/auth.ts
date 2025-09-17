@@ -337,3 +337,24 @@ export function cleanupExpiredSessions(): void {
     }
   }
 }
+
+// Additional exports for middleware
+export async function validateSessionFromRequest(request: NextRequest): Promise<User | null> {
+  return await authenticateFromRequest(request);
+}
+
+export function canAccessRole(userRole: 'admin' | 'commissioner' | 'player', requiredRole: 'admin' | 'commissioner' | 'authenticated'): boolean {
+  if (requiredRole === 'authenticated') {
+    return true; // Any authenticated user can access
+  }
+  
+  if (requiredRole === 'admin') {
+    return userRole === 'admin';
+  }
+  
+  if (requiredRole === 'commissioner') {
+    return userRole === 'admin' || userRole === 'commissioner';
+  }
+  
+  return false;
+}

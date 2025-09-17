@@ -13,10 +13,14 @@ export const NFLStateSchema = z.object({
   season: z.string(),
   previous_season: z.string(),
   leg: z.number(),
-  season_start_date: z.string(),
-  season_end_date: z.string(),
-  week_start_date: z.string(),
-  week_end_date: z.string()
+  season_start_date: z.string().optional(),
+  season_end_date: z.string().optional(),
+  week_start_date: z.string().optional(),
+  week_end_date: z.string().optional(),
+  league_season: z.string().optional(),
+  display_week: z.number().optional(),
+  league_create_season: z.string().optional(),
+  season_has_scores: z.boolean().optional()
 });
 
 export type NFLState = z.infer<typeof NFLStateSchema>;

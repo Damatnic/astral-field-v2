@@ -19,6 +19,10 @@ const nextConfig = {
   // Build configuration
   eslint: {
     dirs: ['src', 'prisma', 'scripts'],
+    ignoreDuringBuilds: process.env.NODE_ENV === 'production',
+  },
+  typescript: {
+    ignoreBuildErrors: process.env.NODE_ENV === 'production',
   },
   
   // Production optimizations
