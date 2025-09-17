@@ -379,7 +379,7 @@ async function syncProjectionsFromSleeper(week?: number, season?: number, option
     console.log(`Syncing Sleeper projections for week ${targetWeek}, season ${targetSeason}`);
     
     // Use the existing sync service
-    await sleeperPlayerSyncService.syncCurrentWeekProjections();
+    await playerSyncService.syncCurrentWeekProjections();
 
     // Get sync stats
     const syncedCount = await db.playerProjection.count({

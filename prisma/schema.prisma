@@ -373,13 +373,13 @@ model WaiverClaim {
 model Message {
   id        String      @id @default(cuid())
   leagueId  String
-  userId    String
+  userId    String?
   content   String      @db.Text
   type      MessageType @default(GENERAL)
   metadata  Json?
   createdAt DateTime    @default(now())
   league    League      @relation(fields: [leagueId], references: [id], onDelete: Cascade)
-  user      User        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user      User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([leagueId, type])
   @@index([userId, createdAt])
