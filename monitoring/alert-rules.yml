@@ -1,0 +1,169 @@
+# Prometheus alerting rules for AstralField v2.1
+# Critical alerts for production monitoring
+
+groups:
+  - name: astralfield-critical
+    rules:
+      # Application availability
+      - alert: ApplicationDown
+        expr: up{job="astralfield-app"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "AstralField application is down"
+          description: "The AstralField application has been down for more than 1 minute"
+      
+      # High error rate
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value }} errors per second"
+      
+      # High response time
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High response time"
+          description: "95th percentile response time is {{ $value }} seconds"
+      
+      # Memory usage
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes > 0.85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is above 85% ({{ $value }})"
+      
+      # CPU usage
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is above 80% ({{ $value }}%)"
+      
+      # Disk space
+      - alert: LowDiskSpace
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 < 10
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Low disk space"
+          description: "Disk space is below 10% ({{ $value }}%)"
+      
+      # Database connection errors
+      - alert: DatabaseConnectionErrors
+        expr: rate(database_connections_failed_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Database connection errors"
+          description: "Database connection errors: {{ $value }} errors per second"
+      
+      # Auth0 authentication failures
+      - alert: AuthenticationFailures
+        expr: rate(auth_failures_total[5m]) > 0.2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High authentication failure rate"
+          description: "Authentication failure rate: {{ $value }} failures per second"
+      
+      # Cache miss rate
+      - alert: HighCacheMissRate
+        expr: rate(cache_misses_total[5m]) / rate(cache_requests_total[5m]) > 0.5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High cache miss rate"
+          description: "Cache miss rate is {{ $value }}"
+      
+      # Socket connection issues
+      - alert: SocketConnectionErrors
+        expr: rate(socket_connection_errors_total[5m]) > 0.1
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Socket connection errors"
+          description: "Socket connection errors: {{ $value }} errors per second"
+
+  - name: astralfield-business
+    rules:
+      # Fantasy football specific alerts
+      - alert: DraftSystemDown
+        expr: draft_system_status != 1
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Draft system is down"
+          description: "The fantasy football draft system is not operational"
+      
+      # Trade processing issues
+      - alert: TradeProcessingDelayed
+        expr: avg_over_time(trade_processing_duration_seconds[5m]) > 30
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Trade processing is delayed"
+          description: "Average trade processing time is {{ $value }} seconds"
+      
+      # Lineup optimization failures
+      - alert: LineupOptimizationFailures
+        expr: rate(lineup_optimization_failures_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Lineup optimization failures"
+          description: "Lineup optimization failure rate: {{ $value }} failures per second"
+      
+      # Player data sync issues
+      - alert: PlayerDataSyncFailures
+        expr: rate(player_sync_failures_total[5m]) > 0.02
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Player data sync failures"
+          description: "Player data sync failure rate: {{ $value }} failures per second"
+
+  - name: infrastructure
+    rules:
+      # Container restarts
+      - alert: ContainerRestarting
+        expr: rate(container_start_time_seconds[10m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container restarting frequently"
+          description: "Container {{ $labels.name }} is restarting"
+      
+      # Nginx errors
+      - alert: NginxHighErrorRate
+        expr: rate(nginx_http_requests_total{status=~"4..|5.."}[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Nginx high error rate"
+          description: "Nginx error rate: {{ $value }} errors per second"
