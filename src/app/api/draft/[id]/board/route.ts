@@ -14,7 +14,11 @@ export async function GET(
       include: {
         league: {
           include: {
-            teams: true
+            teams: {
+              include: {
+                owner: true
+              }
+            }
           }
         },
         picks: {
@@ -81,8 +85,8 @@ export async function GET(
       teams: draft.league.teams.map(team => ({
         id: team.id,
         name: team.name,
-        userId: team.userId,
-        draftPosition: team.draftPosition
+        userId: team.ownerId,
+        draftPosition: team.draftPosition || 0
       })),
       picks: draft.picks.map(pick => ({
         id: pick.id,

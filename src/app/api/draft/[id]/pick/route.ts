@@ -58,7 +58,8 @@ export async function POST(
       data: {
         teamId,
         playerId,
-        position: 'BENCH', // Start on bench
+        rosterSlot: 'BENCH', // Start on bench
+        position: 'BENCH',
         acquisitionType: 'DRAFT',
         acquisitionDate: new Date()
       }

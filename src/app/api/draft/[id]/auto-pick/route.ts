@@ -27,11 +27,13 @@ export async function POST(
     }
 
     // Get team's roster needs
+    // Note: This is a simplified auto-pick logic
+    // In production, you'd want more sophisticated logic
     const teamPicks = draft.picks.filter(p => p.teamId === teamId);
-    const positions = teamPicks.map(p => p.player?.position || '');
+    // For now, just use round count as a proxy for position needs
     
     // Determine position need (basic algorithm)
-    const positionNeeds = calculatePositionNeeds(positions);
+    const positionNeeds = calculatePositionNeeds(teamPicks.length);
 
     // Get best available player
     const draftedPlayerIds = draft.picks.map(p => p.playerId);
@@ -96,37 +98,18 @@ export async function POST(
   }
 }
 
-function calculatePositionNeeds(currentPositions: string[]): string[] {
-  const counts = {
-    QB: 0,
-    RB: 0,
-    WR: 0,
-    TE: 0,
-    K: 0,
-    DEF: 0
-  };
+function calculatePositionNeeds(picksCount: number): string[] {
+  // Simple position needs based on pick count
+  const priorities = [
+    'QB', 'RB', 'WR', 'RB', 'WR', 'TE', 'RB', 'WR', 'QB', 'RB',
+    'WR', 'TE', 'K', 'DEF', 'RB', 'WR'
+  ];
 
-  // Count current positions
-  currentPositions.forEach(pos => {
-    if (pos in counts) {
-      counts[pos as keyof typeof counts]++;
-    }
-  });
-
-  // Determine needs based on standard roster requirements
-  const needs: string[] = [];
-  
-  if (counts.QB < 2) needs.push('QB');
-  if (counts.RB < 5) needs.push('RB');
-  if (counts.WR < 5) needs.push('WR');
-  if (counts.TE < 2) needs.push('TE');
-  if (counts.K < 1) needs.push('K');
-  if (counts.DEF < 1) needs.push('DEF');
-
-  // If all positions filled, prioritize RB/WR depth
-  if (needs.length === 0) {
-    needs.push('RB', 'WR');
+  // Return next priority position based on pick count
+  if (picksCount < priorities.length) {
+    return [priorities[picksCount]];
   }
-
-  return needs;
+  
+  // If beyond initial picks, prioritize depth
+  return ['RB', 'WR'];
 }

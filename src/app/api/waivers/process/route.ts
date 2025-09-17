@@ -189,6 +189,7 @@ async function processSingleClaim(claim: any): Promise<boolean> {
         data: {
           teamId: claim.teamId,
           playerId: claim.playerId,
+          rosterSlot: 'BENCH',
           position: 'BENCH',
           acquisitionType: 'WAIVER',
           acquisitionDate: new Date()

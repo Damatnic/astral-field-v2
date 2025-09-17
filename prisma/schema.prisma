@@ -34,6 +34,7 @@ model User {
   userSessions           UserSession[]
   pushTokens             PushToken[]
   notificationPreferences NotificationPreferences?
+  lineupHistory          LineupHistory[]
 
   @@index([createdAt])
   @@index([profileId])
@@ -66,6 +67,7 @@ model League {
   waiverClaims WaiverClaim[]
   weeks        Week[]
   draftOrders  DraftOrder[]
+  drafts       Draft[]
 
   @@index([commissionerId])
   @@index([season, isActive])
@@ -104,6 +106,7 @@ model Team {
   waiverPriority Int            @default(1) // Should be 1-N where N = number of teams
   faabBudget     Int            @default(100) // Typically 100-1000
   faabSpent      Int            @default(0) // Should be <= faabBudget
+  draftPosition  Int?           // Draft order position
   awayMatchups   Matchup[]      @relation("AwayTeam")
   homeMatchups   Matchup[]      @relation("HomeTeam")
   roster         RosterPlayer[]
@@ -113,6 +116,8 @@ model Team {
   trades         Trade[]
   waiverClaims   WaiverClaim[]
   draftOrders    DraftOrder[]
+  draftPicks     DraftPick[]
+  lineupHistory  LineupHistory[]
 
   @@unique([leagueId, ownerId])
   @@index([leagueId, pointsFor])
@@ -126,14 +131,18 @@ model Team {
 }
 
 model RosterPlayer {
-  id              String     @id @default(cuid())
+  id              String          @id @default(cuid())
   teamId          String
   playerId        String
   rosterSlot      RosterSlot
-  isLocked        Boolean    @default(false)
-  acquisitionDate DateTime   @default(now())
-  player          Player     @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  team            Team       @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  position        RosterSlot      @default(BENCH) // Current lineup position
+  isLocked        Boolean         @default(false)
+  acquisitionDate DateTime        @default(now())
+  acquisitionType AcquisitionType @default(DRAFT)
+  week            Int?            // Week this applies to (null for all weeks)
+  lastModified    DateTime        @updatedAt
+  player          Player          @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  team            Team            @relation(fields: [teamId], references: [id], onDelete: Cascade)
 
   @@unique([teamId, playerId])
   @@index([teamId, rosterSlot])
@@ -177,6 +186,7 @@ model Player {
   college         String?            @db.VarChar(255)
   searchRank      Int?               // Sleeper search rank for fantasy relevance
   fantasyPositions Json?             // Array of fantasy positions from Sleeper
+  adp             Float?             // Average draft position
   depthChartPosition Int?            // Depth chart position
   depthChartOrder Int?               // Order on depth chart
   isFantasyRelevant Boolean          @default(false)
@@ -193,6 +203,7 @@ model Player {
   // rosters         Roster[]  // REMOVED: Redundant with RosterPlayer
   tradeItems      TradeItem[]
   waiverClaims    WaiverClaim[]
+  draftPicks      DraftPick[]
   
   // New Job Management Relations
   injuryReports   InjuryReport[]
@@ -224,8 +235,11 @@ model Matchup {
   awayTeamId String
   homeScore  Decimal  @default(0) @db.Decimal(8, 2) // Increased precision for high-scoring fantasy games
   awayScore  Decimal  @default(0) @db.Decimal(8, 2) // Increased precision for high-scoring fantasy games
+  team1Score Decimal? @db.Decimal(8, 2) // Alternative scoring fields
+  team2Score Decimal? @db.Decimal(8, 2) // Alternative scoring fields
   isComplete Boolean  @default(false)
   createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
   awayTeam   Team     @relation("AwayTeam", fields: [awayTeamId], references: [id])
   homeTeam   Team     @relation("HomeTeam", fields: [homeTeamId], references: [id])
   league     League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
@@ -340,6 +354,9 @@ model WaiverClaim {
   faabBid      Int? // Should be <= team's remaining FAAB budget
   status       WaiverStatus @default(PENDING)
   processedAt  DateTime?
+  successful   Boolean?     // Whether the claim was successful
+  failureReason String?     // Why the claim failed
+  weekNumber   Int          @default(1)
   createdAt    DateTime     @default(now())
   league       League       @relation(fields: [leagueId], references: [id], onDelete: Cascade)
   player       Player       @relation(fields: [playerId], references: [id], onDelete: Restrict)
@@ -689,6 +706,7 @@ model PlayerStats {
   opponent      String?   @db.VarChar(10)
   stats         Json      // Statistical data
   fantasyPoints Decimal?  @default(0) @db.Decimal(8, 2)
+  projectedPoints Decimal? @default(0) @db.Decimal(8, 2)
   isProjected   Boolean   @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -884,4 +902,91 @@ enum UserRole {
   ADMIN
   COMMISSIONER
   PLAYER
+}
+
+model Draft {
+  id             String      @id @default(cuid())
+  leagueId       String
+  status         DraftStatus @default(PENDING)
+  type           DraftType   @default(SNAKE)
+  rounds         Int         @default(16)
+  pickTimeLimit  Int         @default(120) // seconds
+  currentRound   Int         @default(1)
+  currentPick    Int         @default(1)
+  scheduledStart DateTime?
+  startedAt      DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  
+  // Relations
+  league         League      @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  picks          DraftPick[]
+  
+  @@index([leagueId])
+  @@index([status])
+  @@map("drafts")
+}
+
+model DraftPick {
+  id           String   @id @default(cuid())
+  draftId      String
+  teamId       String
+  playerId     String
+  round        Int
+  pick         Int
+  overallPick  Int
+  pickTime     DateTime @default(now())
+  createdAt    DateTime @default(now())
+  
+  // Relations
+  draft        Draft    @relation(fields: [draftId], references: [id], onDelete: Cascade)
+  team         Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  player       Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  
+  @@unique([draftId, teamId, playerId])
+  @@unique([draftId, round, pick])
+  @@index([draftId, round])
+  @@index([teamId])
+  @@index([playerId])
+  @@map("draft_picks")
+}
+
+model LineupHistory {
+  id           String   @id @default(cuid())
+  teamId       String
+  week         Int
+  lineupData   Json
+  submittedAt  DateTime @default(now())
+  submittedBy  String
+  isOptimal    Boolean  @default(false)
+  
+  // Relations
+  team         Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [submittedBy], references: [id], onDelete: Cascade)
+  
+  @@unique([teamId, week])
+  @@index([week])
+  @@index([submittedAt])
+  @@map("lineup_history")
+}
+
+enum DraftStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum DraftType {
+  SNAKE
+  LINEAR
+  AUCTION
+}
+
+enum AcquisitionType {
+  DRAFT
+  WAIVER
+  FREE_AGENT
+  TRADE
 }
