@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowUpDown,
@@ -16,9 +16,13 @@ import {
   Share2,
   ChevronRight,
   Filter,
-  Bell
+  Bell,
+  RefreshCw,
+  Loader2
 } from 'lucide-react';
 import Image from 'next/image';
+import { useToast } from '@/components/ui/Toast';
+import { ActivityFeedSkeleton } from '@/components/ui/Skeleton';
 
 type ActivityType = 'trade' | 'waiver' | 'message' | 'matchup' | 'injury' | 'milestone' | 'roster';
 
@@ -42,6 +46,10 @@ interface Activity {
     players?: string[];
     score?: string;
     achievement?: string;
+    status?: string;
+    priority?: number;
+    successful?: boolean;
+    week?: number;
     injury?: {
       player: string;
       status: string;
@@ -53,130 +61,79 @@ interface Activity {
     comments: number;
     isLiked?: boolean;
   };
+  createdAt: Date;
 }
 
-export default function LeagueActivityFeed() {
+interface LeagueActivityFeedProps {
+  leagueId: string;
+  className?: string;
+}
+
+export default function LeagueActivityFeed({ leagueId, className = '' }: LeagueActivityFeedProps) {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [filter, setFilter] = useState<ActivityType | 'all'>('all');
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  const { error: showError, success } = useToast();
 
-  useEffect(() => {
-    // Simulated data - replace with actual API/WebSocket
-    const mockActivities: Activity[] = [
-      {
-        id: '1',
-        type: 'trade',
-        title: 'Trade Alert',
-        description: 'Blockbuster trade completed',
-        timestamp: '2 hours ago',
-        user: {
-          name: 'Mike Johnson',
-          team: 'Thunder Bolts'
-        },
-        relatedUser: {
-          name: 'Sarah Williams',
-          team: 'Lightning Strike'
-        },
-        metadata: {
-          players: ['Justin Jefferson', 'Josh Jacobs', 'Calvin Ridley', '2024 1st Round Pick']
-        },
-        reactions: {
-          likes: 12,
-          comments: 8,
-          isLiked: false
-        }
-      },
-      {
-        id: '2',
-        type: 'injury',
-        title: 'Injury Update',
-        description: 'Key player injury affects multiple teams',
-        timestamp: '3 hours ago',
-        user: {
-          name: 'System',
-          team: 'League Update'
-        },
-        metadata: {
-          injury: {
-            player: 'Christian McCaffrey',
-            status: 'OUT - Hamstring',
-            impact: 'high'
-          }
-        },
-        reactions: {
-          likes: 3,
-          comments: 15,
-          isLiked: true
-        }
-      },
-      {
-        id: '3',
-        type: 'matchup',
-        title: 'Upset Victory',
-        description: 'Underdog takes down league leader',
-        timestamp: '5 hours ago',
-        user: {
-          name: 'David Chen',
-          team: 'Dark Horses'
-        },
-        relatedUser: {
-          name: 'Tom Brady Jr.',
-          team: 'Dynasty Kings'
-        },
-        metadata: {
-          score: '142.8 - 138.2'
-        },
-        reactions: {
-          likes: 24,
-          comments: 12,
-          isLiked: false
-        }
-      },
-      {
-        id: '4',
-        type: 'milestone',
-        title: 'Achievement Unlocked',
-        description: 'New league record set',
-        timestamp: '1 day ago',
-        user: {
-          name: 'Alex Rivera',
-          team: 'Speed Demons'
-        },
-        metadata: {
-          achievement: 'Highest single-week score: 187.4 points'
-        },
-        reactions: {
-          likes: 45,
-          comments: 18,
-          isLiked: true
-        }
-      },
-      {
-        id: '5',
-        type: 'waiver',
-        title: 'Waiver Wire Activity',
-        description: 'Multiple claims processed',
-        timestamp: '1 day ago',
-        user: {
-          name: 'Jessica Park',
-          team: 'Rising Stars'
-        },
-        metadata: {
-          players: ['Tank Bigsby', 'Jaylen Warren']
-        },
-        reactions: {
-          likes: 5,
-          comments: 3,
-          isLiked: false
-        }
+  const fetchActivities = useCallback(async (isRefresh = false) => {
+    if (isRefresh) {
+      setIsRefreshing(true);
+    } else {
+      setIsLoading(true);
+    }
+    
+    setError(null);
+    
+    try {
+      const url = new URL(`/api/leagues/${leagueId}/activity`, window.location.origin);
+      if (filter !== 'all') {
+        url.searchParams.set('type', filter);
       }
-    ];
-
-    setTimeout(() => {
-      setActivities(mockActivities);
+      url.searchParams.set('limit', '20');
+      
+      const response = await fetch(url.toString());
+      const data = await response.json();
+      
+      if (data.success) {
+        setActivities(data.activities);
+        setError(null);
+        
+        if (isRefresh) {
+          success('Activity feed updated', 'Latest league activity loaded');
+        }
+      } else {
+        setError(data.error || 'Failed to load activities');
+        showError('Failed to load league activity', data.error);
+      }
+    } catch (err) {
+      console.error('Failed to fetch league activity:', err);
+      setError('Failed to load activities');
+      showError('Failed to load league activity', 'Please try again');
+    } finally {
       setIsLoading(false);
-    }, 500);
-  }, []);
+      setIsRefreshing(false);
+    }
+  }, [leagueId, filter, showError, success]);
+  
+  useEffect(() => {
+    if (leagueId) {
+      fetchActivities();
+    }
+  }, [fetchActivities]);
+  
+  // Auto-refresh every 2 minutes
+  useEffect(() => {
+    if (!leagueId) return;
+    
+    const interval = setInterval(() => {
+      fetchActivities(true);
+    }, 2 * 60 * 1000);
+    
+    return () => clearInterval(interval);
+  }, [fetchActivities]);
 
   const getActivityIcon = (type: ActivityType) => {
     switch (type) {
@@ -204,7 +161,8 @@ export default function LeagueActivityFeed() {
     }
   };
 
-  const handleReaction = (activityId: string, type: 'like' | 'comment') => {
+  const handleReaction = async (activityId: string, type: 'like' | 'comment') => {
+    // Optimistic update
     setActivities(prev => prev.map(activity => {
       if (activity.id === activityId && activity.reactions) {
         if (type === 'like') {
@@ -222,6 +180,13 @@ export default function LeagueActivityFeed() {
       }
       return activity;
     }));
+    
+    // TODO: Send reaction to API
+    // This would be implemented with an activity reactions endpoint
+  };
+  
+  const handleRefresh = () => {
+    fetchActivities(true);
   };
 
   const filteredActivities = filter === 'all' 
@@ -297,6 +262,17 @@ export default function LeagueActivityFeed() {
                         {player}
                       </span>
                     ))}
+                    {activity.metadata.status && (
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        activity.metadata.status === 'accepted' 
+                          ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
+                          : activity.metadata.status === 'pending'
+                          ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'
+                          : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+                      }`}>
+                        {activity.metadata.status}
+                      </span>
+                    )}
                   </div>
                 )}
                 {activity.metadata.score && (
@@ -375,15 +351,36 @@ export default function LeagueActivityFeed() {
     );
   };
 
+  if (!leagueId) {
+    return (
+      <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 ${className}`}>
+        <p className="text-center text-gray-500 dark:text-gray-400">No league selected</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+    <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 ${className}`}>
       {/* Header */}
       <div className="p-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-semibold text-lg">League Activity</h3>
-          <button className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-            <Bell className="h-5 w-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {isRefreshing ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <RefreshCw className="h-5 w-5" />
+              )}
+            </button>
+            <button className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+              <Bell className="h-5 w-5" />
+            </button>
+          </div>
         </div>
         
         {/* Filter Tabs */}
@@ -408,12 +405,26 @@ export default function LeagueActivityFeed() {
       {/* Activity List */}
       <div className="p-4 space-y-3 max-h-[600px] overflow-y-auto">
         {isLoading ? (
-          <div className="space-y-3">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="animate-pulse">
-                <div className="h-24 bg-gray-100 dark:bg-gray-700 rounded-lg"></div>
-              </div>
-            ))}
+          <ActivityFeedSkeleton />
+        ) : error ? (
+          <div className="text-center py-8">
+            <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <p className="text-red-600 dark:text-red-400 font-medium mb-2">Failed to load activity</p>
+            <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">{error}</p>
+            <button
+              onClick={() => fetchActivities()}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        ) : filteredActivities.length === 0 ? (
+          <div className="text-center py-8">
+            <Bell className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-500 dark:text-gray-400 font-medium mb-2">No activity yet</p>
+            <p className="text-gray-400 dark:text-gray-500 text-sm">
+              {filter === 'all' ? 'League activity will appear here' : `No ${filter} activity found`}
+            </p>
           </div>
         ) : (
           <AnimatePresence>

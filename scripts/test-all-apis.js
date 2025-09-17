@@ -23,7 +23,7 @@ const colors = {
 };
 
 let authToken = null;
-let testResults = {
+const testResults = {
   passed: 0,
   failed: 0,
   skipped: 0,

@@ -470,3 +470,237 @@ export type LineupOptimization = {
   projectedImprovement: number;
   confidence: number;
 };
+
+// Trade Analysis Types
+export interface TradeAnalysis {
+  tradeId: string;
+  fairnessScore: number; // 0-100 scale
+  teamAnalyses: TeamTradeAnalysis[];
+  marketAnalysis: MarketAnalysis;
+  riskFactors: RiskFactor[];
+  recommendations: TradeRecommendation[];
+  similarTrades: SimilarTrade[];
+  createdAt: Date;
+}
+
+export interface TeamTradeAnalysis {
+  teamId: string;
+  teamName: string;
+  beforeTrade: TeamAnalysisSnapshot;
+  afterTrade: TeamAnalysisSnapshot;
+  netValue: number;
+  positionStrengths: PositionStrength[];
+  teamNeeds: TeamNeed[];
+  playoffImpact: PlayoffImpact;
+  rosterBalance: RosterBalanceScore;
+}
+
+export interface TeamAnalysisSnapshot {
+  overallStrength: number; // 0-100
+  positionRankings: Record<Position, number>;
+  projectedPoints: number;
+  rosterValue: number;
+  depthScore: number;
+  starterQuality: number;
+  upside: number;
+  floor: number;
+}
+
+export interface MarketAnalysis {
+  playerValues: PlayerMarketValue[];
+  positionScarcity: PositionScarcityScore[];
+  consensusRankings: ConsensusRanking[];
+  trendingPlayers: TrendingPlayer[];
+  injuryAdjustments: InjuryAdjustment[];
+}
+
+export interface PlayerMarketValue {
+  playerId: string;
+  consensusValue: number;
+  expertValue: number;
+  crowdValue: number;
+  trendDirection: 'UP' | 'DOWN' | 'STABLE';
+  confidenceInterval: [number, number];
+  recentTrades: RecentTradeValue[];
+}
+
+export interface PositionScarcityScore {
+  position: Position;
+  scarcityMultiplier: number; // 0.8-1.5 typical range
+  availableQuality: number;
+  injuryRisk: number;
+  seasonalTrend: 'EARLY' | 'MID' | 'LATE' | 'PLAYOFF';
+}
+
+export interface ConsensusRanking {
+  playerId: string;
+  avgRank: number;
+  stdDev: number;
+  sources: RankingSource[];
+  lastUpdated: Date;
+}
+
+export interface RankingSource {
+  source: string;
+  rank: number;
+  tier: number;
+  confidence: number;
+}
+
+export interface TrendingPlayer {
+  playerId: string;
+  trendScore: number; // -100 to 100
+  volumeChange: number;
+  recentNews: string[];
+  socialSentiment: number;
+}
+
+export interface InjuryAdjustment {
+  playerId: string;
+  injuryStatus: string;
+  probabilityHealthy: number;
+  estimatedReturn?: Date;
+  replacementValue: number;
+  riskDiscount: number;
+}
+
+export interface RiskFactor {
+  type: 'INJURY' | 'AGE' | 'USAGE' | 'SCHEDULE' | 'TEAM_SITUATION' | 'REGRESSION';
+  severity: 'LOW' | 'MEDIUM' | 'HIGH';
+  description: string;
+  affectedPlayerIds: string[];
+  mitigation: string;
+  probability: number;
+}
+
+export interface TradeRecommendation {
+  type: 'ACCEPT' | 'REJECT' | 'COUNTER' | 'MODIFY';
+  confidence: number;
+  reasoning: string[];
+  alternativeOffers?: CounterOffer[];
+  timeline: 'IMMEDIATE' | 'WAIT' | 'DECLINE_OVER_TIME';
+}
+
+export interface CounterOffer {
+  description: string;
+  suggestedChanges: TradeItemChange[];
+  improvedFairness: number;
+  reasoning: string;
+}
+
+export interface TradeItemChange {
+  action: 'ADD' | 'REMOVE' | 'REPLACE';
+  itemType: TradeItemType;
+  playerId?: string;
+  value: number;
+  reasoning: string;
+}
+
+export interface SimilarTrade {
+  tradeDate: Date;
+  teamNames: string[];
+  items: SimilarTradeItem[];
+  outcome: string;
+  similarity: number; // 0-1
+  league: string;
+}
+
+export interface SimilarTradeItem {
+  playerName: string;
+  position: Position;
+  valueAtTime: number;
+  direction: 'TRADED_FOR' | 'TRADED_AWAY';
+}
+
+export interface PositionStrength {
+  position: Position;
+  currentRank: number; // 1-12 in league
+  projectedRank: number;
+  depth: number;
+  quality: number;
+  upside: number;
+}
+
+export interface TeamNeed {
+  position: Position;
+  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+  description: string;
+  timeframe: 'IMMEDIATE' | 'ROS' | 'NEXT_SEASON';
+  alternatives: string[];
+}
+
+export interface PlayoffImpact {
+  probabilityBefore: number;
+  probabilityAfter: number;
+  strengthOfSchedule: number;
+  projectedSeed: number;
+  championshipOdds: number;
+  keyMatchups: string[];
+}
+
+export interface RosterBalanceScore {
+  overall: number; // 0-100
+  starterVsBench: number;
+  positionDistribution: number;
+  ageDistribution: number;
+  injuryRisk: number;
+  byeWeekCoverage: number;
+}
+
+export interface RecentTradeValue {
+  date: Date;
+  value: number;
+  context: string;
+  league: string;
+  tradeId: string;
+}
+
+// Trade Creation Types
+export interface CreateTradeRequest {
+  leagueId: string;
+  proposedToTeamIds: string[];
+  tradeItems: CreateTradeItem[];
+  notes?: string;
+  expirationHours?: number; // defaults to 48
+}
+
+export interface CreateTradeItem {
+  itemType: TradeItemType;
+  fromTeamId: string;
+  toTeamId: string;
+  playerId?: string;
+  draftPick?: DraftPickDetails;
+  faabAmount?: number;
+}
+
+export interface DraftPickDetails {
+  year: number;
+  round: number;
+  originalTeamId: string;
+  conditions?: string;
+}
+
+export interface TradeResponse {
+  action: 'ACCEPT' | 'REJECT' | 'COUNTER';
+  notes?: string;
+  counterOffer?: CreateTradeRequest;
+}
+
+// Enhanced Trade interface
+export interface EnhancedTrade extends Trade {
+  analysis?: TradeAnalysis;
+  involvedTeams: Team[];
+  affectedPositions: Position[];
+  netValues: Record<string, number>; // teamId -> net value
+  riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
+  timeRemaining?: string;
+  requiredVotes?: number;
+  currentVotes?: TradeVoteCount;
+}
+
+export interface TradeVoteCount {
+  approve: number;
+  veto: number;
+  total: number;
+  required: number;
+}

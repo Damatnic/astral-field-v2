@@ -349,7 +349,7 @@ function AuthenticatedDashboard() {
           {/* Left column - 2/3 width */}
           <div className="lg:col-span-2 space-y-8">
             <QuickActions />
-            <LeagueActivityFeed />
+            <LeagueActivityFeed leagueId="damato-dynasty-league" />
           </div>
 
           {/* Right column - 1/3 width */}

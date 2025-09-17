@@ -56,7 +56,7 @@ export default function LineupPage() {
         </div>
 
         {/* Lineup Manager Component */}
-        <LineupManager />
+        <LineupManager teamId={teamId} isOwner={true} />
       </div>
     </div>
   );

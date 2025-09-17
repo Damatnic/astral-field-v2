@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import AuthProvider from '@/components/AuthProvider';
 import Navigation from '@/components/Navigation';
+import { ToastProvider } from '@/components/ui/Toast';
 
 // Font configuration
 const inter = Inter({ 
@@ -135,17 +136,19 @@ export default function RootLayout({
 
         {/* Auth Provider wraps everything to provide authentication context */}
         <AuthProvider>
-          {/* Navigation component */}
-          <Navigation />
-          
-          {/* Main content area */}
-          <main 
-            id="main-content" 
-            className="min-h-screen"
-            role="main"
-          >
-            {children}
-          </main>
+          <ToastProvider>
+            {/* Navigation component */}
+            <Navigation />
+            
+            {/* Main content area */}
+            <main 
+              id="main-content" 
+              className="min-h-screen"
+              role="main"
+            >
+              {children}
+            </main>
+          </ToastProvider>
           
           {/* Footer */}
           <footer className="bg-white border-t border-gray-200 mt-auto">
