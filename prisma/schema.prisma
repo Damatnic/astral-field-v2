@@ -6,7 +6,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  directUrl = env("DATABASE_URL_UNPOOLED")
+  // directUrl = env("DATABASE_URL_UNPOOLED")  // Commented out for local development
 }
 
 model User {
@@ -159,14 +159,31 @@ model Settings {
 
 model Player {
   id              String             @id @default(cuid())
-  nflId           String             @unique
+  nflId           String?            @unique  // Made optional since Sleeper uses different IDs
+  sleeperPlayerId String?            @unique  // Sleeper API player ID
   name            String             @db.VarChar(255)
+  firstName       String?            @db.VarChar(255)
+  lastName        String?            @db.VarChar(255)
   position        Position
-  nflTeam         String             @db.VarChar(10)
+  nflTeam         String?            @db.VarChar(10)  // Made optional for free agents
   byeWeek         Int? // Should be 1-18 for NFL season
   status          PlayerStatus       @default(ACTIVE)
+  injuryStatus    String?            @db.VarChar(50)  // Sleeper injury status
   isRookie        Boolean            @default(false)
   yearsExperience Int                @default(0)
+  age             Int?               // Player age
+  height          String?            @db.VarChar(10)  // e.g., "6'2""
+  weight          String?            @db.VarChar(10)  // e.g., "225"
+  college         String?            @db.VarChar(255)
+  searchRank      Int?               // Sleeper search rank for fantasy relevance
+  fantasyPositions Json?             // Array of fantasy positions from Sleeper
+  depthChartPosition Int?            // Depth chart position
+  depthChartOrder Int?               // Order on depth chart
+  isFantasyRelevant Boolean          @default(false)
+  isActive        Boolean            @default(true)
+  isDynastyTarget Boolean            @default(false)
+  dynastyRank     Int?               // Dynasty ranking
+  lastUpdated     DateTime           @default(now())  // Last sync with Sleeper
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
   playerNews      PlayerNews[]
@@ -190,6 +207,11 @@ model Player {
   @@index([yearsExperience])
   @@index([name])
   @@index([nflTeam, status])
+  @@index([sleeperPlayerId])
+  @@index([isFantasyRelevant])
+  @@index([isDynastyTarget])
+  @@index([searchRank])
+  @@index([lastUpdated])
   @@map("players")
 }
 
