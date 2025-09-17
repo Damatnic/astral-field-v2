@@ -92,7 +92,7 @@ export class SleeperDataTransformer {
       birthDate: sleeperPlayer.birth_date,
       college: sleeperPlayer.college,
       hashtag: sleeperPlayer.hashtag,
-      depthChartPosition: sleeperPlayer.depth_chart_position,
+      depthChartPosition: this.parseDepthChartPosition(sleeperPlayer.depth_chart_position),
       depthChartOrder: sleeperPlayer.depth_chart_order,
       searchRank: sleeperPlayer.search_rank,
       injuryStartDate: sleeperPlayer.injury_start_date,
@@ -167,6 +167,30 @@ export class SleeperDataTransformer {
   }
 
   /**
+   * Parse depth chart position (handle both strings and numbers)
+   */
+  private static parseDepthChartPosition(position: any): number | null {
+    // If it's already a number or null, return as-is
+    if (typeof position === 'number' || position === null || position === undefined) {
+      return position;
+    }
+    
+    // If it's a string, try to parse as number first
+    if (typeof position === 'string') {
+      const parsed = parseInt(position, 10);
+      if (!isNaN(parsed)) {
+        return parsed;
+      }
+      
+      // If it's a position string like "QB", "RB", return null
+      // since we can't meaningfully convert these to depth chart positions
+      return null;
+    }
+    
+    return null;
+  }
+
+  /**
    * Map Sleeper player status to our internal status
    */
   private static mapPlayerStatus(status: string): string {
@@ -187,7 +211,7 @@ export class SleeperDataTransformer {
       case 'practice_squad':
         return 'PRACTICE_SQUAD';
       case 'reserve_covid':
-        return 'RESERVE_COVID';
+        return 'INJURED_RESERVE'; // Map to existing enum value
       default:
         return 'UNKNOWN';
     }

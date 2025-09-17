@@ -8,7 +8,7 @@
 const TEST_CONFIG = {
   baseUrl: process.env.BASE_URL || 'http://localhost:3000',
   testUser: {
-    email: 'mike.wilson@astralfield.com',
+    email: 'nicholas.damato@astralfield.com',
     password: 'player123!'
   }
 };

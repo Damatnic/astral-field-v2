@@ -25,90 +25,89 @@ interface UserProfile {
   description: string;
 }
 
-// Demo user profiles for selection
+// D'Amato Dynasty League user profiles
 const userProfiles: UserProfile[] = [
-  // Admins
+  // Commissioner
   {
-    id: 'admin-001',
-    name: 'Alex Johnson',
-    email: 'alex.johnson@astralfield.com',
-    role: 'admin',
-    avatar: '/avatars/alex-johnson.jpg',
-    description: 'Platform Administrator - Full system access'
-  },
-  {
-    id: 'admin-002',
-    name: 'Sarah Chen',
-    email: 'sarah.chen@astralfield.com',
-    role: 'admin',
-    avatar: '/avatars/sarah-chen.jpg',
-    description: 'Platform Administrator - Analytics & Security'
-  },
-  // Commissioners
-  {
-    id: 'comm-001',
-    name: 'Mike Wilson',
-    email: 'mike.wilson@league.com',
+    id: 'admin-1',
+    name: "Nicholas D'Amato",
+    email: 'nicholas.damato@astralfield.com',
     role: 'commissioner',
-    avatar: '/avatars/mike-wilson.jpg',
-    description: 'League Commissioner - Championship League'
-  },
-  {
-    id: 'comm-002',
-    name: 'Emily Davis',
-    email: 'emily.davis@league.com',
-    role: 'commissioner',
-    avatar: '/avatars/emily-davis.jpg',
-    description: 'League Commissioner - Pro Division'
+    avatar: '/avatars/nicholas-damato.jpg',
+    description: 'League Commissioner - D\'Amato Dynasty League'
   },
   // Players
   {
-    id: 'player-001',
-    name: 'Chris Brown',
-    email: 'chris.brown@players.com',
+    id: 'player-1',
+    name: 'Nick Hartley',
+    email: 'nick.hartley@astralfield.com',
     role: 'player',
-    avatar: '/avatars/chris-brown.jpg',
-    description: 'Fantasy Player - 5 year veteran'
+    avatar: '/avatars/nick-hartley.jpg',
+    description: 'Dynasty League Player - Strategic trader'
   },
   {
-    id: 'player-002',
-    name: 'Jessica Miller',
-    email: 'jessica.miller@players.com',
+    id: 'player-2',
+    name: 'Jack McCaigue',
+    email: 'jack.mccaigue@astralfield.com',
     role: 'player',
-    avatar: '/avatars/jessica-miller.jpg',
-    description: 'Fantasy Player - Analytics enthusiast'
+    avatar: '/avatars/jack-mccaigue.jpg',
+    description: 'Dynasty League Player - Draft expert'
   },
   {
-    id: 'player-003',
-    name: 'David Lee',
-    email: 'david.lee@players.com',
+    id: 'player-3',
+    name: 'Larry McCaigue',
+    email: 'larry.mccaigue@astralfield.com',
     role: 'player',
-    avatar: '/avatars/david-lee.jpg',
-    description: 'Fantasy Player - Championship winner 2023'
+    avatar: '/avatars/larry-mccaigue.jpg',
+    description: 'Dynasty League Player - Analytics master'
   },
   {
-    id: 'player-004',
-    name: 'Amanda White',
-    email: 'amanda.white@players.com',
+    id: 'player-4',
+    name: 'Renee McCaigue',
+    email: 'renee.mccaigue@astralfield.com',
     role: 'player',
-    avatar: '/avatars/amanda-white.jpg',
-    description: 'Fantasy Player - Draft specialist'
+    avatar: '/avatars/renee-mccaigue.jpg',
+    description: 'Dynasty League Player - Waiver specialist'
   },
   {
-    id: 'player-005',
-    name: 'Ryan Taylor',
-    email: 'ryan.taylor@players.com',
+    id: 'player-5',
+    name: 'Jon Kornbeck',
+    email: 'jon.kornbeck@astralfield.com',
     role: 'player',
-    avatar: '/avatars/ryan-taylor.jpg',
-    description: 'Fantasy Player - Waiver wire expert'
+    avatar: '/avatars/jon-kornbeck.jpg',
+    description: 'Dynasty League Player - Championship contender'
   },
   {
-    id: 'player-006',
-    name: 'Nicole Garcia',
-    email: 'nicole.garcia@players.com',
+    id: 'player-6',
+    name: 'David Jarvey',
+    email: 'david.jarvey@astralfield.com',
     role: 'player',
-    avatar: '/avatars/nicole-garcia.jpg',
-    description: 'Fantasy Player - Trade master'
+    avatar: '/avatars/david-jarvey.jpg',
+    description: 'Dynasty League Player - Rookie hunter'
+  },
+  {
+    id: 'player-7',
+    name: 'Kaity Lorbecki',
+    email: 'kaity.lorbecki@astralfield.com',
+    role: 'player',
+    avatar: '/avatars/kaity-lorbecki.jpg',
+    description: 'Dynasty League Player - Trade negotiator'
+  },
+  {
+    id: 'player-8',
+    name: 'Cason Minor',
+    email: 'cason.minor@astralfield.com',
+    role: 'player',
+    avatar: '/avatars/cason-minor.jpg',
+    description: 'Dynasty League Player - Sleeper finder'
+  },
+  {
+    id: 'player-9',
+    name: 'Brittany Bergum',
+    email: 'brittany.bergum@astralfield.com',
+    role: 'player',
+    avatar: '/avatars/brittany-bergum.jpg',
+    description: 'Dynasty League Player - Matchup strategist'
   }
 ];
 

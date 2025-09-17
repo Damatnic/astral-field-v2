@@ -34,8 +34,7 @@ export async function POST(request: NextRequest) {
         name: authResult.user.name,
         role: authResult.user.role,
         avatar: authResult.user.avatar,
-        createdAt: authResult.user.createdAt,
-        lastLoginAt: authResult.user.lastLoginAt
+        createdAt: authResult.user.createdAt
       }
     });
 

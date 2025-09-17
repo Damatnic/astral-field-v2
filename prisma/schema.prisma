@@ -462,6 +462,7 @@ enum RosterSlot {
 
 enum PlayerStatus {
   ACTIVE
+  INACTIVE          // Not active on roster
   OUT
   DOUBTFUL
   QUESTIONABLE
@@ -471,6 +472,7 @@ enum PlayerStatus {
   SUSPENDED
   RETIRED
   PRACTICE_SQUAD
+  UNKNOWN           // Status not yet determined
   NON_FOOTBALL_INJURY
 }
 

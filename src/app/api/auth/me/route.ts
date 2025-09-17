@@ -22,8 +22,7 @@ export async function GET(_request: NextRequest) {
         name: user.name,
         role: user.role,
         avatar: user.avatar,
-        createdAt: user.createdAt,
-        lastLoginAt: user.lastLoginAt
+        createdAt: user.createdAt
       }
     });
 
