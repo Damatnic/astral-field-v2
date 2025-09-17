@@ -1,21 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { destroySession, getSessionCookieOptions } from '@/lib/auth';
-import { cookies } from 'next/headers';
+import { logout } from '@/lib/auth';
 
 export async function POST(_request: NextRequest) {
   try {
-    // Get session cookie
-    const cookieStore = cookies();
-    const sessionCookieName = getSessionCookieOptions().name;
-    const sessionCookie = cookieStore.get(sessionCookieName);
-
-    // Destroy session if it exists
-    if (sessionCookie?.value) {
-      await destroySession(sessionCookie.value);
-    }
-
-    // Clear session cookie
-    cookieStore.delete(sessionCookieName);
+    // Use our auth.ts logout function
+    await logout();
 
     return NextResponse.json({
       success: true,

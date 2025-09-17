@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { authenticateUser, createSession, getSessionCookieOptions } from '@/lib/auth';
-import { cookies } from 'next/headers';
+import { login } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,8 +15,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Authenticate user
-    const authResult = await authenticateUser({ email, password });
+    // Authenticate user using our auth.ts login function
+    const authResult = await login({ email, password });
 
     if (!authResult.success || !authResult.user) {
       return NextResponse.json(
@@ -25,21 +24,6 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
-
-    // Create session
-    const sessionId = await createSession(authResult.user.id);
-
-    // Set session cookie
-    const cookieStore = cookies();
-    const cookieOptions = getSessionCookieOptions();
-    
-    cookieStore.set(cookieOptions.name, sessionId, {
-      httpOnly: cookieOptions.httpOnly,
-      secure: cookieOptions.secure,
-      sameSite: cookieOptions.sameSite,
-      maxAge: cookieOptions.maxAge,
-      path: cookieOptions.path
-    });
 
     // Return success response
     return NextResponse.json({
