@@ -3,6 +3,9 @@
 import React from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/components/AuthProvider';
+import LiveScoresTicker from '@/components/dashboard/LiveScoresTicker';
+import TeamPerformanceMetrics from '@/components/dashboard/TeamPerformanceMetrics';
+import LeagueActivityFeed from '@/components/dashboard/LeagueActivityFeed';
 import { 
   Trophy, 
   Users, 
@@ -17,7 +20,9 @@ import {
   PlayCircle,
   ArrowRight,
   Star,
-  Activity
+  Activity,
+  Sparkles,
+  Gamepad2
 } from 'lucide-react';
 
 // Dashboard stats component
@@ -306,33 +311,52 @@ function AuthenticatedDashboard() {
   const { user } = useAuth();
 
   return (
-    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-      {/* Welcome header */}
-      <div className="page-header">
-        <h1 className="page-title">
-          Welcome back, {user?.name?.split(' ')[0]}!
-        </h1>
-        <p className="page-description">
-          Here&apos;s what&apos;s happening with your fantasy teams today.
-        </p>
-      </div>
-
-      {/* Dashboard stats */}
-      <div className="mb-8">
-        <DashboardStats />
-      </div>
-
-      {/* Main content grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left column - 2/3 width */}
-        <div className="lg:col-span-2 space-y-8">
-          <QuickActions />
-          <RecentActivity />
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+        {/* Welcome header with enhanced styling */}
+        <div className="page-header relative">
+          <div className="absolute -top-4 -left-4 w-24 h-24 bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-full blur-xl animate-pulse"></div>
+          <div className="relative">
+            <div className="flex items-center gap-3 mb-2">
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                Welcome back, {user?.name?.split(' ')[0]}!
+              </h1>
+              <Sparkles className="h-8 w-8 text-yellow-500 animate-spin-slow" />
+            </div>
+            <p className="text-lg text-gray-600 dark:text-gray-300">
+              Here&apos;s what&apos;s happening in the D&apos;Amato Dynasty League today.
+            </p>
+          </div>
         </div>
 
-        {/* Right column - 1/3 width */}
-        <div className="space-y-8">
-          <UpcomingEvents />
+        {/* Live Scores Ticker */}
+        <div className="mb-8">
+          <LiveScoresTicker />
+        </div>
+
+        {/* Dashboard stats */}
+        <div className="mb-8">
+          <DashboardStats />
+        </div>
+
+        {/* Team Performance Metrics */}
+        <div className="mb-8">
+          <TeamPerformanceMetrics />
+        </div>
+
+        {/* Main content grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left column - 2/3 width */}
+          <div className="lg:col-span-2 space-y-8">
+            <QuickActions />
+            <LeagueActivityFeed />
+          </div>
+
+          {/* Right column - 1/3 width */}
+          <div className="space-y-8">
+            <UpcomingEvents />
+            <RecentActivity />
+          </div>
         </div>
       </div>
     </div>

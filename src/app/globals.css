@@ -262,6 +262,15 @@ input:focus, textarea:focus, select:focus {
   }
 }
 
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @keyframes slideUp {
   from {
     opacity: 0;

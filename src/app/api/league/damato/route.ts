@@ -159,7 +159,8 @@ export async function GET(request: NextRequest) {
 }
 
 // Get standings
-export async function standings(request: NextRequest) {
+// Helper function for standings - call via GET with ?action=standings
+async function getStandings(request: NextRequest) {
   try {
     await requireAuth(request);
     
