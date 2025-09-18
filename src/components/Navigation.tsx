@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/components/AuthProvider';
 import { 
@@ -134,7 +135,7 @@ function MobileNav({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }
             return (
               <Link
                 key={item.name}
-                href={item.href as any}
+                href={item.href as string}
                 onClick={onClose}
                 className={`flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                   active
@@ -155,10 +156,12 @@ function MobileNav({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }
             <div className="flex items-center space-x-3 mb-4">
               <div className="flex-shrink-0">
                 {user.avatar ? (
-                  <img
+                  <Image
                     className="h-10 w-10 rounded-full"
                     src={user.avatar}
                     alt={user.name}
+                    width={40}
+                    height={40}
                   />
                 ) : (
                   <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
@@ -234,10 +237,12 @@ function UserMenu() {
         className="flex items-center space-x-3 rounded-full bg-white p-1 text-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
       >
         {user.avatar ? (
-          <img
+          <Image
             className="h-8 w-8 rounded-full"
             src={user.avatar}
             alt={user.name}
+            width={32}
+            height={32}
           />
         ) : (
           <div className="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center">

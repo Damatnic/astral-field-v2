@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { useAuth } from '@/components/AuthProvider';
 import { 
   Eye, 
@@ -130,10 +131,12 @@ function ProfileSelection({ onSelect }: { onSelect: (profile: UserProfile) => vo
             <div className="flex items-start space-x-3">
               <div className="flex-shrink-0">
                 {profile.avatar ? (
-                  <img
+                  <Image
                     className="h-12 w-12 rounded-full object-cover"
                     src={profile.avatar}
                     alt={profile.name}
+                    width={48}
+                    height={48}
                     onError={(e) => {
                       // Fallback to icon if image fails to load
                       e.currentTarget.style.display = 'none';

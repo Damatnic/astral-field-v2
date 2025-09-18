@@ -1,20 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
-
+import { logError } from '@/lib/error-handling';
 
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('Request headers:', Object.fromEntries(request.headers.entries()));
+    logError('Debug request', { 
+      operation: 'auth-debug',
+      metadata: { headers: Object.fromEntries(request.headers.entries()) }
+    });
     
     // Get the raw text first
-    const text = await request.text();// Try to parse it
+    const text = await request.text();
+    
+    // Try to parse it
     let body;
     try {
-      body = JSON.parse(text);} catch (parseError: unknown) {
+      body = JSON.parse(text);
+    } catch (parseError: unknown) {
       const errorMessage = parseError instanceof Error ? parseError.message : 'Unknown parse error';
-      handleComponentError(parseError as Error, 'route');
+      logError(parseError as Error, { operation: 'auth-debug-parse' });
       return NextResponse.json(
         { 
           success: false, 
@@ -34,7 +40,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    handleComponentError(error as Error, 'route');
+    logError(error as Error, { operation: 'auth-debug' });
     return NextResponse.json(
       { success: false, error: 'Internal server error', message: errorMessage },
       { status: 500 }

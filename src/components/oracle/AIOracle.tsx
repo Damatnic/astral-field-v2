@@ -5,28 +5,19 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { handleComponentError } from '@/lib/error-handling';
 import {
   Brain,
-  MessageCircle,
   Sparkles,
   TrendingUp,
   Users,
-  BarChart3,
   AlertCircle,
   Trophy,
-  Target,
-  Zap,
   Send,
   ThumbsUp,
   ThumbsDown,
   Copy,
   RefreshCw,
   Loader2,
-  ChevronDown,
-  Info,
   Shield,
-  Activity,
-  DollarSign,
   Calendar,
-  Settings,
   HelpCircle
 } from 'lucide-react';
 

@@ -2,13 +2,12 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { LeagueCardProps } from '@/types/fantasy';
 
 export default function LeagueCard({ 
   league, 
-  currentUserId, 
-  onJoin, 
-  onLeave 
+  currentUserId 
 }: LeagueCardProps) {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -111,10 +110,12 @@ export default function LeagueCard({
           <div className="flex items-center gap-3 mb-4">
             <div className="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
               {league.commissioner.avatar ? (
-                <img
+                <Image
                   src={league.commissioner.avatar}
                   alt={league.commissioner.name || 'Commissioner'}
                   className="h-8 w-8 rounded-full"
+                  width={32}
+                  height={32}
                 />
               ) : (
                 <span className="text-sm font-medium text-gray-600">

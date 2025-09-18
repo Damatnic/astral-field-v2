@@ -2,24 +2,20 @@
 
 
 import { handleComponentError } from '@/lib/error-handling';
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
+import Image from 'next/image';
 import { 
-  Camera, 
-  Smartphone,
   Eye,
   EyeOff,
   RotateCcw,
   Maximize,
   Minimize,
-  Zap,
   Star,
   TrendingUp,
   TrendingDown,
   Activity,
-  Shield,
   Target,
-  Award,
   AlertCircle,
   CheckCircle
 } from 'lucide-react';
@@ -63,7 +59,7 @@ const ARPlayerCards: React.FC<ARPlayerCardsProps> = ({
 }) => {
   const [arSupported, setArSupported] = useState(false);
   const [arActive, setArActive] = useState(false);
-  const [cameraPermission, setCameraPermission] = useState<'granted' | 'denied' | 'pending'>('pending');
+  const [, setCameraPermission] = useState<'granted' | 'denied' | 'pending'>('pending');
   const [currentLayout, setCurrentLayout] = useState(layoutMode);
   const [rotation, setRotation] = useState({ x: 0, y: 0, z: 0 });
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -71,7 +67,6 @@ const ARPlayerCards: React.FC<ARPlayerCardsProps> = ({
   
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // Check AR support
   useEffect(() => {
@@ -223,9 +218,11 @@ const ARPlayerCards: React.FC<ARPlayerCardsProps> = ({
         {/* Player Photo */}
         <div className="relative mb-4">
           {player.photoUrl ? (
-            <img
+            <Image
               src={player.photoUrl}
               alt={player.playerName}
+              width={80}
+              height={80}
               className="w-20 h-20 rounded-full mx-auto object-cover border-2 border-gray-600"
             />
           ) : (

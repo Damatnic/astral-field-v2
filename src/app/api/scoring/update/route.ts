@@ -6,8 +6,7 @@ import { sleeperRealTimeScoringService } from '@/services/sleeper/realTimeScorin
 import { nflStateService } from '@/services/sleeper/nflStateService';
 import { prisma as db } from '@/lib/db';
 
-
-import { handleComponentError } from '@/lib/error-handling';
+import { handleComponentError, logError } from '@/lib/error-handling';
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic';
 
@@ -122,11 +121,10 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const leagueId = searchParams.get('leagueId');
     const week = searchParams.get('week');
-    const status = searchParams.get('status') || 'all';
 
     // Get update status and history
     if (leagueId) {
-      const result = await getUpdateStatus(leagueId, week ? parseInt(week) : undefined, status);
+      const result = await getUpdateStatus(leagueId, week ? parseInt(week) : undefined);
       
       return NextResponse.json({
         success: true,
@@ -461,15 +459,17 @@ async function logScoringUpdate(logData: {
 }) {
   try {
     // This would log to a scoring updates table if we had one
-    // For now, just console log
-    console.log(`[ScoringUpdate] ${logData.updateType}:`, {
-      league: logData.leagueId,
-      week: logData.week,
-      season: logData.season,
-      success: logData.success,
-      details: logData.details,
-      error: logData.error,
-      timestamp: new Date().toISOString(),
+    logError(`ScoringUpdate ${logData.updateType}`, {
+      operation: 'scoring-update',
+      metadata: {
+        league: logData.leagueId,
+        week: logData.week,
+        season: logData.season,
+        success: logData.success,
+        details: logData.details,
+        error: logData.error,
+        timestamp: new Date().toISOString(),
+      }
     });
   } catch (error) {
     handleComponentError(error as Error, 'route');
@@ -477,7 +477,7 @@ async function logScoringUpdate(logData: {
 }
 
 // Helper function to get update status
-async function getUpdateStatus(leagueId: string, week?: number, status: string = 'all') {
+async function getUpdateStatus(leagueId: string, week?: number) {
   try {
     const league = await db.league.findUnique({
       where: { id: leagueId },

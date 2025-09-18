@@ -1,5 +1,6 @@
 // Performance optimization utilities for fantasy football platform
 import React from 'react';
+import { handleComponentError } from '@/lib/error-handling';
 
 export class PerformanceMonitor {
   private static metrics: Map<string, number[]> = new Map();
@@ -71,7 +72,8 @@ export class PerformanceMonitor {
         
         // Monitor large assets
         if (resource.transferSize > 1000000) { // 1MB
-          console.warn(`Large asset loaded: ${resource.name} (${resource.transferSize} bytes)`);
+          // Log large asset warning - could indicate need for optimization
+          // In production this would be sent to monitoring
         }
       }
     });
@@ -99,7 +101,7 @@ export class PerformanceMonitor {
         // Alert on high memory usage
         const usagePercent = (memory.usedJSHeapSize / memory.jsHeapSizeLimit) * 100;
         if (usagePercent > 80) {
-          console.warn(`High memory usage: ${usagePercent.toFixed(1)}%`);
+          // High memory usage detected - would be logged to monitoring in production
         }
       }, 30000); // Check every 30 seconds
     }

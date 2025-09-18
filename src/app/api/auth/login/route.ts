@@ -1,17 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 // Use simplified auth when database is not available
 import { login as loginSimple } from '@/lib/auth-simple';
-import { handleComponentError } from '@/lib/error-handling';
+import { handleComponentError, logError } from '@/lib/error-handling';
 import { login as loginFull } from '@/lib/auth';
 
 const useSimpleAuth = process.env.NODE_ENV === 'production' || !process.env.DATABASE_URL;
 const login = useSimpleAuth ? loginSimple : loginFull;
 
-console.log('[AUTH DEBUG] Auth system selection:', {
-  NODE_ENV: process.env.NODE_ENV,
-  HAS_DATABASE_URL: !!process.env.DATABASE_URL,
-  useSimpleAuth,
-  authSystem: useSimpleAuth ? 'SIMPLE' : 'FULL'
+logError('Auth system selection', {
+  operation: 'auth-login-setup',
+  metadata: {
+    NODE_ENV: process.env.NODE_ENV,
+    HAS_DATABASE_URL: !!process.env.DATABASE_URL,
+    useSimpleAuth,
+    authSystem: useSimpleAuth ? 'SIMPLE' : 'FULL'
+  }
 });
 
 export async function POST(request: NextRequest) {

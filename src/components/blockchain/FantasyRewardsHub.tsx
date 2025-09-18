@@ -4,6 +4,7 @@
 import { handleComponentError } from '@/lib/error-handling';
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 import { 
   Coins, 
   Trophy,
@@ -257,9 +258,11 @@ const FantasyRewardsHub: React.FC<FantasyRewardsHubProps> = ({
               {/* NFT Image */}
               <div className="aspect-square bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg mb-4 flex items-center justify-center overflow-hidden">
                 {nft.imageUrl ? (
-                  <img 
+                  <Image 
                     src={nft.imageUrl} 
                     alt={nft.name}
+                    width={200}
+                    height={200}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                   />
                 ) : (

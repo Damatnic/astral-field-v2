@@ -8,6 +8,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { nanoid } from 'nanoid';
 import { NextRequest } from 'next/server';
+import { logError } from '@/lib/error-handling';
 
 const prisma = new PrismaClient();
 
@@ -264,8 +265,10 @@ export class ProductionAuthService {
    */
   private async sendPasswordResetEmail(email: string) {
     // In production, integrate with email service (SendGrid, AWS SES, etc.)
-    console.log(`📧 Password reset email would be sent to: ${email}`);
-    console.log('Please implement email service integration for production');
+    logError('Password reset email needed', {
+      operation: 'send-password-reset',
+      metadata: { email, message: 'Email service integration required for production' }
+    });
   }
   
   /**

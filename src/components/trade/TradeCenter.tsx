@@ -11,25 +11,12 @@ import {
   TrendingDown,
   AlertCircle,
   Calculator,
-  MessageCircle,
   Send,
-  Plus,
-  Minus,
-  X,
   ChevronDown,
-  ChevronUp,
-  Info,
   Trophy,
-  Target,
-  BarChart3,
   Clock,
-  CheckCircle,
-  XCircle,
   RefreshCw,
-  Sparkles,
-  Loader2,
-  DollarSign,
-  Calendar
+  Loader2
 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -132,10 +119,37 @@ export default function TradeCenter({ leagueId, userId, teamId }: TradeCenterPro
   const [isLoading, setIsLoading] = useState(true);
   const [isProposing, setIsProposing] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   const { success, error: showError, info } = useToast();
+
+  const fetchPendingTrades = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/trades/league/${leagueId}?status=PENDING`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setPendingTrades(data.trades || []);
+      }
+    } catch (err) {
+      handleComponentError(err as Error, 'TradeCenter');
+    }
+  }, [leagueId]);
+
+  const fetchTradeHistory = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/trades/league/${leagueId}?status=ACCEPTED,REJECTED`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setTradeHistory(data.trades || []);
+      }
+    } catch (err) {
+      handleComponentError(err as Error, 'TradeCenter');
+    }
+  }, [leagueId]);
 
   // Fetch league data
   const fetchLeagueData = useCallback(async () => {
@@ -174,44 +188,11 @@ export default function TradeCenter({ leagueId, userId, teamId }: TradeCenterPro
     } finally {
       setIsLoading(false);
     }
-  }, [leagueId, teamId, activeTab, showError]);
-
-  const fetchPendingTrades = async () => {
-    try {
-      const response = await fetch(`/api/trades/league/${leagueId}?status=PENDING`);
-      const data = await response.json();
-      
-      if (data.success) {
-        setPendingTrades(data.trades || []);
-      }
-    } catch (err) {
-      handleComponentError(err as Error, 'TradeCenter');
-    }
-  };
-
-  const fetchTradeHistory = async () => {
-    try {
-      const response = await fetch(`/api/trades/league/${leagueId}?status=ACCEPTED,REJECTED`);
-      const data = await response.json();
-      
-      if (data.success) {
-        setTradeHistory(data.trades || []);
-      }
-    } catch (err) {
-      handleComponentError(err as Error, 'TradeCenter');
-    }
-  };
+  }, [leagueId, teamId, activeTab, showError, fetchPendingTrades, fetchTradeHistory]);
 
   useEffect(() => {
     fetchLeagueData();
   }, [fetchLeagueData]);
-
-  const calculateTradeValue = () => {
-    const offeredValue = playersOffered.reduce((sum, rp) => sum + (rp.player.value || 0), 0);
-    const requestedValue = playersRequested.reduce((sum, rp) => sum + (rp.player.value || 0), 0);
-    const fairness = 100 - Math.abs(offeredValue - requestedValue);
-    return { offeredValue, requestedValue, fairness: Math.max(0, fairness) };
-  };
 
   const analyzeTrade = async () => {
     if (playersOffered.length === 0 || playersRequested.length === 0) {

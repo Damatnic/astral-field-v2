@@ -1,6 +1,7 @@
 // Sleeper Integration Service
 // Master service that coordinates all Sleeper API services
 
+import { handleComponentError } from '@/lib/error-handling';
 import { sleeperPlayerService } from './playerService';
 import { sleeperPlayerDatabaseService } from './playerDatabaseService';
 import { sleeperLeagueSyncService } from './leagueSyncService';
@@ -50,6 +51,7 @@ export class SleeperIntegrationService {
    */
   async initialize(): Promise<{ success: boolean; message: string; details: any }> {
     try {
+      /* eslint-disable no-console */
       console.log('🚀 INITIALIZING SLEEPER INTEGRATION');
       console.log('=====================================');
 
@@ -125,6 +127,7 @@ export class SleeperIntegrationService {
           timestamp: new Date().toISOString(),
         },
       };
+      /* eslint-enable no-console */
     }
   }
 
@@ -133,6 +136,7 @@ export class SleeperIntegrationService {
    */
   async performFullSync(): Promise<FullSyncResult> {
     const startTime = Date.now();
+    /* eslint-disable no-console */
     console.log('🔄 STARTING FULL SLEEPER SYNC');
     console.log('=============================');
 

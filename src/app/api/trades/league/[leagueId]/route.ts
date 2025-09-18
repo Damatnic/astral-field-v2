@@ -48,7 +48,7 @@ export async function GET(request: NextRequest, { params }: { params: { leagueId
     }
 
     // Build where clause
-    const whereClause: any = {
+    const whereClause: Record<string, any> = {
       leagueId
     };
 
@@ -76,7 +76,7 @@ export async function GET(request: NextRequest, { params }: { params: { leagueId
     const skip = (page - 1) * limit;
 
     // Build order by clause
-    const orderBy: any = {};
+    const orderBy: Record<string, any> = {};
     if (sortBy === 'createdAt' || sortBy === 'updatedAt' || sortBy === 'processedAt') {
       orderBy[sortBy] = sortOrder;
     } else if (sortBy === 'fairness') {
@@ -158,7 +158,7 @@ export async function GET(request: NextRequest, { params }: { params: { leagueId
         if (includeAnalysis && (trade.status === 'PENDING' || trade.status === 'ACCEPTED')) {
           try {
             // You could cache analysis results and only recalculate if needed
-            analysis = await getTradeAnalysis(trade.id);
+            analysis = null; // Trade analysis would be computed here
           } catch (error) {
             handleComponentError(error as Error, 'route');
           }
@@ -227,7 +227,16 @@ export async function GET(request: NextRequest, { params }: { params: { leagueId
   }
 }
 
-async function getInvolvedTeams(tradeItems: any[]) {
+interface TradeItem {
+  fromTeamId: string;
+  toTeamId: string;
+  playerId?: string;
+  player?: any;
+  itemType?: string;
+  metadata?: any;
+}
+
+async function getInvolvedTeams(tradeItems: TradeItem[]) {
   const teamIds = new Set<string>();
   tradeItems.forEach(item => {
     teamIds.add(item.fromTeamId);
@@ -251,7 +260,7 @@ async function getInvolvedTeams(tradeItems: any[]) {
   });
 }
 
-function getAffectedPositions(tradeItems: any[]) {
+function getAffectedPositions(tradeItems: TradeItem[]) {
   const positions = new Set<string>();
   tradeItems.forEach(item => {
     if (item.player?.position) {
@@ -261,14 +270,14 @@ function getAffectedPositions(tradeItems: any[]) {
   return Array.from(positions);
 }
 
-async function calculateNetValues(tradeItems: any[]) {
+async function calculateNetValues(tradeItems: TradeItem[]) {
   // Calculate net value change for each team
   const teamValues: Record<string, number> = {};
 
   for (const item of tradeItems) {
     if (item.itemType === 'PLAYER' && item.player) {
       // Simplified value calculation - in production, use more sophisticated method
-      const playerValue = await getPlayerValue(item.playerId);
+      const playerValue = item.playerId ? await getPlayerValue(item.playerId) : 0;
       
       // Subtract from giving team
       teamValues[item.fromTeamId] = (teamValues[item.fromTeamId] || 0) - playerValue;
@@ -321,7 +330,7 @@ function getPositionValueMultiplier(position: string): number {
   return multipliers[position] || 1.0;
 }
 
-function assessRiskLevel(tradeItems: any[]): 'LOW' | 'MEDIUM' | 'HIGH' {
+function assessRiskLevel(tradeItems: TradeItem[]): 'LOW' | 'MEDIUM' | 'HIGH' {
   let riskScore = 0;
 
   tradeItems.forEach(item => {
@@ -382,12 +391,6 @@ function calculateVoteCount(votes: any[]) {
 function calculateRequiredVotes(teamCount: number): number {
   // In most leagues, trades require majority approval from non-involved teams
   return Math.ceil((teamCount - 2) * 0.5); // Exclude the 2 teams in the trade
-}
-
-async function getTradeAnalysis(tradeId: string) {
-  // This would fetch cached analysis or trigger new analysis
-  // For now, return null to avoid circular dependency
-  return null;
 }
 
 async function getLeagueTradeStats(leagueId: string, season: number | null) {

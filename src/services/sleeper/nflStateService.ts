@@ -316,6 +316,7 @@ export class NFLStateService {
       }
     }, this.refreshInterval);
     
+    // eslint-disable-next-line no-console
     console.log(`🕒 NFL state periodic refresh started (every ${this.refreshInterval / 1000}s)`);
   }
 

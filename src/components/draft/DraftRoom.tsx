@@ -1,33 +1,17 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Timer,
-  Users,
   MessageCircle,
   Search,
-  Filter,
-  TrendingUp,
-  Star,
-  AlertCircle,
-  Trophy,
-  Target,
-  Zap,
-  ChevronDown,
-  ChevronUp,
-  Clock,
   Play,
   Pause,
-  SkipForward,
   Volume2,
   VolumeX,
   Send,
   Bot,
-  User,
-  CheckCircle,
-  XCircle,
-  Info
+  User
 } from 'lucide-react';
 
 interface DraftPick {
@@ -90,7 +74,7 @@ interface DraftRoomProps {
   userId?: string;
 }
 
-export default function DraftRoom({ draftId, userId }: DraftRoomProps) {
+export default function DraftRoom({ }: DraftRoomProps) {
   const [draftStarted, setDraftStarted] = useState(false);
   const [currentPick, setCurrentPick] = useState<DraftPick>({
     id: '1',
@@ -111,7 +95,7 @@ export default function DraftRoom({ draftId, userId }: DraftRoomProps) {
   const [newMessage, setNewMessage] = useState('');
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [autoPickEnabled, setAutoPickEnabled] = useState(false);
-  const [showPlayerDetails, setShowPlayerDetails] = useState(false);
+
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   // Mock data initialization
@@ -224,39 +208,34 @@ export default function DraftRoom({ draftId, userId }: DraftRoomProps) {
     ]);
   }, []);
 
-  // Timer countdown
-  useEffect(() => {
-    if (draftStarted && !isPaused && timeRemaining > 0) {
-      const timer = setInterval(() => {
-        setTimeRemaining(prev => {
-          if (prev <= 1) {
-            // Auto-pick logic
-            handleAutoPick();
-            return 90;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-      return () => clearInterval(timer);
+  const getNextPick = useCallback((): DraftPick => {
+    const totalTeams = teams.length;
+    const isOddRound = currentPick.round % 2 === 1;
+    let nextPick = currentPick.pick + 1;
+    let nextRound = currentPick.round;
+    let nextTeam: string;
+
+    if (nextPick > totalTeams) {
+      nextPick = 1;
+      nextRound++;
     }
-  }, [draftStarted, isPaused, timeRemaining]);
 
-  // Auto-scroll chat
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatMessages]);
+    if (isOddRound) {
+      nextTeam = teams[nextPick - 1]?.name || 'Team';
+    } else {
+      nextTeam = teams[totalTeams - nextPick]?.name || 'Team';
+    }
 
-  const handleStartDraft = () => {
-    setDraftStarted(true);
-    addSystemMessage('Draft has started! Thunder Bolts is on the clock.');
-  };
+    return {
+      id: `${nextRound}-${nextPick}`,
+      round: nextRound,
+      pick: nextPick,
+      overall: (nextRound - 1) * totalTeams + nextPick,
+      team: nextTeam
+    };
+  }, [teams, currentPick]);
 
-  const handlePauseDraft = () => {
-    setIsPaused(!isPaused);
-    addSystemMessage(isPaused ? 'Draft resumed.' : 'Draft paused.');
-  };
-
-  const handleDraftPlayer = () => {
+  const handleDraftPlayer = useCallback(() => {
     if (!selectedPlayer) return;
 
     const pick: DraftPick = {
@@ -285,43 +264,71 @@ export default function DraftRoom({ draftId, userId }: DraftRoomProps) {
       // Play draft sound
       playDraftSound();
     }
+  }, [selectedPlayer, currentPick, soundEnabled, getNextPick, setDraftBoard, setAvailablePlayers, setCurrentPick, setTimeRemaining]);
+
+  const playDraftSound = () => {
+    // Simple beep sound using Audio API
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    oscillator.frequency.value = 800;
+    oscillator.type = 'sine';
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+
+    oscillator.start();
+    oscillator.stop(audioContext.currentTime + 0.5);
   };
 
-  const handleAutoPick = () => {
+  const handleAutoPick = useCallback(() => {
     const bestAvailable = availablePlayers[0]; // Simple BPA strategy
     if (bestAvailable) {
       setSelectedPlayer(bestAvailable);
       setTimeout(() => handleDraftPlayer(), 500);
     }
+  }, [availablePlayers, handleDraftPlayer]);
+
+  // Timer countdown
+  useEffect(() => {
+    if (draftStarted && !isPaused && timeRemaining > 0) {
+      const timer = setInterval(() => {
+        setTimeRemaining(prev => {
+          if (prev <= 1) {
+            // Auto-pick logic
+            handleAutoPick();
+            return 90;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [draftStarted, isPaused, timeRemaining, handleAutoPick]);
+
+  // Auto-scroll chat
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages]);
+
+  const handleStartDraft = () => {
+    setDraftStarted(true);
+    addSystemMessage('Draft has started! Thunder Bolts is on the clock.');
   };
 
-  const getNextPick = (): DraftPick => {
-    const totalTeams = teams.length;
-    const isOddRound = currentPick.round % 2 === 1;
-    let nextPick = currentPick.pick + 1;
-    let nextRound = currentPick.round;
-    let nextTeam: string;
-
-    if (nextPick > totalTeams) {
-      nextPick = 1;
-      nextRound++;
-    }
-
-    // Snake draft logic
-    if (isOddRound) {
-      nextTeam = teams[nextPick - 1].name;
-    } else {
-      nextTeam = teams[totalTeams - nextPick].name;
-    }
-
-    return {
-      id: `${nextRound}-${nextPick}`,
-      round: nextRound,
-      pick: nextPick,
-      overall: currentPick.overall + 1,
-      team: nextTeam
-    };
+  const handlePauseDraft = () => {
+    setIsPaused(!isPaused);
+    addSystemMessage(isPaused ? 'Draft resumed.' : 'Draft paused.');
   };
+
+
+
+
+
+
 
   const addSystemMessage = (message: string) => {
     setChatMessages(prev => [...prev, {
@@ -345,9 +352,7 @@ export default function DraftRoom({ draftId, userId }: DraftRoomProps) {
     setNewMessage('');
   };
 
-  const playDraftSound = () => {
-    // Implement sound effect
-  };
+
 
   const filteredPlayers = availablePlayers.filter(player => {
     const matchesPosition = positionFilter === 'ALL' || player.position === positionFilter;
