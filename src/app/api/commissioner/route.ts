@@ -8,6 +8,10 @@ import { PrismaClient, UserRole } from '@prisma/client';
 import { requireCommissioner } from '@/lib/auth/production-auth';
 import { nflDataService } from '@/services/nfl/nflDataService';
 
+
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 const prisma = new PrismaClient();
 
 // Get commissioner dashboard data
@@ -126,7 +130,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Commissioner dashboard error:', error);
     
-    if (error instanceof Error && error.message === 'Commissioner access required') {
+    if (error instanceof Error && (error.message === 'Commissioner access required' || error.message === 'Unauthorized')) {
       return NextResponse.json(
         { error: 'Commissioner access required' },
         { status: 403 }

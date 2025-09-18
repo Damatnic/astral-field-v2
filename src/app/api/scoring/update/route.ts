@@ -6,9 +6,20 @@ import { sleeperRealTimeScoringService } from '@/services/sleeper/realTimeScorin
 import { nflStateService } from '@/services/sleeper/nflStateService';
 import { prisma as db } from '@/lib/db';
 
+
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    let body;
+    try {
+      body = await request.json();
+    } catch (error) {
+      // Handle empty or invalid JSON body
+      body = {};
+    }
+    
     const { 
       action, 
       leagueId, 

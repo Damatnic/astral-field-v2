@@ -3,6 +3,10 @@ import { prisma } from '@/lib/db';
 import { authenticateFromRequest } from '@/lib/auth';
 import { PaginatedResponse, EnhancedTrade, TradeStatus } from '@/types/fantasy';
 
+
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 // GET /api/trades/league/[leagueId] - Get all trades for a league
 export async function GET(request: NextRequest, { params }: { params: { leagueId: string } }) {
   try {

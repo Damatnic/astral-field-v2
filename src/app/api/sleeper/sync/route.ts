@@ -11,6 +11,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sleeperPlayerService } from '@/services/sleeper/playerService';
 import { sleeperClient } from '@/services/sleeper/core/sleeperClient';
 
+
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -80,7 +84,14 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    let body;
+    try {
+      body = await request.json();
+    } catch (error) {
+      // Handle empty or invalid JSON body
+      body = {};
+    }
+    
     const { action, options = {} } = body;
 
     let result;

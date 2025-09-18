@@ -7,6 +7,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { authService } from '@/lib/auth/production-auth';
 import { z } from 'zod';
 
+
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 const LoginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8)

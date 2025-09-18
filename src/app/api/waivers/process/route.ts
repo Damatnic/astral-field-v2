@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 
+
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 // This endpoint processes all pending waiver claims
 // Should be called by a cron job every Wednesday at 3am ET
 export async function POST(request: NextRequest) {

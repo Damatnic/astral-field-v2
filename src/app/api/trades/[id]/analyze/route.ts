@@ -4,6 +4,10 @@ import { authenticateFromRequest } from '@/lib/auth';
 import { TradeAnalyzer } from '@/services/tradeAnalyzer';
 import { ApiResponse, TradeAnalysis } from '@/types/fantasy';
 
+
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 // GET /api/trades/[id]/analyze - Analyze trade value and fairness
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {

@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     console.log('Request headers:', Object.fromEntries(request.headers.entries()));

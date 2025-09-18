@@ -7,6 +7,10 @@ import { nflStateService } from '@/services/sleeper/nflStateService';
 import { SleeperApiService } from '@/services/sleeper/sleeperApiService';
 import { prisma as db } from '@/lib/db';
 
+
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 const sleeperApi = new SleeperApiService();
 
 export async function GET(request: NextRequest) {
@@ -175,7 +179,7 @@ async function getPlayerProjections(playerId: string, week: number, season: numb
           orderBy: { createdAt: 'desc' },
           take: 1,
         },
-        stats: includeStats ? {
+        playerStats: includeStats ? {
           where: { week, season },
           take: 1,
         } : false,
@@ -221,9 +225,9 @@ async function getPlayerProjections(playerId: string, week: number, season: numb
           stats: sleeperProjection,
         } : null,
       },
-      actualStats: includeStats && player.stats?.[0] ? {
-        fantasyPoints: Number(player.stats[0].fantasyPoints),
-        stats: player.stats[0].stats,
+      actualStats: includeStats && player.playerStats?.[0] ? {
+        fantasyPoints: Number(player.playerStats[0].fantasyPoints),
+        stats: player.playerStats[0].stats,
       } : null,
     };
 
@@ -270,7 +274,7 @@ async function getLeagueProjections(
                   orderBy: { createdAt: 'desc' },
                   take: 1,
                 },
-                stats: includeStats ? {
+                playerStats: includeStats ? {
                   where: { week, season },
                   take: 1,
                 } : false,
@@ -329,7 +333,7 @@ async function getAllProjections(
           orderBy: { createdAt: 'desc' },
           take: 1,
         },
-        stats: includeStats ? {
+        playerStats: includeStats ? {
           where: { week, season },
           take: 1,
         } : false,
@@ -354,7 +358,7 @@ async function getAllProjections(
     const playersWithData = players.filter(player => 
       player.projections.length > 0 || 
       (sleeperProjections[player.sleeperId]) ||
-      (includeStats && player.stats && player.stats.length > 0)
+      (includeStats && player.playerStats && player.playerStats.length > 0)
     );
 
     if (format === 'summary') {
@@ -689,9 +693,9 @@ function formatLeagueProjectionsDetailed(teams: any[], week: number, season: num
               stats: sleeperProj,
             } : null,
           },
-          actualStats: includeStats && rp.player.stats?.[0] ? {
-            fantasyPoints: Number(rp.player.stats[0].fantasyPoints),
-            stats: rp.player.stats[0].stats,
+          actualStats: includeStats && rp.player.playerStats?.[0] ? {
+            fantasyPoints: Number(rp.player.playerStats[0].fantasyPoints),
+            stats: rp.player.playerStats[0].stats,
           } : null,
         };
       }),
@@ -764,9 +768,9 @@ function formatAllProjectionsDetailed(players: any[], week: number, season: numb
             stats: sleeperProj,
           } : null,
         },
-        actualStats: includeStats && player.stats?.[0] ? {
-          fantasyPoints: Number(player.stats[0].fantasyPoints),
-          stats: player.stats[0].stats,
+        actualStats: includeStats && player.playerStats?.[0] ? {
+          fantasyPoints: Number(player.playerStats[0].fantasyPoints),
+          stats: player.playerStats[0].stats,
         } : null,
       };
     }),

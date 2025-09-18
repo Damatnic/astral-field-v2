@@ -4,6 +4,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sleeperRealTimeScoringService } from '@/services/sleeper/realTimeScoringService';
 
+
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);

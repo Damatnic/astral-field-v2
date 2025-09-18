@@ -3,6 +3,10 @@ import { prisma } from '@/lib/db';
 import { authenticateFromRequest } from '@/lib/auth';
 import { League, CreateLeagueForm, ApiResponse, PaginatedResponse } from '@/types/fantasy';
 
+
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 // Default league settings
 const DEFAULT_ROSTER_SLOTS = {
   QB: 1,

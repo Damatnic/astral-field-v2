@@ -3,6 +3,10 @@ import { prisma } from '@/lib/db';
 import { authenticateFromRequest } from '@/lib/auth';
 import { CreateTradeRequest, ApiResponse, Trade } from '@/types/fantasy';
 
+
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 // POST /api/trades/create - Create a new trade proposal
 export async function POST(request: NextRequest) {
   try {

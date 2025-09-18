@@ -6,6 +6,10 @@ import { sleeperRealTimeScoringService } from '@/services/sleeper/realTimeScorin
 import { nflStateService } from '@/services/sleeper/nflStateService';
 import { prisma as db } from '@/lib/db';
 
+
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);

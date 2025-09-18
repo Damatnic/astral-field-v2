@@ -3,6 +3,10 @@ import { PrismaClient } from '@prisma/client';
 import { authenticateFromRequest } from '@/lib/auth';
 import { League, ApiResponse } from '@/types/fantasy';
 
+
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 const prisma = new PrismaClient();
 
 // GET /api/leagues/[id] - Get a specific league

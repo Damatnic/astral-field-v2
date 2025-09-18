@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
+
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 // Your real users with passwords
 const USERS_DB = {
   'nicholas.damato@astralfield.com': { password: 'admin123!', name: "Nicholas D'Amato", role: 'admin' },

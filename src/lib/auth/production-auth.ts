@@ -7,6 +7,7 @@ import { PrismaClient, UserRole } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { nanoid } from 'nanoid';
+import { NextRequest } from 'next/server';
 
 const prisma = new PrismaClient();
 
@@ -325,7 +326,7 @@ export class ProductionAuthService {
 export const authService = new ProductionAuthService();
 
 // Middleware helper
-export async function requireAuth(request: Request): Promise<AuthUser> {
+export async function requireAuth(request: Request | NextRequest): Promise<AuthUser> {
   const authHeader = request.headers.get('authorization');
   
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -343,7 +344,7 @@ export async function requireAuth(request: Request): Promise<AuthUser> {
 }
 
 // Commissioner-only middleware
-export async function requireCommissioner(request: Request): Promise<AuthUser> {
+export async function requireCommissioner(request: Request | NextRequest): Promise<AuthUser> {
   const user = await requireAuth(request);
   
   if (!user.isCommissioner) {
