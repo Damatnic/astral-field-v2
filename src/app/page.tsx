@@ -29,30 +29,30 @@ import {
 function DashboardStats() {
   const stats = [
     {
-      label: 'Active Leagues',
-      value: '3',
-      change: '+1',
+      label: 'D\'Amato Dynasty League',
+      value: '1',
+      change: 'Active',
       changeType: 'positive',
       icon: Trophy
     },
     {
-      label: 'Total Players',
-      value: '156',
-      change: '+12',
+      label: 'League Members',
+      value: '10',
+      change: 'Full League',
       changeType: 'positive', 
       icon: Users
     },
     {
-      label: 'Win Rate',
-      value: '68%',
-      change: '+5%',
+      label: 'Season Progress',
+      value: '18%',
+      change: 'Week 3 of 17',
       changeType: 'positive',
       icon: Target
     },
     {
-      label: 'Avg Score',
-      value: '124.5',
-      change: '+8.2',
+      label: 'League Avg Score',
+      value: '115.3',
+      change: 'Current Week',
       changeType: 'positive',
       icon: TrendingUp
     }
@@ -177,7 +177,7 @@ function RecentActivity() {
     {
       id: 1,
       type: 'trade',
-      message: 'Trade completed: Received Tyreek Hill',
+      message: 'Nicholas D\'Amato proposed trade to Nick Hartley',
       timestamp: '2 hours ago',
       icon: Activity,
       color: 'text-green-600'
@@ -185,24 +185,24 @@ function RecentActivity() {
     {
       id: 2,
       type: 'waiver',
-      message: 'Waiver claim successful: Added Josh Jacobs',
-      timestamp: '1 day ago',
+      message: 'Jon Kornbeck claimed Jerome Ford from waivers',
+      timestamp: '4 hours ago',
       icon: TrendingUp,
       color: 'text-blue-600'
     },
     {
       id: 3,
       type: 'matchup',
-      message: 'Won matchup against Team Rocket (128.4 - 95.7)',
+      message: 'David Jarvey leads with highest Week 2 score (156.8)',
       timestamp: '3 days ago',
       icon: Trophy,
       color: 'text-yellow-600'
     },
     {
       id: 4,
-      type: 'draft',
-      message: 'Drafted Christian McCaffrey (1st overall)',
-      timestamp: '1 week ago',
+      type: 'lineup',
+      message: 'Jack McCaigue updated Week 3 starting lineup',
+      timestamp: '6 hours ago',
       icon: Star,
       color: 'text-purple-600'
     }
@@ -245,25 +245,25 @@ function UpcomingEvents() {
   const events = [
     {
       id: 1,
-      title: 'League Draft',
-      description: 'Championship League 2024',
-      date: 'Tomorrow, 8:00 PM',
-      type: 'draft',
+      title: 'Week 3 Lineups Due',
+      description: 'D\'Amato Dynasty League',
+      date: 'Thursday, 8:20 PM',
+      type: 'lineup',
       urgent: true
     },
     {
       id: 2,
       title: 'Trade Deadline',
-      description: 'All leagues',
-      date: 'Nov 15, 2024',
+      description: 'D\'Amato Dynasty League',
+      date: 'Nov 19, 2024',
       type: 'deadline',
       urgent: false
     },
     {
       id: 3,
-      title: 'Playoffs Start',
-      description: 'Championship League',
-      date: 'Dec 1, 2024',
+      title: 'Fantasy Playoffs',
+      description: 'D\'Amato Dynasty League',
+      date: 'Week 15-17',
       type: 'playoffs',
       urgent: false
     }

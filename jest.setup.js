@@ -8,16 +8,16 @@ import '@testing-library/jest-dom';
 process.env.NODE_ENV = process.env.NODE_ENV || 'test';
 
 // In Node 18+, fetch is available globally. Guard just in case.
-if (typeof (global as any).fetch === 'undefined') {
+if (typeof global.fetch === 'undefined') {
   // Lazy import to avoid bundling for environments that already have fetch
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const fetchImpl = require('node-fetch');
-  (global as any).fetch = fetchImpl;
+  global.fetch = fetchImpl;
 }
 
 // Silence noisy console.error logs in tests unless explicitly asserted
 const originalError = console.error;
-console.error = (...args: any[]) => {
+console.error = (...args) => {
   const msg = args?.[0] || '';
   // Allow React act warnings and explicit test failures to show
   const allowList = [

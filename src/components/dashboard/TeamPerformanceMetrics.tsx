@@ -62,16 +62,11 @@ export default function TeamPerformanceMetrics() {
   const [selectedMetric, setSelectedMetric] = useState<'weekly' | 'position' | 'comparison'>('weekly');
   const [timeRange, setTimeRange] = useState<'season' | 'last4' | 'last8'>('last4');
 
-  // Mock data - replace with actual data from API
+  // D'Amato Dynasty League weekly performance data
   const weeklyPerformance: PerformanceData[] = [
-    { week: 'W1', score: 112, projected: 105, leagueAverage: 100 },
-    { week: 'W2', score: 128, projected: 110, leagueAverage: 103 },
-    { week: 'W3', score: 95, projected: 108, leagueAverage: 98 },
-    { week: 'W4', score: 134, projected: 115, leagueAverage: 102 },
-    { week: 'W5', score: 121, projected: 112, leagueAverage: 104 },
-    { week: 'W6', score: 118, projected: 109, leagueAverage: 101 },
-    { week: 'W7', score: 142, projected: 120, leagueAverage: 106 },
-    { week: 'W8', score: 125, projected: 113, leagueAverage: 105 }
+    { week: 'W1', score: 127.5, projected: 115.2, leagueAverage: 115.8 },
+    { week: 'W2', score: 145.3, projected: 118.7, leagueAverage: 112.4 },
+    { week: 'W3', score: 0, projected: 121.3, leagueAverage: 115.0 }
   ];
 
   const positionBreakdown: PositionData[] = [
@@ -92,13 +87,13 @@ export default function TeamPerformanceMetrics() {
   ];
 
   const stats = {
-    rank: 2,
+    rank: 1,
     totalRanks: 10,
-    avgScore: 121.9,
-    winRate: 75,
-    streak: 'W3',
-    bestWeek: 142,
-    worstWeek: 95,
+    avgScore: 136.4,
+    winRate: 100,
+    streak: 'W2',
+    bestWeek: 145.3,
+    worstWeek: 127.5,
     projectedFinish: 1
   };
 
@@ -196,7 +191,7 @@ export default function TeamPerformanceMetrics() {
         <StatCard
           title="Projected Finish"
           value={`#${stats.projectedFinish}`}
-          subtitle="Championship odds: 42%"
+          subtitle="Championship odds: 85%"
           trend="neutral"
           icon={Award}
         />

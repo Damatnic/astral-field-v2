@@ -64,20 +64,20 @@ export default function AIOracle() {
     {
       id: '1',
       role: 'assistant',
-      content: 'Hello! I\'m your AI Fantasy Oracle. I can help you optimize lineups, analyze trades, suggest waiver pickups, and provide strategic insights. What would you like help with today?',
+      content: 'Welcome to the D\'Amato Dynasty League AI Oracle! I\'m here to help you dominate your dynasty league with optimized lineups, trade analysis, and strategic insights tailored specifically for your league. What can I help you with today?',
       timestamp: new Date(),
       suggestions: [
         {
           id: 's1',
           type: 'lineup',
-          title: 'Lineup Optimization Available',
-          description: 'Your current lineup could be improved by 8.5 projected points',
-          confidence: 92,
+          title: 'Week 3 Dynasty Lineup Optimization',
+          description: 'Optimize your Week 3 lineup to stay undefeated in the D\'Amato Dynasty League',
+          confidence: 95,
           impact: 'high',
           reasoning: [
-            'CeeDee Lamb has a favorable matchup against NYG (28th against WR)',
-            'Weather conditions favor passing game in DAL vs NYG',
-            'Consider starting Lamb over Mike Evans in FLEX'
+            'Consider your long-term dynasty assets vs short-term scoring',
+            'Weather conditions and matchup analysis for Week 3',
+            'Leverage your league\'s scoring settings for maximum points'
           ]
         }
       ]
@@ -588,10 +588,10 @@ export default function AIOracle() {
               <h3 className="font-semibold text-lg mb-4">AI Performance Breakdown</h3>
               <div className="space-y-3">
                 {[
-                  { category: 'Lineup Optimization', accuracy: 89, impact: '+4.2 PPG' },
-                  { category: 'Trade Analysis', accuracy: 82, impact: '73% Win Rate' },
-                  { category: 'Waiver Predictions', accuracy: 71, impact: '62% Hit Rate' },
-                  { category: 'Injury Impact', accuracy: 86, impact: '2.1 Wins Saved' }
+                  { category: 'D\'Amato Dynasty Lineup', accuracy: 94, impact: '+12.3 PPG' },
+                  { category: 'League Trade Success', accuracy: 88, impact: '85% Win Rate' },
+                  { category: 'Waiver Wire Value', accuracy: 76, impact: '68% Hit Rate' },
+                  { category: 'Dynasty Strategy', accuracy: 91, impact: '3.2 Wins Added' }
                 ].map(stat => (
                   <div key={stat.category} className="flex items-center justify-between">
                     <div className="flex-1">

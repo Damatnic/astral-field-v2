@@ -5,14 +5,21 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { requireAuth } from '@/lib/auth/production-auth';
+import { authenticateFromRequest } from '@/lib/auth';
 
 const prisma = new PrismaClient();
 
 export async function GET(request: NextRequest) {
   try {
     // Verify authentication
-    const user = await requireAuth(request);
+    const user = await authenticateFromRequest(request);
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
     
     // Get the D'Amato Dynasty League
     const league = await prisma.league.findFirst({
@@ -162,7 +169,14 @@ export async function GET(request: NextRequest) {
 // Helper function for standings - call via GET with ?action=standings
 async function getStandings(request: NextRequest) {
   try {
-    await requireAuth(request);
+    const user = await authenticateFromRequest(request);
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
     
     const league = await prisma.league.findFirst({
       where: {

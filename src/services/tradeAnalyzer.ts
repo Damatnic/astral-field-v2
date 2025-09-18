@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db';
+import { Position as PrismaPosition } from '@prisma/client';
 import {
   TradeAnalysis,
   TeamTradeAnalysis,
@@ -167,7 +168,7 @@ export class TradeAnalyzer {
       
       // Simplified value calculation
       const baseValue = (avgProjection * 0.7) + (avgActual * 0.3);
-      const positionMultiplier = this.getPositionValueMultiplier(player.position);
+      const positionMultiplier = this.getPositionValueMultiplier(player.position as Position);
       const marketValue = baseValue * positionMultiplier;
 
       return {
@@ -212,7 +213,7 @@ export class TradeAnalyzer {
   }
 
   private async calculatePositionScarcity(): Promise<PositionScarcityScore[]> {
-    const positions: Position[] = ['QB', 'RB', 'WR', 'TE', 'K', 'DST'];
+    const positions: PrismaPosition[] = [PrismaPosition.QB, PrismaPosition.RB, PrismaPosition.WR, PrismaPosition.TE, PrismaPosition.K, PrismaPosition.DST];
     const scarcityScores = await Promise.all(
       positions.map(async (position) => {
         const availablePlayers = await prisma.player.count({
@@ -236,10 +237,10 @@ export class TradeAnalyzer {
         const scarcityMultiplier = Math.max(0.8, Math.min(1.5, 1.3 - scarcityRatio));
 
         return {
-          position,
+          position: position as Position,
           scarcityMultiplier,
-          availableQuality: this.calculateAvailableQuality(position),
-          injuryRisk: this.getPositionInjuryRisk(position),
+          availableQuality: this.calculateAvailableQuality(position as Position),
+          injuryRisk: this.getPositionInjuryRisk(position as Position),
           seasonalTrend: this.getSeasonalTrend()
         };
       })
@@ -356,7 +357,7 @@ export class TradeAnalyzer {
 
   private calculatePositionRankings(roster: any[]): Record<Position, number> {
     // Simplified ranking calculation
-    const positions: Position[] = ['QB', 'RB', 'WR', 'TE', 'K', 'DST'];
+    const positions: Position[] = [Position.QB, Position.RB, Position.WR, Position.TE, Position.K, Position.DST];
     const rankings: Record<Position, number> = {} as any;
 
     positions.forEach(position => {
@@ -378,12 +379,12 @@ export class TradeAnalyzer {
     return roster.reduce((sum, rp) => {
       const projections = rp.player.projections || [];
       const avgProj = projections.reduce((pSum: number, p: any) => pSum + Number(p.projectedPoints), 0) / Math.max(projections.length, 1);
-      return sum + avgProj * this.getPositionValueMultiplier(rp.player.position);
+      return sum + avgProj * this.getPositionValueMultiplier(rp.player.position as Position);
     }, 0);
   }
 
   private calculateDepthScore(roster: any[]): number {
-    const positions: Position[] = ['QB', 'RB', 'WR', 'TE'];
+    const positions: Position[] = [Position.QB, Position.RB, Position.WR, Position.TE];
     let depthScore = 0;
 
     positions.forEach(position => {

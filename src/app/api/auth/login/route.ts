@@ -3,8 +3,19 @@ import { login } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
-    // Parse request body
-    const body = await request.json();
+    // Parse request body with better error handling
+    let body;
+    try {
+      const text = await request.text();
+      body = JSON.parse(text);
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      return NextResponse.json(
+        { success: false, error: 'Invalid JSON format' },
+        { status: 400 }
+      );
+    }
+    
     const { email, password } = body;
 
     // Validate input

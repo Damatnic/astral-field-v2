@@ -64,7 +64,7 @@ Login with email and password.
     "email": "alex.johnson@astralfield.com",
     "name": "Alex Johnson",
     "role": "admin",
-    "avatar": "/avatars/alex-johnson.jpg",
+    "avatar": "/api/avatars/alex-johnson.jpg",
     "lastLoginAt": "2024-12-15T..."
   },
   "message": "Login successful"
@@ -94,7 +94,7 @@ Get current authenticated user.
     "email": "alex.johnson@astralfield.com",
     "name": "Alex Johnson",
     "role": "admin",
-    "avatar": "/avatars/alex-johnson.jpg",
+    "avatar": "/api/avatars/alex-johnson.jpg",
     "createdAt": "2024-01-01T...",
     "lastLoginAt": "2024-12-15T..."
   }

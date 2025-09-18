@@ -33,7 +33,7 @@ const userProfiles: UserProfile[] = [
     name: "Nicholas D'Amato",
     email: 'nicholas.damato@astralfield.com',
     role: 'commissioner',
-    avatar: '/avatars/nicholas-damato.jpg',
+    avatar: '/api/avatars/nicholas-damato.jpg',
     description: 'League Commissioner - D\'Amato Dynasty League'
   },
   // Players
@@ -42,7 +42,7 @@ const userProfiles: UserProfile[] = [
     name: 'Nick Hartley',
     email: 'nick.hartley@astralfield.com',
     role: 'player',
-    avatar: '/avatars/nick-hartley.jpg',
+    avatar: '/api/avatars/nick-hartley.jpg',
     description: 'Dynasty League Player - Strategic trader'
   },
   {
@@ -50,7 +50,7 @@ const userProfiles: UserProfile[] = [
     name: 'Jack McCaigue',
     email: 'jack.mccaigue@astralfield.com',
     role: 'player',
-    avatar: '/avatars/jack-mccaigue.jpg',
+    avatar: '/api/avatars/jack-mccaigue.jpg',
     description: 'Dynasty League Player - Draft expert'
   },
   {
@@ -58,7 +58,7 @@ const userProfiles: UserProfile[] = [
     name: 'Larry McCaigue',
     email: 'larry.mccaigue@astralfield.com',
     role: 'player',
-    avatar: '/avatars/larry-mccaigue.jpg',
+    avatar: '/api/avatars/larry-mccaigue.jpg',
     description: 'Dynasty League Player - Analytics master'
   },
   {
@@ -66,7 +66,7 @@ const userProfiles: UserProfile[] = [
     name: 'Renee McCaigue',
     email: 'renee.mccaigue@astralfield.com',
     role: 'player',
-    avatar: '/avatars/renee-mccaigue.jpg',
+    avatar: '/api/avatars/renee-mccaigue.jpg',
     description: 'Dynasty League Player - Waiver specialist'
   },
   {
@@ -74,7 +74,7 @@ const userProfiles: UserProfile[] = [
     name: 'Jon Kornbeck',
     email: 'jon.kornbeck@astralfield.com',
     role: 'player',
-    avatar: '/avatars/jon-kornbeck.jpg',
+    avatar: '/api/avatars/jon-kornbeck.jpg',
     description: 'Dynasty League Player - Championship contender'
   },
   {
@@ -82,7 +82,7 @@ const userProfiles: UserProfile[] = [
     name: 'David Jarvey',
     email: 'david.jarvey@astralfield.com',
     role: 'player',
-    avatar: '/avatars/david-jarvey.jpg',
+    avatar: '/api/avatars/david-jarvey.jpg',
     description: 'Dynasty League Player - Rookie hunter'
   },
   {
@@ -90,7 +90,7 @@ const userProfiles: UserProfile[] = [
     name: 'Kaity Lorbecki',
     email: 'kaity.lorbecki@astralfield.com',
     role: 'player',
-    avatar: '/avatars/kaity-lorbecki.jpg',
+    avatar: '/api/avatars/kaity-lorbecki.jpg',
     description: 'Dynasty League Player - Trade negotiator'
   },
   {
@@ -98,7 +98,7 @@ const userProfiles: UserProfile[] = [
     name: 'Cason Minor',
     email: 'cason.minor@astralfield.com',
     role: 'player',
-    avatar: '/avatars/cason-minor.jpg',
+    avatar: '/api/avatars/cason-minor.jpg',
     description: 'Dynasty League Player - Sleeper finder'
   },
   {
@@ -106,7 +106,7 @@ const userProfiles: UserProfile[] = [
     name: 'Brittany Bergum',
     email: 'brittany.bergum@astralfield.com',
     role: 'player',
-    avatar: '/avatars/brittany-bergum.jpg',
+    avatar: '/api/avatars/brittany-bergum.jpg',
     description: 'Dynasty League Player - Matchup strategist'
   }
 ];
