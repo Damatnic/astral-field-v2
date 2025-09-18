@@ -62,9 +62,7 @@ export class SleeperPlayerService {
 
     return sleeperCache.getOrSet(
       cacheKey,
-      async () => {
-        console.log('[PlayerService] Fetching all players from Sleeper API...');
-        const playersData = await sleeperClient.getAllPlayers();
+      async () => {const playersData = await sleeperClient.getAllPlayers();
         
         // Convert object to array and transform
         const playersArray = Object.values(playersData as Record<string, any>);
@@ -86,9 +84,7 @@ export class SleeperPlayerService {
 
     return sleeperCache.getOrSet(
       cacheKey,
-      async () => {
-        console.log('[PlayerService] Fetching fantasy players from Sleeper API...');
-        const allPlayers = await this.getAllPlayers(forceRefresh);
+      async () => {const allPlayers = await this.getAllPlayers(forceRefresh);
         return allPlayers.filter(player => player.isFantasyRelevant);
       },
       SleeperCacheManager.TTL.PLAYERS_FANTASY
@@ -184,9 +180,7 @@ export class SleeperPlayerService {
 
     return sleeperCache.getOrSet(
       cacheKey,
-      async () => {
-        console.log(`[PlayerService] Fetching trending ${type}s from Sleeper API...`);
-        const trendingData = await sleeperClient.getTrendingPlayers(type, lookbackHours, 50);
+      async () => {const trendingData = await sleeperClient.getTrendingPlayers(type, lookbackHours, 50);
         
         // Get player details for trending players
         const playerIds = (trendingData as any[]).map((trend: any) => trend.player_id);
@@ -255,9 +249,7 @@ export class SleeperPlayerService {
    */
   async getPlayerStats(playerId: string, week?: number): Promise<PlayerStats | null> {
     // This would need to be implemented by pulling from Sleeper matchup data
-    // For now, return null as this requires league-specific data
-    console.log(`[PlayerService] Player stats for ${playerId} week ${week} not yet implemented`);
-    return null;
+    // For now, return null as this requires league-specific datareturn null;
   }
 
   /**
@@ -304,9 +296,7 @@ export class SleeperPlayerService {
     await sleeperCache.delete(SleeperCacheManager.CACHE_KEYS.ALL_PLAYERS);
     await sleeperCache.delete(SleeperCacheManager.CACHE_KEYS.FANTASY_PLAYERS);
     await sleeperCache.delete(SleeperCacheManager.CACHE_KEYS.TRENDING_ADDS);
-    await sleeperCache.delete(SleeperCacheManager.CACHE_KEYS.TRENDING_DROPS);
-    console.log('[PlayerService] Player cache cleared');
-  }
+    await sleeperCache.delete(SleeperCacheManager.CACHE_KEYS.TRENDING_DROPS);}
 
   /**
    * Get service health and statistics

@@ -154,7 +154,7 @@ export async function login(credentials: LoginCredentials): Promise<AuthResult> 
       user
     };
   } catch (error) {
-    console.error('Login error:', error);
+    handleComponentError(error as Error, 'auth-simple');
     return {
       success: false,
       error: 'An error occurred during login'
@@ -172,7 +172,7 @@ export async function logout(): Promise<void> {
       cookieStore.delete(SESSION_COOKIE_NAME);
     }
   } catch (error) {
-    console.error('Logout error:', error);
+    handleComponentError(error as Error, 'auth-simple');
   }
 }
 
@@ -191,7 +191,7 @@ export async function getCurrentUser(): Promise<User | null> {
     
     return user || null;
   } catch (error) {
-    console.error('Get current user error:', error);
+    handleComponentError(error as Error, 'auth-simple');
     return null;
   }
 }

@@ -4,6 +4,7 @@
 import { sleeperPlayerService } from './playerService';
 import { nflStateService } from './nflStateService';
 import { prisma as db } from '@/lib/db';
+import { handleComponentError } from '@/lib/error-handling';
 import { Position, PlayerStatus } from '@/types/fantasy';
 
 export interface LeagueSyncResult {
@@ -32,10 +33,7 @@ export class SleeperLeagueSyncService {
    * Sync all leagues with Sleeper player data
    */
   async syncAllLeagues(): Promise<LeagueSyncResult[]> {
-    try {
-      console.log('[LeagueSyncService] Starting sync for all leagues...');
-      
-      const leagues = await db.league.findMany({
+    try {const leagues = await db.league.findMany({
         where: { isActive: true },
         select: { id: true, name: true, season: true },
       });
@@ -46,12 +44,9 @@ export class SleeperLeagueSyncService {
         console.log(`[LeagueSyncService] Syncing league: ${league.name} (${league.id})`);
         const result = await this.syncLeague(league.id);
         results.push(result);
-      }
-
-      console.log(`[LeagueSyncService] Completed sync for ${leagues.length} leagues`);
-      return results;
+      }return results;
     } catch (error) {
-      console.error('[LeagueSyncService] Failed to sync all leagues:', error);
+      handleComponentError(error as Error, 'leagueSyncService');
       throw error;
     }
   }
@@ -72,10 +67,7 @@ export class SleeperLeagueSyncService {
       timestamp: new Date().toISOString(),
     };
 
-    try {
-      console.log(`[LeagueSyncService] Starting sync for league ${leagueId}...`);
-
-      // Get all players currently in league rosters
+    try {// Get all players currently in league rosters
       const rosterPlayers = await db.rosterPlayer.findMany({
         where: {
           team: {
@@ -88,11 +80,7 @@ export class SleeperLeagueSyncService {
             select: { id: true, name: true, ownerId: true },
           },
         },
-      });
-
-      console.log(`[LeagueSyncService] Found ${rosterPlayers.length} rostered players`);
-
-      // Get all Sleeper fantasy players for mapping
+      });// Get all Sleeper fantasy players for mapping
       const sleeperPlayers = await sleeperPlayerService.getFantasyPlayers();
       const sleeperPlayerMap = new Map(sleeperPlayers.map(p => [p.name.toLowerCase(), p]));
 
@@ -119,15 +107,11 @@ export class SleeperLeagueSyncService {
       // Update roster statistics
       result.rostersUpdated = await this.updateRosterStatistics(leagueId);
 
-      result.duration = Date.now() - startTime;
-      console.log(`[LeagueSyncService] League sync completed in ${result.duration}ms`);
-      console.log(`[LeagueSyncService] Mapped: ${result.playersMapped}, Not found: ${result.playersNotFound}, Errors: ${result.errors.length}`);
-
-      return result;
+      result.duration = Date.now() - startTime;return result;
     } catch (error: any) {
       result.errors.push(`League sync failed: ${error.message}`);
       result.duration = Date.now() - startTime;
-      console.error(`[LeagueSyncService] League sync failed:`, error);
+      handleComponentError(error as Error, 'leagueSyncService');
       return result;
     }
   }
@@ -278,11 +262,8 @@ export class SleeperLeagueSyncService {
           depthChartOrder: sleeperPlayer.depthChartOrder,
           lastUpdated: new Date(),
         },
-      });
-
-      console.log(`[LeagueSyncService] Updated player: ${sleeperPlayer.name} with Sleeper data`);
-    } catch (error) {
-      console.error(`[LeagueSyncService] Failed to update player ${playerId}:`, error);
+      });} catch (error) {
+      handleComponentError(error as Error, 'leagueSyncService');
       throw error;
     }
   }
@@ -339,12 +320,9 @@ export class SleeperLeagueSyncService {
         });
 
         rostersUpdated++;
-      }
-
-      console.log(`[LeagueSyncService] Updated ${rostersUpdated} team rosters`);
-      return rostersUpdated;
+      }return rostersUpdated;
     } catch (error) {
-      console.error('[LeagueSyncService] Failed to update roster statistics:', error);
+      handleComponentError(error as Error, 'leagueSyncService');
       return 0;
     }
   }
@@ -396,7 +374,7 @@ export class SleeperLeagueSyncService {
         needsSync,
       };
     } catch (error) {
-      console.error(`[LeagueSyncService] Failed to get sync status for league ${leagueId}:`, error);
+      handleComponentError(error as Error, 'leagueSyncService');
       throw error;
     }
   }
@@ -429,7 +407,7 @@ export class SleeperLeagueSyncService {
 
       return mappings;
     } catch (error) {
-      console.error(`[LeagueSyncService] Failed to get player mappings for league ${leagueId}:`, error);
+      handleComponentError(error as Error, 'leagueSyncService');
       throw error;
     }
   }

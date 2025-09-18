@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { handleComponentError } from '@/lib/error-handling';
 import { authenticateFromRequest } from '@/lib/auth';
 import { League, CreateLeagueForm, ApiResponse, PaginatedResponse } from '@/types/fantasy';
 
@@ -182,7 +183,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(response);
   } catch (error) {
-    console.error('Error fetching leagues:', error);
+    handleComponentError(error as Error, 'route');
     return NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }
@@ -327,7 +328,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(response, { status: 201 });
   } catch (error) {
-    console.error('Error creating league:', error);
+    handleComponentError(error as Error, 'route');
     return NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }

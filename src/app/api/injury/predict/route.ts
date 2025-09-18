@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 
+import { handleComponentError } from '@/lib/error-handling';
 // Injury risk factors and weights
 const RISK_FACTORS = {
   age: 0.15,
@@ -111,7 +112,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Injury prediction error:', error);
+    handleComponentError(error as Error, 'route');
     return NextResponse.json(
       { error: 'Failed to predict injuries' },
       { status: 500 }

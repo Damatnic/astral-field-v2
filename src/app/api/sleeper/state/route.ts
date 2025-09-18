@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('❌ Error fetching NFL state:', error);
+    handleComponentError(error as Error, 'route');
     
     return NextResponse.json({
       success: false,
@@ -72,10 +72,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  try {
-    console.log('🔄 Refreshing NFL state cache...');
-    
-    const state = await nflStateService.refreshState();
+  try {const state = await nflStateService.refreshState();
     
     return NextResponse.json({
       success: true,
@@ -89,7 +86,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('❌ Error refreshing NFL state:', error);
+    handleComponentError(error as Error, 'route');
     
     return NextResponse.json({
       success: false,

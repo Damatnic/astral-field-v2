@@ -45,7 +45,7 @@ async function makeRequest(endpoint, options = {}) {
     });
     
     const data = await response.text();
-    let json = null;
+    const json = null;
     
     try {
       json = JSON.parse(data);

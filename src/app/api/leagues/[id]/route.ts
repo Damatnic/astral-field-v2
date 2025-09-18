@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { authenticateFromRequest } from '@/lib/auth';
+import { handleComponentError } from '@/lib/error-handling';
 import { League, ApiResponse } from '@/types/fantasy';
 
 
@@ -159,7 +160,7 @@ export async function GET(
 
     return NextResponse.json(response);
   } catch (error) {
-    console.error('Error fetching league:', error);
+    handleComponentError(error as Error, 'route');
     return NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }
@@ -282,7 +283,7 @@ export async function PUT(
 
     return NextResponse.json(response);
   } catch (error) {
-    console.error('Error updating league:', error);
+    handleComponentError(error as Error, 'route');
     return NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }
@@ -339,7 +340,7 @@ export async function DELETE(
 
     return NextResponse.json(response);
   } catch (error) {
-    console.error('Error deleting league:', error);
+    handleComponentError(error as Error, 'route');
     return NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }

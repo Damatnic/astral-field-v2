@@ -1,5 +1,7 @@
 'use client';
 
+
+import { handleComponentError } from '@/lib/error-handling';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -107,7 +109,7 @@ export function WeatherImpactAnalyzer({
         setWeatherReport(data);
       }
     } catch (error) {
-      console.error('Failed to fetch weather data:', error);
+      handleComponentError(error as Error, 'WeatherImpactAnalyzer');
     } finally {
       setIsLoading(false);
     }
@@ -187,7 +189,7 @@ export function WeatherImpactAnalyzer({
         {['overview', 'detailed', 'recommendations'].map((mode) => (
           <Button
             key={mode}
-            variant={viewMode === mode ? 'default' : 'outline'}
+            variant={viewMode === mode ? 'primary' : 'outline'}
             onClick={() => setViewMode(mode as any)}
             className="capitalize"
           >

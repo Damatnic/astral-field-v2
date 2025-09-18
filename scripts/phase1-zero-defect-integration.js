@@ -176,8 +176,8 @@ class Phase1ZeroDefectIntegration {
       }
     ];
 
-    for (const module of modules) {
-      await this.runTestingModule(module);
+    for (const testModule of modules) {
+      await this.runTestingModule(testModule);
     }
   }
 

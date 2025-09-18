@@ -148,15 +148,19 @@ export class TradeAnalyzer {
         projections: {
           where: {
             season: this.season,
-            week: { gte: this.currentWeek },
-            week: { lte: this.currentWeek + 4 } // Next 4 weeks
+            week: {
+              gte: this.currentWeek,
+              lte: this.currentWeek + 4
+            } // Next 4 weeks
           }
         },
         playerStats: {
           where: {
             season: this.season,
-            week: { gte: Math.max(1, this.currentWeek - 4) },
-            week: { lt: this.currentWeek }
+            week: {
+              gte: Math.max(1, this.currentWeek - 4),
+              lt: this.currentWeek
+            }
           }
         }
       }
@@ -418,7 +422,7 @@ export class TradeAnalyzer {
     // Calculate best-case scenario
     return roster.reduce((sum, rp) => {
       const projections = rp.player.projections || [];
-      const maxProj = Math.max(...projections.map(p => Number(p.projectedPoints)), 0);
+      const maxProj = Math.max(...projections.map((p: any) => Number(p.projectedPoints)), 0);
       return sum + maxProj;
     }, 0);
   }
@@ -428,7 +432,7 @@ export class TradeAnalyzer {
     return roster.reduce((sum, rp) => {
       const projections = rp.player.projections || [];
       const minProj = projections.length > 0 ? 
-        Math.min(...projections.map(p => Number(p.projectedPoints))) : 0;
+        Math.min(...projections.map((p: any) => Number(p.projectedPoints))) : 0;
       return sum + minProj;
     }, 0);
   }

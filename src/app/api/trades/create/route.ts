@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { handleComponentError } from '@/lib/error-handling';
 import { authenticateFromRequest } from '@/lib/auth';
 import { CreateTradeRequest, ApiResponse, Trade } from '@/types/fantasy';
 
@@ -135,11 +136,11 @@ export async function POST(request: NextRequest) {
           toTeamId: item.toTeamId,
           playerId: item.playerId || null,
           itemType: item.itemType,
-          metadata: item.draftPick ? {
+          metadata: item.draftPick ? JSON.parse(JSON.stringify({
             draftPick: item.draftPick
-          } : item.faabAmount ? {
+          })) : item.faabAmount ? JSON.parse(JSON.stringify({
             faabAmount: item.faabAmount
-          } : null
+          })) : undefined
         }))
       });
 
@@ -217,7 +218,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(response, { status: 201 });
   } catch (error) {
-    console.error('Error creating trade:', error);
+    handleComponentError(error as Error, 'route');
     return NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }
@@ -299,7 +300,7 @@ async function validateTradeItems(tradeItems: any[], leagueId: string, proposerT
 
     return { isValid: true };
   } catch (error) {
-    console.error('Error validating trade items:', error);
+    handleComponentError(error as Error, 'route');
     return { isValid: false, error: 'Validation error occurred' };
   }
 }
@@ -378,7 +379,7 @@ async function validateRosterLimits(tradeItems: any[], leagueId: string) {
 
     return { isValid: true };
   } catch (error) {
-    console.error('Error validating roster limits:', error);
+    handleComponentError(error as Error, 'route');
     return { isValid: false, error: 'Roster validation error occurred' };
   }
 }

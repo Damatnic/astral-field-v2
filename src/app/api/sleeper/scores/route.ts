@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
         );
     }
   } catch (error: any) {
-    console.error('[API] Scoring GET error:', error);
+    handleComponentError(error as Error, 'route');
     
     return NextResponse.json(
       {
@@ -116,15 +116,10 @@ export async function POST(request: NextRequest) {
             { error: 'leagueId required for league score update' },
             { status: 400 }
           );
-        }
-        
-        console.log(`[API] Updating scores for league: ${leagueId}`);
-        result = await sleeperRealTimeScoringService.updateLeagueScores(leagueId);
+        }result = await sleeperRealTimeScoringService.updateLeagueScores(leagueId);
         break;
       
-      case 'update_all':
-        console.log('[API] Updating scores for all leagues...');
-        await sleeperRealTimeScoringService.updateAllLeagueScores();
+      case 'update_all':await sleeperRealTimeScoringService.updateAllLeagueScores();
         result = {
           message: 'All league scores updated successfully',
           timestamp: new Date().toISOString(),
@@ -132,10 +127,7 @@ export async function POST(request: NextRequest) {
         break;
       
       case 'start_live_updates':
-        const intervalMs = options.intervalMs || 60000; // Default 1 minute
-        
-        console.log(`[API] Starting live updates with ${intervalMs}ms interval...`);
-        await sleeperRealTimeScoringService.startRealTimeUpdates(intervalMs);
+        const intervalMs = options.intervalMs || 60000; // Default 1 minuteawait sleeperRealTimeScoringService.startRealTimeUpdates(intervalMs);
         
         result = {
           message: 'Live updates started',
@@ -144,9 +136,7 @@ export async function POST(request: NextRequest) {
         };
         break;
       
-      case 'stop_live_updates':
-        console.log('[API] Stopping live updates...');
-        sleeperRealTimeScoringService.stopRealTimeUpdates();
+      case 'stop_live_updates':sleeperRealTimeScoringService.stopRealTimeUpdates();
         
         result = {
           message: 'Live updates stopped',
@@ -160,10 +150,7 @@ export async function POST(request: NextRequest) {
             { error: 'leagueId required for force update' },
             { status: 400 }
           );
-        }
-        
-        console.log(`[API] Force updating scores for league: ${leagueId}`);
-        // Clear cache first to force fresh calculation
+        }// Clear cache first to force fresh calculation
         const currentWeek = options.week || 1;
         // sleeperCache.delete(`live_scores:${leagueId}:${currentWeek}`);
         
@@ -185,7 +172,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('[API] Scoring POST error:', error);
+    handleComponentError(error as Error, 'route');
     
     return NextResponse.json(
       {

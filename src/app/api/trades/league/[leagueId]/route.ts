@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { handleComponentError } from '@/lib/error-handling';
 import { authenticateFromRequest } from '@/lib/auth';
 import { PaginatedResponse, EnhancedTrade, TradeStatus } from '@/types/fantasy';
 
@@ -132,17 +133,7 @@ export async function GET(request: NextRequest, { params }: { params: { leagueId
               }
             }
           },
-          votes: {
-            include: {
-              user: {
-                select: {
-                  id: true,
-                  name: true,
-                  avatar: true
-                }
-              }
-            }
-          }
+          votes: true
         },
         orderBy,
         skip,
@@ -155,7 +146,7 @@ export async function GET(request: NextRequest, { params }: { params: { leagueId
 
     // Transform trades to enhanced format
     const enhancedTrades: EnhancedTrade[] = await Promise.all(
-      trades.map(async (trade) => {
+      trades.map(async (trade: any) => {
         const involvedTeams = await getInvolvedTeams(trade.items);
         const affectedPositions = getAffectedPositions(trade.items);
         const netValues = await calculateNetValues(trade.items);
@@ -169,7 +160,7 @@ export async function GET(request: NextRequest, { params }: { params: { leagueId
             // You could cache analysis results and only recalculate if needed
             analysis = await getTradeAnalysis(trade.id);
           } catch (error) {
-            console.error(`Error getting analysis for trade ${trade.id}:`, error);
+            handleComponentError(error as Error, 'route');
           }
         }
 
@@ -214,8 +205,8 @@ export async function GET(request: NextRequest, { params }: { params: { leagueId
       ...response,
       metadata: {
         leagueStats,
-        currentWeek: trades[0]?.league?.currentWeek || 1,
-        tradeDeadline: trades[0]?.league?.settings?.tradeDeadline || null,
+        currentWeek: (trades[0] as any)?.league?.currentWeek || 1,
+        tradeDeadline: (trades[0] as any)?.league?.settings?.tradeDeadline || null,
         filters: {
           status,
           teamId,
@@ -228,7 +219,7 @@ export async function GET(request: NextRequest, { params }: { params: { leagueId
 
     return NextResponse.json(responseWithMeta);
   } catch (error) {
-    console.error('Error fetching league trades:', error);
+    handleComponentError(error as Error, 'route');
     return NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }

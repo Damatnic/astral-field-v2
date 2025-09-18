@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 // Use simplified auth when database is not available
 import { logout as logoutSimple } from '@/lib/auth-simple';
+import { handleComponentError } from '@/lib/error-handling';
 import { logout as logoutFull } from '@/lib/auth';
 
 const useSimpleAuth = process.env.NODE_ENV === 'production' || !process.env.DATABASE_URL;
 const logout = useSimpleAuth ? logoutSimple : logoutFull;
 
-export async function POST(_request: NextRequest) {
+export async function POST() {
   try {
     // Use our auth.ts logout function
     await logout();
@@ -17,7 +18,7 @@ export async function POST(_request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Logout API error:', error);
+    // handleComponentError(error as Error, 'route');
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

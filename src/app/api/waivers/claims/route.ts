@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { handleComponentError } from '@/lib/error-handling';
 import { authenticateFromRequest } from '@/lib/auth';
 
 
@@ -15,13 +16,12 @@ export async function GET(request: NextRequest) {
 
     // Get user's team and league
     const team = await prisma.team.findFirst({
-      where: { userId: user.id },
+      where: { ownerId: user.id },
       include: {
         league: true,
         waiverClaims: {
           include: {
-            player: true,
-            dropPlayer: true
+            player: true
           },
           where: {
             status: 'PENDING'
@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Get waiver claims error:', error);
+    handleComponentError(error as Error, 'route');
     return NextResponse.json(
       { success: false, error: 'Failed to fetch waiver claims' },
       { status: 500 }
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
 
     // Get user's team
     const team = await prisma.team.findFirst({
-      where: { userId: user.id },
+      where: { ownerId: user.id },
       include: { league: true }
     });
 
@@ -117,17 +117,18 @@ export async function POST(request: NextRequest) {
     // Create waiver claim
     const claim = await prisma.waiverClaim.create({
       data: {
+        leagueId: team.leagueId,
         teamId: team.id,
+        userId: user.id,
         playerId,
         dropPlayerId,
-        bidAmount,
+        faabBid: bidAmount,
         priority: claimsCount + 1,
         status: 'PENDING',
         weekNumber: getCurrentWeek()
       },
       include: {
-        player: true,
-        dropPlayer: true
+        player: true
       }
     });
 
@@ -138,7 +139,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Submit waiver claim error:', error);
+    handleComponentError(error as Error, 'route');
     return NextResponse.json(
       { success: false, error: 'Failed to submit waiver claim' },
       { status: 500 }
@@ -157,7 +158,7 @@ export async function DELETE(request: NextRequest) {
 
     // Get user's team
     const team = await prisma.team.findFirst({
-      where: { userId: user.id }
+      where: { ownerId: user.id }
     });
 
     if (!team) {
@@ -205,7 +206,7 @@ export async function DELETE(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Cancel waiver claim error:', error);
+    handleComponentError(error as Error, 'route');
     return NextResponse.json(
       { success: false, error: 'Failed to cancel waiver claim' },
       { status: 500 }

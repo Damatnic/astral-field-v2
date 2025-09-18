@@ -1,5 +1,7 @@
 'use client';
 
+
+import { handleComponentError } from '@/lib/error-handling';
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -126,7 +128,7 @@ const FantasyRewardsHub: React.FC<FantasyRewardsHubProps> = ({
       setTotalValue(totalTokenValue + totalNFTValue);
 
     } catch (error) {
-      console.error('Failed to load blockchain data:', error);
+      handleComponentError(error as Error, 'FantasyRewardsHub');
     } finally {
       setIsLoading(false);
     }

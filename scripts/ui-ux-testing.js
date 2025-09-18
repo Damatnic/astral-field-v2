@@ -786,7 +786,7 @@ class UIUXTester {
       await this.page.goto(this.baseUrl, { waitUntil: 'networkidle0' });
       
       // Test tab sequence
-      let focusedElements = [];
+      const focusedElements = [];
       
       for (let i = 0; i < 10; i++) { // Test first 10 tab stops
         await this.page.keyboard.press('Tab');
@@ -1069,7 +1069,7 @@ class UIUXTester {
       const cls = await this.page.evaluate(() => {
         return new Promise((resolve) => {
           let clsValue = 0;
-          let observer = new PerformanceObserver((list) => {
+          const observer = new PerformanceObserver((list) => {
             for (const entry of list.getEntries()) {
               if (!entry.hadRecentInput) {
                 clsValue += entry.value;

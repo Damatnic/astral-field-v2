@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { handleComponentError } from '@/lib/error-handling';
 import { authenticateFromRequest } from '@/lib/auth';
 
 
@@ -38,7 +39,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Get notification preferences error:', error);
+    handleComponentError(error as Error, 'route');
     return NextResponse.json(
       { success: false, error: 'Failed to fetch notification preferences' },
       { status: 500 }
@@ -75,7 +76,7 @@ export async function PUT(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Update notification preferences error:', error);
+    handleComponentError(error as Error, 'route');
     return NextResponse.json(
       { success: false, error: 'Failed to update notification preferences' },
       { status: 500 }

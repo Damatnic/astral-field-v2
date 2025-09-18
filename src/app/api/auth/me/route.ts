@@ -1,19 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 // Use simplified auth when database is not available
 import { getCurrentUser as getCurrentUserSimple } from '@/lib/auth-simple';
+import { handleComponentError } from '@/lib/error-handling';
 import { getCurrentUser as getCurrentUserFull } from '@/lib/auth';
 
 const useSimpleAuth = process.env.NODE_ENV === 'production' || !process.env.DATABASE_URL;
 const getCurrentUser = useSimpleAuth ? getCurrentUserSimple : getCurrentUserFull;
 
-console.log('[AUTH DEBUG] /me endpoint - Auth system selection:', {
-  NODE_ENV: process.env.NODE_ENV,
-  HAS_DATABASE_URL: !!process.env.DATABASE_URL,
-  useSimpleAuth,
-  authSystem: useSimpleAuth ? 'SIMPLE' : 'FULL'
-});
+// console.log('[AUTH DEBUG] /me endpoint - Auth system selection:', {
+//   NODE_ENV: process.env.NODE_ENV,
+//   HAS_DATABASE_URL: !!process.env.DATABASE_URL,
+//   useSimpleAuth,
+//   authSystem: useSimpleAuth ? 'SIMPLE' : 'FULL'
+// });
 
-export async function GET(_request: NextRequest) {
+export async function GET() {
   try {
     // Get current user from session
     const user = await getCurrentUser();
@@ -39,7 +40,7 @@ export async function GET(_request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Get current user API error:', error);
+    // handleComponentError(error as Error, 'route');
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

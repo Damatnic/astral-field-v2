@@ -1,18 +1,17 @@
 'use client';
 
+
+import { handleComponentError } from '@/lib/error-handling';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
   Mic, 
   MicOff, 
   Volume2, 
   VolumeX, 
-  Play, 
   Square, 
-  RotateCcw,
   CheckCircle,
   AlertCircle,
-  Zap,
   MessageSquare,
   User,
   Users
@@ -61,20 +60,20 @@ const VoiceLineupManager: React.FC<VoiceLineupManagerProps> = ({
   const [lastResponse, setLastResponse] = useState('');
   const [confidence, setConfidence] = useState(0);
   
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<any>(null);
   const synthesisRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   // Initialize speech recognition
   useEffect(() => {
     if (typeof window !== 'undefined' && 'webkitSpeechRecognition' in window) {
-      const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+      const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
       recognitionRef.current = new SpeechRecognition();
       
       recognitionRef.current.continuous = true;
       recognitionRef.current.interimResults = true;
       recognitionRef.current.lang = 'en-US';
       
-      recognitionRef.current.onresult = (event) => {
+      recognitionRef.current.onresult = (event: any) => {
         let finalTranscript = '';
         let interimTranscript = '';
         
@@ -95,8 +94,8 @@ const VoiceLineupManager: React.FC<VoiceLineupManagerProps> = ({
         }
       };
       
-      recognitionRef.current.onerror = (event) => {
-        console.error('Speech recognition error:', event.error);
+      recognitionRef.current.onerror = (event: any) => {
+        handleComponentError(event.error as Error, 'VoiceLineupManager');
         setIsListening(false);
       };
       
@@ -180,7 +179,7 @@ const VoiceLineupManager: React.FC<VoiceLineupManagerProps> = ({
         speak(result.error || 'Sorry, I could not process that command');
       }
     } catch (error) {
-      console.error('Voice command processing error:', error);
+      handleComponentError(error as Error, 'VoiceLineupManager');
       
       setCommands(prev => prev.map(cmd => 
         cmd.id === commandId 
@@ -367,7 +366,7 @@ const VoiceLineupManager: React.FC<VoiceLineupManagerProps> = ({
               >
                 <div className="flex items-center space-x-2">
                   <Mic className="w-4 h-4 text-indigo-400" />
-                  <span className="text-gray-300 text-sm">"{example}"</span>
+                  <span className="text-gray-300 text-sm">&quot;{example}&quot;</span>
                 </div>
               </motion.div>
             ))}
@@ -400,7 +399,7 @@ const VoiceLineupManager: React.FC<VoiceLineupManagerProps> = ({
                         ({Math.round(command.confidence * 100)}% confidence)
                       </span>
                     </div>
-                    <p className="text-white mb-2">"{command.command}"</p>
+                    <p className="text-white mb-2">&quot;{command.command}&quot;</p>
                     
                     <div className="flex items-center space-x-2">
                       <Users className="w-4 h-4 text-green-400" />

@@ -147,9 +147,9 @@ export function usePermissions() {
     if (!user) return false;
     
     const roleHierarchy = {
-      admin: 3,
-      commissioner: 2,
-      player: 1
+      ADMIN: 3,
+      COMMISSIONER: 2,
+      PLAYER: 1
     };
 
     return roleHierarchy[user.role] >= roleHierarchy[requiredRole];
@@ -157,9 +157,9 @@ export function usePermissions() {
 
   return {
     user,
-    isAdmin: hasRole('admin'),
-    isCommissioner: hasRole('commissioner'),
-    isPlayer: hasRole('player'),
+    isAdmin: hasRole('ADMIN'),
+    isCommissioner: hasRole('COMMISSIONER'),
+    isPlayer: hasRole('PLAYER'),
     hasRole,
     hasAnyRole,
     canAccess,
@@ -221,7 +221,7 @@ export function AdminPanel() {
   return (
     <div>
       <h1>Admin Panel</h1>
-      {canAccess('admin') && (
+      {canAccess('ADMIN') && (
         <button>Admin Only Action</button>
       )}
     </div>

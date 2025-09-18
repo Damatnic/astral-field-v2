@@ -56,7 +56,7 @@ export async function GET(
     });
 
   } catch (error) {
-    console.error('Token balance fetch error:', error);
+    handleComponentError(error as Error, 'route');
     return NextResponse.json({
       success: false,
       error: 'Failed to fetch token balances'

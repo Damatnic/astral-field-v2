@@ -1,5 +1,7 @@
 'use client';
 
+
+import { handleComponentError } from '@/lib/error-handling';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -78,9 +80,7 @@ const ARPlayerCards: React.FC<ARPlayerCardsProps> = ({
         try {
           const isSupported = await (navigator as any).xr.isSessionSupported('immersive-ar');
           setArSupported(isSupported);
-        } catch (error) {
-          console.log('AR not supported:', error);
-          setArSupported(false);
+        } catch (error) {setArSupported(false);
         }
       } else {
         setArSupported(false);
@@ -104,7 +104,7 @@ const ARPlayerCards: React.FC<ARPlayerCardsProps> = ({
       setCameraPermission('granted');
       return true;
     } catch (error) {
-      console.error('Camera permission denied:', error);
+      handleComponentError(error as Error, 'ARPlayerCards');
       setCameraPermission('denied');
       return false;
     }

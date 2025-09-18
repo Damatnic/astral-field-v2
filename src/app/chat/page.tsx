@@ -1,6 +1,6 @@
 'use client';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { MessageCircle, Users, Bell, Zap } from 'lucide-react';
 
@@ -15,7 +15,7 @@ export default function ChatPage() {
             <h1 className="text-4xl font-bold text-slate-900">League Chat</h1>
           </div>
           <p className="text-xl text-slate-600">
-            Real-time communication for the D'Amato Dynasty League
+            Real-time communication for the D&apos;Amato Dynasty League
           </p>
         </div>
 
@@ -25,7 +25,7 @@ export default function ChatPage() {
             <MessageCircle className="h-16 w-16 text-blue-600 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-slate-900 mb-4">League Chat Coming Soon</h2>
             <p className="text-lg text-slate-700 mb-6">
-              We're developing a real-time chat system for league members to discuss 
+              We&apos;re developing a real-time chat system for league members to discuss
               trades, trash talk, and share fantasy insights.
             </p>
             <Badge className="bg-blue-600 text-white">

@@ -159,7 +159,7 @@ function ProfileSelection({ onSelect }: { onSelect: (profile: UserProfile) => vo
                   {profile.description}
                 </p>
                 <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mt-2 ${
-                  profile.role === 'admin' 
+                  profile.role === 'admin'
                     ? 'bg-red-100 text-red-800'
                     : profile.role === 'commissioner'
                     ? 'bg-yellow-100 text-yellow-800'

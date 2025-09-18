@@ -28,8 +28,8 @@ class Phase2ZeroDefectIntegrator {
         console.log('SCOPE: Cross-Platform & Environment Validation');
         console.log('='.repeat(60));
 
-        for (const module of this.phase2Modules) {
-            await this.executeModule(module);
+        for (const testModule of this.phase2Modules) {
+            await this.executeModule(testModule);
         }
 
         await this.generateComprehensiveCertification();

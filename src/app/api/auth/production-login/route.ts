@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { authService } from '@/lib/auth/production-auth';
+import { handleComponentError } from '@/lib/error-handling';
 import { z } from 'zod';
 
 
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
     return response;
     
   } catch (error) {
-    console.error('Login error:', error);
+    handleComponentError(error as Error, 'route');
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 // Use simplified auth when database is not available
 import { login as loginSimple } from '@/lib/auth-simple';
+import { handleComponentError } from '@/lib/error-handling';
 import { login as loginFull } from '@/lib/auth';
 
 const useSimpleAuth = process.env.NODE_ENV === 'production' || !process.env.DATABASE_URL;
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest) {
       const text = await request.text();
       body = JSON.parse(text);
     } catch (parseError) {
-      console.error('JSON parse error:', parseError);
+      handleComponentError(parseError as Error, 'route');
       return NextResponse.json(
         { success: false, error: 'Invalid JSON format' },
         { status: 400 }
@@ -62,7 +63,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Login API error:', error);
+    handleComponentError(error as Error, 'route');
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

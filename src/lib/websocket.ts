@@ -23,9 +23,7 @@ class WebSocketService {
   }
 
   connect(): void {
-    if (this.socket?.connected) {
-      console.log('WebSocket already connected');
-      return;
+    if (this.socket?.connected) {return;
     }
 
     this.socket = io(this.config.url!, {
@@ -42,19 +40,15 @@ class WebSocketService {
     if (!this.socket) return;
 
     this.socket.on('connect', () => {
-      this.isConnected = true;
-      console.log('WebSocket connected');
-      this.emit('connection:established', { connected: true });
+      this.isConnected = true;this.emit('connection:established', { connected: true });
     });
 
     this.socket.on('disconnect', () => {
-      this.isConnected = false;
-      console.log('WebSocket disconnected');
-      this.emit('connection:lost', { connected: false });
+      this.isConnected = false;this.emit('connection:lost', { connected: false });
     });
 
     this.socket.on('error', (error: Error) => {
-      console.error('WebSocket error:', error);
+      handleComponentError(error as Error, 'websocket');
       this.emit('connection:error', { error: error.message });
     });
 

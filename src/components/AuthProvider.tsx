@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { User } from '@/lib/auth';
+import { handleAuthError } from '@/lib/error-handling';
 
 // Types
 interface AuthContextType {
@@ -61,7 +62,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const data = await response.json();
       return data.user || null;
     } catch (error) {
-      console.error('Failed to fetch current user:', error);
+      handleAuthError(error as Error, 'fetchCurrentUser');
       return null;
     }
   }, []);
@@ -74,7 +75,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const currentUser = await fetchCurrentUser();
         setUser(currentUser);
       } catch (error) {
-        console.error('Auth initialization error:', error);
+        handleAuthError(error as Error, 'initialize');
         setUser(null);
       } finally {
         setIsLoading(false);
@@ -117,7 +118,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         };
       }
     } catch (error) {
-      console.error('Login error:', error);
+      handleAuthError(error as Error, 'login');
       return {
         success: false,
         error: 'Network error. Please try again.'
@@ -147,7 +148,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Redirect to login page
       window.location.href = '/login';
     } catch (error) {
-      console.error('Logout error:', error);
+      handleAuthError(error as Error, 'logout');
       // Still clear user state on error
       setUser(null);
       window.location.href = '/login';
@@ -162,7 +163,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const currentUser = await fetchCurrentUser();
       setUser(currentUser);
     } catch (error) {
-      console.error('Failed to refresh user:', error);
+      handleAuthError(error as Error, 'refreshUser');
     }
   }, [fetchCurrentUser]);
 
@@ -175,19 +176,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const hasPermission = useCallback((roles: User['role'][]): boolean => {
     if (!user) return false;
     return roles.includes(user.role);
-  }, [user]);
-
-  // Role hierarchy check (admin > commissioner > player)
-  const canAccess = useCallback((requiredRole: User['role']): boolean => {
-    if (!user) return false;
-    
-    const roleHierarchy = {
-      admin: 3,
-      commissioner: 2,
-      player: 1
-    };
-
-    return roleHierarchy[user.role] >= roleHierarchy[requiredRole];
   }, [user]);
 
   // Context value
@@ -215,7 +203,7 @@ export function withAuth<P extends object>(
   requiredRoles?: User['role'][]
 ) {
   return function AuthenticatedComponent(props: P) {
-    const { user, isLoading, isAuthenticated, hasPermission } = useAuth();
+    const { isLoading, isAuthenticated, hasPermission } = useAuth();
 
     // Show loading state
     if (isLoading) {
@@ -262,8 +250,8 @@ export function useRequireAuth(requiredRoles?: User['role'][]) {
       }
 
       if (requiredRoles && !hasPermission(requiredRoles)) {
-        // Could redirect to a 403 page or show error
-        console.warn('User does not have required permissions:', requiredRoles);
+        // Could redirect to a 403 page or show error  
+        handleAuthError(new Error('Insufficient permissions'), 'permissionCheck');
       }
     }
   }, [isLoading, isAuthenticated, hasPermission, requiredRoles]);

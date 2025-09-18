@@ -1,6 +1,6 @@
 'use client';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Activity, Clock, Users, ArrowRightLeft, Trophy, UserPlus } from 'lucide-react';
 
@@ -112,7 +112,7 @@ export default function ActivityPage() {
             <h1 className="text-4xl font-bold text-slate-900">League Activity</h1>
           </div>
           <p className="text-xl text-slate-600">
-            Recent activity and updates from the D'Amato Dynasty League
+            Recent activity and updates from the D&apos;Amato Dynasty League
           </p>
         </div>
 

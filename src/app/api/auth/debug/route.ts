@@ -9,17 +9,12 @@ export async function POST(request: NextRequest) {
     console.log('Request headers:', Object.fromEntries(request.headers.entries()));
     
     // Get the raw text first
-    const text = await request.text();
-    console.log('Raw request text:', text);
-    
-    // Try to parse it
+    const text = await request.text();// Try to parse it
     let body;
     try {
-      body = JSON.parse(text);
-      console.log('Parsed body:', body);
-    } catch (parseError: unknown) {
+      body = JSON.parse(text);} catch (parseError: unknown) {
       const errorMessage = parseError instanceof Error ? parseError.message : 'Unknown parse error';
-      console.error('JSON parse error:', parseError);
+      handleComponentError(parseError as Error, 'route');
       return NextResponse.json(
         { 
           success: false, 
@@ -39,7 +34,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Debug API error:', error);
+    handleComponentError(error as Error, 'route');
     return NextResponse.json(
       { success: false, error: 'Internal server error', message: errorMessage },
       { status: 500 }

@@ -115,7 +115,7 @@ export class SleeperIntegrationService {
         },
       };
     } catch (error: any) {
-      console.error('❌ Initialization failed:', error);
+      handleComponentError(error as Error, 'sleeperIntegrationService');
       
       return {
         success: false,
@@ -205,7 +205,7 @@ export class SleeperIntegrationService {
       result.summary.totalDuration = Date.now() - startTime;
       result.summary.success = false;
       
-      console.error('❌ Full sync failed:', error);
+      handleComponentError(error as Error, 'sleeperIntegrationService');
       return result;
     }
   }

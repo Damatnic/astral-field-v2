@@ -222,7 +222,7 @@ class AdvancedPerformanceTuner {
             const expires = headers['expires'];
 
             let cacheScore = 0;
-            let maxScore = 4;
+            const maxScore = 4;
 
             if (cacheControl) cacheScore++;
             if (etag) cacheScore++;

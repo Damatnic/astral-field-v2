@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { handleComponentError } from '@/lib/error-handling';
 import { authenticateFromRequest } from '@/lib/auth';
 import { TradeResponse, ApiResponse, Trade } from '@/types/fantasy';
 
@@ -165,7 +166,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
     return NextResponse.json(response);
   } catch (error) {
-    console.error('Error responding to trade:', error);
+    handleComponentError(error as Error, 'route');
     return NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }
@@ -295,7 +296,7 @@ async function handleTradeRejection(tradeId: string, userId: string, notes?: str
     await tx.trade.update({
       where: { id: tradeId },
       data: {
-        status: isProposer ? 'CANCELLED' : 'REJECTED',
+        status: 'REJECTED', // Both proposer cancellation and recipient rejection result in REJECTED status
         processedAt: new Date(),
         notes: notes ? `${notes}\n\nRejected by user` : 'Trade rejected'
       }

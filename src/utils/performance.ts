@@ -66,9 +66,7 @@ export class PerformanceMonitor {
           this.recordMetric('API_Response_Time', duration);
           
           // Alert on slow API calls
-          if (duration > 2000) {
-            console.warn(`Slow API call detected: ${resource.name} took ${duration}ms`);
-          }
+          if (duration > 2000) {}
         }
         
         // Monitor large assets
@@ -156,12 +154,14 @@ export class ReactOptimizer {
   ) {
     const LazyComponent = React.lazy(importFunc);
     
-    return (props: React.ComponentProps<T>) => 
+    const WrappedComponent = (props: React.ComponentProps<T>) =>
       React.createElement(React.Suspense, { fallback: fallback || React.createElement('div', null, 'Loading...') },
         React.createElement(ErrorBoundary, null,
           React.createElement(LazyComponent, props)
         )
       );
+    
+    return WrappedComponent;
   }
 
   // Memoize expensive calculations
@@ -236,7 +236,7 @@ class ErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('Component error:', error, errorInfo);
+    handleComponentError(error, errorInfo as Error, 'performance');
     
     // Send error to monitoring service
     if (typeof window !== 'undefined') {
@@ -346,10 +346,10 @@ export class BundleOptimizer {
     modulePath: string
   ): Promise<T> {
     try {
-      const module = await import(modulePath);
-      return module.default || module;
+      const moduleExports = await import(modulePath);
+      return moduleExports.default || moduleExports;
     } catch (error) {
-      console.error(`Failed to load module: ${modulePath}`, error);
+      handleComponentError(error as Error, 'performance');
       throw error;
     }
   }
@@ -387,8 +387,6 @@ if (typeof window !== 'undefined') {
   
   // Report performance metrics periodically
   setInterval(() => {
-    const metrics = PerformanceMonitor.getMetrics();
-    console.log('Performance Metrics:', metrics);
-  }, 60000); // Every minute
+    const metrics = PerformanceMonitor.getMetrics();}, 60000); // Every minute
 }
 

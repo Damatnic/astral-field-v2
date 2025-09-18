@@ -376,9 +376,9 @@ export default function FeaturesPage() {
               <Trophy className="h-16 w-16 mx-auto mb-6 text-yellow-400" />
               <h3 className="text-3xl font-bold mb-4">The Future of Fantasy Football</h3>
               <p className="text-xl text-blue-100 max-w-3xl mx-auto mb-8">
-                AstralField isn't just a fantasy platform—it's your secret weapon. With cutting-edge AI, 
-                immersive experiences, and blockchain rewards, you're not just playing fantasy football, 
-                you're dominating it.
+                AstralField isn&apos;t just a fantasy platform—it&apos;s your secret weapon. With cutting-edge AI,
+                immersive experiences, and blockchain rewards, you&apos;re not just playing fantasy football,
+                you&apos;re dominating it.
               </p>
               <div className="flex justify-center gap-4">
                 <Button 

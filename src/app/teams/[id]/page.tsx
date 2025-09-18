@@ -1,5 +1,7 @@
 'use client';
 
+
+import { handleComponentError } from '@/lib/error-handling';
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { Team, RosterSlot } from '@/types/fantasy';
@@ -32,7 +34,7 @@ export default function TeamPage() {
       }
     } catch (error) {
       setError('Error loading team');
-      console.error('Error fetching team:', error);
+      handleComponentError(error as Error, 'page');
     } finally {
       setLoading(false);
     }
@@ -59,7 +61,7 @@ export default function TeamPage() {
       }
     } catch (error) {
       setError('Error updating lineup');
-      console.error('Error updating lineup:', error);
+      handleComponentError(error as Error, 'page');
     }
   };
 

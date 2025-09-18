@@ -123,7 +123,7 @@ export async function login(credentials: LoginCredentials): Promise<AuthResult> 
     const user: User = {
       id: dbUser.id,
       email: dbUser.email,
-      name: dbUser.name,
+      name: dbUser.name || dbUser.email,
       role: dbUser.role,
       avatar: dbUser.avatar || undefined,
       createdAt: dbUser.createdAt
@@ -134,7 +134,7 @@ export async function login(credentials: LoginCredentials): Promise<AuthResult> 
       user
     };
   } catch (error) {
-    console.error('Login error:', error);
+    handleComponentError(error as Error, 'auth');
     return {
       success: false,
       error: 'An error occurred during login'
@@ -153,7 +153,7 @@ export async function logout(): Promise<void> {
     
     cookieStore.delete(SESSION_COOKIE_NAME);
   } catch (error) {
-    console.error('Logout error:', error);
+    handleComponentError(error as Error, 'auth');
   }
 }
 
@@ -177,7 +177,7 @@ export async function getCurrentUser(): Promise<User | null> {
     const user: User = {
       id: dbUser.id,
       email: dbUser.email,
-      name: dbUser.name,
+      name: dbUser.name || dbUser.email,
       role: dbUser.role,
       avatar: dbUser.avatar || undefined,
       createdAt: dbUser.createdAt
@@ -185,7 +185,7 @@ export async function getCurrentUser(): Promise<User | null> {
     
     return user;
   } catch (error) {
-    console.error('Get current user error:', error);
+    handleComponentError(error as Error, 'auth');
     return null;
   }
 }
@@ -206,7 +206,7 @@ export async function authenticateFromRequest(request: NextRequest): Promise<Use
           const user: User = {
             id: dbUser.id,
             email: dbUser.email,
-            name: dbUser.name,
+            name: dbUser.name || dbUser.email,
             role: dbUser.role,
             avatar: dbUser.avatar || undefined,
             createdAt: dbUser.createdAt
@@ -230,7 +230,7 @@ export async function authenticateFromRequest(request: NextRequest): Promise<Use
           const user: User = {
             id: dbUser.id,
             email: dbUser.email,
-            name: dbUser.name,
+            name: dbUser.name || dbUser.email,
             role: dbUser.role,
             avatar: dbUser.avatar || undefined,
             createdAt: dbUser.createdAt
@@ -242,7 +242,7 @@ export async function authenticateFromRequest(request: NextRequest): Promise<Use
     
     return null;
   } catch (error) {
-    console.error('Authenticate from request error:', error);
+    handleComponentError(error as Error, 'auth');
     return null;
   }
 }
@@ -259,7 +259,7 @@ export async function getUserById(id: string): Promise<User | null> {
     const user: User = {
       id: dbUser.id,
       email: dbUser.email,
-      name: dbUser.name,
+      name: dbUser.name || dbUser.email,
       role: dbUser.role,
       avatar: dbUser.avatar || undefined,
       createdAt: dbUser.createdAt
@@ -267,7 +267,7 @@ export async function getUserById(id: string): Promise<User | null> {
     
     return user;
   } catch (error) {
-    console.error('Get user by ID error:', error);
+    handleComponentError(error as Error, 'auth');
     return null;
   }
 }
@@ -283,7 +283,7 @@ export async function getUserByEmail(email: string): Promise<User | null> {
     const user: User = {
       id: dbUser.id,
       email: dbUser.email,
-      name: dbUser.name,
+      name: dbUser.name || dbUser.email,
       role: dbUser.role,
       avatar: dbUser.avatar || undefined,
       createdAt: dbUser.createdAt
@@ -291,7 +291,7 @@ export async function getUserByEmail(email: string): Promise<User | null> {
     
     return user;
   } catch (error) {
-    console.error('Get user by email error:', error);
+    handleComponentError(error as Error, 'auth');
     return null;
   }
 }
@@ -303,13 +303,13 @@ export async function getAllUsers(): Promise<User[]> {
     return dbUsers.map(dbUser => ({
       id: dbUser.id,
       email: dbUser.email,
-      name: dbUser.name,
+      name: dbUser.name || dbUser.email,
       role: dbUser.role,
       avatar: dbUser.avatar || undefined,
       createdAt: dbUser.createdAt
     }));
   } catch (error) {
-    console.error('Get all users error:', error);
+    handleComponentError(error as Error, 'auth');
     return [];
   }
 }
@@ -323,13 +323,13 @@ export async function getUsersByRole(role: 'ADMIN' | 'COMMISSIONER' | 'PLAYER'):
     return dbUsers.map(dbUser => ({
       id: dbUser.id,
       email: dbUser.email,
-      name: dbUser.name,
+      name: dbUser.name || dbUser.email,
       role: dbUser.role,
       avatar: dbUser.avatar || undefined,
       createdAt: dbUser.createdAt
     }));
   } catch (error) {
-    console.error('Get users by role error:', error);
+    handleComponentError(error as Error, 'auth');
     return [];
   }
 }

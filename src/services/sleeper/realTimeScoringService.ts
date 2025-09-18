@@ -6,6 +6,7 @@ import { nflStateService } from './nflStateService';
 import { sleeperCache, SleeperCacheManager } from './core/cacheManager';
 import { prisma as db } from '@/lib/db';
 
+import { handleComponentError } from '@/lib/error-handling';
 export interface LiveScoreUpdate {
   leagueId: string;
   week: number;
@@ -80,14 +81,8 @@ export class SleeperRealTimeScoringService {
    * Start real-time scoring updates
    */
   async startRealTimeUpdates(intervalMs = 60000): Promise<void> {
-    if (this.updateInterval) {
-      console.log('[RealTimeScoringService] Updates already running');
-      return;
-    }
-
-    console.log(`[RealTimeScoringService] Starting real-time updates every ${intervalMs}ms`);
-    
-    // Initial update
+    if (this.updateInterval) {return;
+    }// Initial update
     await this.updateAllLeagueScores();
 
     // Schedule periodic updates
@@ -104,9 +99,7 @@ export class SleeperRealTimeScoringService {
   stopRealTimeUpdates(): void {
     if (this.updateInterval) {
       clearInterval(this.updateInterval);
-      this.updateInterval = null;
-      console.log('[RealTimeScoringService] Real-time updates stopped');
-    }
+      this.updateInterval = null;}
   }
 
   /**
@@ -120,15 +113,11 @@ export class SleeperRealTimeScoringService {
       const leagues = await db.league.findMany({
         where: { isActive: true },
         select: { id: true, name: true, currentWeek: true, season: true },
-      });
-
-      console.log(`[RealTimeScoringService] Updating scores for ${leagues.length} leagues`);
-
-      for (const league of leagues) {
+      });for (const league of leagues) {
         try {
           await this.updateLeagueScores(league.id);
         } catch (error) {
-          console.error(`[RealTimeScoringService] Failed to update league ${league.id}:`, error);
+          handleComponentError(error as Error, 'realTimeScoringService');
         }
       }
     } finally {
@@ -195,12 +184,9 @@ export class SleeperRealTimeScoringService {
         `live_scores:${leagueId}:${currentWeek}`,
         liveUpdate,
         isLive ? 60000 : 300000 // 1 min if live, 5 min if not
-      );
-
-      console.log(`[RealTimeScoringService] Updated scores for league ${leagueId}, week ${currentWeek}`);
-      return liveUpdate;
+      );return liveUpdate;
     } catch (error) {
-      console.error(`[RealTimeScoringService] Failed to update league scores:`, error);
+      handleComponentError(error as Error, 'realTimeScoringService');
       throw error;
     }
   }
@@ -237,7 +223,7 @@ export class SleeperRealTimeScoringService {
         );
         matchupScores.push(matchupScore);
       } catch (error) {
-        console.error(`[RealTimeScoringService] Failed to calculate matchup ${dbMatchup.id}:`, error);
+        handleComponentError(error as Error, 'realTimeScoringService');
       }
     }
 
@@ -318,7 +304,7 @@ export class SleeperRealTimeScoringService {
         );
         playerScores.push(playerScore);
       } catch (error) {
-        console.error(`[RealTimeScoringService] Failed to calculate score for player ${rosterPlayer.player.id}:`, error);
+        handleComponentError(error as Error, 'realTimeScoringService');
         
         // Add zero score as fallback
         playerScores.push({
@@ -447,7 +433,7 @@ export class SleeperRealTimeScoringService {
           },
         });
       } catch (error) {
-        console.error(`[RealTimeScoringService] Failed to update matchup ${matchup.matchupId}:`, error);
+        handleComponentError(error as Error, 'realTimeScoringService');
       }
     }
   }
@@ -460,7 +446,7 @@ export class SleeperRealTimeScoringService {
       const isScoringPeriod = await nflStateService.isScoringPeriod();
       return isScoringPeriod;
     } catch (error) {
-      console.error('[RealTimeScoringService] Failed to check if live:', error);
+      handleComponentError(error as Error, 'realTimeScoringService');
       return false;
     }
   }
@@ -486,7 +472,7 @@ export class SleeperRealTimeScoringService {
       
       return false;
     } catch (error) {
-      console.error('[RealTimeScoringService] Failed to check week complete:', error);
+      handleComponentError(error as Error, 'realTimeScoringService');
       return false;
     }
   }
@@ -544,7 +530,7 @@ export class SleeperRealTimeScoringService {
       // If not cached, calculate fresh scores
       return await this.updateLeagueScores(leagueId);
     } catch (error) {
-      console.error(`[RealTimeScoringService] Failed to get live scores for league ${leagueId}:`, error);
+      handleComponentError(error as Error, 'realTimeScoringService');
       return null;
     }
   }

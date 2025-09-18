@@ -184,7 +184,7 @@ export async function GET(
     });
 
   } catch (error) {
-    console.error('Achievement fetch error:', error);
+    handleComponentError(error as Error, 'route');
     return NextResponse.json({
       success: false,
       error: 'Failed to fetch achievements'

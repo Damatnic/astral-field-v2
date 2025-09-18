@@ -7,6 +7,7 @@ import { nflStateService } from '@/services/sleeper/nflStateService';
 import { prisma as db } from '@/lib/db';
 
 
+import { handleComponentError } from '@/lib/error-handling';
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic';
 
@@ -127,7 +128,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('[API] Live scoring GET error:', error);
+    handleComponentError(error as Error, 'route');
     
     return NextResponse.json(
       {
@@ -156,16 +157,12 @@ export async function POST(request: NextRequest) {
 
     switch (action) {
       case 'refresh':
-        // Force refresh live scores for current week
-        console.log(`[API] Force refreshing live scores for league: ${leagueId}`);
-        result = await sleeperRealTimeScoringService.updateLeagueScores(leagueId);
+        // Force refresh live scores for current weekresult = await sleeperRealTimeScoringService.updateLeagueScores(leagueId);
         break;
 
       case 'start_live_tracking':
         // Start real-time tracking for this league
-        const intervalMs = options.intervalMs || 60000;
-        console.log(`[API] Starting live tracking for league: ${leagueId}`);
-        await sleeperRealTimeScoringService.startRealTimeUpdates(intervalMs);
+        const intervalMs = options.intervalMs || 60000;await sleeperRealTimeScoringService.startRealTimeUpdates(intervalMs);
         
         result = {
           message: 'Live tracking started',
@@ -175,9 +172,7 @@ export async function POST(request: NextRequest) {
         break;
 
       case 'stop_live_tracking':
-        // Stop real-time tracking
-        console.log(`[API] Stopping live tracking for league: ${leagueId}`);
-        sleeperRealTimeScoringService.stopRealTimeUpdates();
+        // Stop real-time trackingsleeperRealTimeScoringService.stopRealTimeUpdates();
         
         result = {
           message: 'Live tracking stopped',
@@ -187,10 +182,7 @@ export async function POST(request: NextRequest) {
 
       case 'calculate_week':
         // Calculate scores for a specific week
-        const targetWeek = week || 1;
-        console.log(`[API] Calculating scores for league: ${leagueId}, week: ${targetWeek}`);
-        
-        result = await calculateWeekScores(leagueId, targetWeek, options.season);
+        const targetWeek = week || 1;result = await calculateWeekScores(leagueId, targetWeek, options.season);
         break;
 
       default:
@@ -208,7 +200,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('[API] Live scoring POST error:', error);
+    handleComponentError(error as Error, 'route');
     
     return NextResponse.json(
       {
@@ -265,7 +257,7 @@ async function calculateHistoricalScores(leagueId: string, week: number, season:
     };
 
   } catch (error) {
-    console.error('Failed to calculate historical scores:', error);
+    handleComponentError(error as Error, 'route');
     return null;
   }
 }
@@ -282,7 +274,7 @@ async function calculateWeekScores(leagueId: string, week: number, season?: numb
     
     return await sleeperRealTimeScoringService.updateLeagueScores(leagueId);
   } catch (error) {
-    console.error('Failed to calculate week scores:', error);
+    handleComponentError(error as Error, 'route');
     throw error;
   }
 }
@@ -376,7 +368,7 @@ async function getWeekProjections(leagueId: string, week: number, season: number
 
     return projections;
   } catch (error) {
-    console.error('Failed to get week projections:', error);
+    handleComponentError(error as Error, 'route');
     return {};
   }
 }

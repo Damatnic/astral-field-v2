@@ -1,5 +1,7 @@
 'use client';
 
+
+import { handleComponentError } from '@/lib/error-handling';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { League, CreateLeagueForm } from '@/types/fantasy';
@@ -31,7 +33,7 @@ export default function LeaguesPage() {
         setUser(userData.user);
       }
     } catch (error) {
-      console.error('Error fetching user:', error);
+      handleComponentError(error as Error, 'page');
     }
   };
 
@@ -65,7 +67,7 @@ export default function LeaguesPage() {
       }
     } catch (error) {
       setError('Error loading leagues');
-      console.error('Error fetching leagues:', error);
+      handleComponentError(error as Error, 'page');
     } finally {
       setLoading(false);
     }
@@ -92,18 +94,16 @@ export default function LeaguesPage() {
       }
     } catch (error) {
       setError('Error creating league');
-      console.error('Error creating league:', error);
+      handleComponentError(error as Error, 'page');
     }
   };
 
   const handleJoinLeague = async (leagueId: string) => {
     // This would be implemented when we add league invitations
-    console.log('Join league:', leagueId);
   };
 
   const handleLeaveLeague = async (leagueId: string) => {
     // This would be implemented when we add leave functionality
-    console.log('Leave league:', leagueId);
   };
 
   if (loading) {

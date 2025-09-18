@@ -55,24 +55,13 @@ export class NFLStateService {
           undefined,
           'Fetching NFL state'
         );
-        this.lastRefresh = now;
-        
-        console.log('📅 NFL state updated:', {
-          season: this.currentState.season,
-          week: this.currentState.week,
-          seasonType: this.currentState.season_type
-        });
-        
-      } catch (error) {
-        console.error('❌ Failed to refresh NFL state:', error);
+        this.lastRefresh = now;} catch (error) {
+        handleComponentError(error as Error, 'nflStateService');
         
         // Return cached state if available, otherwise throw
         if (!this.currentState) {
           throw ErrorHandler.createSleeperError(error, '/state/nfl', 'Failed to get NFL state');
-        }
-        
-        console.log('⚠️ Using cached NFL state due to API error');
-      }
+        }}
     }
     
     return this.currentState;
@@ -149,7 +138,7 @@ export class NFLStateService {
     
     if (week && week !== state.week) {
       // Calculate dates for a different week
-      const currentWeekStart = new Date(state.week_start_date);
+      const currentWeekStart = new Date(state.week_start_date || Date.now());
       const weekDiff = week - state.week;
       const targetWeekStart = new Date(currentWeekStart.getTime() + (weekDiff * 7 * 24 * 60 * 60 * 1000));
       const targetWeekEnd = new Date(targetWeekStart.getTime() + (7 * 24 * 60 * 60 * 1000) - 1);
@@ -161,8 +150,8 @@ export class NFLStateService {
     }
     
     return {
-      start: new Date(state.week_start_date),
-      end: new Date(state.week_end_date)
+      start: new Date(state.week_start_date || Date.now()),
+      end: new Date(state.week_end_date || Date.now())
     };
   }
 
@@ -172,8 +161,8 @@ export class NFLStateService {
   async getSeasonDates(): Promise<{ start: Date; end: Date }> {
     const state = await this.getCurrentState();
     return {
-      start: new Date(state.season_start_date),
-      end: new Date(state.season_end_date)
+      start: new Date(state.season_start_date || Date.now()),
+      end: new Date(state.season_end_date || Date.now())
     };
   }
 
@@ -298,7 +287,7 @@ export class NFLStateService {
    * Calculate weeks remaining in season
    */
   private calculateWeeksRemaining(state: NFLState, currentDate: Date): number {
-    const seasonEnd = new Date(state.season_end_date);
+    const seasonEnd = new Date(state.season_end_date || Date.now());
     const millisecondsRemaining = seasonEnd.getTime() - currentDate.getTime();
     const weeksRemaining = millisecondsRemaining / (7 * 24 * 60 * 60 * 1000);
     
@@ -323,7 +312,7 @@ export class NFLStateService {
       try {
         await this.getCurrentState(true);
       } catch (error) {
-        console.error('⚠️ Periodic NFL state refresh failed:', error);
+        handleComponentError(error as Error, 'nflStateService');
       }
     }, this.refreshInterval);
     
@@ -403,9 +392,7 @@ export class NFLStateService {
    * Cleanup resources
    */
   cleanup(): void {
-    // Clear any timers or resources if needed
-    console.log('🧹 NFL State Service cleanup completed');
-  }
+    // Clear any timers or resources if needed}
 }
 
 // Export singleton instance

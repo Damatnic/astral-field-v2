@@ -800,7 +800,7 @@ class MobileResponsiveTester {
             const scrollPerformance = await page.evaluate(() => {
               return new Promise(resolve => {
                 let frameCount = 0;
-                let startTime = performance.now();
+                const startTime = performance.now();
                 
                 function measureFrame() {
                   frameCount++;

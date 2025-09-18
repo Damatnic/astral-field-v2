@@ -1,5 +1,7 @@
 'use client';
 
+
+import { handleComponentError } from '@/lib/error-handling';
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -109,7 +111,7 @@ export default function LeagueActivityFeed({ leagueId, className = '' }: LeagueA
         showError('Failed to load league activity', data.error);
       }
     } catch (err) {
-      console.error('Failed to fetch league activity:', err);
+      handleComponentError(err as Error, 'LeagueActivityFeed');
       setError('Failed to load activities');
       showError('Failed to load league activity', 'Please try again');
     } finally {

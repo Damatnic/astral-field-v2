@@ -26,6 +26,7 @@ model User {
   notifications          Notification[]
   teams                  Team[]
   trades                 Trade[]
+  tradeVotes             TradeVote[]
   waiverClaims           WaiverClaim[]
   roles                  Role[]
   
@@ -338,6 +339,7 @@ model TradeVote {
   reason  String?
   votedAt DateTime      @default(now())
   trade   Trade         @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([tradeId, userId])
   @@map("trade_votes")

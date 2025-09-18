@@ -162,7 +162,7 @@ export async function middleware(request: NextRequest) {
     return response;
     
   } catch (error) {
-    console.error('Middleware error:', error);
+    handleComponentError(error as Error, 'middleware');
     
     // On error, if it's a protected route, redirect to login
     const routeInfo = isProtectedRoute(pathname);
@@ -196,7 +196,7 @@ export const config = {
 export function getUserFromHeaders(request: NextRequest) {
   return {
     id: request.headers.get('x-user-id'),
-    role: request.headers.get('x-user-role') as 'admin' | 'commissioner' | 'player',
+    role: request.headers.get('x-user-role') as 'ADMIN' | 'COMMISSIONER' | 'PLAYER',
     email: request.headers.get('x-user-email')
   };
 }
@@ -209,7 +209,7 @@ export function requireAuth(request: NextRequest) {
   return getUserFromHeaders(request);
 }
 
-export function requireRole(request: NextRequest, requiredRole: 'admin' | 'commissioner' | 'player') {
+export function requireRole(request: NextRequest, requiredRole: 'admin' | 'commissioner' | 'authenticated') {
   const user = requireAuth(request);
   if (!canAccessRole(user.role, requiredRole)) {
     throw new Error(`${requiredRole} role required`);

@@ -100,7 +100,7 @@ export async function GET(
     });
 
   } catch (error) {
-    console.error('NFT fetch error:', error);
+    handleComponentError(error as Error, 'route');
     return NextResponse.json({
       success: false,
       error: 'Failed to fetch NFT collection'

@@ -1,5 +1,7 @@
 'use client';
 
+
+import { handleComponentError } from '@/lib/error-handling';
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -94,14 +96,10 @@ export function LiveScoringDashboard({
     });
 
     socketRef.current.on('connect', () => {
-      setIsConnected(true);
-      console.log('Connected to live scoring');
-    });
+      setIsConnected(true);});
 
     socketRef.current.on('disconnect', () => {
-      setIsConnected(false);
-      console.log('Disconnected from live scoring');
-    });
+      setIsConnected(false);});
 
     socketRef.current.on('scoreUpdate', (data: any) => {
       handleScoreUpdate(data);
@@ -138,7 +136,7 @@ export function LiveScoringDashboard({
         }
       }
     } catch (error) {
-      console.error('Failed to fetch initial data:', error);
+      handleComponentError(error as Error, 'LiveScoringDashboard');
     }
   };
 

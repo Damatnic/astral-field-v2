@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('Login error:', error);
+    handleComponentError(error as Error, 'route');
     return NextResponse.json(
       { success: false, error: 'Login failed' },
       { status: 500 }

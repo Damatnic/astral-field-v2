@@ -251,7 +251,7 @@ class ErrorEdgeCaseTester {
         });
         
         const page = await browser.newPage();
-        let jsErrors = [];
+        const jsErrors = [];
         
         page.on('pageerror', error => {
           jsErrors.push(error.message);
@@ -1079,7 +1079,7 @@ class ErrorEdgeCaseTester {
             document.body.appendChild(testElement);
             
             // High frequency scroll handler
-            let scrollHandler = () => {
+            const scrollHandler = () => {
               eventCount++;
               const now = performance.now();
               frameTimes.push(now - lastFrameTime);

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { handleComponentError } from '@/lib/error-handling';
 import { Resend } from 'resend';
 import { NotificationLogType } from '@prisma/client';
 
@@ -76,7 +77,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result);
 
   } catch (error) {
-    console.error('Send notification error:', error);
+    handleComponentError(error as Error, 'route');
     return NextResponse.json(
       { success: false, error: 'Failed to send notification' },
       { status: 500 }

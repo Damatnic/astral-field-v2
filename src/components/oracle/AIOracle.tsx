@@ -295,9 +295,7 @@ export default function AIOracle() {
   };
 
   const handleFeedback = (messageId: string, feedback: 'positive' | 'negative') => {
-    // Handle feedback submission
-    console.log(`Feedback ${feedback} for message ${messageId}`);
-  };
+    // Handle feedback submission};
 
   const getConfidenceColor = (confidence: number) => {
     if (confidence >= 80) return 'text-green-600 dark:text-green-400';

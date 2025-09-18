@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  MessageCircle, Trophy, Flame, Send, Heart, ThumbsUp, 
-  Laugh, Target, Crown, Shield, Star, TrendingUp,
-  Users, Activity, Award, Zap
+import {
+  MessageCircle, Trophy, Flame, Send,
+  Crown, Shield, Star, TrendingUp,
+  Award, Zap
 } from 'lucide-react';
 
 interface Message {
@@ -388,7 +388,7 @@ export default function SocialHub() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="text-center">
                   <div className="text-3xl mb-2">🥇</div>
-                  <p className="font-semibold">Nicholas D'Amato</p>
+                  <p className="font-semibold">Nicholas D&apos;Amato</p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">12 Trophies</p>
                 </div>
                 <div className="text-center">
@@ -480,4 +480,4 @@ export default function SocialHub() {
       </AnimatePresence>
     </div>
   );
-}export default SocialHub;
+}

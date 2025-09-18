@@ -4,8 +4,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient, UserRole } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { requireCommissioner } from '@/lib/auth/production-auth';
+import { handleComponentError } from '@/lib/error-handling';
 import { nflDataService } from '@/services/nfl/nflDataService';
 
 
@@ -128,7 +129,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(dashboardData);
     
   } catch (error) {
-    console.error('Commissioner dashboard error:', error);
+    // handleComponentError(error as Error, 'route');
     
     if (error instanceof Error && (error.message === 'Commissioner access required' || error.message === 'Unauthorized')) {
       return NextResponse.json(
@@ -199,7 +200,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ success: true });
     
   } catch (error) {
-    console.error('Update settings error:', error);
+    // handleComponentError(error as Error, 'route');
     return NextResponse.json(
       { error: 'Failed to update settings' },
       { status: 500 }
@@ -273,7 +274,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, result });
     
   } catch (error) {
-    console.error('Commissioner action error:', error);
+    // handleComponentError(error as Error, 'route');
     return NextResponse.json(
       { error: 'Failed to execute commissioner action' },
       { status: 500 }

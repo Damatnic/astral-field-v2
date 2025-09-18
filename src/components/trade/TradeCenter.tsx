@@ -1,5 +1,7 @@
 'use client';
 
+
+import { handleComponentError } from '@/lib/error-handling';
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -166,7 +168,7 @@ export default function TradeCenter({ leagueId, userId, teamId }: TradeCenterPro
       }
       
     } catch (err) {
-      console.error('Failed to fetch league data:', err);
+      handleComponentError(err as Error, 'TradeCenter');
       setError('Failed to load league data');
       showError('Failed to load data', 'Please try again');
     } finally {
@@ -183,7 +185,7 @@ export default function TradeCenter({ leagueId, userId, teamId }: TradeCenterPro
         setPendingTrades(data.trades || []);
       }
     } catch (err) {
-      console.error('Failed to fetch pending trades:', err);
+      handleComponentError(err as Error, 'TradeCenter');
     }
   };
 
@@ -196,7 +198,7 @@ export default function TradeCenter({ leagueId, userId, teamId }: TradeCenterPro
         setTradeHistory(data.trades || []);
       }
     } catch (err) {
-      console.error('Failed to fetch trade history:', err);
+      handleComponentError(err as Error, 'TradeCenter');
     }
   };
 
@@ -244,7 +246,7 @@ export default function TradeCenter({ leagueId, userId, teamId }: TradeCenterPro
         showError('Analysis failed', data.error);
       }
     } catch (err) {
-      console.error('Trade analysis failed:', err);
+      handleComponentError(err as Error, 'TradeCenter');
       showError('Analysis failed', 'Please try again');
     } finally {
       setIsAnalyzing(false);
@@ -303,7 +305,7 @@ export default function TradeCenter({ leagueId, userId, teamId }: TradeCenterPro
         showError('Trade proposal failed', data.message || 'Please try again');
       }
     } catch (err) {
-      console.error('Failed to propose trade:', err);
+      handleComponentError(err as Error, 'TradeCenter');
       showError('Trade proposal failed', 'Please try again');
     } finally {
       setIsProposing(false);
@@ -332,7 +334,7 @@ export default function TradeCenter({ leagueId, userId, teamId }: TradeCenterPro
         showError(`Failed to ${action} trade`, data.error);
       }
     } catch (err) {
-      console.error(`Failed to ${action} trade:`, err);
+      handleComponentError(err as Error, 'TradeCenter');
       showError(`Failed to ${action} trade`, 'Please try again');
     }
   };

@@ -85,7 +85,12 @@ interface ChatMessage {
   isSystem?: boolean;
 }
 
-export default function DraftRoom() {
+interface DraftRoomProps {
+  draftId: string;
+  userId?: string;
+}
+
+export default function DraftRoom({ draftId, userId }: DraftRoomProps) {
   const [draftStarted, setDraftStarted] = useState(false);
   const [currentPick, setCurrentPick] = useState<DraftPick>({
     id: '1',

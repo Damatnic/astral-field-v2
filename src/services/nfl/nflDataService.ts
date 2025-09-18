@@ -71,18 +71,13 @@ export class NFLDataService {
     this.apiKey = SPORTSDATA_API_KEY;
     this.useRealAPI = !!this.apiKey;
     
-    if (!this.useRealAPI) {
-      console.log('⚠️  No SportsData API key found. Using fallback data source.');
-    }
+    if (!this.useRealAPI) {}
   }
   
   /**
    * Fetch all NFL players for fantasy football
    */
-  async fetchAllPlayers(): Promise<void> {
-    console.log('🏈 Fetching NFL player data...');
-    
-    try {
+  async fetchAllPlayers(): Promise<void> {try {
       let players: any[] = [];
       
       if (this.useRealAPI) {
@@ -106,19 +101,11 @@ export class NFLDataService {
         POSITION_MAP[p.Position] && 
         p.Status !== 'Inactive' &&
         p.Status !== 'Retired'
-      );
-      
-      console.log(`Found ${fantasyPlayers.length} fantasy-relevant players`);
-      
-      // Upsert players to database
+      );// Upsert players to database
       for (const player of fantasyPlayers) {
         await this.upsertPlayer(player);
-      }
-      
-      console.log('✅ Player data import complete');
-      
-    } catch (error) {
-      console.error('❌ Error fetching NFL players:', error);
+      }} catch (error) {
+      handleComponentError(error as Error, 'nflDataService');
       // Fall back to static top players list
       await this.loadStaticPlayers();
     }
@@ -151,7 +138,7 @@ export class NFLDataService {
           })));
         }
       } catch (err) {
-        console.error(`Error fetching ${pos} players:`, err);
+        handleComponentError(err as Error, 'nflDataService');
       }
     }
     
@@ -193,17 +180,14 @@ export class NFLDataService {
         }
       });
     } catch (error) {
-      console.error(`Error upserting player ${playerData.Name}:`, error);
+      handleComponentError(error as Error, 'nflDataService');
     }
   }
   
   /**
    * Load static top fantasy players (fallback)
    */
-  private async loadStaticPlayers() {
-    console.log('Loading static player data...');
-    
-    const TOP_PLAYERS_2024 = [
+  private async loadStaticPlayers() {const TOP_PLAYERS_2024 = [
       // Quarterbacks
       { name: 'Josh Allen', position: Position.QB, team: 'BUF', bye: 12 },
       { name: 'Jalen Hurts', position: Position.QB, team: 'PHI', bye: 10 },
@@ -312,18 +296,12 @@ export class NFLDataService {
           yearsExperience: 3 // Default value
         }
       });
-    }
-    
-    console.log(`✅ Loaded ${TOP_PLAYERS_2024.length} static players`);
-  }
+    }}
   
   /**
    * Fetch current week scores
    */
-  async fetchCurrentWeekScores(week: number = 17) {
-    console.log(`📊 Fetching Week ${week} scores...`);
-    
-    if (this.useRealAPI) {
+  async fetchCurrentWeekScores(week: number = 17) {if (this.useRealAPI) {
       try {
         const response = await axios.get(
           `${SPORTSDATA_BASE_URL}/stats/json/PlayerGameStatsByWeek/2024/${week}`,
@@ -339,12 +317,8 @@ export class NFLDataService {
         // Process and store player stats
         for (const stat of stats) {
           await this.processPlayerStats(stat, week);
-        }
-        
-        console.log(`✅ Processed ${stats.length} player stats for Week ${week}`);
-        
-      } catch (error) {
-        console.error('Error fetching week scores:', error);
+        }} catch (error) {
+        handleComponentError(error as Error, 'nflDataService');
       }
     } else {
       // Generate random scores for demo
@@ -430,10 +404,7 @@ export class NFLDataService {
   /**
    * Generate demo scores for testing
    */
-  private async generateDemoScores(week: number) {
-    console.log('Generating demo scores...');
-    
-    const players = await prisma.player.findMany({
+  private async generateDemoScores(week: number) {const players = await prisma.player.findMany({
       where: {
         status: PlayerStatus.ACTIVE
       }
@@ -483,10 +454,7 @@ export class NFLDataService {
           isProjected: false
         }
       });
-    }
-    
-    console.log(`✅ Generated demo scores for ${players.length} players`);
-  }
+    }}
 }
 
 // Export singleton instance

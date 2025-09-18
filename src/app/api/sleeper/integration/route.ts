@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
         );
     }
   } catch (error: any) {
-    console.error('[API] Integration GET error:', error);
+    handleComponentError(error as Error, 'route');
     
     return NextResponse.json(
       {
@@ -75,19 +75,13 @@ export async function POST(request: NextRequest) {
     let result;
 
     switch (action) {
-      case 'initialize':
-        console.log('[API] Initializing Sleeper integration...');
-        result = await sleeperIntegrationService.initialize();
+      case 'initialize':result = await sleeperIntegrationService.initialize();
         break;
       
-      case 'full_sync':
-        console.log('[API] Starting full Sleeper sync...');
-        result = await sleeperIntegrationService.performFullSync();
+      case 'full_sync':result = await sleeperIntegrationService.performFullSync();
         break;
       
-      case 'start_maintenance':
-        console.log('[API] Starting maintenance schedule...');
-        await sleeperIntegrationService.startMaintenanceSchedule();
+      case 'start_maintenance':await sleeperIntegrationService.startMaintenanceSchedule();
         result = {
           message: 'Maintenance schedule started',
           description: 'Automatic sync and update routines are now active',
@@ -95,10 +89,7 @@ export async function POST(request: NextRequest) {
         };
         break;
       
-      case 'quick_setup':
-        console.log('[API] Running quick setup for D\'Amato Dynasty League...');
-        
-        // Perform essential setup steps
+      case 'quick_setup':// Perform essential setup steps
         const initResult = await sleeperIntegrationService.initialize();
         
         if (initResult.success) {
@@ -131,9 +122,7 @@ export async function POST(request: NextRequest) {
         }
         break;
       
-      case 'health_check':
-        console.log('[API] Running comprehensive health check...');
-        const healthResult = await sleeperIntegrationService.getHealthStatus();
+      case 'health_check':const healthResult = await sleeperIntegrationService.getHealthStatus();
         
         result = {
           message: 'Health check completed',
@@ -163,7 +152,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('[API] Integration POST error:', error);
+    handleComponentError(error as Error, 'route');
     
     return NextResponse.json(
       {

@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { authenticateFromRequest } from '@/lib/auth';
 
+import { handleComponentError } from '@/lib/error-handling';
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic';
 
@@ -152,7 +153,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(enhancedLeague);
     
   } catch (error) {
-    console.error('Error fetching league:', error);
+    handleComponentError(error as Error, 'route');
     
     if (error instanceof Error && error.message === 'Unauthorized') {
       return NextResponse.json(
@@ -221,7 +222,7 @@ async function getStandings(request: NextRequest) {
     return NextResponse.json(standings);
     
   } catch (error) {
-    console.error('Error fetching standings:', error);
+    handleComponentError(error as Error, 'route');
     return NextResponse.json(
       { error: 'Failed to fetch standings' },
       { status: 500 }

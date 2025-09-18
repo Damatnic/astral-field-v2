@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 
 
+import { handleComponentError } from '@/lib/error-handling';
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic';
 
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Process waivers error:', error);
+    handleComponentError(error as Error, 'route');
     return NextResponse.json(
       { success: false, error: 'Failed to process waivers' },
       { status: 500 }
@@ -60,10 +61,9 @@ async function processLeagueWaivers(leagueId: string) {
       include: {
         team: true,
         player: true,
-        dropPlayer: true
       },
       orderBy: [
-        { bidAmount: 'desc' }, // Highest bid first
+        { faabBid: 'desc' }, // Highest bid first
         { team: { waiverPriority: 'asc' } } // Then by waiver priority
       ]
     });
@@ -82,8 +82,10 @@ async function processLeagueWaivers(leagueId: string) {
     for (const [playerId, playerClaims] of claimsByPlayer.entries()) {
       // Sort by bid amount (highest first), then waiver priority
       const sortedClaims = playerClaims.sort((a, b) => {
-        if (b.bidAmount !== a.bidAmount) {
-          return b.bidAmount - a.bidAmount;
+        const bidA = a.faabBid || 0;
+        const bidB = b.faabBid || 0;
+        if (bidB !== bidA) {
+          return bidB - bidA;
         }
         return a.team.waiverPriority - b.team.waiverPriority;
       });
@@ -130,7 +132,7 @@ async function processLeagueWaivers(leagueId: string) {
     };
 
   } catch (error) {
-    console.error(`Error processing waivers for league ${leagueId}:`, error);
+    handleComponentError(error as Error, 'route');
     return {
       processedClaims: processedClaims.length,
       failedClaims: failedClaims.length,
@@ -166,7 +168,7 @@ async function processSingleClaim(claim: any): Promise<boolean> {
         where: { id: claim.teamId }
       });
 
-      if (!team || team.faabBudget < claim.bidAmount) {
+      if (!team || team.faabBudget < (claim.faabBid || 0)) {
         await tx.waiverClaim.update({
           where: { id: claim.id },
           data: {
@@ -204,7 +206,7 @@ async function processSingleClaim(claim: any): Promise<boolean> {
       await tx.team.update({
         where: { id: claim.teamId },
         data: {
-          faabBudget: team.faabBudget - claim.bidAmount
+          faabBudget: team.faabBudget - (claim.faabBid || 0)
         }
       });
 
@@ -220,12 +222,15 @@ async function processSingleClaim(claim: any): Promise<boolean> {
       // Create transaction record
       await tx.transaction.create({
         data: {
-          type: 'WAIVER_CLAIM',
+          type: 'WAIVER',
+          leagueId: claim.league.id,
           teamId: claim.teamId,
           playerId: claim.playerId,
-          dropPlayerId: claim.dropPlayerId,
-          faabAmount: claim.bidAmount,
-          status: 'COMPLETED'
+          metadata: {
+            dropPlayerId: claim.dropPlayerId,
+            faabAmount: claim.faabBid || 0,
+            status: 'COMPLETED'
+          }
         }
       });
 
@@ -234,7 +239,7 @@ async function processSingleClaim(claim: any): Promise<boolean> {
 
     return result;
   } catch (error) {
-    console.error('Error processing claim:', error);
+    handleComponentError(error as Error, 'route');
     return false;
   }
 }

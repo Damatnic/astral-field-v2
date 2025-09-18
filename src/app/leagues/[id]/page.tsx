@@ -1,5 +1,7 @@
 'use client';
 
+
+import { handleComponentError } from '@/lib/error-handling';
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
@@ -31,7 +33,7 @@ export default function LeaguePage() {
       }
     } catch (error) {
       setError('Error loading league');
-      console.error('Error fetching league:', error);
+      handleComponentError(error as Error, 'page');
     } finally {
       setLoading(false);
     }
@@ -108,13 +110,13 @@ export default function LeaguePage() {
 
             <div className="mt-4 lg:mt-0 flex gap-3">
               <Link
-                href={`/leagues/${league.id}/settings`}
+                href={`/leagues/${league.id}/settings` as any}
                 className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 font-medium"
               >
                 League Settings
               </Link>
               <Link
-                href={`/leagues/${league.id}/draft`}
+                href={`/leagues/${league.id}/draft` as any}
                 className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium"
               >
                 Draft Room

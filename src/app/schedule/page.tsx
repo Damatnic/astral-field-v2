@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CalendarDays, Clock, Trophy, Users, ChevronLeft, ChevronRight } from 'lucide-react';
+import { CalendarDays, Clock, Trophy, ChevronLeft, ChevronRight } from 'lucide-react';
 
 // Mock schedule data for D'Amato Dynasty League
 const scheduleData = {
@@ -195,7 +195,7 @@ export default function SchedulePage() {
             <h1 className="text-4xl font-bold text-slate-900">League Schedule</h1>
           </div>
           <p className="text-xl text-slate-600">
-            D'Amato Dynasty League • {scheduleData.season} Season
+            D&apos;Amato Dynasty League • {scheduleData.season} Season
           </p>
         </div>
 
@@ -235,7 +235,7 @@ export default function SchedulePage() {
             {scheduleData.weeks.map((week) => (
               <Button
                 key={week.week}
-                variant={selectedWeek === week.week ? "default" : "outline"}
+                variant={selectedWeek === week.week ? "primary" : "outline"}
                 size="sm"
                 onClick={() => setSelectedWeek(week.week)}
                 className={selectedWeek === week.week ? 'bg-blue-600' : ''}

@@ -1,18 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { handleComponentError } from '@/lib/error-handling';
 
 export async function POST(request: NextRequest) {
   try {
     const metrics = await request.json();
     
     // Log performance metrics (in production, send to monitoring service)
-    console.log('[Performance Metrics]:', metrics);
-    
     return NextResponse.json({ 
       success: true, 
       message: 'Performance metrics recorded' 
     });
   } catch (error) {
-    console.error('Error recording performance metrics:', error);
+    handleComponentError(error as Error, 'route');
     return NextResponse.json(
       { success: false, message: 'Failed to record metrics' },
       { status: 500 }

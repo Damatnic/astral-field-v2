@@ -582,7 +582,5 @@ export const mockRosterPlayers = [
 ];
 
 // DEPRECATED: Use NFLDataService.getAvailablePlayers() instead
-export const getAvailablePlayers = (leagueId?: string) => {
-  console.warn('mockPlayers.getAvailablePlayers is deprecated. Use NFLDataService instead.');
-  return [];
+export const getAvailablePlayers = (leagueId?: string) => {return [];
 };

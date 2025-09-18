@@ -94,7 +94,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error('Error generating avatar:', error);
+    handleComponentError(error as Error, 'route');
     
     // Return a default avatar on error
     const defaultSvg = generateAvatarSVG('User', memberColors.default);

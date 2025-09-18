@@ -181,7 +181,7 @@ export default function LeagueCard({
           
           {isCommissioner && (
             <Link
-              href={`/leagues/${league.id}/settings`}
+              href={`/leagues/${league.id}/settings` as any}
               className="bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-50 transition-colors font-medium text-sm"
             >
               Settings

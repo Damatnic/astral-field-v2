@@ -5,12 +5,9 @@ export async function POST(request: NextRequest) {
     const metric = await request.json();
     
     // In production, you would send this to your analytics service
-    // For now, we'll just log it (in a real app, use a service like DataDog, New Relic, etc.)
-    console.log('[Performance Metric]', metric);
-    
-    return NextResponse.json({ success: true });
+    // For now, we'll just log it (in a real app, use a service like DataDog, New Relic, etc.)return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error logging performance metric:', error);
+    handleComponentError(error as Error, 'route');
     return NextResponse.json({ error: 'Failed to log metric' }, { status: 500 });
   }
 }

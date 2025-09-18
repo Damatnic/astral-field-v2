@@ -1,36 +1,25 @@
 'use client';
 
+
+import { handleComponentError } from '@/lib/error-handling';
 import React, { useState, useEffect, useCallback } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
-  Shield,
   TrendingUp,
   TrendingDown,
   AlertCircle,
-  Info,
   Lock,
-  Unlock,
-  Star,
   Zap,
-  Heart,
-  Activity,
-  ChevronDown,
-  ChevronUp,
   Trophy,
-  Target,
-  Plus,
-  Minus,
   User,
   Users,
-  Clock,
   CheckCircle,
   XCircle,
   Save,
   RotateCcw,
   Loader2
 } from 'lucide-react';
-import Image from 'next/image';
 import { useToast } from '@/components/ui/Toast';
 import { Skeleton, LineupSlotSkeleton } from '@/components/ui/Skeleton';
 
@@ -67,6 +56,7 @@ interface RosterPlayer {
   player: Player;
   week?: number;
   isLocked: boolean;
+  projectedPoints?: number;
 }
 
 interface LineupSlot {
@@ -93,15 +83,15 @@ const positionColors = {
   FLEX: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-700'
 };
 
-function getCurrentWeek(): number {
-  const seasonStart = new Date('2025-09-04');
-  const now = new Date();
-  const diff = now.getTime() - seasonStart.getTime();
-  const weeks = Math.floor(diff / (1000 * 60 * 60 * 24 * 7));
-  return Math.max(1, Math.min(weeks + 1, 18));
-}
-
 export default function LineupManager({ teamId, week, isOwner = true }: LineupManagerProps) {
+  // Helper function to get current NFL week
+  const getCurrentWeek = (): number => {
+    const seasonStart = new Date('2025-09-04');
+    const now = new Date();
+    const diff = now.getTime() - seasonStart.getTime();
+    const weeks = Math.floor(diff / (1000 * 60 * 60 * 24 * 7));
+    return Math.max(1, Math.min(weeks + 1, 18));
+  };
   const [lineup, setLineup] = useState<LineupSlot[]>([
     { id: '1', position: 'QB', isRequired: true, eligiblePositions: ['QB'] },
     { id: '2', position: 'RB', isRequired: true, eligiblePositions: ['RB'] },
@@ -120,10 +110,9 @@ export default function LineupManager({ teamId, week, isOwner = true }: LineupMa
   const [isSaving, setIsSaving] = useState(false);
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [projectedTotal, setProjectedTotal] = useState(0);
-  const [showPlayerDetails, setShowPlayerDetails] = useState<string | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
-  const [currentWeek, setCurrentWeek] = useState(week || getCurrentWeek());
+  const [currentWeek] = useState(week || getCurrentWeek());
   
   const { success, error, info } = useToast();
 
@@ -171,7 +160,7 @@ export default function LineupManager({ teamId, week, isOwner = true }: LineupMa
         error('Failed to load lineup', data.error);
       }
     } catch (err) {
-      console.error('Failed to fetch lineup:', err);
+      handleComponentError(err as Error, 'LineupManager');
       error('Failed to load lineup', 'Please try again');
     } finally {
       setIsLoading(false);
@@ -292,7 +281,7 @@ export default function LineupManager({ teamId, week, isOwner = true }: LineupMa
         error('Failed to save lineup', data.error);
       }
     } catch (err) {
-      console.error('Failed to save lineup:', err);
+      handleComponentError(err as Error, 'LineupManager');
       error('Failed to save lineup', 'Please try again');
     } finally {
       setIsSaving(false);
@@ -356,7 +345,7 @@ export default function LineupManager({ teamId, week, isOwner = true }: LineupMa
         error('Failed to optimize lineup', data.error);
       }
     } catch (err) {
-      console.error('Failed to optimize lineup:', err);
+      handleComponentError(err as Error, 'LineupManager');
       error('Failed to optimize lineup', 'Please try again');
     } finally {
       setIsOptimizing(false);
@@ -374,14 +363,6 @@ export default function LineupManager({ teamId, week, isOwner = true }: LineupMa
       case 'DEF': return 8;
       default: return -1;
     }
-  };
-  
-  const getCurrentWeek = (): number => {
-    const seasonStart = new Date('2025-09-04');
-    const now = new Date();
-    const diff = now.getTime() - seasonStart.getTime();
-    const weeks = Math.floor(diff / (1000 * 60 * 60 * 24 * 7));
-    return Math.max(1, Math.min(weeks + 1, 18));
   };
   
   const PlayerCard = ({ rosterPlayer, isDragging }: { rosterPlayer: RosterPlayer; isDragging: boolean }) => {

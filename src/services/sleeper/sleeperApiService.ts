@@ -39,9 +39,7 @@ import {
 let Redis: any;
 try {
   Redis = require('ioredis');
-} catch (error) {
-  console.warn('Redis not available, using memory cache fallback');
-}
+} catch (error) {}
 
 export class SleeperApiError extends Error {
   constructor(
@@ -78,11 +76,7 @@ export class SleeperApiService {
     // Initialize Redis if available
     if (Redis && process.env.REDIS_URL) {
       try {
-        this.redis = new Redis(process.env.REDIS_URL);
-        console.log('✅ Redis cache initialized for Sleeper API');
-      } catch (error) {
-        console.warn('⚠️ Redis connection failed, using memory cache:', error);
-      }
+        this.redis = new Redis(process.env.REDIS_URL);} catch (error) {}
     }
 
     this.setupInterceptors();
@@ -103,9 +97,7 @@ export class SleeperApiService {
     this.client.interceptors.response.use(
       (response) => response,
       async (error) => {
-        if (error.response?.status === 429) {
-          console.log('⏳ Rate limited by Sleeper API, waiting before retry...');
-          await this.waitForRateLimit();
+        if (error.response?.status === 429) {await this.waitForRateLimit();
           return this.client.request(error.config);
         }
         
@@ -131,9 +123,7 @@ export class SleeperApiService {
     }
 
     if (this.requestCount >= this.config.rateLimit.maxRequests) {
-      const waitTime = this.resetTime - now;
-      console.log(`⏳ Rate limit reached. Waiting ${waitTime}ms...`);
-      await new Promise(resolve => setTimeout(resolve, waitTime));
+      const waitTime = this.resetTime - now;await new Promise(resolve => setTimeout(resolve, waitTime));
       this.requestCount = 0;
       this.resetTime = Date.now() + this.config.rateLimit.windowMs;
     }
@@ -165,9 +155,7 @@ export class SleeperApiService {
     if (cached) {
       try {
         return validator.parse(cached);
-      } catch (error) {
-        console.warn(`❌ Cache validation failed for ${cacheKey}:`, error);
-        await this.deleteFromCache(cacheKey);
+      } catch (error) {await this.deleteFromCache(cacheKey);
       }
     }
 
@@ -362,9 +350,7 @@ export class SleeperApiService {
       try {
         const cached = await this.redis.get(key);
         return cached ? JSON.parse(cached) : null;
-      } catch (error) {
-        console.warn(`Redis get error for key ${key}:`, error);
-      }
+      } catch (error) {}
     }
 
     // Memory cache fallback
@@ -381,9 +367,7 @@ export class SleeperApiService {
       try {
         await this.redis.setex(key, ttl, JSON.stringify(data));
         return;
-      } catch (error) {
-        console.warn(`Redis set error for key ${key}:`, error);
-      }
+      } catch (error) {}
     }
 
     // Memory cache fallback
@@ -398,9 +382,7 @@ export class SleeperApiService {
       try {
         await this.redis.del(key);
         return;
-      } catch (error) {
-        console.warn(`Redis delete error for key ${key}:`, error);
-      }
+      } catch (error) {}
     }
 
     // Memory cache fallback
@@ -445,10 +427,7 @@ export class SleeperApiService {
         const delay = Math.min(
           this.config.retry.baseDelay * Math.pow(this.config.retry.exponentialBase, attempt),
           this.config.retry.maxDelay
-        );
-        
-        console.log(`⚠️ Attempt ${attempt + 1} failed, retrying in ${delay}ms...`);
-        await new Promise(resolve => setTimeout(resolve, delay));
+        );await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
     
@@ -503,14 +482,10 @@ export class SleeperApiService {
         if (keys.length > 0) {
           await this.redis.del(keys);
         }
-      } catch (error) {
-        console.warn('Redis cache clear error:', error);
-      }
+      } catch (error) {}
     }
 
-    this.memoryCache.clear();
-    console.log('✅ Sleeper API cache cleared');
-  }
+    this.memoryCache.clear();}
 }
 
 // Export singleton instance

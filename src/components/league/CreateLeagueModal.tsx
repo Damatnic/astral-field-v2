@@ -1,5 +1,7 @@
 'use client';
 
+
+import { handleComponentError } from '@/lib/error-handling';
 import { useState } from 'react';
 import { CreateLeagueForm, WaiverMode } from '@/types/fantasy';
 
@@ -81,7 +83,7 @@ export default function CreateLeagueModal({ onClose, onSubmit }: CreateLeagueMod
     try {
       await onSubmit(formData);
     } catch (error) {
-      console.error('Error creating league:', error);
+      handleComponentError(error as Error, 'CreateLeagueModal');
     } finally {
       setLoading(false);
     }

@@ -26,7 +26,7 @@ interface NavItem {
   name: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
-  roles?: Array<'admin' | 'commissioner' | 'player'>;
+  roles?: Array<'ADMIN' | 'COMMISSIONER' | 'PLAYER'>;
   exact?: boolean;
 }
 
@@ -71,13 +71,13 @@ const adminNavItems: NavItem[] = [
     name: 'Admin Panel',
     href: '/admin',
     icon: Shield,
-    roles: ['admin']
+    roles: ['ADMIN']
   },
   {
     name: 'Commissioner',
     href: '/commissioner',
     icon: Crown,
-    roles: ['admin', 'commissioner']
+    roles: ['ADMIN', 'COMMISSIONER']
   }
 ];
 
@@ -178,7 +178,7 @@ function MobileNav({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }
             
             <div className="space-y-1">
               <Link
-                href="/settings"
+                href={"/settings" as any}
                 onClick={onClose}
                 className="flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50"
               >
@@ -259,7 +259,7 @@ function UserMenu() {
             </div>
             
             <Link
-              href="/profile"
+              href={"/profile" as any}
               className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
               onClick={() => setIsOpen(false)}
             >
@@ -268,7 +268,7 @@ function UserMenu() {
             </Link>
             
             <Link
-              href="/settings"
+              href={"/settings" as any}
               className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
               onClick={() => setIsOpen(false)}
             >

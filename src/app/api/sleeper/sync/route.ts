@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('[API] Sleeper sync error:', error);
+    handleComponentError(error as Error, 'route');
     
     return NextResponse.json(
       {
@@ -107,9 +107,7 @@ export async function POST(request: NextRequest) {
         result = searchResults;
         break;
       
-      case 'sync_all':
-        console.log('[API] Starting full Sleeper data sync...');
-        const [allPlayers, fantasyPlayers, trendingAdds, dynastyTargets] = await Promise.all([
+      case 'sync_all':const [allPlayers, fantasyPlayers, trendingAdds, dynastyTargets] = await Promise.all([
           sleeperPlayerService.getAllPlayers(true),
           sleeperPlayerService.getFantasyPlayers(true),
           sleeperPlayerService.getTrendingPlayers('add'),
@@ -141,7 +139,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('[API] Sleeper sync POST error:', error);
+    handleComponentError(error as Error, 'route');
     
     return NextResponse.json(
       {

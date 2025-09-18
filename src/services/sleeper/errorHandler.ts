@@ -69,9 +69,7 @@ export class CircuitBreaker {
   async execute<T>(operation: () => Promise<T>): Promise<T> {
     if (this.state === 'OPEN') {
       if (Date.now() - this.lastFailureTime > this.recoveryTimeoutMs) {
-        this.state = 'HALF_OPEN';
-        console.log('🔄 Circuit breaker moving to HALF_OPEN state');
-      } else {
+        this.state = 'HALF_OPEN';} else {
         throw new SleeperApiError(
           'Circuit breaker is OPEN - service temporarily unavailable',
           503,
@@ -102,9 +100,7 @@ export class CircuitBreaker {
     this.lastFailureTime = Date.now();
 
     if (this.failures >= this.failureThreshold) {
-      this.state = 'OPEN';
-      console.log(`⚠️ Circuit breaker opened after ${this.failures} failures`);
-    }
+      this.state = 'OPEN';}
   }
 
   getState() {
@@ -118,9 +114,7 @@ export class CircuitBreaker {
   reset(): void {
     this.failures = 0;
     this.lastFailureTime = 0;
-    this.state = 'CLOSED';
-    console.log('🔧 Circuit breaker manually reset');
-  }
+    this.state = 'CLOSED';}
 }
 
 /**
@@ -323,24 +317,16 @@ export class FallbackDataProvider {
     week_end_date: '2024-12-30'
   };
 
-  static getNFLState() {
-    console.log('⚠️ Using fallback NFL state data');
-    return this.FALLBACK_NFL_STATE;
+  static getNFLState() {return this.FALLBACK_NFL_STATE;
   }
 
-  static getPlayerStats(): Record<string, any> {
-    console.log('⚠️ Using empty fallback player stats');
-    return {};
+  static getPlayerStats(): Record<string, any> {return {};
   }
 
-  static getTrendingPlayers(): any[] {
-    console.log('⚠️ Using empty fallback trending players');
-    return [];
+  static getTrendingPlayers(): any[] {return [];
   }
 
-  static getLeagueData(leagueId: string) {
-    console.log(`⚠️ Using fallback league data for ${leagueId}`);
-    return {
+  static getLeagueData(leagueId: string) {return {
       league_id: leagueId,
       name: 'Fallback League',
       total_rosters: 10,
@@ -427,9 +413,7 @@ export class ErrorMonitor {
 
   reset(): void {
     this.errorCounts.clear();
-    this.errorWindow.clear();
-    console.log('🔧 Error monitor reset');
-  }
+    this.errorWindow.clear();}
 }
 
 // Export singleton instances

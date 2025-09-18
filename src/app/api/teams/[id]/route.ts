@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { authenticateFromRequest } from '@/lib/auth';
+import { handleComponentError } from '@/lib/error-handling';
 import { Team, ApiResponse } from '@/types/fantasy';
 
 
@@ -204,7 +205,7 @@ export async function GET(
 
     return NextResponse.json(response);
   } catch (error) {
-    console.error('Error fetching team:', error);
+    handleComponentError(error as Error, 'route');
     return NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }
@@ -324,7 +325,7 @@ export async function PUT(
 
     return NextResponse.json(response);
   } catch (error) {
-    console.error('Error updating team:', error);
+    handleComponentError(error as Error, 'route');
     return NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }

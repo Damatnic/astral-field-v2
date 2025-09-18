@@ -1,5 +1,7 @@
 'use client';
 
+
+import { handleComponentError } from '@/lib/error-handling';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -127,7 +129,7 @@ export function AdvancedTradeAnalyzer({
       const data = await response.json();
       setAnalysis(data);
     } catch (error) {
-      console.error('Trade analysis error:', error);
+      handleComponentError(error as Error, 'AdvancedTradeAnalyzer');
     } finally {
       setIsAnalyzing(false);
     }
@@ -297,7 +299,7 @@ export function AdvancedTradeAnalyzer({
               {['overview', 'dynasty', 'market'].map((tab) => (
                 <Button
                   key={tab}
-                  variant={selectedTab === tab ? 'default' : 'outline'}
+                  variant={selectedTab === tab ? 'primary' : 'outline'}
                   onClick={() => setSelectedTab(tab as any)}
                   className="capitalize"
                 >

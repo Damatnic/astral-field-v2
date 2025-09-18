@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { handleComponentError } from '@/lib/error-handling';
 import { Position } from '@prisma/client';
 
 export async function POST(
@@ -91,7 +92,7 @@ export async function POST(
     });
 
   } catch (error) {
-    console.error('Auto-pick error:', error);
+    handleComponentError(error as Error, 'route');
     return NextResponse.json(
       { success: false, error: 'Failed to generate auto-pick' },
       { status: 500 }

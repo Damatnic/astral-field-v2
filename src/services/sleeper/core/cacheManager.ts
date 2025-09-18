@@ -40,14 +40,10 @@ export class SleeperCacheManager {
     try {
       const Redis = await import('ioredis');
       if (this.config.redisUrl) {
-        this.redis = new Redis.default(this.config.redisUrl);
-        console.log('[CacheManager] Redis connected');
-      } else {
+        this.redis = new Redis.default(this.config.redisUrl);} else {
         throw new Error('Redis URL not configured');
       }
-    } catch (error: any) {
-      console.warn('[CacheManager] Redis connection failed, using memory cache only:', error.message);
-      this.config.useRedis = false;
+    } catch (error: any) {this.config.useRedis = false;
     }
   }
 
@@ -61,9 +57,7 @@ export class SleeperCacheManager {
         const redisData = await this.redis.get(key);
         if (redisData) {
           const parsed = JSON.parse(redisData);
-          if (this.isValid(parsed)) {
-            console.log(`[CacheManager] Redis hit: ${key}`);
-            return parsed.data;
+          if (this.isValid(parsed)) {return parsed.data;
           } else {
             // Expired, remove from Redis
             await this.redis.del(key);
@@ -73,18 +67,13 @@ export class SleeperCacheManager {
 
       // Try memory cache
       const memoryEntry = this.memoryCache.get(key);
-      if (memoryEntry && this.isValid(memoryEntry)) {
-        console.log(`[CacheManager] Memory hit: ${key}`);
-        return memoryEntry.data;
+      if (memoryEntry && this.isValid(memoryEntry)) {return memoryEntry.data;
       } else if (memoryEntry) {
         // Expired, remove from memory
         this.memoryCache.delete(key);
-      }
-
-      console.log(`[CacheManager] Cache miss: ${key}`);
-      return null;
+      }return null;
     } catch (error) {
-      console.error(`[CacheManager] Error getting ${key}:`, error);
+      handleComponentError(error as Error, 'cacheManager');
       return null;
     }
   }
@@ -116,7 +105,7 @@ export class SleeperCacheManager {
         this.cleanupMemoryCache();
       }
     } catch (error) {
-      console.error(`[CacheManager] Error setting ${key}:`, error);
+      handleComponentError(error as Error, 'cacheManager');
     }
   }
 
@@ -128,10 +117,8 @@ export class SleeperCacheManager {
       if (this.redis) {
         await this.redis.del(key);
       }
-      this.memoryCache.delete(key);
-      console.log(`[CacheManager] Deleted: ${key}`);
-    } catch (error) {
-      console.error(`[CacheManager] Error deleting ${key}:`, error);
+      this.memoryCache.delete(key);} catch (error) {
+      handleComponentError(error as Error, 'cacheManager');
     }
   }
 
@@ -143,10 +130,8 @@ export class SleeperCacheManager {
       if (this.redis) {
         await this.redis.flushall();
       }
-      this.memoryCache.clear();
-      console.log('[CacheManager] Cache cleared');
-    } catch (error) {
-      console.error('[CacheManager] Error clearing cache:', error);
+      this.memoryCache.clear();} catch (error) {
+      handleComponentError(error as Error, 'cacheManager');
     }
   }
 
@@ -161,10 +146,7 @@ export class SleeperCacheManager {
     const cached = await this.get<T>(key);
     if (cached !== null) {
       return cached;
-    }
-
-    console.log(`[CacheManager] Fetching fresh data for: ${key}`);
-    const freshData = await fetchFunction();
+    }const freshData = await fetchFunction();
     await this.set(key, freshData, ttl);
     return freshData;
   }
@@ -190,9 +172,7 @@ export class SleeperCacheManager {
       }
     }
 
-    if (removed > 0) {
-      console.log(`[CacheManager] Cleaned up ${removed} expired memory entries`);
-    }
+    if (removed > 0) {}
 
     // If still too large, remove oldest entries
     if (this.memoryCache.size > this.config.maxMemoryItems) {
@@ -202,10 +182,7 @@ export class SleeperCacheManager {
       const toRemove = this.memoryCache.size - this.config.maxMemoryItems;
       for (let i = 0; i < toRemove; i++) {
         this.memoryCache.delete(entries[i][0]);
-      }
-
-      console.log(`[CacheManager] Removed ${toRemove} oldest entries to free memory`);
-    }
+      }}
   }
 
   /**

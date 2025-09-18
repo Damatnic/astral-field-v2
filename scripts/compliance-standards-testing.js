@@ -82,7 +82,7 @@ class ComplianceStandardsTester {
     async testImageAltText($) {
         const images = $('img');
         let imagesWithoutAlt = 0;
-        let totalImages = images.length;
+        const totalImages = images.length;
 
         images.each((index, element) => {
             const altText = $(element).attr('alt');
@@ -263,7 +263,7 @@ class ComplianceStandardsTester {
         ];
 
         const contentLower = content.toLowerCase();
-        let missingSections = [];
+        const missingSections = [];
 
         for (const section of requiredSections) {
             if (!contentLower.includes(section.replace(' ', '')) && 

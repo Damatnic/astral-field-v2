@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 
+import { handleComponentError } from '@/lib/error-handling';
 interface TradePlayer {
   id: string;
   name: string;
@@ -102,8 +103,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Calculate trade values
-    const team1TotalValue = calculateTotalValue(trade.team1Gives, trade.draftPicks?.filter(p => p.team === trade.team1.id));
-    const team2TotalValue = calculateTotalValue(trade.team2Gives, trade.draftPicks?.filter(p => p.team === trade.team2.id));
+    const team1TotalValue = calculateTotalValue(trade.team1Gives, trade.draftPicks?.filter((p: any) => p.team === trade.team1.id));
+    const team2TotalValue = calculateTotalValue(trade.team2Gives, trade.draftPicks?.filter((p: any) => p.team === trade.team2.id));
 
     // Calculate fairness score
     const fairnessScore = calculateFairnessScore(team1TotalValue, team2TotalValue);
@@ -151,7 +152,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Trade analysis error:', error);
+    handleComponentError(error as Error, 'route');
     return NextResponse.json(
       { error: 'Failed to analyze trade' },
       { status: 500 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { handleComponentError } from '@/lib/error-handling';
 import { authenticateFromRequest } from '@/lib/auth';
 
 
@@ -77,7 +78,7 @@ export async function GET(
     });
 
   } catch (error) {
-    console.error('Get lineup error:', error);
+    handleComponentError(error as Error, 'route');
     return NextResponse.json(
       { success: false, error: 'Failed to fetch lineup' },
       { status: 500 }
@@ -187,7 +188,7 @@ export async function PUT(
     });
 
   } catch (error) {
-    console.error('Update lineup error:', error);
+    handleComponentError(error as Error, 'route');
     return NextResponse.json(
       { success: false, error: 'Failed to update lineup' },
       { status: 500 }
@@ -267,7 +268,7 @@ export async function POST(
     );
 
   } catch (error) {
-    console.error('Lineup action error:', error);
+    handleComponentError(error as Error, 'route');
     return NextResponse.json(
       { success: false, error: 'Failed to perform lineup action' },
       { status: 500 }

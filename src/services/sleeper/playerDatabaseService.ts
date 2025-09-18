@@ -4,6 +4,7 @@
 import { sleeperPlayerService } from './playerService';
 import { prisma as db } from '@/lib/db';
 
+import { handleComponentError } from '@/lib/error-handling';
 export interface DatabaseSyncResult {
   playersProcessed: number;
   playersCreated: number;
@@ -28,14 +29,8 @@ export class SleeperPlayerDatabaseService {
       timestamp: new Date().toISOString(),
     };
 
-    try {
-      console.log('[PlayerDatabaseService] Starting fantasy player sync...');
-      
-      // Get all fantasy players from Sleeper
-      const fantasyPlayers = await sleeperPlayerService.getFantasyPlayers();
-      console.log(`[PlayerDatabaseService] Retrieved ${fantasyPlayers.length} fantasy players from Sleeper`);
-
-      // Process players in batches
+    try {// Get all fantasy players from Sleeper
+      const fantasyPlayers = await sleeperPlayerService.getFantasyPlayers();// Process players in batches
       for (let i = 0; i < fantasyPlayers.length; i += batchSize) {
         const batch = fantasyPlayers.slice(i, i + batchSize);
         
@@ -45,19 +40,15 @@ export class SleeperPlayerDatabaseService {
         } catch (error: any) {
           const errorMsg = `Batch ${Math.floor(i/batchSize) + 1} failed: ${error.message}`;
           result.errors.push(errorMsg);
-          console.error(`[PlayerDatabaseService] ${errorMsg}`);
+          handleComponentError(new Error('[PlayerDatabaseService] ${errorMsg}'), 'playerDatabaseService');
         }
       }
 
-      result.duration = Date.now() - startTime;
-      console.log(`[PlayerDatabaseService] Sync completed in ${result.duration}ms`);
-      console.log(`[PlayerDatabaseService] Created: ${result.playersCreated}, Updated: ${result.playersUpdated}, Errors: ${result.errors.length}`);
-
-      return result;
+      result.duration = Date.now() - startTime;return result;
     } catch (error: any) {
       result.errors.push(`Sync failed: ${error.message}`);
       result.duration = Date.now() - startTime;
-      console.error('[PlayerDatabaseService] Sync failed:', error);
+      handleComponentError(error as Error, 'playerDatabaseService');
       return result;
     }
   }
@@ -151,13 +142,7 @@ export class SleeperPlayerDatabaseService {
       timestamp: new Date().toISOString(),
     };
 
-    try {
-      console.log('[PlayerDatabaseService] Starting dynasty targets sync...');
-      
-      const dynastyTargets = await sleeperPlayerService.getDynastyTargets();
-      console.log(`[PlayerDatabaseService] Retrieved ${dynastyTargets.length} dynasty targets`);
-
-      for (const player of dynastyTargets) {
+    try {const dynastyTargets = await sleeperPlayerService.getDynastyTargets();for (const player of dynastyTargets) {
         try {
           // Mark as dynasty target in database
           await db.player.updateMany({
@@ -176,10 +161,7 @@ export class SleeperPlayerDatabaseService {
         }
       }
 
-      result.duration = Date.now() - startTime;
-      console.log(`[PlayerDatabaseService] Dynasty sync completed: ${result.playersUpdated} players marked`);
-
-      return result;
+      result.duration = Date.now() - startTime;return result;
     } catch (error: any) {
       result.errors.push(`Dynasty sync failed: ${error.message}`);
       result.duration = Date.now() - startTime;
@@ -191,10 +173,7 @@ export class SleeperPlayerDatabaseService {
    * Clean up old/inactive players
    */
   async cleanupInactivePlayers(): Promise<{ removed: number; deactivated: number }> {
-    try {
-      console.log('[PlayerDatabaseService] Starting cleanup of inactive players...');
-      
-      // Get current fantasy players from Sleeper
+    try {// Get current fantasy players from Sleeper
       const currentPlayers = await sleeperPlayerService.getFantasyPlayers();
       const currentPlayerIds = new Set(currentPlayers.map(p => p.id));
 
@@ -218,9 +197,7 @@ export class SleeperPlayerDatabaseService {
               lastUpdated: new Date(),
             },
           });
-          deactivated++;
-          console.log(`[PlayerDatabaseService] Deactivated: ${dbPlayer.name}`);
-        }
+          deactivated++;}
       }
 
       // Optionally remove very old records (players not updated in 6+ months)
@@ -237,12 +214,9 @@ export class SleeperPlayerDatabaseService {
         },
       });
 
-      removed = oldPlayers.count;
-
-      console.log(`[PlayerDatabaseService] Cleanup completed: ${deactivated} deactivated, ${removed} removed`);
-      return { removed, deactivated };
+      removed = oldPlayers.count;return { removed, deactivated };
     } catch (error: any) {
-      console.error('[PlayerDatabaseService] Cleanup failed:', error);
+      handleComponentError(error as Error, 'playerDatabaseService');
       return { removed: 0, deactivated: 0 };
     }
   }
@@ -298,7 +272,7 @@ export class SleeperPlayerDatabaseService {
         needsSync,
       };
     } catch (error: any) {
-      console.error('[PlayerDatabaseService] Stats query failed:', error);
+      handleComponentError(error as Error, 'playerDatabaseService');
       return {
         totalPlayers: 0,
         fantasyRelevant: 0,
@@ -313,24 +287,16 @@ export class SleeperPlayerDatabaseService {
    * Force full resync (clears and rebuilds all player data)
    */
   async fullResync(): Promise<DatabaseSyncResult> {
-    const startTime = Date.now();
-    console.log('[PlayerDatabaseService] Starting FULL RESYNC - this will rebuild all player data...');
-
-    try {
-      // Clear existing players
-      console.log('[PlayerDatabaseService] Clearing existing player data...');
-      await db.player.deleteMany({});
+    const startTime = Date.now();try {
+      // Clear existing playersawait db.player.deleteMany({});
 
       // Perform full sync
       const result = await this.syncFantasyPlayersToDatabase();
       
       // Add dynasty targets
-      await this.syncDynastyTargets();
-
-      console.log('[PlayerDatabaseService] Full resync completed!');
-      return result;
+      await this.syncDynastyTargets();return result;
     } catch (error: any) {
-      console.error('[PlayerDatabaseService] Full resync failed:', error);
+      handleComponentError(error as Error, 'playerDatabaseService');
       return {
         playersProcessed: 0,
         playersCreated: 0,

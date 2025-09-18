@@ -1,5 +1,7 @@
 'use client';
 
+
+import { handleComponentError } from '@/lib/error-handling';
 import { useState, useEffect, useCallback } from 'react';
 import { Player, Position, PlayerStatus, PlayerSearchFilters } from '@/types/fantasy';
 import PlayerCard from '@/components/player/PlayerCard';
@@ -44,7 +46,7 @@ export default function PlayersPage() {
         }
       }
     } catch (error) {
-      console.error('Error fetching leagues:', error);
+      handleComponentError(error as Error, 'page');
     }
   };
 
@@ -91,7 +93,7 @@ export default function PlayersPage() {
       }
     } catch (error) {
       setError('Error loading players');
-      console.error('Error fetching players:', error);
+      handleComponentError(error as Error, 'page');
     } finally {
       setLoading(false);
     }
@@ -107,17 +109,14 @@ export default function PlayersPage() {
 
   const handleAddPlayer = async (playerId: string) => {
     // This would integrate with waiver/free agent system
-    console.log('Add player:', playerId);
   };
 
   const handleDropPlayer = async (playerId: string) => {
     // This would integrate with roster management
-    console.log('Drop player:', playerId);
   };
 
   const handleTradePlayer = async (playerId: string) => {
     // This would open trade interface
-    console.log('Trade player:', playerId);
   };
 
   const groupedPlayers = players.reduce((groups, player) => {

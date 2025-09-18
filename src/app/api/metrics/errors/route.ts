@@ -6,11 +6,11 @@ export async function POST(request: NextRequest) {
     
     // In production, you would send this to your error tracking service
     // For now, we'll just log it (in a real app, use Sentry, LogRocket, etc.)
-    console.error('[Client Error]', error);
+    handleComponentError(error as Error, 'route');
     
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error('Error logging client error:', err);
+    handleComponentError(err as Error, 'route');
     return NextResponse.json({ error: 'Failed to log error' }, { status: 500 });
   }
 }

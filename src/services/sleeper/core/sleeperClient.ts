@@ -36,9 +36,7 @@ export class SleeperClient {
     const url = `${this.baseURL}${endpoint}`;
     this.requestCount++;
 
-    try {
-      console.log(`[SleeperClient] Making request to: ${endpoint}`);
-      const response = await fetch(url, {
+    try {const response = await fetch(url, {
         ...options,
         headers: {
           'Content-Type': 'application/json',
@@ -55,7 +53,7 @@ export class SleeperClient {
       console.log(`[SleeperClient] Success: ${endpoint} (${this.requestCount}/${this.RATE_LIMIT})`);
       return data;
     } catch (error) {
-      console.error(`[SleeperClient] Error: ${endpoint}`, error);
+      handleComponentError(error as Error, 'sleeperClient');
       throw error;
     }
   }

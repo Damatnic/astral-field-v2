@@ -28,8 +28,8 @@ class Phase3ZeroDefectIntegrator {
         console.log('SCOPE: Advanced Quality & Compliance Validation');
         console.log('='.repeat(60));
 
-        for (const module of this.phase3Modules) {
-            await this.executeModule(module);
+        for (const testModule of this.phase3Modules) {
+            await this.executeModule(testModule);
         }
 
         await this.generateComprehensiveCertification();

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { handleComponentError } from '@/lib/error-handling';
 import { authenticateFromRequest } from '@/lib/auth';
 import { TradeAnalyzer } from '@/services/tradeAnalyzer';
 import { ApiResponse, TradeAnalysis } from '@/types/fantasy';
@@ -72,7 +73,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     }
 
     // Check if we have a cached analysis and it's recent (within 1 hour)
-    let cachedAnalysis = null;
+    const cachedAnalysis = null;
     if (!refreshCache) {
       const cacheKey = `trade_analysis_${tradeId}`;
       // In a production system, you'd use Redis or similar for caching
@@ -106,7 +107,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
     return NextResponse.json(response);
   } catch (error) {
-    console.error('Error analyzing trade:', error);
+    // handleComponentError(error as Error, 'route');
     return NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }
@@ -230,7 +231,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
     return NextResponse.json(response);
   } catch (error) {
-    console.error('Error performing detailed trade analysis:', error);
+    // handleComponentError(error as Error, 'route');
     return NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }
@@ -362,12 +363,12 @@ async function addDetailedInjuryAnalysis(analysis: TradeAnalysis, trade: any) {
   });
 }
 
-async function addDynastyAnalysis(analysis: TradeAnalysis, trade: any) {
+async function addDynastyAnalysis(analysis: TradeAnalysis, _trade: any) {
   // Add dynasty-specific considerations like age, contract status, development potential
   for (const teamAnalysis of analysis.teamAnalyses) {
     // Analyze age distribution and future value
     const avgAge = await calculateAverageAge(teamAnalysis.teamId);
-    const developmentPotential = await assessDevelopmentPotential(teamAnalysis.teamId);
+    // const developmentPotential = await assessDevelopmentPotential(teamAnalysis.teamId);
     
     teamAnalysis.rosterBalance.ageDistribution = Math.max(0, 100 - (avgAge - 25) * 5);
     
@@ -468,32 +469,32 @@ async function getTeamContext(teamId: string, leagueId: string) {
   });
 }
 
-async function generateCustomRecommendations(teamAnalysis: any, teamContext: any) {
+async function generateCustomRecommendations(_teamAnalysis: any, _teamContext: any) {
   // Generate recommendations specific to this team's situation
   return [];
 }
 
-async function identifyTeamSpecificRisks(teamAnalysis: any, teamContext: any) {
+async function identifyTeamSpecificRisks(_teamAnalysis: any, _teamContext: any) {
   // Identify risks specific to this team
   return [];
 }
 
-async function suggestAlternativeTargets(teamAnalysis: any, teamContext: any) {
+async function suggestAlternativeTargets(_teamAnalysis: any, _teamContext: any) {
   // Suggest alternative trade targets that might be better fits
   return [];
 }
 
-async function getUpcomingGames(leagueId: string, teamId: string) {
+async function getUpcomingGames(_leagueId: string, _teamId: string) {
   // Get upcoming matchups for schedule analysis
   return [];
 }
 
-function calculateScheduleStrength(upcomingGames: any[]): number {
+function calculateScheduleStrength(_upcomingGames: any[]): number {
   // Calculate strength of upcoming schedule
   return 0.5; // Placeholder
 }
 
-function identifyKeyMatchups(upcomingGames: any[]): string[] {
+function identifyKeyMatchups(_upcomingGames: any[]): string[] {
   // Identify key upcoming matchups
   return [];
 }

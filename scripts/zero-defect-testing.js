@@ -163,7 +163,7 @@ class ZeroDefectTester {
 
     await this.runTest('All links are functional', async () => {
       const links = await this.page.$$('a[href]');
-      let brokenLinks = [];
+      const brokenLinks = [];
       
       for (const link of links) {
         const href = await link.getProperty('href').then(h => h.jsonValue());
@@ -186,7 +186,7 @@ class ZeroDefectTester {
 
     await this.runTest('All images load successfully', async () => {
       const images = await this.page.$$('img');
-      let failedImages = [];
+      const failedImages = [];
       
       for (const img of images) {
         const src = await img.getProperty('src').then(s => s.jsonValue());

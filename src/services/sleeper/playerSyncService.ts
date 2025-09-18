@@ -89,11 +89,7 @@ export class PlayerSyncService {
     }
 
     this.isRunning = true;
-    const startTime = Date.now();
-    
-    console.log('🔄 Starting comprehensive player synchronization from Sleeper API...');
-    
-    const result: SyncResult = {
+    const startTime = Date.now();const result: SyncResult = {
       totalPlayers: 0,
       syncedPlayers: 0,
       skippedPlayers: 0,
@@ -111,11 +107,7 @@ export class PlayerSyncService {
       );
 
       const playerEntries = Object.entries(allPlayers);
-      result.totalPlayers = playerEntries.length;
-      
-      console.log(`📥 Fetched ${playerEntries.length} players from Sleeper API`);
-      
-      // Process players in batches
+      result.totalPlayers = playerEntries.length;// Process players in batches
       const batchSize = options.batchSize || 100;
       const batches = this.chunkArray(playerEntries, batchSize);
       
@@ -191,7 +183,7 @@ export class PlayerSyncService {
         result.errorCount++;
         const errorMessage = `Failed to sync player ${playerId}: ${error instanceof Error ? error.message : 'Unknown error'}`;
         result.errors.push(errorMessage);
-        console.error('❌', errorMessage);
+        handleComponentError(errorMessage as Error, 'playerSyncService');
       }
     });
 
@@ -251,7 +243,7 @@ export class PlayerSyncService {
       return true;
       
     } catch (error) {
-      console.error(`Failed to upsert player ${fullName}:`, error);
+      handleComponentError(error as Error, 'playerSyncService');
       return false;
     }
   }
@@ -352,10 +344,7 @@ export class PlayerSyncService {
   /**
    * Sync current season player stats
    */
-  async syncCurrentSeasonStats(): Promise<void> {
-    console.log('📊 Syncing current season player stats...');
-    
-    try {
+  async syncCurrentSeasonStats(): Promise<void> {try {
       const currentSeason = await this.nflState.getCurrentSeason();
       const stats = await this.sleeperApi.getPlayerStats(currentSeason);
       
@@ -369,18 +358,12 @@ export class PlayerSyncService {
         } catch (error) {
           const errorMsg = `Failed to update stats for ${sleeperPlayerId}: ${error instanceof Error ? error.message : 'Unknown error'}`;
           errors.push(errorMsg);
-          console.error('❌', errorMsg);
+          handleComponentError(errorMsg as Error, 'playerSyncService');
         }
-      }
-
-      console.log(`✅ Processed ${processedCount} player season stat records`);
-      
-      if (errors.length > 0) {
-        console.warn(`⚠️ ${errors.length} errors occurred during stats sync`);
-      }
+      }if (errors.length > 0) {}
       
     } catch (error) {
-      console.error('❌ Failed to sync season stats:', error);
+      handleComponentError(error as Error, 'playerSyncService');
       throw ErrorHandler.createSleeperError(error, undefined, 'Season stats sync failed');
     }
   }
@@ -388,10 +371,7 @@ export class PlayerSyncService {
   /**
    * Sync current week projections
    */
-  async syncCurrentWeekProjections(): Promise<void> {
-    console.log('🔮 Syncing current week projections...');
-    
-    try {
+  async syncCurrentWeekProjections(): Promise<void> {try {
       const currentSeason = await this.nflState.getCurrentSeason();
       const currentWeek = await this.nflState.getCurrentWeek();
       
@@ -404,14 +384,10 @@ export class PlayerSyncService {
           await this.updatePlayerProjections(sleeperPlayerId, projectionStats, parseInt(currentSeason), currentWeek);
           processedCount++;
         } catch (error) {
-          console.error(`❌ Failed to update projections for ${sleeperPlayerId}:`, error);
+          handleComponentError(error as Error, 'playerSyncService');
         }
-      }
-
-      console.log(`✅ Processed ${processedCount} player projection records`);
-      
-    } catch (error) {
-      console.error('❌ Failed to sync projections:', error);
+      }} catch (error) {
+      handleComponentError(error as Error, 'playerSyncService');
       throw ErrorHandler.createSleeperError(error, undefined, 'Projections sync failed');
     }
   }
@@ -551,10 +527,7 @@ export class PlayerSyncService {
   /**
    * Sync specific week stats
    */
-  async syncWeekStats(season: string, week: number): Promise<SyncResult> {
-    console.log(`📊 Syncing Week ${week} stats for ${season} season...`);
-    
-    const startTime = Date.now();
+  async syncWeekStats(season: string, week: number): Promise<SyncResult> {const startTime = Date.now();
     const result: SyncResult = {
       totalPlayers: 0,
       syncedPlayers: 0,
@@ -656,7 +629,7 @@ export class PlayerSyncService {
 
       return true;
     } catch (error) {
-      console.error(`Failed to update week stats for player ${sleeperPlayerId}:`, error);
+      handleComponentError(error as Error, 'playerSyncService');
       return false;
     }
   }
@@ -690,9 +663,7 @@ export class PlayerSyncService {
    * Force stop sync (emergency use only)
    */
   forceStop(): void {
-    this.isRunning = false;
-    console.log('⚠️ Player sync force stopped');
-  }
+    this.isRunning = false;}
 }
 
 // Export singleton instance

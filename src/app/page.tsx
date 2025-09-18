@@ -6,11 +6,10 @@ import { useAuth } from '@/components/AuthProvider';
 import LiveScoresTicker from '@/components/dashboard/LiveScoresTicker';
 import TeamPerformanceMetrics from '@/components/dashboard/TeamPerformanceMetrics';
 import LeagueActivityFeed from '@/components/dashboard/LeagueActivityFeed';
-import { 
-  Trophy, 
-  Users, 
-  BarChart3, 
-  // Calendar, 
+import {
+  Trophy,
+  Users,
+  BarChart3,
   MessageCircle,
   TrendingUp,
   Target,
@@ -21,15 +20,14 @@ import {
   ArrowRight,
   Star,
   Activity,
-  Sparkles,
-  Gamepad2
+  Sparkles
 } from 'lucide-react';
 
 // Dashboard stats component
 function DashboardStats() {
   const stats = [
     {
-      label: 'D\'Amato Dynasty League',
+      label: 'D&apos;Amato Dynasty League',
       value: '1',
       change: 'Active',
       changeType: 'positive',
@@ -93,7 +91,7 @@ function DashboardStats() {
 
 // Quick actions component
 function QuickActions() {
-  const { user, hasPermission } = useAuth();
+  const { hasPermission } = useAuth();
 
   const actions = [
     {
@@ -127,12 +125,12 @@ function QuickActions() {
   ];
 
   // Add admin/commissioner actions
-  if (hasPermission(['admin', 'commissioner'])) {
+  if (hasPermission(['ADMIN', 'COMMISSIONER'])) {
     actions.push({
-      name: hasPermission(['admin']) ? 'Admin Panel' : 'Commissioner Tools',
-      description: hasPermission(['admin']) ? 'Manage platform settings' : 'Manage your leagues',
-      href: hasPermission(['admin']) ? '/admin' : '/commissioner',
-      icon: hasPermission(['admin']) ? Shield : Crown,
+      name: hasPermission(['ADMIN']) ? 'Admin Panel' : 'Commissioner Tools',
+      description: hasPermission(['ADMIN']) ? 'Manage platform settings' : 'Manage your leagues',
+      href: hasPermission(['ADMIN']) ? '/admin' : '/commissioner',
+      icon: hasPermission(['ADMIN']) ? Shield : Crown,
       color: 'bg-red-500 hover:bg-red-600'
     });
   }
@@ -177,7 +175,7 @@ function RecentActivity() {
     {
       id: 1,
       type: 'trade',
-      message: 'Nicholas D\'Amato proposed trade to Nick Hartley',
+      message: 'Nicholas D&apos;Amato proposed trade to Nick Hartley',
       timestamp: '2 hours ago',
       icon: Activity,
       color: 'text-green-600'
@@ -254,7 +252,7 @@ function UpcomingEvents() {
     {
       id: 2,
       title: 'Trade Deadline',
-      description: 'D\'Amato Dynasty League',
+      description: 'D&apos;Amato Dynasty League',
       date: 'Nov 19, 2024',
       type: 'deadline',
       urgent: false
@@ -262,7 +260,7 @@ function UpcomingEvents() {
     {
       id: 3,
       title: 'Fantasy Playoffs',
-      description: 'D\'Amato Dynasty League',
+      description: 'D&apos;Amato Dynasty League',
       date: 'Week 15-17',
       type: 'playoffs',
       urgent: false
@@ -483,7 +481,7 @@ function LandingPage() {
                 Start your journey
               </Link>
               <Link
-                href="/contact"
+                href={"/contact" as any}
                 className="text-sm font-semibold leading-6 text-white hover:text-primary-100"
               >
                 Contact sales <span aria-hidden="true">→</span>

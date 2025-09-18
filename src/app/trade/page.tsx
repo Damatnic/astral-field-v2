@@ -73,7 +73,7 @@ export default function TradePage() {
         </div>
 
         {/* Trade Center Component */}
-        <TradeCenter />
+        <TradeCenter leagueId="damato-dynasty-league" />
       </div>
     </div>
   );

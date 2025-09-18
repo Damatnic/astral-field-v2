@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { handleComponentError } from '@/lib/error-handling';
 import { Position } from '@prisma/client';
 
 // Machine Learning weights for player scoring predictions
@@ -11,16 +12,6 @@ const ML_WEIGHTS = {
   injuryRisk: 0.10
 };
 
-// Position requirements for standard lineup
-const LINEUP_REQUIREMENTS = {
-  QB: 1,
-  RB: 2,
-  WR: 2,
-  TE: 1,
-  FLEX: 1,
-  K: 1,
-  DST: 1
-};
 
 interface PlayerAnalysis {
   id: string;
@@ -123,7 +114,7 @@ export async function POST(request: NextRequest) {
         : 0;
 
       // Simulate matchup difficulty based on position and opponent
-      const matchupDifficulty = calculateMatchupDifficulty(player.position, player.nflTeam);
+      const matchupDifficulty = calculateMatchupDifficulty(player.position);
       
       // Calculate weather impact (simulated for now)
       const weatherImpact = simulateWeatherImpact(player.position);
@@ -207,7 +198,7 @@ export async function POST(request: NextRequest) {
     const winProbability = calculateWinProbability(totalProjectedPoints, opponentProjection);
 
     // Generate key insights
-    const keyInsights = generateInsights(optimizedLineup, analyzedPlayers);
+    const keyInsights = generateInsights(optimizedLineup);
 
     // Calculate risk profile
     const riskProfile = calculateRiskProfile(optimizedLineup);
@@ -222,7 +213,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Lineup optimization error:', error);
+    // handleComponentError(error as Error, 'route');
     return NextResponse.json(
       { error: 'Failed to optimize lineup' },
       { status: 500 }
@@ -329,7 +320,7 @@ function generatePlayerReasoning(player: PlayerAnalysis): string[] {
   return reasons.slice(0, 5);
 }
 
-function generateInsights(lineup: any[], allPlayers: PlayerAnalysis[]): string[] {
+function generateInsights(lineup: any[]): string[] {
   const insights = [];
   
   // High upside plays
@@ -371,7 +362,7 @@ function generateInsights(lineup: any[], allPlayers: PlayerAnalysis[]): string[]
   return insights;
 }
 
-function calculateMatchupDifficulty(position: Position | null, team: string | null): number {
+function calculateMatchupDifficulty(position: Position | null): number {
   // Simulate matchup difficulty based on defensive rankings
   const baseDifficulty = 0.5 + Math.random() * 0.5;
   
@@ -467,8 +458,6 @@ function getOpponent(team: string | null, week: number): string {
 function calculateOpponentProjection(matchup: any, teamId: string): number {
   // Simulate opponent's projected score
   const isHome = matchup.homeTeamId === teamId;
-  const opponentRoster = isHome ? matchup.awayTeam.roster : matchup.homeTeam.roster;
-  
   // Basic simulation - would be more complex with real data
   return 110 + Math.random() * 40;
 }

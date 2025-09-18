@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Server as SocketIOServer } from 'socket.io';
 import { prisma } from '@/lib/db';
 
+import { handleComponentError } from '@/lib/error-handling';
 // This would typically be a WebSocket endpoint, but for API route we'll use SSE
 export async function GET(
   request: NextRequest,
@@ -105,7 +106,7 @@ export async function GET(
               return;
             }
           } catch (error) {
-            console.error('SSE polling error:', error);
+            handleComponentError(error as Error, 'route');
             controller.enqueue(
               encoder.encode(`data: ${JSON.stringify({ 
                 type: 'error', 
@@ -126,7 +127,7 @@ export async function GET(
           }
         });
       } catch (error) {
-        console.error('SSE start error:', error);
+        handleComponentError(error as Error, 'route');
         controller.error(error);
       }
     },

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { handleComponentError } from '@/lib/error-handling';
 import { authenticateFromRequest } from '@/lib/auth';
 
 
@@ -85,7 +86,7 @@ export async function POST(
     });
 
   } catch (error) {
-    console.error('Draft pick error:', error);
+    handleComponentError(error as Error, 'route');
     return NextResponse.json(
       { success: false, error: 'Failed to process draft pick' },
       { status: 500 }

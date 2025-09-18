@@ -8,6 +8,7 @@ import { SleeperApiService } from '@/services/sleeper/sleeperApiService';
 import { prisma as db } from '@/lib/db';
 
 
+import { handleComponentError } from '@/lib/error-handling';
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic';
 
@@ -70,7 +71,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(responseData);
 
   } catch (error: any) {
-    console.error('[API] Projections GET error:', error);
+    handleComponentError(error as Error, 'route');
     
     return NextResponse.json(
       {
@@ -99,9 +100,7 @@ export async function POST(request: NextRequest) {
 
     switch (action) {
       case 'sync_projections':
-        // Sync projections from Sleeper API
-        console.log(`[API] Syncing projections for week ${week || 'current'}`);
-        result = await syncProjectionsFromSleeper(week, season, options);
+        // Sync projections from Sleeper APIresult = await syncProjectionsFromSleeper(week, season, options);
         break;
 
       case 'update_league_projections':
@@ -110,22 +109,15 @@ export async function POST(request: NextRequest) {
             { error: 'leagueId required for league projection update' },
             { status: 400 }
           );
-        }
-
-        console.log(`[API] Updating projections for league: ${leagueId}`);
-        result = await updateLeagueProjections(leagueId, week, season, options);
+        }result = await updateLeagueProjections(leagueId, week, season, options);
         break;
 
       case 'calculate_custom_projections':
-        // Calculate custom projections based on historical data
-        console.log(`[API] Calculating custom projections for week ${week || 'current'}`);
-        result = await calculateCustomProjections(week, season, leagueId, options);
+        // Calculate custom projections based on historical dataresult = await calculateCustomProjections(week, season, leagueId, options);
         break;
 
       case 'compare_projections':
-        // Compare different projection sources
-        console.log(`[API] Comparing projection sources for week ${week || 'current'}`);
-        result = await compareProjections(week, season, leagueId, options);
+        // Compare different projection sourcesresult = await compareProjections(week, season, leagueId, options);
         break;
 
       case 'generate_lineup_projections':
@@ -134,10 +126,7 @@ export async function POST(request: NextRequest) {
             { error: 'leagueId required for lineup projections' },
             { status: 400 }
           );
-        }
-
-        console.log(`[API] Generating lineup projections for league: ${leagueId}`);
-        result = await generateLineupProjections(leagueId, week, season, options);
+        }result = await generateLineupProjections(leagueId, week, season, options);
         break;
 
       default:
@@ -155,7 +144,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('[API] Projections POST error:', error);
+    handleComponentError(error as Error, 'route');
     
     return NextResponse.json(
       {
@@ -195,9 +184,7 @@ async function getPlayerProjections(playerId: string, week: number, season: numb
       try {
         const sleeperProjections = await sleeperApi.getPlayerProjections(season.toString(), week);
         sleeperProjection = sleeperProjections[player.sleeperPlayerId || ''] || null;
-      } catch (error) {
-        console.warn(`Failed to get Sleeper projection for player ${playerId}:`, error);
-      }
+      } catch (error) {}
     }
 
     const dbProjection = player.projections[0];
@@ -232,7 +219,7 @@ async function getPlayerProjections(playerId: string, week: number, season: numb
     };
 
   } catch (error) {
-    console.error(`Failed to get player projections for ${playerId}:`, error);
+    handleComponentError(error as Error, 'route');
     throw error;
   }
 }
@@ -290,9 +277,7 @@ async function getLeagueProjections(
     if (source === 'sleeper' || source === 'both') {
       try {
         sleeperProjections = await sleeperApi.getPlayerProjections(season.toString(), week);
-      } catch (error) {
-        console.warn('Failed to get Sleeper projections:', error);
-      }
+      } catch (error) {}
     }
 
     // Format response based on format type
@@ -305,7 +290,7 @@ async function getLeagueProjections(
     }
 
   } catch (error) {
-    console.error(`Failed to get league projections for ${leagueId}:`, error);
+    handleComponentError(error as Error, 'route');
     throw error;
   }
 }
@@ -349,9 +334,7 @@ async function getAllProjections(
     if (source === 'sleeper' || source === 'both') {
       try {
         sleeperProjections = await sleeperApi.getPlayerProjections(season.toString(), week);
-      } catch (error) {
-        console.warn('Failed to get Sleeper projections:', error);
-      }
+      } catch (error) {}
     }
 
     // Filter players with projections or stats
@@ -368,7 +351,7 @@ async function getAllProjections(
     }
 
   } catch (error) {
-    console.error('Failed to get all projections:', error);
+    handleComponentError(error as Error, 'route');
     throw error;
   }
 }
@@ -378,11 +361,7 @@ async function syncProjectionsFromSleeper(week?: number, season?: number, option
   try {
     const nflState = await nflStateService.getCurrentState();
     const targetWeek = week || nflState.week;
-    const targetSeason = season || parseInt(nflState.season);
-
-    console.log(`Syncing Sleeper projections for week ${targetWeek}, season ${targetSeason}`);
-    
-    // Use the existing sync service
+    const targetSeason = season || parseInt(nflState.season);// Use the existing sync service
     await playerSyncService.syncCurrentWeekProjections();
 
     // Get sync stats
@@ -406,7 +385,7 @@ async function syncProjectionsFromSleeper(week?: number, season?: number, option
     };
 
   } catch (error) {
-    console.error('Failed to sync projections from Sleeper:', error);
+    handleComponentError(error as Error, 'route');
     throw error;
   }
 }
@@ -439,9 +418,7 @@ async function updateLeagueProjections(leagueId: string, week?: number, season?:
           where: { playerId, week: targetWeek, season: targetSeason },
         });
         if (existing) updatedCount++;
-      } catch (error) {
-        console.warn(`Failed to update projection for player ${playerId}:`, error);
-      }
+      } catch (error) {}
     }
 
     return {
@@ -454,7 +431,7 @@ async function updateLeagueProjections(leagueId: string, week?: number, season?:
     };
 
   } catch (error) {
-    console.error(`Failed to update league projections for ${leagueId}:`, error);
+    handleComponentError(error as Error, 'route');
     throw error;
   }
 }
@@ -485,7 +462,7 @@ async function calculateCustomProjections(week?: number, season?: number, league
     };
 
   } catch (error) {
-    console.error('Failed to calculate custom projections:', error);
+    handleComponentError(error as Error, 'route');
     throw error;
   }
 }
@@ -528,7 +505,7 @@ async function compareProjections(week?: number, season?: number, leagueId?: str
     };
 
   } catch (error) {
-    console.error('Failed to compare projections:', error);
+    handleComponentError(error as Error, 'route');
     throw error;
   }
 }
@@ -602,7 +579,7 @@ async function generateLineupProjections(leagueId: string, week?: number, season
     };
 
   } catch (error) {
-    console.error(`Failed to generate lineup projections for league ${leagueId}:`, error);
+    handleComponentError(error as Error, 'route');
     throw error;
   }
 }

@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
         );
     }
   } catch (error: any) {
-    console.error('[API] League sync GET error:', error);
+    handleComponentError(error as Error, 'route');
     
     return NextResponse.json(
       {
@@ -107,15 +107,10 @@ export async function POST(request: NextRequest) {
             { error: 'leagueId required for league sync' },
             { status: 400 }
           );
-        }
-        
-        console.log(`[API] Starting sync for league: ${leagueId}`);
-        result = await sleeperLeagueSyncService.syncLeague(leagueId);
+        }result = await sleeperLeagueSyncService.syncLeague(leagueId);
         break;
       
-      case 'sync_all_leagues':
-        console.log('[API] Starting sync for all active leagues...');
-        result = await sleeperLeagueSyncService.syncAllLeagues();
+      case 'sync_all_leagues':result = await sleeperLeagueSyncService.syncAllLeagues();
         
         // Create summary for all leagues
         const summary = {
@@ -141,14 +136,9 @@ export async function POST(request: NextRequest) {
             { error: 'leagueId required for force resync' },
             { status: 400 }
           );
-        }
-        
-        console.log(`[API] Force resyncing league: ${leagueId}`);
-        // Force resync by clearing Sleeper IDs first (if option enabled)
+        }// Force resync by clearing Sleeper IDs first (if option enabled)
         if (options.clearMappings) {
-          // This would clear existing mappings to force remapping
-          console.log(`[API] Clearing existing mappings for league: ${leagueId}`);
-          // Implementation would go here
+          // This would clear existing mappings to force remapping// Implementation would go here
         }
         
         result = await sleeperLeagueSyncService.syncLeague(leagueId);
@@ -169,7 +159,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('[API] League sync POST error:', error);
+    handleComponentError(error as Error, 'route');
     
     return NextResponse.json(
       {

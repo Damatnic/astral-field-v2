@@ -1,6 +1,6 @@
 'use client';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { BarChart3, TrendingUp, Trophy, Users, Target, Activity } from 'lucide-react';
 
@@ -15,7 +15,7 @@ export default function AnalyticsPage() {
             <h1 className="text-4xl font-bold text-slate-900">League Analytics</h1>
           </div>
           <p className="text-xl text-slate-600">
-            Deep insights and performance analytics for the D'Amato Dynasty League
+            Deep insights and performance analytics for the D&apos;Amato Dynasty League
           </p>
         </div>
 
@@ -25,7 +25,7 @@ export default function AnalyticsPage() {
             <Activity className="h-16 w-16 text-blue-600 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-slate-900 mb-4">Advanced Analytics Coming Soon</h2>
             <p className="text-lg text-slate-700 mb-6">
-              We're building powerful analytics tools including performance tracking, 
+              We&apos;re building powerful analytics tools including performance tracking,
               trend analysis, and dynasty value insights.
             </p>
             <Badge className="bg-blue-600 text-white">

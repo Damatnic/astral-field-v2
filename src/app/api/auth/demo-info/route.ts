@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getDemoCredentials } from '@/lib/auth-simple';
 
+import { handleComponentError } from '@/lib/error-handling';
 export async function GET() {
   try {
     const demoInfo = getDemoCredentials();
@@ -14,7 +15,7 @@ export async function GET() {
       }
     });
   } catch (error) {
-    console.error('Demo info API error:', error);
+    handleComponentError(error as Error, 'route');
     return NextResponse.json(
       { success: false, error: 'Failed to get demo info' },
       { status: 500 }

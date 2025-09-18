@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
         );
     }
   } catch (error: any) {
-    console.error('[API] Database GET error:', error);
+    handleComponentError(error as Error, 'route');
     
     return NextResponse.json(
       {
@@ -62,26 +62,18 @@ export async function POST(request: NextRequest) {
     let result;
 
     switch (action) {
-      case 'sync_fantasy':
-        console.log('[API] Starting fantasy player database sync...');
-        result = await sleeperPlayerDatabaseService.syncFantasyPlayersToDatabase(
+      case 'sync_fantasy':result = await sleeperPlayerDatabaseService.syncFantasyPlayersToDatabase(
           options.batchSize || 100
         );
         break;
       
-      case 'sync_dynasty':
-        console.log('[API] Starting dynasty targets sync...');
-        result = await sleeperPlayerDatabaseService.syncDynastyTargets();
+      case 'sync_dynasty':result = await sleeperPlayerDatabaseService.syncDynastyTargets();
         break;
       
-      case 'cleanup':
-        console.log('[API] Starting player cleanup...');
-        result = await sleeperPlayerDatabaseService.cleanupInactivePlayers();
+      case 'cleanup':result = await sleeperPlayerDatabaseService.cleanupInactivePlayers();
         break;
       
-      case 'full_resync':
-        console.log('[API] Starting FULL database resync...');
-        result = await sleeperPlayerDatabaseService.fullResync();
+      case 'full_resync':result = await sleeperPlayerDatabaseService.fullResync();
         break;
       
       case 'complete_sync':
@@ -122,7 +114,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('[API] Database sync error:', error);
+    handleComponentError(error as Error, 'route');
     
     return NextResponse.json(
       {

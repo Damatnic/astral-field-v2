@@ -7,6 +7,7 @@ import { nflStateService } from '@/services/sleeper/nflStateService';
 import { prisma as db } from '@/lib/db';
 
 
+import { handleComponentError } from '@/lib/error-handling';
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic';
 
@@ -46,10 +47,7 @@ export async function POST(request: NextRequest) {
             { error: 'leagueId required for league update' },
             { status: 400 }
           );
-        }
-
-        console.log(`[API] Updating scores for league: ${leagueId}`);
-        result = await updateLeagueScores(leagueId, week, season, options);
+        }result = await updateLeagueScores(leagueId, week, season, options);
         break;
 
       case 'update_matchup':
@@ -58,15 +56,10 @@ export async function POST(request: NextRequest) {
             { error: 'matchupId required for matchup update' },
             { status: 400 }
           );
-        }
-
-        console.log(`[API] Updating individual matchup: ${matchupId}`);
-        result = await updateSingleMatchup(matchupId, scores, options);
+        }result = await updateSingleMatchup(matchupId, scores, options);
         break;
 
-      case 'update_all_leagues':
-        console.log('[API] Updating scores for all active leagues');
-        result = await updateAllActiveLeagues(options);
+      case 'update_all_leagues':result = await updateAllActiveLeagues(options);
         break;
 
       case 'batch_update':
@@ -75,10 +68,7 @@ export async function POST(request: NextRequest) {
             { error: 'updates array required for batch update' },
             { status: 400 }
           );
-        }
-
-        console.log(`[API] Processing batch update of ${body.updates.length} matchups`);
-        result = await processBatchUpdate(body.updates, options);
+        }result = await processBatchUpdate(body.updates, options);
         break;
 
       case 'stat_correction':
@@ -87,10 +77,7 @@ export async function POST(request: NextRequest) {
             { error: 'leagueId and week required for stat correction' },
             { status: 400 }
           );
-        }
-
-        console.log(`[API] Processing stat correction for league: ${leagueId}, week: ${week}`);
-        result = await processStatCorrection(leagueId, week, season, body.corrections, options);
+        }result = await processStatCorrection(leagueId, week, season, body.corrections, options);
         break;
 
       case 'recalculate_week':
@@ -99,10 +86,7 @@ export async function POST(request: NextRequest) {
             { error: 'leagueId and week required for recalculation' },
             { status: 400 }
           );
-        }
-
-        console.log(`[API] Recalculating week ${week} for league: ${leagueId}`);
-        result = await recalculateWeekScores(leagueId, week, season, options);
+        }result = await recalculateWeekScores(leagueId, week, season, options);
         break;
 
       default:
@@ -120,7 +104,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('[API] Scoring update error:', error);
+    handleComponentError(error as Error, 'route');
     
     return NextResponse.json(
       {
@@ -161,7 +145,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('[API] Scoring update status error:', error);
+    handleComponentError(error as Error, 'route');
     
     return NextResponse.json(
       {
@@ -192,7 +176,7 @@ async function updateLeagueScores(leagueId: string, week?: number, season?: numb
     }
 
     const targetWeek = week || league.currentWeek || 1;
-    const targetSeason = season || parseInt(league.season.toString());
+    const targetSeason = season || league.season;
 
     // Update scores using real-time service
     const liveUpdate = await sleeperRealTimeScoringService.updateLeagueScores(leagueId);
@@ -221,7 +205,7 @@ async function updateLeagueScores(leagueId: string, week?: number, season?: numb
     };
 
   } catch (error) {
-    console.error(`Failed to update league scores for ${leagueId}:`, error);
+    handleComponentError(error as Error, 'route');
     
     // Log the failed update
     await logScoringUpdate({
@@ -304,7 +288,7 @@ async function updateSingleMatchup(matchupId: string, scores?: any, options: any
     };
 
   } catch (error) {
-    console.error(`Failed to update matchup ${matchupId}:`, error);
+    handleComponentError(error as Error, 'route');
     throw error;
   }
 }
@@ -337,7 +321,7 @@ async function updateAllActiveLeagues(options: any = {}) {
     };
 
   } catch (error) {
-    console.error('Failed to update all leagues:', error);
+    handleComponentError(error as Error, 'route');
     throw error;
   }
 }
@@ -422,7 +406,7 @@ async function processStatCorrection(leagueId: string, week: number, season?: nu
     };
 
   } catch (error) {
-    console.error(`Failed to process stat correction for league ${leagueId}:`, error);
+    handleComponentError(error as Error, 'route');
     throw error;
   }
 }
@@ -460,7 +444,7 @@ async function recalculateWeekScores(leagueId: string, week: number, season?: nu
     };
 
   } catch (error) {
-    console.error(`Failed to recalculate week scores for league ${leagueId}:`, error);
+    handleComponentError(error as Error, 'route');
     throw error;
   }
 }
@@ -488,7 +472,7 @@ async function logScoringUpdate(logData: {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Failed to log scoring update:', error);
+    handleComponentError(error as Error, 'route');
   }
 }
 
@@ -517,7 +501,7 @@ async function getUpdateStatus(leagueId: string, week?: number, status: string =
       where: {
         leagueId,
         week: targetWeek,
-        season: parseInt(league.season.toString()),
+        season: league.season,
       },
       select: {
         id: true,
@@ -541,7 +525,7 @@ async function getUpdateStatus(leagueId: string, week?: number, status: string =
         isActive: league.isActive,
       },
       week: targetWeek,
-      season: parseInt(league.season),
+      season: league.season,
       isCurrentWeek,
       isLive,
       matchups: matchups.map(m => ({
@@ -566,7 +550,7 @@ async function getUpdateStatus(leagueId: string, week?: number, status: string =
     };
 
   } catch (error) {
-    console.error(`Failed to get update status for league ${leagueId}:`, error);
+    handleComponentError(error as Error, 'route');
     throw error;
   }
 }
@@ -608,7 +592,7 @@ async function getGlobalUpdateStatus() {
     };
 
   } catch (error) {
-    console.error('Failed to get global update status:', error);
+    handleComponentError(error as Error, 'route');
     throw error;
   }
 }
