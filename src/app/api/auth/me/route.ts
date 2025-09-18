@@ -6,6 +6,13 @@ import { getCurrentUser as getCurrentUserFull } from '@/lib/auth';
 const useSimpleAuth = process.env.NODE_ENV === 'production' || !process.env.DATABASE_URL;
 const getCurrentUser = useSimpleAuth ? getCurrentUserSimple : getCurrentUserFull;
 
+console.log('[AUTH DEBUG] /me endpoint - Auth system selection:', {
+  NODE_ENV: process.env.NODE_ENV,
+  HAS_DATABASE_URL: !!process.env.DATABASE_URL,
+  useSimpleAuth,
+  authSystem: useSimpleAuth ? 'SIMPLE' : 'FULL'
+});
+
 export async function GET(_request: NextRequest) {
   try {
     // Get current user from session

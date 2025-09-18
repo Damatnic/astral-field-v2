@@ -6,6 +6,13 @@ import { login as loginFull } from '@/lib/auth';
 const useSimpleAuth = process.env.NODE_ENV === 'production' || !process.env.DATABASE_URL;
 const login = useSimpleAuth ? loginSimple : loginFull;
 
+console.log('[AUTH DEBUG] Auth system selection:', {
+  NODE_ENV: process.env.NODE_ENV,
+  HAS_DATABASE_URL: !!process.env.DATABASE_URL,
+  useSimpleAuth,
+  authSystem: useSimpleAuth ? 'SIMPLE' : 'FULL'
+});
+
 export async function POST(request: NextRequest) {
   try {
     // Parse request body with better error handling

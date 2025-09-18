@@ -24,7 +24,7 @@ export async function GET(
     const team = await prisma.team.findFirst({
       where: {
         id: teamId,
-        userId: user.id
+        ownerId: user.id
       },
       include: {
         league: true
@@ -51,15 +51,15 @@ export async function GET(
 
     // Organize by position
     const lineup = {
-      QB: rosterPlayers.filter(rp => rp.position === 'QB'),
-      RB: rosterPlayers.filter(rp => rp.position === 'RB'),
-      WR: rosterPlayers.filter(rp => rp.position === 'WR'),
-      TE: rosterPlayers.filter(rp => rp.position === 'TE'),
-      FLEX: rosterPlayers.filter(rp => rp.position === 'FLEX'),
-      K: rosterPlayers.filter(rp => rp.position === 'K'),
-      DEF: rosterPlayers.filter(rp => rp.position === 'DEF'),
-      BENCH: rosterPlayers.filter(rp => rp.position === 'BENCH'),
-      IR: rosterPlayers.filter(rp => rp.position === 'IR')
+      QB: rosterPlayers.filter(rp => rp.rosterSlot === 'QB'),
+      RB: rosterPlayers.filter(rp => rp.rosterSlot === 'RB'),
+      WR: rosterPlayers.filter(rp => rp.rosterSlot === 'WR'),
+      TE: rosterPlayers.filter(rp => rp.rosterSlot === 'TE'),
+      FLEX: rosterPlayers.filter(rp => rp.rosterSlot === 'FLEX'),
+      K: rosterPlayers.filter(rp => rp.rosterSlot === 'K'),
+      DST: rosterPlayers.filter(rp => rp.rosterSlot === 'DST'),
+      BENCH: rosterPlayers.filter(rp => rp.rosterSlot === 'BENCH'),
+      IR: rosterPlayers.filter(rp => rp.rosterSlot === 'IR')
     };
 
     // Check if lineup is locked (games have started)
@@ -103,7 +103,7 @@ export async function PUT(
     const team = await prisma.team.findFirst({
       where: {
         id: teamId,
-        userId: user.id
+        ownerId: user.id
       }
     });
 
@@ -157,7 +157,7 @@ export async function PUT(
             playerId: update.playerId
           },
           data: {
-            position: update.position,
+            rosterSlot: update.position as any,
             week: targetWeek,
             isLocked: false,
             lastModified: new Date()
@@ -213,7 +213,7 @@ export async function POST(
     const team = await prisma.team.findFirst({
       where: {
         id: teamId,
-        userId: user.id
+        ownerId: user.id
       }
     });
 
@@ -234,7 +234,7 @@ export async function POST(
                 playerId: player.playerId
               },
               data: {
-                position: position,
+                rosterSlot: position as any,
                 week: targetWeek,
                 lastModified: new Date()
               }
@@ -337,7 +337,7 @@ async function generateOptimalLineup(teamId: string, week: number): Promise<any>
     include: {
       player: {
         include: {
-          stats: {
+          playerStats: {
             where: { week },
             take: 1
           }
@@ -348,8 +348,8 @@ async function generateOptimalLineup(teamId: string, week: number): Promise<any>
 
   // Sort by projected points (descending)
   const sortedPlayers = rosterPlayers.sort((a, b) => {
-    const aPoints = a.player.stats[0]?.projectedPoints || 0;
-    const bPoints = b.player.stats[0]?.projectedPoints || 0;
+    const aPoints = Number(a.player.playerStats[0]?.projectedPoints || 0);
+    const bPoints = Number(b.player.playerStats[0]?.projectedPoints || 0);
     return bPoints - aPoints;
   });
 
@@ -368,7 +368,7 @@ async function generateOptimalLineup(teamId: string, week: number): Promise<any>
   const used = new Set<string>();
 
   // Fill required positions first
-  ['QB', 'K', 'DEF'].forEach(pos => {
+  ['QB', 'K', 'DST'].forEach(pos => {
     const player = sortedPlayers.find(p => p.player.position === pos && !used.has(p.playerId));
     if (player) {
       optimal[pos].push(player);

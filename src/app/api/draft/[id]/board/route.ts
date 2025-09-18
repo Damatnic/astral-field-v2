@@ -63,10 +63,14 @@ export async function GET(
     let pickOrder: string[] = [];
     if (currentRound % 2 === 1) {
       // Odd rounds: normal order
-      pickOrder = draft.league.teams.sort((a, b) => a.draftPosition - b.draftPosition).map(t => t.id);
+      pickOrder = draft.league.teams
+        .sort((a, b) => (a.draftPosition ?? 0) - (b.draftPosition ?? 0))
+        .map(t => t.id);
     } else {
       // Even rounds: reverse order
-      pickOrder = draft.league.teams.sort((a, b) => b.draftPosition - a.draftPosition).map(t => t.id);
+      pickOrder = draft.league.teams
+        .sort((a, b) => (b.draftPosition ?? 0) - (a.draftPosition ?? 0))
+        .map(t => t.id);
     }
 
     const currentTeamId = pickOrder[currentPick - 1];

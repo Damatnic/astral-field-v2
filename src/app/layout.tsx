@@ -231,7 +231,7 @@ export default function RootLayout({
         </AuthProvider>
 
         {/* Performance monitoring script */}
-        {process.env.NODE_ENV === 'production' && (
+        {typeof window !== 'undefined' && window.location.hostname !== 'localhost' && (
           <script
             defer
             src="/scripts/performance-monitor.js"
@@ -239,7 +239,7 @@ export default function RootLayout({
         )}
         
         {/* Service Worker registration */}
-        {process.env.NODE_ENV === 'production' && (
+        {typeof window !== 'undefined' && window.location.hostname !== 'localhost' && (
           <script
             dangerouslySetInnerHTML={{
               __html: `

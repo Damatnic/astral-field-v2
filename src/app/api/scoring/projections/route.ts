@@ -45,10 +45,10 @@ export async function GET(request: NextRequest) {
       result = await getPlayerProjections(playerId, targetWeek, targetSeason, includeStats, source);
     } else if (leagueId) {
       // Get projections for all players in a league
-      result = await getLeagueProjections(leagueId, targetWeek, targetSeason, teamId, format, includeStats, source);
+      result = await getLeagueProjections(leagueId, targetWeek, targetSeason, teamId || undefined, format, includeStats, source);
     } else {
       // Get projections for all players (optionally filtered by position)
-      result = await getAllProjections(targetWeek, targetSeason, position, format, includeStats, source);
+      result = await getAllProjections(targetWeek, targetSeason, position || undefined, format, includeStats, source);
     }
 
     // Add metadata
@@ -194,7 +194,7 @@ async function getPlayerProjections(playerId: string, week: number, season: numb
     if (source === 'sleeper' || source === 'both') {
       try {
         const sleeperProjections = await sleeperApi.getPlayerProjections(season.toString(), week);
-        sleeperProjection = sleeperProjections[player.sleeperId];
+        sleeperProjection = sleeperProjections[player.sleeperPlayerId || ''] || null;
       } catch (error) {
         console.warn(`Failed to get Sleeper projection for player ${playerId}:`, error);
       }
@@ -208,7 +208,7 @@ async function getPlayerProjections(playerId: string, week: number, season: numb
         name: player.name,
         position: player.position,
         nflTeam: player.nflTeam,
-        sleeperId: player.sleeperId,
+        sleeperId: player.sleeperPlayerId || null,
       },
       week,
       season,
@@ -218,7 +218,7 @@ async function getPlayerProjections(playerId: string, week: number, season: numb
           confidence: dbProjection.confidence,
           source: dbProjection.source,
           createdAt: dbProjection.createdAt,
-          stats: dbProjection.projectedStats,
+          stats: null,
         } : null,
         sleeper: sleeperProjection ? {
           projectedPoints: calculateFantasyPoints(sleeperProjection),
@@ -357,7 +357,7 @@ async function getAllProjections(
     // Filter players with projections or stats
     const playersWithData = players.filter(player => 
       player.projections.length > 0 || 
-      (sleeperProjections[player.sleeperId]) ||
+      (player.sleeperPlayerId && sleeperProjections[player.sleeperPlayerId]) ||
       (includeStats && player.playerStats && player.playerStats.length > 0)
     );
 
@@ -616,7 +616,7 @@ function formatLeagueProjectionsSummary(teams: any[], week: number, season: numb
 
     const totalProjected = startingLineup.reduce((sum: number, rp: any) => {
       const dbProjection = rp.player.projections[0];
-      const sleeperProj = sleeperProjections[rp.player.sleeperId];
+      const sleeperProj = sleeperProjections[rp.player.sleeperPlayerId || ''];
       
       const points = dbProjection ? Number(dbProjection.projectedPoints) :
                     sleeperProj ? calculateFantasyPoints(sleeperProj) : 0;
@@ -649,7 +649,7 @@ function formatLeagueProjectionsRoster(teams: any[], week: number, season: numbe
     teamName: team.name,
     roster: team.roster.map((rp: any) => {
       const dbProjection = rp.player.projections[0];
-      const sleeperProj = sleeperProjections[rp.player.sleeperId];
+      const sleeperProj = sleeperProjections[rp.player.sleeperPlayerId || ''];
       
       return {
         playerId: rp.player.id,
@@ -673,7 +673,7 @@ function formatLeagueProjectionsDetailed(teams: any[], week: number, season: num
       teamName: team.name,
       roster: team.roster.map((rp: any) => {
         const dbProjection = rp.player.projections[0];
-        const sleeperProj = sleeperProjections[rp.player.sleeperId];
+        const sleeperProj = sleeperProjections[rp.player.sleeperPlayerId || ''];
         
         return {
           playerId: rp.player.id,
@@ -709,7 +709,7 @@ function formatAllProjectionsSummary(players: any[], week: number, season: numbe
     if (!groups[pos]) groups[pos] = [];
     
     const dbProjection = player.projections[0];
-    const sleeperProj = sleeperProjections[player.sleeperId];
+    const sleeperProj = sleeperProjections[player.sleeperPlayerId || ''];
     const projectedPoints = dbProjection ? Number(dbProjection.projectedPoints) :
                            sleeperProj ? calculateFantasyPoints(sleeperProj) : 0;
     
@@ -749,7 +749,7 @@ function formatAllProjectionsDetailed(players: any[], week: number, season: numb
     season,
     players: players.map(player => {
       const dbProjection = player.projections[0];
-      const sleeperProj = sleeperProjections[player.sleeperId];
+      const sleeperProj = sleeperProjections[player.sleeperPlayerId || ''] || null;
       
       return {
         playerId: player.id,

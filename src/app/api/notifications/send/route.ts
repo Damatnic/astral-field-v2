@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { Resend } from 'resend';
+import { NotificationLogType } from '@prisma/client';
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
@@ -65,10 +66,9 @@ export async function POST(request: NextRequest) {
     await prisma.notificationLog.create({
       data: {
         userId,
-        type,
+        type: NotificationLogType.EMAIL,
         status: result.success ? 'SENT' : 'FAILED',
-        method: 'EMAIL',
-        data: data,
+        content: JSON.stringify(data),
         error: result.error || null
       }
     });

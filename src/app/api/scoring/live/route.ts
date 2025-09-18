@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
       liveScores = await sleeperRealTimeScoringService.getLiveScores(leagueId);
     } else {
       // For past/future weeks, calculate from stored data
-      liveScores = await calculateHistoricalScores(leagueId, targetWeek, parseInt(league.season));
+      liveScores = await calculateHistoricalScores(leagueId, targetWeek, league.season);
     }
 
     if (!liveScores) {
@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
 
     // Add projections if requested
     if (includeProjections && format === 'detailed') {
-      responseData.projections = await getWeekProjections(leagueId, targetWeek, parseInt(league.season));
+      responseData.projections = await getWeekProjections(leagueId, targetWeek, league.season);
     }
 
     return NextResponse.json({
@@ -278,7 +278,7 @@ async function calculateWeekScores(leagueId: string, week: number, season?: numb
       select: { season: true },
     });
 
-    const targetSeason = season || parseInt(league?.season || '2024');
+    const targetSeason = season || (league?.season?.toString() || '2024');
     
     return await sleeperRealTimeScoringService.updateLeagueScores(leagueId);
   } catch (error) {

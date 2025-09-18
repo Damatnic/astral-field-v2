@@ -192,7 +192,7 @@ async function updateLeagueScores(leagueId: string, week?: number, season?: numb
     }
 
     const targetWeek = week || league.currentWeek || 1;
-    const targetSeason = season || parseInt(league.season);
+    const targetSeason = season || parseInt(league.season.toString());
 
     // Update scores using real-time service
     const liveUpdate = await sleeperRealTimeScoringService.updateLeagueScores(leagueId);
@@ -392,7 +392,7 @@ async function processStatCorrection(leagueId: string, week: number, season?: nu
           data: {
             stats: correction.correctedStats,
             fantasyPoints: correction.correctedPoints,
-            lastUpdated: new Date(),
+            updatedAt: new Date(),
           },
         });
       }
@@ -517,14 +517,14 @@ async function getUpdateStatus(leagueId: string, week?: number, status: string =
       where: {
         leagueId,
         week: targetWeek,
-        season: parseInt(league.season),
+        season: parseInt(league.season.toString()),
       },
       select: {
         id: true,
         homeScore: true,
         awayScore: true,
         isComplete: true,
-        lastUpdated: true,
+        updatedAt: true,
         homeTeam: { select: { name: true } },
         awayTeam: { select: { name: true } },
       },
@@ -546,20 +546,20 @@ async function getUpdateStatus(leagueId: string, week?: number, status: string =
       isLive,
       matchups: matchups.map(m => ({
         id: m.id,
-        homeTeam: m.homeTeam.name,
-        awayTeam: m.awayTeam.name,
+        homeTeam: m.homeTeam?.name || 'Unknown',
+        awayTeam: m.awayTeam?.name || 'Unknown',
         homeScore: m.homeScore || 0,
         awayScore: m.awayScore || 0,
         isComplete: m.isComplete || false,
-        lastUpdated: m.lastUpdated,
-        needsUpdate: isCurrentWeek && !m.lastUpdated || 
-                    (m.lastUpdated && (Date.now() - m.lastUpdated.getTime()) > 300000), // 5 min old
+        lastUpdated: m.updatedAt,
+        needsUpdate: isCurrentWeek && !m.updatedAt || 
+                    (m.updatedAt && (Date.now() - m.updatedAt.getTime()) > 300000), // 5 min old
       })),
       summary: {
         totalMatchups: matchups.length,
         completedMatchups: matchups.filter(m => m.isComplete).length,
         lastUpdate: matchups.reduce((latest, m) => 
-          m.lastUpdated && (!latest || m.lastUpdated > latest) ? m.lastUpdated : latest, 
+          m.updatedAt && (!latest || m.updatedAt > latest) ? m.updatedAt : latest, 
           null as Date | null
         ),
       },

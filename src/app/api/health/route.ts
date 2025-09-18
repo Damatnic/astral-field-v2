@@ -13,8 +13,8 @@ export async function GET() {
       sleeper: { status: 'unknown', message: 'Not checked' }
     },
     endpoints: {
-      tested: [],
-      failed: []
+      tested: [] as string[],
+      failed: [] as string[]
     }
   };
 

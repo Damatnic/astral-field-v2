@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { Position } from '@prisma/client';
 
 export async function POST(
   request: NextRequest,
@@ -98,11 +99,12 @@ export async function POST(
   }
 }
 
-function calculatePositionNeeds(picksCount: number): string[] {
+function calculatePositionNeeds(picksCount: number): Position[] {
   // Simple position needs based on pick count
-  const priorities = [
-    'QB', 'RB', 'WR', 'RB', 'WR', 'TE', 'RB', 'WR', 'QB', 'RB',
-    'WR', 'TE', 'K', 'DEF', 'RB', 'WR'
+  const priorities: Position[] = [
+    Position.QB, Position.RB, Position.WR, Position.RB, Position.WR, Position.TE, 
+    Position.RB, Position.WR, Position.QB, Position.RB, Position.WR, Position.TE, 
+    Position.K, Position.DST, Position.RB, Position.WR
   ];
 
   // Return next priority position based on pick count
@@ -111,5 +113,5 @@ function calculatePositionNeeds(picksCount: number): string[] {
   }
   
   // If beyond initial picks, prioritize depth
-  return ['RB', 'WR'];
+  return [Position.RB, Position.WR];
 }

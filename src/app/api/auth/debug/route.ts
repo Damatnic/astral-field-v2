@@ -17,14 +17,15 @@ export async function POST(request: NextRequest) {
     try {
       body = JSON.parse(text);
       console.log('Parsed body:', body);
-    } catch (parseError) {
+    } catch (parseError: unknown) {
+      const errorMessage = parseError instanceof Error ? parseError.message : 'Unknown parse error';
       console.error('JSON parse error:', parseError);
       return NextResponse.json(
         { 
           success: false, 
           error: 'JSON parse error',
           rawText: text,
-          parseError: parseError.message
+          parseError: errorMessage
         },
         { status: 400 }
       );
@@ -36,10 +37,11 @@ export async function POST(request: NextRequest) {
       rawText: text
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('Debug API error:', error);
     return NextResponse.json(
-      { success: false, error: 'Internal server error', message: error.message },
+      { success: false, error: 'Internal server error', message: errorMessage },
       { status: 500 }
     );
   }
