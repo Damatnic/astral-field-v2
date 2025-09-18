@@ -128,6 +128,12 @@ module.exports = {
         '92': '23rem',
         '100': '25rem',
         '104': '26rem',
+        // Mobile-specific spacing
+        'safe-top': 'var(--safe-area-top)',
+        'safe-bottom': 'var(--safe-area-bottom)',
+        'safe-left': 'var(--safe-area-left)', 
+        'safe-right': 'var(--safe-area-right)',
+        'touch': 'var(--touch-target-size)',
         '108': '27rem',
       },
       borderRadius: {

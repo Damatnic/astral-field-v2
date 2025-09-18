@@ -2,7 +2,7 @@
 
 
 import { handleComponentError } from '@/lib/error-handling';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   AlertTriangle,
@@ -12,12 +12,8 @@ import {
   Activity,
   User,
   Calendar,
-  Info,
-  ChevronRight,
   Heart,
-  Zap,
   Target,
-  AlertCircle,
   CheckCircle
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
@@ -98,11 +94,7 @@ export function InjuryPredictor({
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [viewMode, setViewMode] = useState<'overview' | 'detailed' | 'recommendations'>('overview');
 
-  useEffect(() => {
-    analyzeTeamInjuryRisk();
-  }, [teamId]);
-
-  const analyzeTeamInjuryRisk = async () => {
+  const analyzeTeamInjuryRisk = useCallback(async () => {
     setIsAnalyzing(true);
     try {
       const response = await fetch('/api/injury/predict', {
@@ -120,7 +112,11 @@ export function InjuryPredictor({
     } finally {
       setIsAnalyzing(false);
     }
-  };
+  }, [teamId, leagueId]);
+
+  useEffect(() => {
+    analyzeTeamInjuryRisk();
+  }, [analyzeTeamInjuryRisk]);
 
   const getRiskColor = (level: string) => {
     switch (level) {

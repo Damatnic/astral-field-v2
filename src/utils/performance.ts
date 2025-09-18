@@ -1,6 +1,6 @@
 // Performance optimization utilities for fantasy football platform
 import React from 'react';
-import { handleComponentError } from '@/lib/error-handling';
+import { handleComponentError } from './errorHandling';
 
 export class PerformanceMonitor {
   private static metrics: Map<string, number[]> = new Map();
@@ -167,9 +167,9 @@ export class ReactOptimizer {
   }
 
   // Memoize expensive calculations
-  static memoize<T extends (...args: any[]) => any>(
+  static memoize<T extends (..._args: any[]) => any>(
     fn: T,
-    getKey?: (...args: Parameters<T>) => string
+    getKey?: (..._args: Parameters<T>) => string
   ): T {
     const cache = new Map();
     
@@ -194,7 +194,7 @@ export class ReactOptimizer {
   }
 
   // Debounce function calls
-  static debounce<T extends (...args: any[]) => any>(
+  static debounce<T extends (..._args: any[]) => any>(
     func: T,
     wait: number
   ): T {
@@ -207,7 +207,7 @@ export class ReactOptimizer {
   }
 
   // Throttle function calls
-  static throttle<T extends (...args: any[]) => any>(
+  static throttle<T extends (..._args: any[]) => any>(
     func: T,
     limit: number
   ): T {
@@ -238,7 +238,7 @@ class ErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    handleComponentError(error, errorInfo as Error, 'performance');
+    handleComponentError(error, 'performance', 'Component error boundary');
     
     // Send error to monitoring service
     if (typeof window !== 'undefined') {
@@ -378,6 +378,8 @@ export class BundleOptimizer {
   }
 }
 
+
+
 // Initialize performance monitoring
 if (typeof window !== 'undefined') {
   PerformanceMonitor.initialize();
@@ -389,6 +391,7 @@ if (typeof window !== 'undefined') {
   
   // Report performance metrics periodically
   setInterval(() => {
-    const metrics = PerformanceMonitor.getMetrics();}, 60000); // Every minute
+    PerformanceMonitor.getMetrics(); // Get metrics for potential reporting
+  }, 60000); // Every minute
 }
 

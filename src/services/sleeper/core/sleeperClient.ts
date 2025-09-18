@@ -1,6 +1,8 @@
 // Core Sleeper API Client
 // Handles all HTTP requests to the Sleeper API with error handling and rate limiting
 
+import { handleComponentError } from '@/utils/errorHandling';
+
 export class SleeperClient {
   private baseURL = 'https://api.sleeper.app/v1';
   private requestCount = 0;

@@ -249,7 +249,8 @@ export class SleeperPlayerService {
    */
   async getPlayerStats(playerId: string, week?: number): Promise<PlayerStats | null> {
     // This would need to be implemented by pulling from Sleeper matchup data
-    // For now, return null as this requires league-specific datareturn null;
+    // For now, return null as this requires league-specific data
+    return null;
   }
 
   /**

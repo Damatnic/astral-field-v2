@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { UserRole } from '@prisma/client';
+import { handleComponentError } from '@/utils/errorHandling';
 
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic';

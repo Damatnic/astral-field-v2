@@ -1,4 +1,5 @@
 import { io, Socket } from 'socket.io-client';
+import { handleComponentError } from '@/utils/errorHandling';
 
 interface WebSocketConfig {
   url?: string;

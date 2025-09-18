@@ -13,6 +13,7 @@
 
 import { PrismaClient, Position, PlayerStatus } from '@prisma/client';
 import { SleeperApiService } from './sleeperApiService';
+import { handleComponentError } from '@/utils/errorHandling';
 import { NFLStateService } from './nflStateService';
 import { SleeperPlayer, PlayerStats } from '@/types/sleeper';
 import { withRetry, ErrorHandler, SleeperApiError } from './errorHandler';
@@ -183,7 +184,7 @@ export class PlayerSyncService {
         result.errorCount++;
         const errorMessage = `Failed to sync player ${playerId}: ${error instanceof Error ? error.message : 'Unknown error'}`;
         result.errors.push(errorMessage);
-        handleComponentError(errorMessage as Error, 'playerSyncService');
+        handleComponentError(new Error(errorMessage), 'playerSyncService');
       }
     });
 
@@ -358,7 +359,7 @@ export class PlayerSyncService {
         } catch (error) {
           const errorMsg = `Failed to update stats for ${sleeperPlayerId}: ${error instanceof Error ? error.message : 'Unknown error'}`;
           errors.push(errorMsg);
-          handleComponentError(errorMsg as Error, 'playerSyncService');
+          handleComponentError(new Error(errorMsg), 'playerSyncService');
         }
       }if (errors.length > 0) {}
       

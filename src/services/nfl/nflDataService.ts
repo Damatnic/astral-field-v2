@@ -3,6 +3,8 @@
  * Integrates with SportsData.io or similar APIs for real NFL data
  */
 
+import { handleComponentError } from '@/utils/errorHandling';
+
 import { PrismaClient, Position, PlayerStatus } from '@prisma/client';
 import axios from 'axios';
 import { z } from 'zod';

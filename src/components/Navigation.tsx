@@ -135,7 +135,7 @@ function MobileNav({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }
             return (
               <Link
                 key={item.name}
-                href={item.href as string}
+                href={item.href as any}
                 onClick={onClose}
                 className={`flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                   active

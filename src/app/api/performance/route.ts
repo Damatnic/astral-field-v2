@@ -3,7 +3,7 @@ import { handleComponentError } from '@/lib/error-handling';
 
 export async function POST(request: NextRequest) {
   try {
-    const metrics = await request.json();
+    await request.json(); // Consume the request body
     
     // Log performance metrics (in production, send to monitoring service)
     return NextResponse.json({ 

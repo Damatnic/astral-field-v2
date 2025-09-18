@@ -1,6 +1,8 @@
 // Cache Manager for Sleeper API Data
 // Provides intelligent caching with memory and optional Redis support
 
+import { handleComponentError } from '@/utils/errorHandling';
+
 interface CacheEntry<T> {
   data: T;
   timestamp: number;

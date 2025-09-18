@@ -2,10 +2,10 @@
 
 
 import { handleComponentError } from '@/lib/error-handling';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { League, Team } from '@/types/fantasy';
+import { League } from '@/types/fantasy';
 
 export default function LeaguePage() {
   const params = useParams();
@@ -16,11 +16,7 @@ export default function LeaguePage() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'standings' | 'scoreboard' | 'transactions'>('standings');
 
-  useEffect(() => {
-    fetchLeague();
-  }, [leagueId]);
-
-  const fetchLeague = async () => {
+  const fetchLeague = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch(`/api/leagues/${leagueId}`);
@@ -37,7 +33,11 @@ export default function LeaguePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [leagueId]);
+
+  useEffect(() => {
+    fetchLeague();
+  }, [leagueId, fetchLeague]);
 
   if (loading) {
     return (

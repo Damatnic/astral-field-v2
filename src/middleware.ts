@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateSessionFromRequest, canAccessRole } from './lib/auth';
+import { handleComponentError } from './utils/errorHandling';
 
 // Protected routes configuration
 const PROTECTED_ROUTES = {

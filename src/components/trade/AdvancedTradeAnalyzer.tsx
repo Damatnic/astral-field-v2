@@ -2,23 +2,17 @@
 
 
 import { handleComponentError } from '@/lib/error-handling';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   TrendingUp, 
   TrendingDown, 
   Scale, 
-  Trophy,
   AlertTriangle,
   BarChart3,
-  Calendar,
-  Zap,
-  Shield,
   Target,
   ArrowRight,
-  RefreshCw,
-  Users,
-  DollarSign
+  RefreshCw
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';

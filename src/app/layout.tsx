@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import AuthProvider from '@/components/AuthProvider';
-import Navigation from '@/components/Navigation';
+import { ResponsiveNavigation, SafeAreaProvider } from '@/components/mobile/ResponsiveUtils';
 import { ToastProvider } from '@/components/ui/Toast';
 
 // Font configuration
@@ -135,9 +135,10 @@ export default function RootLayout({
 
         {/* Auth Provider wraps everything to provide authentication context */}
         <AuthProvider>
-          <ToastProvider>
-            {/* Navigation component */}
-            <Navigation />
+          <SafeAreaProvider>
+            <ToastProvider>
+            {/* Responsive Navigation component */}
+            <ResponsiveNavigation />
             
             {/* Main content area */}
             <main 
@@ -147,8 +148,9 @@ export default function RootLayout({
             >
               {children}
             </main>
-          </ToastProvider>
-          
+            </ToastProvider>
+          </SafeAreaProvider>
+
           {/* Footer */}
           <footer className="bg-white border-t border-gray-200 mt-auto">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">

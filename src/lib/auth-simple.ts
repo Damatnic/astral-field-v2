@@ -3,6 +3,7 @@
 
 import { cookies } from 'next/headers';
 import * as crypto from 'crypto';
+import { handleComponentError } from '@/utils/errorHandling';
 
 export interface User {
   id: string;

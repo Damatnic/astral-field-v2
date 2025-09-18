@@ -13,6 +13,7 @@
 import { SleeperApiService } from './sleeperApiService';
 import { NFLState } from '@/types/sleeper';
 import { withRetry, ErrorHandler } from './errorHandler';
+import { handleComponentError } from '@/utils/errorHandling';
 
 export interface GameSchedule {
   week: number;

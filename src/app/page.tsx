@@ -1,11 +1,17 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/components/AuthProvider';
-import LiveScoresTicker from '@/components/dashboard/LiveScoresTicker';
-import TeamPerformanceMetrics from '@/components/dashboard/TeamPerformanceMetrics';
-import LeagueActivityFeed from '@/components/dashboard/LeagueActivityFeed';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useBreakpoint } from '@/components/mobile/ResponsiveUtils';
+import MobileHomepage from './mobile-homepage';
+import { 
+  LiveScoresTicker as EnhancedLiveScoresTicker, 
+  LivePlayerUpdates, 
+  InjuryReport as InjuryReportComponent, 
+  NewsFeed 
+} from '@/components/ui/live-data-components';
 import {
   Trophy,
   Users,
@@ -19,473 +25,538 @@ import {
   PlayCircle,
   ArrowRight,
   Star,
-  Activity,
-  Sparkles
+
+  ChevronRight,
+  TrendingDown
 } from 'lucide-react';
 
-// Dashboard stats component
-function DashboardStats() {
+// Enhanced Dashboard Stats with ESPN-style visuals
+function EnhancedDashboardStats() {
   const stats = [
     {
-      label: 'D&apos;Amato Dynasty League',
-      value: '1',
-      change: 'Active',
-      changeType: 'positive',
-      icon: Trophy
+      label: 'League Rank',
+      value: '#2',
+      change: '+1',
+      trend: 'up',
+      icon: Trophy,
+      color: 'text-yellow-600 bg-yellow-50',
+      accent: 'border-yellow-200'
     },
     {
-      label: 'League Members',
-      value: '10',
-      change: 'Full League',
-      changeType: 'positive', 
-      icon: Users
+      label: 'Total Points',
+      value: '1,847.2',
+      change: '+127.4',
+      trend: 'up',
+      icon: Target,
+      color: 'text-green-600 bg-green-50',
+      accent: 'border-green-200'
     },
     {
-      label: 'Season Progress',
-      value: '18%',
-      change: 'Week 3 of 17',
-      changeType: 'positive',
-      icon: Target
+      label: 'Win Percentage',
+      value: '72%',
+      change: '+8%',
+      trend: 'up',
+      icon: TrendingUp,
+      color: 'text-blue-600 bg-blue-50',
+      accent: 'border-blue-200'
     },
     {
-      label: 'League Avg Score',
-      value: '115.3',
-      change: 'Current Week',
-      changeType: 'positive',
-      icon: TrendingUp
+      label: 'Active Players',
+      value: '14',
+      change: '2 Injured',
+      trend: 'down',
+      icon: Users,
+      color: 'text-orange-600 bg-orange-50',
+      accent: 'border-orange-200'
     }
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-      {stats.map((stat) => {
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      {stats.map((stat, index) => {
         const IconComponent = stat.icon;
         return (
-          <div key={stat.label} className="card-hover">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600 mb-1">
-                  {stat.label}
-                </p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {stat.value}
-                </p>
-                <p className={`text-sm font-medium ${
-                  stat.changeType === 'positive' 
-                    ? 'text-green-600' 
-                    : 'text-red-600'
-                }`}>
-                  {stat.change}
-                </p>
+          <motion.div
+            key={stat.label}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.1, duration: 0.5 }}
+            className={`bg-white rounded-xl p-6 shadow-sm border-l-4 ${stat.accent} hover:shadow-md transition-shadow duration-200`}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className={`p-2 rounded-lg ${stat.color}`}>
+                <IconComponent className="h-5 w-5" />
               </div>
-              <div className="h-12 w-12 rounded-lg bg-primary-100 flex items-center justify-center">
-                <IconComponent className="h-6 w-6 text-primary-600" />
+              <div className={`text-xs font-medium px-2 py-1 rounded-full ${
+                stat.trend === 'up' 
+                  ? 'text-green-700 bg-green-100' 
+                  : 'text-red-700 bg-red-100'
+              }`}>
+                {stat.change}
               </div>
             </div>
-          </div>
+            <div className="space-y-1">
+              <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+              <p className="text-sm text-gray-500">{stat.label}</p>
+            </div>
+          </motion.div>
         );
       })}
     </div>
   );
 }
 
-// Quick actions component
-function QuickActions() {
-  const { hasPermission } = useAuth();
-
+// ESPN-Style Live Scores Ticker
+// Yahoo-Style Quick Actions Grid
+function QuickActionsGrid() {
   const actions = [
     {
-      name: 'Join League',
-      description: 'Find and join a new fantasy league',
-      href: '/leagues/join',
-      icon: Trophy,
-      color: 'bg-blue-500 hover:bg-blue-600'
+      name: 'Set Lineup',
+      description: 'Optimize your starting lineup',
+      href: '/teams/lineup',
+      icon: Users,
+      gradient: 'from-blue-500 to-blue-600',
+      hoverGradient: 'from-blue-600 to-blue-700',
+      stats: '2 changes needed'
+    },
+    {
+      name: 'Waiver Wire',
+      description: 'Add available players',
+      href: '/waivers',
+      icon: Target,
+      gradient: 'from-green-500 to-green-600',
+      hoverGradient: 'from-green-600 to-green-700',
+      stats: '47 available'
+    },
+    {
+      name: 'Trade Center',
+      description: 'Propose and manage trades',
+      href: '/trade',
+      icon: ArrowRight,
+      gradient: 'from-purple-500 to-purple-600',
+      hoverGradient: 'from-purple-600 to-purple-700',
+      stats: '3 pending'
+    },
+    {
+      name: 'Advanced Search',
+      description: 'Find & compare players',
+      href: '/search',
+      icon: BarChart3,
+      gradient: 'from-cyan-500 to-cyan-600',
+      hoverGradient: 'from-cyan-600 to-cyan-700',
+      stats: 'AI-powered'
+    },
+    {
+      name: 'Research',
+      description: 'Player stats & analysis',
+      href: '/players',
+      icon: BarChart3,
+      gradient: 'from-orange-500 to-orange-600',
+      hoverGradient: 'from-orange-600 to-orange-700',
+      stats: 'Updated 2h ago'
     },
     {
       name: 'Draft Room',
-      description: 'Enter live draft room',
+      description: 'Join live draft',
       href: '/draft',
-      icon: PlayCircle,
-      color: 'bg-green-500 hover:bg-green-600'
-    },
-    {
-      name: 'Player Research',
-      description: 'Analyze player performance',
-      href: '/players',
-      icon: BarChart3,
-      color: 'bg-purple-500 hover:bg-purple-600'
+      icon: Crown,
+      gradient: 'from-red-500 to-red-600',
+      hoverGradient: 'from-red-600 to-red-700',
+      stats: 'Starting soon'
     },
     {
       name: 'League Chat',
-      description: 'Connect with league members',
+      description: 'Connect with managers',
       href: '/chat',
       icon: MessageCircle,
-      color: 'bg-orange-500 hover:bg-orange-600'
+      gradient: 'from-teal-500 to-teal-600',
+      hoverGradient: 'from-teal-600 to-teal-700',
+      stats: '12 new messages'
     }
   ];
 
-  // Add admin/commissioner actions
-  if (hasPermission(['ADMIN', 'COMMISSIONER'])) {
-    actions.push({
-      name: hasPermission(['ADMIN']) ? 'Admin Panel' : 'Commissioner Tools',
-      description: hasPermission(['ADMIN']) ? 'Manage platform settings' : 'Manage your leagues',
-      href: hasPermission(['ADMIN']) ? '/admin' : '/commissioner',
-      icon: hasPermission(['ADMIN']) ? Shield : Crown,
-      color: 'bg-red-500 hover:bg-red-600'
-    });
-  }
-
   return (
-    <div className="card">
-      <h2 className="section-title">Quick Actions</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {actions.map((action) => {
-          const IconComponent = action.icon;
-          return (
+    <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+      {actions.map((action, index) => {
+        const IconComponent = action.icon;
+        return (
+          <motion.div
+            key={action.name}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: index * 0.1, duration: 0.5 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
             <Link
-              key={action.name}
               href={action.href as any}
-              className="group relative p-4 rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all duration-200"
+              className={`block bg-gradient-to-br ${action.gradient} hover:${action.hoverGradient} p-6 rounded-xl text-white shadow-lg hover:shadow-xl transition-all duration-300 group`}
             >
-              <div className="flex items-start space-x-3">
-                <div className={`flex-shrink-0 w-10 h-10 rounded-lg ${action.color} flex items-center justify-center transition-colors duration-200`}>
-                  <IconComponent className="h-5 w-5 text-white" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-sm font-medium text-gray-900 group-hover:text-primary-600 transition-colors duration-200">
-                    {action.name}
-                  </h3>
-                  <p className="text-sm text-gray-500 mt-1">
-                    {action.description}
-                  </p>
-                </div>
-                <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-primary-600 group-hover:translate-x-1 transition-all duration-200" />
+              <div className="flex items-center justify-between mb-4">
+                <IconComponent className="h-8 w-8 group-hover:scale-110 transition-transform duration-200" />
+                <ChevronRight className="h-5 w-5 opacity-60 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-200" />
+              </div>
+              <h3 className="font-semibold text-lg mb-2">{action.name}</h3>
+              <p className="text-sm opacity-90 mb-2">{action.description}</p>
+              <div className="text-xs opacity-75 bg-white/20 rounded-full px-3 py-1 inline-block">
+                {action.stats}
               </div>
             </Link>
-          );
-        })}
-      </div>
+          </motion.div>
+        );
+      })}
     </div>
   );
 }
 
-// Recent activity component
-function RecentActivity() {
-  const activities = [
+// ESPN-Style Top Performers Widget
+function TopPerformers() {
+  const performers = [
     {
-      id: 1,
-      type: 'trade',
-      message: 'Nicholas D&apos;Amato proposed trade to Nick Hartley',
-      timestamp: '2 hours ago',
-      icon: Activity,
-      color: 'text-green-600'
+      name: 'Josh Allen',
+      position: 'QB',
+      team: 'BUF',
+      points: 28.7,
+      projection: 24.2,
+      status: 'playing',
+      trend: 'up',
+      avatar: '🏈'
     },
     {
-      id: 2,
-      type: 'waiver',
-      message: 'Jon Kornbeck claimed Jerome Ford from waivers',
-      timestamp: '4 hours ago',
-      icon: TrendingUp,
-      color: 'text-blue-600'
+      name: 'Christian McCaffrey',
+      position: 'RB',
+      team: 'SF',
+      points: 22.4,
+      projection: 18.8,
+      status: 'playing',
+      trend: 'up',
+      avatar: '🔥'
     },
     {
-      id: 3,
-      type: 'matchup',
-      message: 'David Jarvey leads with highest Week 2 score (156.8)',
-      timestamp: '3 days ago',
-      icon: Trophy,
-      color: 'text-yellow-600'
-    },
-    {
-      id: 4,
-      type: 'lineup',
-      message: 'Jack McCaigue updated Week 3 starting lineup',
-      timestamp: '6 hours ago',
-      icon: Star,
-      color: 'text-purple-600'
+      name: 'Tyreek Hill',
+      position: 'WR',
+      team: 'MIA',
+      points: 19.6,
+      projection: 16.2,
+      status: 'questionable',
+      trend: 'down',
+      avatar: '⚡'
     }
   ];
 
   return (
-    <div className="card">
-      <h2 className="section-title">Recent Activity</h2>
-      <div className="space-y-4">
-        {activities.map((activity) => {
-          const IconComponent = activity.icon;
-          return (
-            <div key={activity.id} className="flex items-start space-x-3">
-              <div className={`flex-shrink-0 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center`}>
-                <IconComponent className={`h-4 w-4 ${activity.color}`} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm text-gray-900">{activity.message}</p>
-                <p className="text-xs text-gray-500 mt-1">{activity.timestamp}</p>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      <div className="mt-6">
-        <Link
-          href={"/activity" as any}
-          className="text-sm font-medium text-primary-600 hover:text-primary-700 flex items-center"
-        >
-          View all activity
-          <ArrowRight className="ml-1 h-4 w-4" />
+    <div className="bg-white rounded-xl shadow-sm border p-6">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-xl font-bold text-gray-900 flex items-center">
+          <Star className="h-5 w-5 text-yellow-500 mr-2" />
+          Top Performers
+        </h2>
+        <Link href="/players" className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+          View All
         </Link>
       </div>
-    </div>
-  );
-}
-
-// Upcoming events component
-function UpcomingEvents() {
-  const events = [
-    {
-      id: 1,
-      title: 'Week 3 Lineups Due',
-      description: 'D\'Amato Dynasty League',
-      date: 'Thursday, 8:20 PM',
-      type: 'lineup',
-      urgent: true
-    },
-    {
-      id: 2,
-      title: 'Trade Deadline',
-      description: 'D&apos;Amato Dynasty League',
-      date: 'Nov 19, 2024',
-      type: 'deadline',
-      urgent: false
-    },
-    {
-      id: 3,
-      title: 'Fantasy Playoffs',
-      description: 'D&apos;Amato Dynasty League',
-      date: 'Week 15-17',
-      type: 'playoffs',
-      urgent: false
-    }
-  ];
-
-  return (
-    <div className="card">
-      <h2 className="section-title">Upcoming Events</h2>
+      
       <div className="space-y-4">
-        {events.map((event) => (
-          <div 
-            key={event.id} 
-            className={`p-3 rounded-lg border ${
-              event.urgent 
-                ? 'border-orange-200 bg-orange-50' 
-                : 'border-gray-200 bg-gray-50'
-            }`}
+        {performers.map((player, index) => (
+          <motion.div
+            key={player.name}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: index * 0.1 }}
+            className="flex items-center justify-between p-4 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
           >
-            <div className="flex items-start justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="text-2xl">{player.avatar}</div>
               <div>
-                <h3 className="text-sm font-medium text-gray-900">
-                  {event.title}
-                </h3>
-                <p className="text-sm text-gray-600 mt-1">
-                  {event.description}
-                </p>
+                <div className="flex items-center space-x-2">
+                  <h3 className="font-semibold text-gray-900">{player.name}</h3>
+                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                    player.status === 'playing' 
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-yellow-100 text-yellow-700'
+                  }`}>
+                    {player.status}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-500">{player.position} • {player.team}</p>
               </div>
-              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                event.urgent
-                  ? 'bg-orange-100 text-orange-800'
-                  : 'bg-gray-100 text-gray-800'
-              }`}>
-                {event.date}
-              </span>
             </div>
-          </div>
+            
+            <div className="text-right">
+              <div className="flex items-center space-x-2">
+                <span className="text-2xl font-bold text-gray-900">{player.points}</span>
+                <div className={`flex items-center ${
+                  player.trend === 'up' ? 'text-green-600' : 'text-red-600'
+                }`}>
+                  {player.trend === 'up' ? (
+                    <TrendingUp className="h-4 w-4" />
+                  ) : (
+                    <TrendingDown className="h-4 w-4" />
+                  )}
+                </div>
+              </div>
+              <p className="text-xs text-gray-500">Proj: {player.projection}</p>
+            </div>
+          </motion.div>
         ))}
       </div>
     </div>
   );
 }
 
-// Authenticated dashboard component
-function AuthenticatedDashboard() {
-  const { user } = useAuth();
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-        {/* Welcome header with enhanced styling */}
-        <div className="page-header relative">
-          <div className="absolute -top-4 -left-4 w-24 h-24 bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-full blur-xl animate-pulse"></div>
-          <div className="relative">
-            <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Welcome back, {user?.name?.split(' ')[0]}!
-              </h1>
-              <Sparkles className="h-8 w-8 text-yellow-500 animate-spin-slow" />
-            </div>
-            <p className="text-lg text-gray-600 dark:text-gray-300">
-              Here&apos;s what&apos;s happening in the D&apos;Amato Dynasty League today.
-            </p>
-          </div>
-        </div>
-
-        {/* Live Scores Ticker */}
-        <div className="mb-8">
-          <LiveScoresTicker />
-        </div>
-
-        {/* Dashboard stats */}
-        <div className="mb-8">
-          <DashboardStats />
-        </div>
-
-        {/* Team Performance Metrics */}
-        <div className="mb-8">
-          <TeamPerformanceMetrics />
-        </div>
-
-        {/* Main content grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left column - 2/3 width */}
-          <div className="lg:col-span-2 space-y-8">
-            <QuickActions />
-            <LeagueActivityFeed leagueId="damato-dynasty-league" />
-          </div>
-
-          {/* Right column - 1/3 width */}
-          <div className="space-y-8">
-            <UpcomingEvents />
-            <RecentActivity />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Landing page for non-authenticated users
-function LandingPage() {
-  const features = [
+// Enhanced Recent Activity Feed
+function RecentActivity() {
+  const activities = [
     {
-      name: 'AI-Powered Insights',
-      description: 'Get personalized recommendations and predictions powered by advanced AI.',
-      icon: Zap
+      type: 'trade',
+      icon: ArrowRight,
+      color: 'text-purple-600 bg-purple-100',
+      title: 'Trade Completed',
+      description: 'You traded Davante Adams for Travis Kelce',
+      time: '2 hours ago',
+      details: '+12.4 projected points'
     },
     {
-      name: 'Advanced Analytics',
-      description: 'Deep dive into player stats, trends, and performance metrics.',
-      icon: BarChart3
+      type: 'waiver',
+      icon: Target,
+      color: 'text-green-600 bg-green-100',
+      title: 'Waiver Claim Successful',
+      description: 'Added Gabe Davis from waivers',
+      time: '1 day ago',
+      details: 'Dropped Romeo Doubs'
     },
     {
-      name: 'Real-time Updates',
-      description: 'Stay updated with live scores, news, and player updates.',
-      icon: Activity
+      type: 'injury',
+      icon: Shield,
+      color: 'text-red-600 bg-red-100',
+      title: 'Injury Update',
+      description: 'Saquon Barkley listed as Questionable',
+      time: '2 days ago',
+      details: 'Consider backup options'
     },
     {
-      name: 'Draft Tools',
-      description: 'Comprehensive draft preparation and live draft assistance.',
-      icon: Target
+      type: 'achievement',
+      icon: Trophy,
+      color: 'text-yellow-600 bg-yellow-100',
+      title: 'Achievement Unlocked',
+      description: 'Highest weekly score (147.2 points)',
+      time: '3 days ago',
+      details: '+50 league points'
     }
   ];
 
   return (
-    <div className="bg-white">
-      {/* Hero section */}
-      <div className="relative isolate px-6 pt-14 lg:px-8">
-        <div className="absolute inset-x-0 -top-40 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-80">
-          <div className="relative left-[calc(50%-11rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 rotate-[30deg] bg-gradient-to-tr from-[#ff80b5] to-[#9089fc] opacity-30 sm:left-[calc(50%-30rem)] sm:w-[72.1875rem]" />
-        </div>
-        
-        <div className="mx-auto max-w-2xl py-32 sm:py-48 lg:py-56">
-          <div className="text-center">
-            <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
-              Fantasy Football
-              <span className="gradient-text"> Reimagined</span>
+    <div className="bg-white rounded-xl shadow-sm border p-6">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-xl font-bold text-gray-900">Recent Activity</h2>
+        <Link href="/activity" className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+          View All
+        </Link>
+      </div>
+      
+      <div className="space-y-4">
+        {activities.map((activity, index) => {
+          const IconComponent = activity.icon;
+          return (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+              className="flex items-start space-x-4 p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+            >
+              <div className={`p-2 rounded-lg ${activity.color}`}>
+                <IconComponent className="h-4 w-4" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-gray-900 truncate">{activity.title}</h3>
+                  <span className="text-xs text-gray-500 ml-2">{activity.time}</span>
+                </div>
+                <p className="text-sm text-gray-600 mt-1">{activity.description}</p>
+                <p className="text-xs text-gray-500 mt-1">{activity.details}</p>
+              </div>
+            </motion.div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// Enhanced Landing Page with ESPN/Yahoo styling
+function EnhancedLandingPage() {
+  const [currentFeature, setCurrentFeature] = useState(0);
+  
+  const features = [
+    {
+      name: 'AI-Powered Insights',
+      description: 'Advanced machine learning algorithms analyze player performance, matchups, and trends to give you the edge.',
+      icon: Zap,
+      image: '🤖',
+      stats: ['95% Accuracy', '10M+ Data Points', 'Real-time Analysis']
+    },
+    {
+      name: 'Live Draft Assistant',
+      description: 'Interactive draft room with real-time recommendations, player rankings, and strategy optimization.',
+      icon: Crown,
+      image: '👑',
+      stats: ['50+ Draft Strategies', 'Live Updates', 'Opponent Analysis']
+    },
+    {
+      name: 'Advanced Analytics',
+      description: 'Deep dive into comprehensive stats, heat maps, and predictive modeling for every player.',
+      icon: BarChart3,
+      image: '📊',
+      stats: ['20+ Metrics', 'Custom Filters', 'Export Reports']
+    }
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentFeature((prev) => (prev + 1) % features.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [features.length]);
+
+  return (
+    <div className="bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 min-h-screen">
+      {/* Enhanced Hero Section */}
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-purple-600/20"></div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-32">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="text-center"
+          >
+            <h1 className="text-5xl lg:text-7xl font-bold text-white mb-6">
+              Dominate Your{' '}
+              <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                Fantasy League
+              </span>
             </h1>
-            <p className="mt-6 text-lg leading-8 text-gray-600">
-              Experience the future of fantasy football with AI-powered insights, 
-              advanced analytics, and immersive league management.
+            <p className="text-xl lg:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto">
+              The ultimate fantasy football platform with AI-powered insights, advanced analytics, 
+              and professional-grade tools used by championship teams.
             </p>
-            <div className="mt-10 flex items-center justify-center gap-x-6">
-              <Link href="/login" className="btn-primary text-lg px-8 py-3">
-                Get started
-              </Link>
-              <Link 
-                href="/features" 
-                className="text-sm font-semibold leading-6 text-gray-900 hover:text-primary-600 transition-colors"
+            
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-lg flex items-center justify-center space-x-2"
               >
-                Learn more <span aria-hidden="true">→</span>
-              </Link>
+                <Crown className="h-6 w-6" />
+                <span>Start Winning Today</span>
+              </motion.button>
+              
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="bg-white/10 backdrop-blur-sm border border-white/20 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-white/20 transition-all duration-200 flex items-center justify-center space-x-2"
+              >
+                <PlayCircle className="h-6 w-6" />
+                <span>Watch Demo</span>
+              </motion.button>
             </div>
-          </div>
-        </div>
-        
-        <div className="absolute inset-x-0 top-[calc(100%-13rem)] -z-10 transform-gpu overflow-hidden blur-3xl sm:top-[calc(100%-30rem)]">
-          <div className="relative left-[calc(50%+3rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 bg-gradient-to-tr from-[#ff80b5] to-[#9089fc] opacity-30 sm:left-[calc(50%+36rem)] sm:w-[72.1875rem]" />
+            
+            {/* Stats Banner */}
+            <div className="grid grid-cols-3 gap-8 max-w-2xl mx-auto">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-white">10M+</div>
+                <div className="text-gray-400 text-sm">Active Users</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-white">95%</div>
+                <div className="text-gray-400 text-sm">Win Rate Increase</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-white">$2.1M+</div>
+                <div className="text-gray-400 text-sm">Prizes Won</div>
+              </div>
+            </div>
+          </motion.div>
         </div>
       </div>
 
-      {/* Features section */}
-      <div className="py-24 sm:py-32">
-        <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          <div className="mx-auto max-w-2xl lg:text-center">
-            <h2 className="text-base font-semibold leading-7 text-primary-600">
-              Everything you need
+      {/* Interactive Features Section */}
+      <div className="bg-white py-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              Championship-Level Features
             </h2>
-            <p className="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-              Built for serious fantasy players
-            </p>
-            <p className="mt-6 text-lg leading-8 text-gray-600">
-              From casual players to championship contenders, AstralField provides 
-              the tools and insights you need to dominate your leagues.
+            <p className="text-xl text-gray-600">
+              Everything you need to build and manage a winning fantasy team
             </p>
           </div>
-          
-          <div className="mx-auto mt-16 max-w-2xl sm:mt-20 lg:mt-24 lg:max-w-4xl">
-            <dl className="grid max-w-xl grid-cols-1 gap-x-8 gap-y-10 lg:max-w-none lg:grid-cols-2 lg:gap-y-16">
-              {features.map((feature) => {
-                const IconComponent = feature.icon;
-                return (
-                  <div key={feature.name} className="relative pl-16">
-                    <dt className="text-base font-semibold leading-7 text-gray-900">
-                      <div className="absolute left-0 top-0 flex h-10 w-10 items-center justify-center rounded-lg bg-primary-600">
-                        <IconComponent className="h-6 w-6 text-white" />
+
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={currentFeature}
+                  initial={{ opacity: 0, x: -50 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 50 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <div className="text-6xl mb-6">{features[currentFeature].image}</div>
+                  <h3 className="text-3xl font-bold text-gray-900 mb-4">
+                    {features[currentFeature].name}
+                  </h3>
+                  <p className="text-lg text-gray-600 mb-6">
+                    {features[currentFeature].description}
+                  </p>
+                  <div className="grid grid-cols-3 gap-4">
+                    {features[currentFeature].stats.map((stat, index) => (
+                      <div key={index} className="text-center p-4 bg-gray-50 rounded-lg">
+                        <div className="text-sm font-semibold text-gray-900">{stat}</div>
                       </div>
-                      {feature.name}
-                    </dt>
-                    <dd className="mt-2 text-base leading-7 text-gray-600">
-                      {feature.description}
-                    </dd>
+                    ))}
                   </div>
-                );
-              })}
-            </dl>
-          </div>
-        </div>
-      </div>
+                </motion.div>
+              </AnimatePresence>
 
-      {/* CTA section */}
-      <div className="bg-primary-600">
-        <div className="px-6 py-24 sm:px-6 sm:py-32 lg:px-8">
-          <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-              Ready to dominate your league?
-            </h2>
-            <p className="mx-auto mt-6 max-w-xl text-lg leading-8 text-primary-100">
-              Join thousands of fantasy players who trust AstralField to give them 
-              the competitive edge they need.
-            </p>
-            <div className="mt-10 flex items-center justify-center gap-x-6">
-              <Link
-                href="/login"
-                className="rounded-md bg-white px-3.5 py-2.5 text-sm font-semibold text-primary-600 shadow-sm hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-              >
-                Start your journey
-              </Link>
-              <Link
-                href={"/contact" as any}
-                className="text-sm font-semibold leading-6 text-white hover:text-primary-100"
-              >
-                Contact sales <span aria-hidden="true">→</span>
-              </Link>
+              {/* Feature Navigation */}
+              <div className="flex space-x-2 mt-8">
+                {features.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentFeature(index)}
+                    className={`w-3 h-3 rounded-full transition-all duration-200 ${
+                      index === currentFeature 
+                        ? 'bg-blue-600' 
+                        : 'bg-gray-300 hover:bg-gray-400'
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="relative">
+              <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-8 rounded-2xl shadow-2xl">
+                <div className="text-white">
+                  <div className="mb-6">
+                    <h4 className="text-lg font-semibold mb-2">Live Dashboard Preview</h4>
+                    <div className="h-48 bg-gradient-to-br from-blue-600/20 to-purple-600/20 rounded-lg flex items-center justify-center">
+                      <div className="text-4xl animate-pulse">🏆</div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-white/10 p-4 rounded-lg">
+                      <div className="text-2xl font-bold">147.2</div>
+                      <div className="text-sm opacity-75">This Week</div>
+                    </div>
+                    <div className="bg-white/10 p-4 rounded-lg">
+                      <div className="text-2xl font-bold">#1</div>
+                      <div className="text-sm opacity-75">League Rank</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -494,22 +565,121 @@ function LandingPage() {
   );
 }
 
-// Main page component
-export default function HomePage() {
-  const { user, isLoading } = useAuth();
+// Main Enhanced Dashboard
+function EnhancedAuthenticatedDashboard() {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Welcome Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Welcome back, Champion! 🏆
+              </h1>
+              <p className="text-gray-600">
+                Ready to dominate Week 8? Here&apos;s your team overview.
+              </p>
+            </div>
+            <div className="text-right">
+              <div className="text-sm text-gray-500">Last updated</div>
+              <div className="text-sm font-medium text-gray-900">2 minutes ago</div>
+            </div>
+          </div>
+        </motion.div>
 
-  // Show loading state
+        {/* Enhanced Stats Grid */}
+        <EnhancedDashboardStats />
+
+        {/* Enhanced Live Scores Ticker */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <EnhancedLiveScoresTicker />
+        </motion.div>
+
+        {/* Quick Actions Grid */}
+        <QuickActionsGrid />
+
+        {/* Main Content Grid */}
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* Left Column */}
+          <div className="lg:col-span-2 space-y-8">
+            <TopPerformers />
+            
+            {/* Live Player Updates */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+            >
+              <LivePlayerUpdates />
+            </motion.div>
+
+            {/* News Feed */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.8 }}
+            >
+              <NewsFeed />
+            </motion.div>
+          </div>
+
+          {/* Right Column */}
+          <div className="space-y-8">
+            <RecentActivity />
+            
+            {/* Injury Report */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.7 }}
+            >
+              <InjuryReportComponent />
+            </motion.div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Main Component
+export default function EnhancedHomePage() {
+  const { user, isLoading } = useAuth();
+  const { isMobile } = useBreakpoint();
+
+  // Return mobile version for mobile devices
+  if (isMobile && user) {
+    return <MobileHomepage />;
+  }
+
+  // Enhanced Loading State
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="loading-spinner mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading AstralField...</p>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-blue-900 flex items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center text-white"
+        >
+          <div className="text-6xl mb-4 animate-pulse">🏆</div>
+          <div className="w-16 h-16 mx-auto mb-4">
+            <div className="w-full h-full border-4 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+          <h2 className="text-2xl font-bold mb-2">Loading AstralField</h2>
+          <p className="text-blue-200">Preparing your championship dashboard...</p>
+        </motion.div>
       </div>
     );
   }
 
-  // Show appropriate content based on auth state
-  return user ? <AuthenticatedDashboard /> : <LandingPage />;
+  return user ? <EnhancedAuthenticatedDashboard /> : <EnhancedLandingPage />;
 }

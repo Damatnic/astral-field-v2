@@ -1,7 +1,26 @@
 import { cookies } from 'next/headers';
 import { NextRequest } from 'next/server';
-import * as crypto from 'crypto';
+import { UserRole } from '@/types/fantasy';
+import { handleComponentError } from '@/utils/errorHandling';
+import crypto from 'crypto';
 import { prisma } from './db';
+import type { UserRole as PrismaUserRole } from '@prisma/client';
+
+// Helper function to convert Prisma UserRole to Fantasy UserRole
+function convertUserRole(prismaRole: PrismaUserRole): UserRole {
+  switch (prismaRole) {
+    case 'ADMIN':
+      return UserRole.ADMIN;
+    case 'COMMISSIONER':
+      return UserRole.COMMISSIONER;
+    case 'PLAYER':
+      return UserRole.PLAYER;
+    default:
+      return UserRole.PLAYER;
+  }
+}
+
+
 
 // Types and Interfaces  
 export interface User {
@@ -11,6 +30,7 @@ export interface User {
   role: 'ADMIN' | 'COMMISSIONER' | 'PLAYER';
   avatar?: string;
   createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface AuthSession {
@@ -124,9 +144,10 @@ export async function login(credentials: LoginCredentials): Promise<AuthResult> 
       id: dbUser.id,
       email: dbUser.email,
       name: dbUser.name || dbUser.email,
-      role: dbUser.role,
+      role: convertUserRole(dbUser.role),
       avatar: dbUser.avatar || undefined,
-      createdAt: dbUser.createdAt
+      createdAt: dbUser.createdAt,
+      updatedAt: dbUser.updatedAt
     };
     
     return {
@@ -178,9 +199,10 @@ export async function getCurrentUser(): Promise<User | null> {
       id: dbUser.id,
       email: dbUser.email,
       name: dbUser.name || dbUser.email,
-      role: dbUser.role,
+      role: convertUserRole(dbUser.role),
       avatar: dbUser.avatar || undefined,
-      createdAt: dbUser.createdAt
+      createdAt: dbUser.createdAt,
+      updatedAt: dbUser.updatedAt
     };
     
     return user;
@@ -207,9 +229,10 @@ export async function authenticateFromRequest(request: NextRequest): Promise<Use
             id: dbUser.id,
             email: dbUser.email,
             name: dbUser.name || dbUser.email,
-            role: dbUser.role,
+            role: convertUserRole(dbUser.role),
             avatar: dbUser.avatar || undefined,
-            createdAt: dbUser.createdAt
+            createdAt: dbUser.createdAt,
+      updatedAt: dbUser.updatedAt
                 };
           return user;
         }
@@ -231,9 +254,10 @@ export async function authenticateFromRequest(request: NextRequest): Promise<Use
             id: dbUser.id,
             email: dbUser.email,
             name: dbUser.name || dbUser.email,
-            role: dbUser.role,
+            role: convertUserRole(dbUser.role),
             avatar: dbUser.avatar || undefined,
-            createdAt: dbUser.createdAt
+            createdAt: dbUser.createdAt,
+      updatedAt: dbUser.updatedAt
                 };
           return user;
         }
@@ -260,9 +284,10 @@ export async function getUserById(id: string): Promise<User | null> {
       id: dbUser.id,
       email: dbUser.email,
       name: dbUser.name || dbUser.email,
-      role: dbUser.role,
+      role: convertUserRole(dbUser.role),
       avatar: dbUser.avatar || undefined,
-      createdAt: dbUser.createdAt
+      createdAt: dbUser.createdAt,
+      updatedAt: dbUser.updatedAt
     };
     
     return user;
@@ -284,9 +309,10 @@ export async function getUserByEmail(email: string): Promise<User | null> {
       id: dbUser.id,
       email: dbUser.email,
       name: dbUser.name || dbUser.email,
-      role: dbUser.role,
+      role: convertUserRole(dbUser.role),
       avatar: dbUser.avatar || undefined,
-      createdAt: dbUser.createdAt
+      createdAt: dbUser.createdAt,
+      updatedAt: dbUser.updatedAt
     };
     
     return user;
@@ -304,9 +330,10 @@ export async function getAllUsers(): Promise<User[]> {
       id: dbUser.id,
       email: dbUser.email,
       name: dbUser.name || dbUser.email,
-      role: dbUser.role,
+      role: convertUserRole(dbUser.role),
       avatar: dbUser.avatar || undefined,
-      createdAt: dbUser.createdAt
+      createdAt: dbUser.createdAt,
+      updatedAt: dbUser.updatedAt
     }));
   } catch (error) {
     handleComponentError(error as Error, 'auth');
@@ -324,9 +351,10 @@ export async function getUsersByRole(role: 'ADMIN' | 'COMMISSIONER' | 'PLAYER'):
       id: dbUser.id,
       email: dbUser.email,
       name: dbUser.name || dbUser.email,
-      role: dbUser.role,
+      role: convertUserRole(dbUser.role),
       avatar: dbUser.avatar || undefined,
-      createdAt: dbUser.createdAt
+      createdAt: dbUser.createdAt,
+      updatedAt: dbUser.updatedAt
     }));
   } catch (error) {
     handleComponentError(error as Error, 'auth');
