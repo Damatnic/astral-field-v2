@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { 
   CheckCircle, Star, Zap, Trophy, Users, TrendingUp, Shield, Bell, 
-  Brain, Mic, Cube, Coins, Cloud, Activity, BarChart3, MessageSquare,
+  Brain, Mic, Box, Coins, Cloud, Activity, BarChart3, MessageSquare,
   Target, Gamepad2, Eye, Smartphone, Palette, Globe
 } from 'lucide-react';
 
@@ -46,7 +46,7 @@ const features = [
   },
   {
     category: 'Immersive Experience',
-    icon: Cube,
+    icon: Box,
     items: [
       {
         name: 'Voice-Controlled Management',
