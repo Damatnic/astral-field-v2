@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { handleComponentError } from '@/lib/error-handling';
 import {
   Brain,
   MessageCircle,
@@ -295,7 +296,9 @@ export default function AIOracle() {
   };
 
   const handleFeedback = (messageId: string, feedback: 'positive' | 'negative') => {
-    // Handle feedback submission};
+    // Handle feedback submission
+    handleComponentError(new Error(`Feedback ${feedback} for message ${messageId}`), 'AIOracle', 'handleFeedback');
+  };
 
   const getConfidenceColor = (confidence: number) => {
     if (confidence >= 80) return 'text-green-600 dark:text-green-400';

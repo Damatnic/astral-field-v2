@@ -392,7 +392,8 @@ export class NFLStateService {
    * Cleanup resources
    */
   cleanup(): void {
-    // Clear any timers or resources if needed}
+    // Clear any timers or resources if needed
+  }
 }
 
 // Export singleton instance
