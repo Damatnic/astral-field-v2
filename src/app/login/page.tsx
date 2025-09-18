@@ -27,87 +27,40 @@ interface UserProfile {
 
 // D'Amato Dynasty League user profiles
 const userProfiles: UserProfile[] = [
+  // Admin
+  {
+    id: 'admin-001',
+    name: 'Admin User',
+    email: 'admin@astralfield.com',
+    role: 'admin',
+    avatar: '/api/avatars/admin',
+    description: 'System Administrator - Full access'
+  },
   // Commissioner
   {
-    id: 'admin-1',
-    name: "Nicholas D'Amato",
-    email: 'nicholas.damato@astralfield.com',
+    id: 'comm-001',
+    name: 'Commissioner',
+    email: 'commissioner@astralfield.com',
     role: 'commissioner',
-    avatar: '/api/avatars/nicholas-damato.jpg',
+    avatar: '/api/avatars/commissioner',
     description: 'League Commissioner - D\'Amato Dynasty League'
   },
   // Players
   {
-    id: 'player-1',
-    name: 'Nick Hartley',
-    email: 'nick.hartley@astralfield.com',
+    id: 'player-001',
+    name: 'Player One',
+    email: 'player1@astralfield.com',
     role: 'player',
-    avatar: '/api/avatars/nick-hartley.jpg',
+    avatar: '/api/avatars/player1',
     description: 'Dynasty League Player - Strategic trader'
   },
   {
-    id: 'player-2',
-    name: 'Jack McCaigue',
-    email: 'jack.mccaigue@astralfield.com',
+    id: 'demo-001',
+    name: 'Demo User',
+    email: 'demo@astralfield.com',
     role: 'player',
-    avatar: '/api/avatars/jack-mccaigue.jpg',
-    description: 'Dynasty League Player - Draft expert'
-  },
-  {
-    id: 'player-3',
-    name: 'Larry McCaigue',
-    email: 'larry.mccaigue@astralfield.com',
-    role: 'player',
-    avatar: '/api/avatars/larry-mccaigue.jpg',
-    description: 'Dynasty League Player - Analytics master'
-  },
-  {
-    id: 'player-4',
-    name: 'Renee McCaigue',
-    email: 'renee.mccaigue@astralfield.com',
-    role: 'player',
-    avatar: '/api/avatars/renee-mccaigue.jpg',
-    description: 'Dynasty League Player - Waiver specialist'
-  },
-  {
-    id: 'player-5',
-    name: 'Jon Kornbeck',
-    email: 'jon.kornbeck@astralfield.com',
-    role: 'player',
-    avatar: '/api/avatars/jon-kornbeck.jpg',
-    description: 'Dynasty League Player - Championship contender'
-  },
-  {
-    id: 'player-6',
-    name: 'David Jarvey',
-    email: 'david.jarvey@astralfield.com',
-    role: 'player',
-    avatar: '/api/avatars/david-jarvey.jpg',
-    description: 'Dynasty League Player - Rookie hunter'
-  },
-  {
-    id: 'player-7',
-    name: 'Kaity Lorbecki',
-    email: 'kaity.lorbecki@astralfield.com',
-    role: 'player',
-    avatar: '/api/avatars/kaity-lorbecki.jpg',
-    description: 'Dynasty League Player - Trade negotiator'
-  },
-  {
-    id: 'player-8',
-    name: 'Cason Minor',
-    email: 'cason.minor@astralfield.com',
-    role: 'player',
-    avatar: '/api/avatars/cason-minor.jpg',
-    description: 'Dynasty League Player - Sleeper finder'
-  },
-  {
-    id: 'player-9',
-    name: 'Brittany Bergum',
-    email: 'brittany.bergum@astralfield.com',
-    role: 'player',
-    avatar: '/api/avatars/brittany-bergum.jpg',
-    description: 'Dynasty League Player - Matchup strategist'
+    avatar: '/api/avatars/demo',
+    description: 'Demo account for testing - Full features available'
   }
 ];
 
@@ -287,9 +240,12 @@ function LoginForm({
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <h3 className="text-sm font-medium text-blue-900 mb-2">Demo Credentials</h3>
         <div className="text-sm text-blue-800 space-y-1">
-          <p><strong>Admin:</strong> admin123!</p>
-          <p><strong>Commissioner:</strong> comm123!</p>
-          <p><strong>Player:</strong> player123!</p>
+          <p><strong>Available Users:</strong></p>
+          <p>• admin@astralfield.com</p>
+          <p>• commissioner@astralfield.com</p>
+          <p>• player1@astralfield.com</p>
+          <p>• demo@astralfield.com</p>
+          <p><strong>Password for all:</strong> demo123</p>
         </div>
       </div>
 
@@ -405,14 +361,8 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      // Get the default password for this role
-      const passwords = {
-        admin: 'admin123!',
-        commissioner: 'comm123!',
-        player: 'player123!'
-      };
-
-      const result = await login(profile.email, passwords[profile.role]);
+      // Use the demo password for all users in production/simple auth
+      const result = await login(profile.email, 'demo123');
       
       if (result.success) {
         setSuccess(`Successfully logged in as ${profile.name}`);
