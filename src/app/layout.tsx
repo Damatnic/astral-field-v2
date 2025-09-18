@@ -120,7 +120,6 @@ export default function RootLayout({
         
         {/* Performance hints */}
         <link rel="dns-prefetch" href="//api.astralfield.com" />
-        <link rel="preload" href="/fonts/inter-var.woff2" as="font" type="font/woff2" crossOrigin="" />
       </head>
       <body 
         className={`${inter.className} h-full bg-gray-50 text-gray-900 antialiased`}

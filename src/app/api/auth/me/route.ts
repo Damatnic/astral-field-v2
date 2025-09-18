@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth';
+// Use simplified auth when database is not available
+import { getCurrentUser as getCurrentUserSimple } from '@/lib/auth-simple';
+import { getCurrentUser as getCurrentUserFull } from '@/lib/auth';
+
+const useSimpleAuth = process.env.NODE_ENV === 'production' || !process.env.DATABASE_URL;
+const getCurrentUser = useSimpleAuth ? getCurrentUserSimple : getCurrentUserFull;
 
 export async function GET(_request: NextRequest) {
   try {

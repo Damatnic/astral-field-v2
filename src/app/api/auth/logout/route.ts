@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { logout } from '@/lib/auth';
+// Use simplified auth when database is not available
+import { logout as logoutSimple } from '@/lib/auth-simple';
+import { logout as logoutFull } from '@/lib/auth';
+
+const useSimpleAuth = process.env.NODE_ENV === 'production' || !process.env.DATABASE_URL;
+const logout = useSimpleAuth ? logoutSimple : logoutFull;
 
 export async function POST(_request: NextRequest) {
   try {
