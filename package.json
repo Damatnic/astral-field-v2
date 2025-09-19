@@ -7,6 +7,8 @@
     "prepush": "npm run test",
     "dev": "next dev",
     "build": "prisma generate && next build",
+    "build:custom": "node scripts/vercel-build.js",
+    "build:local": "prisma generate && next build",
     "build:analyze": "ANALYZE=true npm run build",
     "start": "next start",
     "preview": "next build && next start",
@@ -40,6 +42,7 @@
     "deploy": "vercel --prod",
     "deploy:staging": "vercel",
     "deploy:preview": "vercel --no-wait",
+    "validate:deployment": "node scripts/validate-deployment.js",
     "env:pull": "vercel env pull .env.local",
     "env:list": "vercel env ls",
     "logs": "vercel logs",
@@ -115,6 +118,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@netlify/plugin-nextjs": "^5.13.3",
     "@next/bundle-analyzer": "^14.2.10",
     "@playwright/test": "^1.47.2",
     "@testing-library/jest-dom": "^6.8.0",

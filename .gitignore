@@ -293,3 +293,6 @@ scratch.md
 # Parent directory files (prevent accidentally adding files outside project)
 ../../*
 ../*
+
+# Local Netlify folder
+.netlify

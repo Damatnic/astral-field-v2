@@ -1,62 +1,53 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Essential configuration for Vercel deployment
+  // Remove standalone output for Vercel - it handles this automatically
+  // output: 'standalone',
+  
   eslint: {
     ignoreDuringBuilds: true,
   },
   typescript: {
     ignoreBuildErrors: true,
   },
-  
-  // Prisma external packages
   experimental: {
-    serverComponentsExternalPackages: ['@prisma/client', 'prisma'],
+    serverComponentsExternalPackages: ['@prisma/client', 'prisma', 'bcryptjs', 'bcrypt'],
   },
-  
-  // Basic performance optimization
   swcMinify: true,
   compress: true,
-  
-  // Remove powered by header
   poweredByHeader: false,
   
-  // Basic image optimization
+  // Add image configuration for optimization
   images: {
-    domains: [],
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: '**.amazonaws.com',
-      },
-      {
-        protocol: 'https',
-        hostname: '**.cloudfront.net',
-      },
-    ],
+    domains: ['localhost', 'vercel.app', 'astralfield.com'],
+    unoptimized: process.env.NODE_ENV === 'development',
   },
   
-  // Essential security headers only
+  // Webpack configuration to handle Edge Runtime issues
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      // Don't include certain modules on the client side
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+        crypto: false,
+      };
+    }
+    return config;
+  },
+  
+  // Disable static optimization for problematic pages
   async headers() {
     return [
       {
-        source: '/(.*)',
+        source: '/api/:path*',
         headers: [
-          {
-            key: 'X-Frame-Options',
-            value: 'DENY'
-          },
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff'
-          },
-          {
-            key: 'Strict-Transport-Security',
-            value: 'max-age=31536000; includeSubDomains'
-          }
-        ]
-      }
+          { key: 'Cache-Control', value: 'no-store, must-revalidate' },
+        ],
+      },
     ];
-  }
+  },
 };
 
 module.exports = nextConfig;
