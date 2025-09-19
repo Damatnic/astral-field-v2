@@ -3,9 +3,11 @@ import { prisma } from '@/lib/db';
 
 export async function GET() {
   const health = {
-    status: 'operational',
+    status: 'ok',
+    message: 'API is responding',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'production',
+    responseTime: Date.now(),
     checks: {
       api: { status: 'healthy', message: 'API is responding' },
       database: { status: 'unknown', message: 'Not checked' },

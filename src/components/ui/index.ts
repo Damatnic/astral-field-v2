@@ -14,6 +14,8 @@ export { DataTable } from './data-table';
 // Utility Components
 export type { Toast } from './Toast';
 export { Skeleton } from './Skeleton';
+export { Progress } from './progress';
+export { Alert, AlertTitle, AlertDescription } from './alert';
 
 // Types
 export type { ButtonProps } from './button';

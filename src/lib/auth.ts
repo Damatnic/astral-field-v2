@@ -3,6 +3,7 @@ import { NextRequest } from 'next/server';
 import { UserRole } from '@/types/fantasy';
 import { handleComponentError } from '@/utils/errorHandling';
 import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
 import { prisma } from './db';
 import type { UserRole as PrismaUserRole } from '@prisma/client';
 
@@ -54,8 +55,7 @@ export interface AuthResult {
 // Password for all users (in production, use hashed passwords)
 const DEFAULT_PASSWORD = 'player123!';
 
-// In-memory session storage (in production, use Redis or database)
-const SESSIONS = new Map<string, AuthSession>();
+// Database-based session storage for production
 
 // Constants
 const SESSION_COOKIE_NAME = 'astralfield-session';
@@ -66,35 +66,70 @@ function generateSessionId(): string {
   return crypto.randomBytes(32).toString('hex');
 }
 
-function createSession(userId: string): AuthSession {
+async function createSession(userId: string): Promise<AuthSession> {
   const sessionId = generateSessionId();
+  const expiresAt = new Date(Date.now() + SESSION_DURATION);
+  
+  // Store session in database
+  await prisma.userSession.create({
+    data: {
+      userId,
+      sessionId,
+      expiresAt,
+      isActive: true
+    }
+  });
+  
   const session: AuthSession = {
     userId,
     sessionId,
-    expiresAt: new Date(Date.now() + SESSION_DURATION),
+    expiresAt,
     createdAt: new Date()
   };
   
-  SESSIONS.set(sessionId, session);
   return session;
 }
 
-function getSession(sessionId: string): AuthSession | null {
-  const session = SESSIONS.get(sessionId);
-  
-  if (!session) return null;
-  
-  // Check if session is expired
-  if (session.expiresAt < new Date()) {
-    SESSIONS.delete(sessionId);
+async function getSession(sessionId: string): Promise<AuthSession | null> {
+  try {
+    const dbSession = await prisma.userSession.findFirst({
+      where: {
+        sessionId,
+        isActive: true,
+        expiresAt: {
+          gt: new Date() // Not expired
+        }
+      }
+    });
+    
+    if (!dbSession) return null;
+    
+    // Update last activity
+    await prisma.userSession.update({
+      where: { id: dbSession.id },
+      data: { lastActivity: new Date() }
+    });
+    
+    return {
+      userId: dbSession.userId,
+      sessionId: dbSession.sessionId,
+      expiresAt: dbSession.expiresAt,
+      createdAt: dbSession.createdAt
+    };
+  } catch (error) {
     return null;
   }
-  
-  return session;
 }
 
-function deleteSession(sessionId: string): void {
-  SESSIONS.delete(sessionId);
+async function deleteSession(sessionId: string): Promise<void> {
+  try {
+    await prisma.userSession.updateMany({
+      where: { sessionId },
+      data: { isActive: false }
+    });
+  } catch (error) {
+    // Ignore errors in session deletion
+  }
 }
 
 // Authentication Functions
@@ -106,6 +141,16 @@ export async function login(credentials: LoginCredentials): Promise<AuthResult> 
     const dbUser = await prisma.user.findUnique({
       where: {
         email: email.toLowerCase()
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        avatar: true,
+        createdAt: true,
+        updatedAt: true,
+        password: true
       }
     });
     
@@ -116,16 +161,28 @@ export async function login(credentials: LoginCredentials): Promise<AuthResult> 
       };
     }
     
-    // Verify password (using default password for now)
-    if (password !== DEFAULT_PASSWORD) {
-      return { 
-        success: false, 
-        error: 'Invalid email or password' 
-      };
+    // Verify password using bcrypt
+    if (!dbUser.password) {
+      // Fallback: if no hashed password exists, check against default
+      if (password !== DEFAULT_PASSWORD) {
+        return { 
+          success: false, 
+          error: 'Invalid email or password' 
+        };
+      }
+    } else {
+      // Use bcrypt to verify hashed password
+      const isValidPassword = await bcrypt.compare(password, dbUser.password);
+      if (!isValidPassword) {
+        return { 
+          success: false, 
+          error: 'Invalid email or password' 
+        };
+      }
     }
     
     // Create session
-    const session = createSession(dbUser.id);
+    const session = await createSession(dbUser.id);
     
     // Note: lastLoginAt tracking removed since it's not in the schema
     
@@ -169,7 +226,7 @@ export async function logout(): Promise<void> {
     const sessionId = cookieStore.get(SESSION_COOKIE_NAME)?.value;
     
     if (sessionId) {
-      deleteSession(sessionId);
+      await deleteSession(sessionId);
     }
     
     cookieStore.delete(SESSION_COOKIE_NAME);
@@ -185,7 +242,7 @@ export async function getCurrentUser(): Promise<User | null> {
     
     if (!sessionId) return null;
     
-    const session = getSession(sessionId);
+    const session = await getSession(sessionId);
     if (!session) return null;
     
     const dbUser = await prisma.user.findUnique({
@@ -218,7 +275,7 @@ export async function authenticateFromRequest(request: NextRequest): Promise<Use
     const sessionId = request.cookies.get(SESSION_COOKIE_NAME)?.value;
     
     if (sessionId) {
-      const session = getSession(sessionId);
+      const session = await getSession(sessionId);
       if (session) {
         const dbUser = await prisma.user.findUnique({
           where: { id: session.userId }
@@ -243,7 +300,7 @@ export async function authenticateFromRequest(request: NextRequest): Promise<Use
     const authHeader = request.headers.get('authorization');
     if (authHeader?.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
-      const session = getSession(token);
+      const session = await getSession(token);
       if (session) {
         const dbUser = await prisma.user.findUnique({
           where: { id: session.userId }
@@ -363,12 +420,19 @@ export async function getUsersByRole(role: 'ADMIN' | 'COMMISSIONER' | 'PLAYER'):
 }
 
 // Session Cleanup (run periodically in production)
-export function cleanupExpiredSessions(): void {
-  const now = new Date();
-  for (const [sessionId, session] of SESSIONS.entries()) {
-    if (session.expiresAt < now) {
-      SESSIONS.delete(sessionId);
-    }
+export async function cleanupExpiredSessions(): Promise<void> {
+  try {
+    await prisma.userSession.updateMany({
+      where: {
+        OR: [
+          { expiresAt: { lt: new Date() } },
+          { isActive: false }
+        ]
+      },
+      data: { isActive: false }
+    });
+  } catch (error) {
+    handleComponentError(error as Error, 'session-cleanup');
   }
 }
 

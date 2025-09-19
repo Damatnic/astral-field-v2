@@ -1,4 +1,8 @@
 import { login, getAllUsers } from '../src/lib/auth';
+import * as dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config({ path: '.env.local' });
 
 async function testLogin() {
   console.log('🧪 Testing login functionality...');

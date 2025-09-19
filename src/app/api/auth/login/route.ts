@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-// Use simplified auth when database is not available
-import { login as loginSimple } from '@/lib/auth-simple';
 import { handleComponentError, logError } from '@/lib/error-handling';
 import { login as loginFull } from '@/lib/auth';
 
-const useSimpleAuth = process.env.NODE_ENV === 'production' || !process.env.DATABASE_URL;
-const login = useSimpleAuth ? loginSimple : loginFull;
+// Always use full auth system since we have real users in production database
+const useSimpleAuth = false; // Disabled - we have real users in production
+const login = loginFull; // Always use full auth with database
 
 logError('Auth system selection', {
   operation: 'auth-login-setup',
@@ -13,7 +12,7 @@ logError('Auth system selection', {
     NODE_ENV: process.env.NODE_ENV,
     HAS_DATABASE_URL: !!process.env.DATABASE_URL,
     useSimpleAuth,
-    authSystem: useSimpleAuth ? 'SIMPLE' : 'FULL'
+    authSystem: 'FULL'
   }
 });
 

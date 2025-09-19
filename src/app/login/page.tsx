@@ -26,42 +26,89 @@ interface UserProfile {
   description: string;
 }
 
-// D'Amato Dynasty League user profiles
+// Real 2025 NFL Season Week 3 Users - Astral Field Championship League 2025
 const userProfiles: UserProfile[] = [
-  // Admin
+  // Commissioner - Gets strategic advantage
   {
-    id: 'admin-001',
-    name: 'Admin User',
-    email: 'admin@astralfield.com',
-    role: 'admin',
-    avatar: '/api/avatars/admin',
-    description: 'System Administrator - Full access'
-  },
-  // Commissioner
-  {
-    id: 'comm-001',
-    name: 'Commissioner',
-    email: 'commissioner@astralfield.com',
+    id: 'nicholas-damato',
+    name: 'Nicholas D\'Amato',
+    email: 'nicholas.damato@astralfield.com',
     role: 'commissioner',
-    avatar: '/api/avatars/commissioner',
-    description: 'League Commissioner - D\'Amato Dynasty League'
+    avatar: '/api/avatars/nicholas-damato',
+    description: '🏆 League Commissioner - Championship Team Owner'
   },
-  // Players
+  // League Members
   {
-    id: 'player-001',
-    name: 'Player One',
-    email: 'player1@astralfield.com',
+    id: 'brittany-bergum',
+    name: 'Brittany Bergum',
+    email: 'brittany.bergum@astralfield.com',
     role: 'player',
-    avatar: '/api/avatars/player1',
-    description: 'Dynasty League Player - Strategic trader'
+    avatar: '/api/avatars/brittany-bergum',
+    description: 'Fantasy Football Strategist'
   },
   {
-    id: 'demo-001',
-    name: 'Demo User',
-    email: 'demo@astralfield.com',
+    id: 'cason-minor',
+    name: 'Cason Minor',
+    email: 'cason.minor@astralfield.com',
     role: 'player',
-    avatar: '/api/avatars/demo',
-    description: 'Demo account for testing - Full features available'
+    avatar: '/api/avatars/cason-minor',
+    description: 'Rising Fantasy Star'
+  },
+  {
+    id: 'david-jarvey',
+    name: 'David Jarvey',
+    email: 'david.jarvey@astralfield.com',
+    role: 'player',
+    avatar: '/api/avatars/david-jarvey',
+    description: 'Veteran League Member'
+  },
+  {
+    id: 'jack-mccaigue',
+    name: 'Jack McCaigue',
+    email: 'jack.mccaigue@astralfield.com',
+    role: 'player',
+    avatar: '/api/avatars/jack-mccaigue',
+    description: 'Fantasy Analytics Expert'
+  },
+  {
+    id: 'jon-kornbeck',
+    name: 'Jon Kornbeck',
+    email: 'jon.kornbeck@astralfield.com',
+    role: 'player',
+    avatar: '/api/avatars/jon-kornbeck',
+    description: 'Trade Specialist'
+  },
+  {
+    id: 'kaity-lorbecki',
+    name: 'Kaity Lorbecki',
+    email: 'kaity.lorbecki@astralfield.com',
+    role: 'player',
+    avatar: '/api/avatars/kaity-lorbecki',
+    description: 'Waiver Wire Expert'
+  },
+  {
+    id: 'larry-mccaigue',
+    name: 'Larry McCaigue',
+    email: 'larry.mccaigue@astralfield.com',
+    role: 'player',
+    avatar: '/api/avatars/larry-mccaigue',
+    description: 'Season Veteran'
+  },
+  {
+    id: 'nick-hartley',
+    name: 'Nick Hartley',
+    email: 'nick.hartley@astralfield.com',
+    role: 'player',
+    avatar: '/api/avatars/nick-hartley',
+    description: 'Rookie Sensation'
+  },
+  {
+    id: 'renee-mccaigue',
+    name: 'Renee McCaigue',
+    email: 'renee.mccaigue@astralfield.com',
+    role: 'player',
+    avatar: '/api/avatars/renee-mccaigue',
+    description: 'Championship Contender'
   }
 ];
 
@@ -97,9 +144,9 @@ function ProfileSelection({ onSelect }: { onSelect: (profile: UserProfile) => vo
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Choose a Profile</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Choose Your Profile</h2>
         <p className="text-gray-600">
-          Select a demo user profile to explore different roles and permissions.
+          Select your user profile to access your team in the 2025 NFL Season Week 3.
         </p>
       </div>
 
@@ -235,20 +282,22 @@ function LoginForm({
       <div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Manual Login</h2>
         <p className="text-gray-600">
-          Enter credentials manually or use the demo passwords provided.
+          Enter your league member credentials to access your team.
         </p>
       </div>
 
-      {/* Demo credentials info */}
+      {/* Login credentials info */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h3 className="text-sm font-medium text-blue-900 mb-2">Demo Credentials</h3>
+        <h3 className="text-sm font-medium text-blue-900 mb-2">🏈 2025 NFL Season Week 3 - Login Info</h3>
         <div className="text-sm text-blue-800 space-y-1">
-          <p><strong>Available Users:</strong></p>
-          <p>• admin@astralfield.com</p>
-          <p>• commissioner@astralfield.com</p>
-          <p>• player1@astralfield.com</p>
-          <p>• demo@astralfield.com</p>
-          <p><strong>Password for all:</strong> demo123</p>
+          <p><strong>League Members:</strong></p>
+          <p>• Nicholas D&apos;Amato (Commissioner) - nicholas.damato@astralfield.com</p>
+          <p>• Brittany Bergum - brittany.bergum@astralfield.com</p>
+          <p>• Cason Minor - cason.minor@astralfield.com</p>
+          <p>• David Jarvey - david.jarvey@astralfield.com</p>
+          <p>• Jack McCaigue - jack.mccaigue@astralfield.com</p>
+          <p>• + 5 more league members...</p>
+          <p><strong>Password for all:</strong> player123!</p>
         </div>
       </div>
 
@@ -364,8 +413,8 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      // Use the demo password for all users in production/simple auth
-      const result = await login(profile.email, 'demo123');
+      // Use the real user password for 2025 NFL Season Week 3 users
+      const result = await login(profile.email, 'player123!');
       
       if (result.success) {
         setSuccess(`Successfully logged in as ${profile.name}`);
@@ -447,7 +496,7 @@ export default function LoginPage() {
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                Quick Demo
+                Select Profile
               </button>
               <button
                 onClick={() => setLoginMethod('form')}

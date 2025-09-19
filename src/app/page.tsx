@@ -12,6 +12,9 @@ import {
   InjuryReport as InjuryReportComponent, 
   NewsFeed 
 } from '@/components/ui/live-data-components';
+import MyTeamCard from '@/components/team/MyTeamCard';
+import CurrentMatchup from '@/components/matchup/CurrentMatchup';
+import WeekStatus from '@/components/league/WeekStatus';
 import {
   Trophy,
   Users,
@@ -634,6 +637,33 @@ function EnhancedAuthenticatedDashboard() {
 
           {/* Right Column */}
           <div className="space-y-8">
+            {/* Current Matchup */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.4 }}
+            >
+              <CurrentMatchup />
+            </motion.div>
+
+            {/* My Team Card */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.5 }}
+            >
+              <MyTeamCard />
+            </motion.div>
+
+            {/* Week Status */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.6 }}
+            >
+              <WeekStatus />
+            </motion.div>
+            
             <RecentActivity />
             
             {/* Injury Report */}

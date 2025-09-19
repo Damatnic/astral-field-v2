@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-// Use simplified auth when database is not available
-import { getCurrentUser as getCurrentUserSimple } from '@/lib/auth-simple';
 import { handleComponentError } from '@/lib/error-handling';
 import { getCurrentUser as getCurrentUserFull } from '@/lib/auth';
 
-const useSimpleAuth = process.env.NODE_ENV === 'production' || !process.env.DATABASE_URL;
-const getCurrentUser = useSimpleAuth ? getCurrentUserSimple : getCurrentUserFull;
+// Always use full auth system since we have real users in production database
+const getCurrentUser = getCurrentUserFull;
 
 // console.log('[AUTH DEBUG] /me endpoint - Auth system selection:', {
 //   NODE_ENV: process.env.NODE_ENV,
