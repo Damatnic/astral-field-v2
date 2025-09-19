@@ -25,6 +25,6 @@ export async function GET() {
 
   // Always return 200 for health check unless database is down
   return NextResponse.json(health, {
-    status: 200
+    status: health.status === 'operational' ? 200 : 503
   });
 }
