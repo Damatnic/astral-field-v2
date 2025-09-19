@@ -144,9 +144,9 @@ function ProfileSelection({ onSelect }: { onSelect: (profile: UserProfile) => vo
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Choose Your Profile</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Choose Your Manager</h2>
         <p className="text-gray-600">
-          Select your user profile to access your team in the 2025 NFL Season Week 3.
+          Select your profile to access your team in the D'Amato Dynasty League 2024.
         </p>
       </div>
 
@@ -202,20 +202,18 @@ function ProfileSelection({ onSelect }: { onSelect: (profile: UserProfile) => vo
                   </h3>
                   <RoleIcon role={profile.role} className="h-4 w-4" />
                 </div>
-                <p className="text-xs text-gray-500 mb-2">
-                  {profile.email}
-                </p>
-                <p className="text-xs text-gray-600 leading-relaxed">
+                <p className="text-xs text-gray-600 mb-2 leading-relaxed">
                   {profile.description}
                 </p>
+                <p className="text-xs text-gray-500">
+                  {profile.email}
+                </p>
                 <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mt-2 ${
-                  profile.role === 'admin'
-                    ? 'bg-red-100 text-red-800'
-                    : profile.role === 'commissioner'
+                  profile.role === 'commissioner'
                     ? 'bg-yellow-100 text-yellow-800'
                     : 'bg-blue-100 text-blue-800'
                 }`}>
-                  {profile.role.charAt(0).toUpperCase() + profile.role.slice(1)}
+                  {profile.role === 'commissioner' ? '👑 Commissioner' : '🏈 Manager'}
                 </span>
               </div>
             </div>
@@ -282,7 +280,7 @@ function LoginForm({
       <div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Manual Login</h2>
         <p className="text-gray-600">
-          Enter your league member credentials to access your team.
+          Enter your credentials to access your team in the D'Amato Dynasty League.
         </p>
       </div>
 
@@ -482,7 +480,7 @@ export default function LoginPage() {
           Welcome to AstralField
         </h1>
         <p className="mt-3 text-center text-base text-gray-700 font-medium">
-          NFL Week 3 • 2025 Championship League
+          D'Amato Dynasty League • 2024 Season • Week 2
         </p>
         <p className="mt-1 text-center text-sm text-gray-600">
           Sign in to access your fantasy football dashboard
