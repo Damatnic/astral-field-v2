@@ -7,7 +7,6 @@
     "prepush": "npm run test",
     "dev": "next dev",
     "build": "prisma generate && next build",
-    "build:custom": "node scripts/vercel-build.js",
     "build:local": "prisma generate && next build",
     "build:analyze": "ANALYZE=true npm run build",
     "start": "next start",

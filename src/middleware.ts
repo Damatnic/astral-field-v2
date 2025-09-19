@@ -1,12 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// SIMPLIFIED MIDDLEWARE FOR VERCEL DEPLOYMENT
-// All authentication temporarily disabled to fix Edge Runtime issues
-export async function middleware(request: NextRequest) {
+// Simplified middleware for Vercel deployment
+export function middleware(request: NextRequest) {
+  // Pass all requests through without modification
   return NextResponse.next();
 }
 
-// Empty matcher - middleware won't run on any routes
+// Configure matcher to skip static files and API routes for better performance
 export const config = {
-  matcher: []
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public folder files
+     */
+    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
 };
