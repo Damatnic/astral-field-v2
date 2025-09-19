@@ -6,8 +6,7 @@ import { playerSyncService } from '@/services/sleeper/playerSyncService';
 import { nflStateService } from '@/services/sleeper/nflStateService';
 import { SleeperApiService } from '@/services/sleeper/sleeperApiService';
 import { prisma as db } from '@/lib/db';
-
-
+import { DEFAULT_LEAGUE_ID, validateAndDefault } from '@/lib/constants';
 import { handleComponentError } from '@/lib/error-handling';
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic';
@@ -17,7 +16,7 @@ const sleeperApi = new SleeperApiService();
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const leagueId = searchParams.get('leagueId');
+    const rawLeagueId = searchParams.get('leagueId');
     const week = searchParams.get('week');
     const season = searchParams.get('season');
     const playerId = searchParams.get('playerId');
@@ -26,6 +25,9 @@ export async function GET(request: NextRequest) {
     const format = searchParams.get('format') || 'detailed';
     const includeStats = searchParams.get('includeStats') === 'true';
     const source = searchParams.get('source') || 'database'; // 'database', 'sleeper', or 'both'
+
+    // Use default league ID if not provided (for testing)
+    const leagueId = validateAndDefault(rawLeagueId, DEFAULT_LEAGUE_ID, 'leagueId');
 
     // Get current NFL context
     const nflState = await nflStateService.getCurrentState();

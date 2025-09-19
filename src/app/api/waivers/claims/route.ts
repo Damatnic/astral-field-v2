@@ -73,9 +73,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate FAAB bid
-    if (bidAmount > team.faabBudget) {
+    const availableFaab = team.faabBudget - team.faabSpent;
+    if (bidAmount > availableFaab) {
       return NextResponse.json(
-        { success: false, error: 'Insufficient FAAB budget' },
+        { success: false, error: `Insufficient FAAB budget. Available: $${availableFaab}` },
+        { status: 400 }
+      );
+    }
+
+    if (bidAmount < 0) {
+      return NextResponse.json(
+        { success: false, error: 'Bid amount must be non-negative' },
         { status: 400 }
       );
     }

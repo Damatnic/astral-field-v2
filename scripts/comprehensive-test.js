@@ -3,6 +3,7 @@ const { performance } = require('perf_hooks');
 
 // Configuration
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
+const BYPASS_SECRET = 'K9mR3nP7xQ2sL8vY1uW5tE4oI6aS9dF0';
 const TEST_TIMEOUT = 10000; // 10 seconds per test
 
 // Test results storage
@@ -39,6 +40,10 @@ async function testEndpoint(name, method, path, options = {}) {
       url,
       timeout: TEST_TIMEOUT,
       validateStatus: () => true, // Don't throw on any status
+      headers: {
+        'x-vercel-protection-bypass': BYPASS_SECRET,
+        ...options.headers
+      },
       ...options
     };
     

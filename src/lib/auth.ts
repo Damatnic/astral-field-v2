@@ -7,17 +7,17 @@ import bcrypt from 'bcryptjs';
 import { prisma } from './db';
 import type { UserRole as PrismaUserRole } from '@prisma/client';
 
-// Helper function to convert Prisma UserRole to Fantasy UserRole
-function convertUserRole(prismaRole: PrismaUserRole): UserRole {
+// Helper function to convert Prisma UserRole to string role
+function convertUserRole(prismaRole: PrismaUserRole): 'ADMIN' | 'COMMISSIONER' | 'PLAYER' {
   switch (prismaRole) {
     case 'ADMIN':
-      return UserRole.ADMIN;
+      return 'ADMIN';
     case 'COMMISSIONER':
-      return UserRole.COMMISSIONER;
+      return 'COMMISSIONER';
     case 'PLAYER':
-      return UserRole.PLAYER;
+      return 'PLAYER';
     default:
-      return UserRole.PLAYER;
+      return 'PLAYER';
   }
 }
 
@@ -238,31 +238,64 @@ export async function logout(): Promise<void> {
 export async function getCurrentUser(): Promise<User | null> {
   try {
     const cookieStore = await cookies();
+    
+    // Try main auth session first
     const sessionId = cookieStore.get(SESSION_COOKIE_NAME)?.value;
     
-    if (!sessionId) return null;
+    if (sessionId) {
+      const session = await getSession(sessionId);
+      if (session) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: session.userId }
+        });
+        
+        if (dbUser) {
+          const user: User = {
+            id: dbUser.id,
+            email: dbUser.email,
+            name: dbUser.name || dbUser.email,
+            role: convertUserRole(dbUser.role),
+            avatar: dbUser.avatar || undefined,
+            createdAt: dbUser.createdAt,
+            updatedAt: dbUser.updatedAt
+          };
+          return user;
+        }
+      }
+    }
     
-    const session = await getSession(sessionId);
-    if (!session) return null;
+    // Try simple login session
+    const simpleSessionToken = cookieStore.get('session')?.value;
+    if (simpleSessionToken) {
+      try {
+        // Decode simple session token format: base64(email:timestamp)
+        const decoded = Buffer.from(simpleSessionToken, 'base64').toString();
+        const [email] = decoded.split(':');
+        
+        if (email) {
+          const dbUser = await prisma.user.findUnique({
+            where: { email: email.toLowerCase() }
+          });
+          
+          if (dbUser) {
+            const user: User = {
+              id: dbUser.id,
+              email: dbUser.email,
+              name: dbUser.name || dbUser.email,
+              role: convertUserRole(dbUser.role),
+              avatar: dbUser.avatar || undefined,
+              createdAt: dbUser.createdAt,
+              updatedAt: dbUser.updatedAt
+            };
+            return user;
+          }
+        }
+      } catch (simpleSessionError) {
+        // Invalid simple session format
+      }
+    }
     
-    const dbUser = await prisma.user.findUnique({
-      where: { id: session.userId }
-    });
-    
-    if (!dbUser) return null;
-    
-    // Convert to User interface
-    const user: User = {
-      id: dbUser.id,
-      email: dbUser.email,
-      name: dbUser.name || dbUser.email,
-      role: convertUserRole(dbUser.role),
-      avatar: dbUser.avatar || undefined,
-      createdAt: dbUser.createdAt,
-      updatedAt: dbUser.updatedAt
-    };
-    
-    return user;
+    return null;
   } catch (error) {
     handleComponentError(error as Error, 'auth');
     return null;
@@ -271,7 +304,7 @@ export async function getCurrentUser(): Promise<User | null> {
 
 export async function authenticateFromRequest(request: NextRequest): Promise<User | null> {
   try {
-    // Try to get session from cookie
+    // Try to get session from main auth cookie
     const sessionId = request.cookies.get(SESSION_COOKIE_NAME)?.value;
     
     if (sessionId) {
@@ -289,10 +322,41 @@ export async function authenticateFromRequest(request: NextRequest): Promise<Use
             role: convertUserRole(dbUser.role),
             avatar: dbUser.avatar || undefined,
             createdAt: dbUser.createdAt,
-      updatedAt: dbUser.updatedAt
-                };
+            updatedAt: dbUser.updatedAt
+          };
           return user;
         }
+      }
+    }
+    
+    // Try to get simple login session cookie
+    const simpleSessionToken = request.cookies.get('session')?.value;
+    if (simpleSessionToken) {
+      try {
+        // Decode simple session token format: base64(email:timestamp)
+        const decoded = Buffer.from(simpleSessionToken, 'base64').toString();
+        const [email] = decoded.split(':');
+        
+        if (email) {
+          const dbUser = await prisma.user.findUnique({
+            where: { email: email.toLowerCase() }
+          });
+          
+          if (dbUser) {
+            const user: User = {
+              id: dbUser.id,
+              email: dbUser.email,
+              name: dbUser.name || dbUser.email,
+              role: convertUserRole(dbUser.role),
+              avatar: dbUser.avatar || undefined,
+              createdAt: dbUser.createdAt,
+              updatedAt: dbUser.updatedAt
+            };
+            return user;
+          }
+        }
+      } catch (simpleSessionError) {
+        // Invalid simple session format, continue to Bearer token check
       }
     }
     
@@ -300,6 +364,8 @@ export async function authenticateFromRequest(request: NextRequest): Promise<Use
     const authHeader = request.headers.get('authorization');
     if (authHeader?.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
+      
+      // First try as regular session token
       const session = await getSession(token);
       if (session) {
         const dbUser = await prisma.user.findUnique({
@@ -314,10 +380,37 @@ export async function authenticateFromRequest(request: NextRequest): Promise<Use
             role: convertUserRole(dbUser.role),
             avatar: dbUser.avatar || undefined,
             createdAt: dbUser.createdAt,
-      updatedAt: dbUser.updatedAt
-                };
+            updatedAt: dbUser.updatedAt
+          };
           return user;
         }
+      }
+      
+      // If not a regular session, try as simple login token
+      try {
+        const decoded = Buffer.from(token, 'base64').toString();
+        const [email] = decoded.split(':');
+        
+        if (email) {
+          const dbUser = await prisma.user.findUnique({
+            where: { email: email.toLowerCase() }
+          });
+          
+          if (dbUser) {
+            const user: User = {
+              id: dbUser.id,
+              email: dbUser.email,
+              name: dbUser.name || dbUser.email,
+              role: convertUserRole(dbUser.role),
+              avatar: dbUser.avatar || undefined,
+              createdAt: dbUser.createdAt,
+              updatedAt: dbUser.updatedAt
+            };
+            return user;
+          }
+        }
+      } catch (bearerTokenError) {
+        // Invalid bearer token format
       }
     }
     

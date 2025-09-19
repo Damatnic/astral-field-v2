@@ -216,7 +216,7 @@ export async function GET(
     });
 
   } catch (error) {
-    handleComponentError(error as Error, 'route');
+    console.error('Error fetching league activity:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to fetch league activity' },
       { status: 500 }

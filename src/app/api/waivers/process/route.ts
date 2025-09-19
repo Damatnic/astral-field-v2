@@ -168,7 +168,8 @@ async function processSingleClaim(claim: any): Promise<boolean> {
         where: { id: claim.teamId }
       });
 
-      if (!team || team.faabBudget < (claim.faabBid || 0)) {
+      const availableFaab = team.faabBudget - team.faabSpent;
+      if (!team || availableFaab < (claim.faabBid || 0)) {
         await tx.waiverClaim.update({
           where: { id: claim.id },
           data: {
@@ -202,11 +203,11 @@ async function processSingleClaim(claim: any): Promise<boolean> {
         }
       });
 
-      // Update team's FAAB budget
+      // Update team's FAAB spent
       await tx.team.update({
         where: { id: claim.teamId },
         data: {
-          faabBudget: team.faabBudget - (claim.faabBid || 0)
+          faabSpent: team.faabSpent + (claim.faabBid || 0)
         }
       });
 

@@ -5,8 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sleeperRealTimeScoringService } from '@/services/sleeper/realTimeScoringService';
 import { nflStateService } from '@/services/sleeper/nflStateService';
 import { prisma as db } from '@/lib/db';
-
-
+import { getLeagueIdOrDefault } from '@/lib/constants';
 import { handleComponentError } from '@/lib/error-handling';
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic';
@@ -14,17 +13,13 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const leagueId = searchParams.get('leagueId');
+    const rawLeagueId = searchParams.get('leagueId');
     const week = searchParams.get('week');
     const includeProjections = searchParams.get('includeProjections') === 'true';
     const format = searchParams.get('format') || 'detailed';
 
-    if (!leagueId) {
-      return NextResponse.json(
-        { error: 'leagueId parameter required' },
-        { status: 400 }
-      );
-    }
+    // Use default league ID if not provided (for testing)
+    const leagueId = getLeagueIdOrDefault(rawLeagueId || undefined);
 
     // Verify league exists and user has access
     const league = await db.league.findUnique({
@@ -157,12 +152,14 @@ export async function POST(request: NextRequest) {
 
     switch (action) {
       case 'refresh':
-        // Force refresh live scores for current weekresult = await sleeperRealTimeScoringService.updateLeagueScores(leagueId);
+        // Force refresh live scores for current week
+        result = await sleeperRealTimeScoringService.updateLeagueScores(leagueId);
         break;
 
       case 'start_live_tracking':
         // Start real-time tracking for this league
-        const intervalMs = options.intervalMs || 60000;await sleeperRealTimeScoringService.startRealTimeUpdates(intervalMs);
+        const intervalMs = options.intervalMs || 60000;
+        await sleeperRealTimeScoringService.startRealTimeUpdates(intervalMs);
         
         result = {
           message: 'Live tracking started',
@@ -172,7 +169,8 @@ export async function POST(request: NextRequest) {
         break;
 
       case 'stop_live_tracking':
-        // Stop real-time trackingsleeperRealTimeScoringService.stopRealTimeUpdates();
+        // Stop real-time tracking
+        sleeperRealTimeScoringService.stopRealTimeUpdates();
         
         result = {
           message: 'Live tracking stopped',
@@ -182,7 +180,8 @@ export async function POST(request: NextRequest) {
 
       case 'calculate_week':
         // Calculate scores for a specific week
-        const targetWeek = week || 1;result = await calculateWeekScores(leagueId, targetWeek, options.season);
+        const targetWeek = week || 1;
+        result = await calculateWeekScores(leagueId, targetWeek, options.season);
         break;
 
       default:

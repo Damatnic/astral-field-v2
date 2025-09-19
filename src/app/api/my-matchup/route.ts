@@ -1,17 +1,16 @@
-import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-import { getCurrentUser } from '@/lib/auth';
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/db';
+import { authenticateFromRequest } from '@/lib/auth';
 import { handleComponentError } from '@/lib/error-handling';
 
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic';
 
-const prisma = new PrismaClient();
 
 // GET /api/my-matchup - Get current user's matchup for current week
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
+    const user = await authenticateFromRequest(request);
     if (!user) {
       return NextResponse.json(
         { success: false, message: 'Unauthorized' },

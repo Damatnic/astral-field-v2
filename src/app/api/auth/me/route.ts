@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { handleComponentError } from '@/lib/error-handling';
-import { getCurrentUser as getCurrentUserFull } from '@/lib/auth';
-
-// Always use full auth system since we have real users in production database
-const getCurrentUser = getCurrentUserFull;
+import { authenticateFromRequest } from '@/lib/auth';
 
 // console.log('[AUTH DEBUG] /me endpoint - Auth system selection:', {
 //   NODE_ENV: process.env.NODE_ENV,
@@ -12,10 +9,10 @@ const getCurrentUser = getCurrentUserFull;
 //   authSystem: useSimpleAuth ? 'SIMPLE' : 'FULL'
 // });
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    // Get current user from session
-    const user = await getCurrentUser();
+    // Get current user from session or Bearer token
+    const user = await authenticateFromRequest(request);
 
     if (!user) {
       return NextResponse.json(

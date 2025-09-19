@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-
-import { handleComponentError } from '@/lib/error-handling';
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -118,7 +116,7 @@ export async function GET(
     });
 
   } catch (error) {
-    handleComponentError(error as Error, 'route');
+    console.error('Error fetching draft board:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to fetch draft board' },
       { status: 500 }

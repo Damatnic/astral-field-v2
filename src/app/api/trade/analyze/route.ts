@@ -1,535 +1,622 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-
 import { handleComponentError } from '@/lib/error-handling';
-interface TradePlayer {
-  id: string;
-  name: string;
-  position: string;
-  team: string;
-  currentValue: number;
-  futureValue: number;
-  dynastyValue: number;
-  age: number;
-  injuryRisk: number;
-  consistency: number;
-}
+import { authenticateFromRequest } from '@/lib/auth';
 
-interface TradeOffer {
-  team1: {
-    id: string;
-    name: string;
-    owner: string;
-    record: string;
-    projectedRank: number;
-  };
-  team2: {
-    id: string;
-    name: string;
-    owner: string;
-    record: string;
-    projectedRank: number;
-  };
-  team1Gives: TradePlayer[];
-  team2Gives: TradePlayer[];
-  draftPicks?: {
-    team: string;
-    round: number;
-    year: number;
-  }[];
-  faabAmount?: number;
-}
-
-// Trade value calculation weights
-const VALUE_WEIGHTS = {
-  current: 0.6,
-  future: 0.3,
-  dynasty: 0.1
-};
-
-// Position value multipliers for scarcity
-const POSITION_SCARCITY = {
-  QB: 1.2,
-  RB: 1.15,
-  WR: 1.0,
-  TE: 1.1,
-  K: 0.7,
-  DST: 0.8
-};
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
-    const { leagueId, trade } = await request.json();
-
-    if (!leagueId || !trade) {
-      return NextResponse.json(
-        { error: 'Missing required parameters' },
-        { status: 400 }
-      );
+    const user = await authenticateFromRequest(request);
+    if (!user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Fetch league context
-    const league = await prisma.league.findUnique({
-      where: { id: leagueId },
+    const { 
+      tradeItems, 
+      teamIds, 
+      leagueId,
+      scoring = 'standard',
+      timeframe = 'season' 
+    } = await request.json();
+
+    if (!tradeItems || !Array.isArray(tradeItems) || tradeItems.length === 0) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'tradeItems array is required' 
+      }, { status: 400 });
+    }
+
+    if (!teamIds || !Array.isArray(teamIds) || teamIds.length !== 2) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'teamIds array with exactly 2 team IDs is required' 
+      }, { status: 400 });
+    }
+
+    if (!leagueId) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'leagueId is required' 
+      }, { status: 400 });
+    }
+
+    // Verify user has access to analyze this league
+    const leagueMember = await prisma.leagueMember.findFirst({
+      where: {
+        userId: user.id,
+        leagueId: leagueId
+      }
+    });
+
+    if (!leagueMember) {
+      return NextResponse.json({
+        success: false,
+        error: 'Access denied - not a league member'
+      }, { status: 403 });
+    }
+
+    // Get teams with current rosters
+    const teams = await prisma.team.findMany({
+      where: {
+        id: { in: teamIds },
+        leagueId: leagueId
+      },
       include: {
-        teams: {
+        roster: {
           include: {
-            roster: {
+            player: {
               include: {
-                player: {
-                  include: {
-                    playerStats: {
-                      where: { season: 2024 },
-                      orderBy: { week: 'desc' },
-                      take: 10
-                    },
-                    projections: {
-                      where: { season: 2024 }
-                    }
-                  }
+                playerStats: {
+                  where: {
+                    season: new Date().getFullYear(),
+                    isProjected: false
+                  },
+                  orderBy: {
+                    week: 'desc'
+                  },
+                  take: 10
+                },
+                projections: {
+                  where: {
+                    season: new Date().getFullYear(),
+                    week: getCurrentWeek()
+                  },
+                  orderBy: {
+                    confidence: 'desc'
+                  },
+                  take: 1
                 }
               }
             }
+          }
+        },
+        owner: {
+          select: {
+            id: true,
+            name: true
           }
         }
       }
     });
 
-    if (!league) {
-      return NextResponse.json(
-        { error: 'League not found' },
-        { status: 404 }
-      );
+    if (teams.length !== 2) {
+      return NextResponse.json({
+        success: false,
+        error: 'Teams not found in specified league'
+      }, { status: 404 });
     }
 
-    // Calculate trade values
-    const team1TotalValue = calculateTotalValue(trade.team1Gives, trade.draftPicks?.filter((p: any) => p.team === trade.team1.id));
-    const team2TotalValue = calculateTotalValue(trade.team2Gives, trade.draftPicks?.filter((p: any) => p.team === trade.team2.id));
+    // Extract player IDs from trade items
+    const playerIds = tradeItems
+      .filter(item => item.playerId && item.itemType === 'PLAYER')
+      .map(item => item.playerId);
 
-    // Calculate fairness score
-    const fairnessScore = calculateFairnessScore(team1TotalValue, team2TotalValue);
+    // Get detailed player analysis
+    const players = await prisma.player.findMany({
+      where: {
+        id: { in: playerIds }
+      },
+      include: {
+        playerStats: {
+          where: {
+            season: new Date().getFullYear(),
+            isProjected: false
+          },
+          orderBy: {
+            week: 'desc'
+          },
+          take: 17 // Full season
+        },
+        projections: {
+          where: {
+            season: new Date().getFullYear(),
+            week: {
+              gte: getCurrentWeek(),
+              lte: 17
+            }
+          },
+          orderBy: [
+            { week: 'asc' },
+            { confidence: 'desc' }
+          ]
+        },
+        playerNews: {
+          orderBy: {
+            timestamp: 'desc'
+          },
+          take: 3
+        }
+      }
+    });
 
+    // Calculate comprehensive player analysis
+    const playerAnalysis = players.map(player => {
+      const seasonStats = player.playerStats;
+      const recentStats = seasonStats.slice(0, 5);
+      
+      const totalPoints = seasonStats.reduce((sum, stat) => sum + (stat.fantasyPoints?.toNumber() || 0), 0);
+      const avgPoints = seasonStats.length > 0 ? totalPoints / seasonStats.length : 0;
+      
+      const recentPoints = recentStats.reduce((sum, stat) => sum + (stat.fantasyPoints?.toNumber() || 0), 0);
+      const recentAvg = recentStats.length > 0 ? recentPoints / recentStats.length : 0;
+      
+      // Rest of season projections
+      const rosProjections = player.projections.slice(0, 17 - getCurrentWeek());
+      const rosProjectedTotal = rosProjections.reduce((sum, proj) => sum + (proj.projectedPoints?.toNumber() || 0), 0);
+      
+      // Calculate various metrics
+      const metrics = calculatePlayerMetrics(player, seasonStats, rosProjections);
+      
+      return {
+        playerId: player.id,
+        playerName: player.name,
+        position: player.position,
+        nflTeam: player.nflTeam,
+        status: player.status,
+        injuryStatus: player.injuryStatus,
+        byeWeek: player.byeWeek,
+        
+        performance: {
+          seasonTotal: totalPoints,
+          seasonAverage: avgPoints,
+          recentAverage: recentAvg,
+          gamesPlayed: seasonStats.length,
+          highGame: Math.max(...seasonStats.map(stat => stat.fantasyPoints?.toNumber() || 0)),
+          lowGame: seasonStats.length > 0 ? Math.min(...seasonStats.map(stat => stat.fantasyPoints?.toNumber() || 0)) : 0
+        },
+        
+        projections: {
+          restOfSeason: rosProjectedTotal,
+          averageROS: rosProjections.length > 0 ? rosProjectedTotal / rosProjections.length : 0,
+          weeksRemaining: rosProjections.length
+        },
+        
+        metrics: metrics,
+        
+        rankings: {
+          positionRank: calculatePositionRank(player.position, avgPoints),
+          tradeValue: calculateTradeValue(avgPoints, recentAvg, rosProjectedTotal, metrics.consistency, player.position)
+        },
+        
+        riskFactors: assessRiskFactors(player, seasonStats, rosProjections)
+      };
+    });
+
+    // Analyze the actual trade
+    const tradeAnalysis = analyzeTradeItems(tradeItems, playerAnalysis, teams);
+    
     // Calculate team impacts
-    const team1Impact = calculateTeamImpact(
-      trade.team1,
-      trade.team1Gives,
-      trade.team2Gives,
-      league
-    );
-
-    const team2Impact = calculateTeamImpact(
-      trade.team2,
-      trade.team2Gives,
-      trade.team1Gives,
-      league
-    );
-
-    // Dynasty projections
-    const dynastyImpact = calculateDynastyImpact(trade);
-
-    // Market context
-    const marketContext = await analyzeMarketContext(leagueId, trade);
-
-    // Generate recommendations
-    const recommendations = generateRecommendations(
-      fairnessScore,
-      team1Impact,
-      team2Impact,
-      trade
-    );
-
-    // Identify risks
-    const risks = identifyRisks(trade, team1Impact, team2Impact);
+    const teamImpacts = calculateTeamImpacts(tradeItems, teams, playerAnalysis);
+    
+    // Generate overall recommendation
+    const recommendation = generateDetailedRecommendation(tradeAnalysis, teamImpacts, playerAnalysis);
 
     return NextResponse.json({
-      fairnessScore: Math.round(fairnessScore),
-      team1Impact,
-      team2Impact,
-      dynastyImpact,
-      marketContext,
-      recommendations,
-      risks
+      success: true,
+      data: {
+        overview: {
+          totalPlayers: playerAnalysis.length,
+          totalValue: tradeAnalysis.totalValue,
+          fairnessScore: tradeAnalysis.fairnessScore,
+          riskLevel: tradeAnalysis.riskLevel
+        },
+        players: playerAnalysis,
+        tradeBreakdown: tradeAnalysis,
+        teamImpacts: teamImpacts,
+        recommendation: recommendation,
+        metadata: {
+          analyzedAt: new Date().toISOString(),
+          timeframe: timeframe,
+          scoring: scoring,
+          currentWeek: getCurrentWeek()
+        }
+      }
     });
 
   } catch (error) {
     handleComponentError(error as Error, 'route');
     return NextResponse.json(
-      { error: 'Failed to analyze trade' },
+      { success: false, error: 'Trade analysis failed' },
       { status: 500 }
     );
   }
 }
 
-function calculateTotalValue(
-  players: TradePlayer[],
-  draftPicks?: { round: number; year: number }[]
-): number {
-  let totalValue = 0;
+function getCurrentWeek(): number {
+  const now = new Date();
+  const seasonStart = new Date(now.getFullYear(), 8, 1); // September 1st
+  const weeksSinceStart = Math.floor((now.getTime() - seasonStart.getTime()) / (7 * 24 * 60 * 60 * 1000));
+  return Math.max(1, Math.min(18, weeksSinceStart + 1));
+}
 
-  // Calculate player values
-  for (const player of players) {
-    const positionMultiplier = POSITION_SCARCITY[player.position as keyof typeof POSITION_SCARCITY] || 1.0;
+function calculatePlayerMetrics(player: any, seasonStats: any[], rosProjections: any[]) {
+  // Consistency (coefficient of variation)
+  const points = seasonStats.map(stat => stat.fantasyPoints?.toNumber() || 0);
+  const mean = points.reduce((sum, p) => sum + p, 0) / points.length;
+  const variance = points.reduce((sum, p) => sum + Math.pow(p - mean, 2), 0) / points.length;
+  const stdDev = Math.sqrt(variance);
+  const consistency = mean > 0 ? Math.max(0, 100 - ((stdDev / mean) * 100)) : 0;
+
+  // Trend analysis
+  let trend = 'stable';
+  if (seasonStats.length >= 6) {
+    const recent = seasonStats.slice(0, 3);
+    const older = seasonStats.slice(3, 6);
     
-    const weightedValue = 
-      (player.currentValue * VALUE_WEIGHTS.current) +
-      (player.futureValue * VALUE_WEIGHTS.future) +
-      (player.dynastyValue * VALUE_WEIGHTS.dynasty);
+    const recentAvg = recent.reduce((sum, stat) => sum + (stat.fantasyPoints?.toNumber() || 0), 0) / recent.length;
+    const olderAvg = older.reduce((sum, stat) => sum + (stat.fantasyPoints?.toNumber() || 0), 0) / older.length;
     
-    // Adjust for age (peak value around 24-27)
-    const ageMultiplier = calculateAgeMultiplier(player.age, player.position);
-    
-    // Adjust for injury risk
-    const injuryMultiplier = 1 - (player.injuryRisk * 0.3);
-    
-    // Adjust for consistency
-    const consistencyBonus = player.consistency * 0.1;
-    
-    totalValue += weightedValue * positionMultiplier * ageMultiplier * injuryMultiplier * (1 + consistencyBonus);
+    if (recentAvg > olderAvg * 1.15) trend = 'up';
+    else if (recentAvg < olderAvg * 0.85) trend = 'down';
   }
 
-  // Calculate draft pick values
-  if (draftPicks) {
-    for (const pick of draftPicks) {
-      const pickValue = calculateDraftPickValue(pick.round, pick.year);
-      totalValue += pickValue;
+  // Ceiling and floor analysis
+  const sortedPoints = [...points].sort((a, b) => b - a);
+  const ceiling = sortedPoints.slice(0, Math.max(1, Math.floor(sortedPoints.length * 0.25))).reduce((sum, p) => sum + p, 0) / Math.max(1, Math.floor(sortedPoints.length * 0.25));
+  const floor = sortedPoints.slice(-Math.max(1, Math.floor(sortedPoints.length * 0.25))).reduce((sum, p) => sum + p, 0) / Math.max(1, Math.floor(sortedPoints.length * 0.25));
+
+  return {
+    consistency: consistency,
+    trend: trend,
+    ceiling: ceiling,
+    floor: floor,
+    upside: ceiling - mean,
+    volatility: stdDev
+  };
+}
+
+function calculatePositionRank(position: string, avgPoints: number): number {
+  const positionThresholds: { [key: string]: number[] } = {
+    'QB': [25, 22, 19, 16, 13, 10], 
+    'RB': [20, 17, 14, 11, 8, 5],   
+    'WR': [18, 15, 12, 9, 7, 5],   
+    'TE': [15, 12, 9, 7, 5, 3],    
+    'K': [10, 8, 6, 4, 2, 0],      
+    'DST': [12, 9, 7, 5, 3, 1]     
+  };
+
+  const thresholds = positionThresholds[position] || [10, 8, 6, 4, 2, 0];
+  
+  for (let i = 0; i < thresholds.length; i++) {
+    if (avgPoints >= thresholds[i]) {
+      return i + 1;
     }
   }
-
-  return totalValue;
+  
+  return thresholds.length + 1;
 }
 
-function calculateFairnessScore(value1: number, value2: number): number {
-  const diff = Math.abs(value1 - value2);
-  const avg = (value1 + value2) / 2;
+function calculateTradeValue(avgPoints: number, recentAvg: number, rosProjected: number, consistency: number, position: string): number {
+  let value = 0;
   
-  if (avg === 0) return 50;
+  // Season performance (35% weight)
+  value += avgPoints * 0.35;
   
-  const percentDiff = (diff / avg) * 100;
+  // Recent form (25% weight)
+  value += recentAvg * 0.25;
   
-  // Convert percentage difference to fairness score (0-100)
-  if (percentDiff <= 5) return 95;
-  if (percentDiff <= 10) return 85;
-  if (percentDiff <= 15) return 75;
-  if (percentDiff <= 20) return 65;
-  if (percentDiff <= 30) return 55;
-  if (percentDiff <= 40) return 45;
-  if (percentDiff <= 50) return 35;
-  return Math.max(20, 100 - percentDiff);
+  // Rest of season projection (30% weight)
+  const weeksRemaining = Math.max(1, 17 - getCurrentWeek());
+  value += (rosProjected / weeksRemaining) * 0.3;
+  
+  // Consistency bonus (10% weight)
+  value += (consistency / 100) * avgPoints * 0.1;
+  
+  // Position scarcity and injury risk adjustments
+  const adjustments = getPositionAdjustments(position);
+  value *= adjustments.scarcity;
+  
+  return Math.round(value * 10) / 10;
 }
 
-function calculateTeamImpact(
-  team: any,
-  playersGiving: TradePlayer[],
-  playersReceiving: TradePlayer[],
-  league: any
-) {
-  const currentRoster = league.teams.find((t: any) => t.id === team.id);
-  
-  // Calculate immediate value change
-  const immediateGiven = playersGiving.reduce((sum, p) => sum + p.currentValue, 0);
-  const immediateReceived = playersReceiving.reduce((sum, p) => sum + p.currentValue, 0);
-  const immediateValue = immediateReceived - immediateGiven;
-  
-  // Calculate future value change
-  const futureGiven = playersGiving.reduce((sum, p) => sum + p.futureValue, 0);
-  const futureReceived = playersReceiving.reduce((sum, p) => sum + p.futureValue, 0);
-  const futureValue = futureReceived - futureGiven;
-  
-  // Calculate win probability change
-  const currentProjectedPoints = estimateTeamPoints(currentRoster);
-  const newProjectedPoints = currentProjectedPoints - immediateGiven + immediateReceived;
-  const winProbabilityChange = ((newProjectedPoints - currentProjectedPoints) / currentProjectedPoints) * 50;
-  
-  // Calculate playoff odds change
-  const playoffOddsChange = calculatePlayoffOddsChange(
-    team.projectedRank,
-    immediateValue,
-    league.teams.length
-  );
-  
-  // Calculate position strength changes
-  const strengthChanges = calculateStrengthChanges(
-    playersGiving,
-    playersReceiving
-  );
-  
-  return {
-    immediateValue,
-    futureValue,
-    winProbabilityChange,
-    playoffOddsChange,
-    strengthChanges
+function getPositionAdjustments(position: string) {
+  const adjustments: { [key: string]: { scarcity: number, risk: number } } = {
+    'QB': { scarcity: 1.0, risk: 0.9 },
+    'RB': { scarcity: 1.4, risk: 1.2 }, // High value, high injury risk
+    'WR': { scarcity: 1.1, risk: 1.0 },
+    'TE': { scarcity: 1.3, risk: 0.95 },
+    'K': { scarcity: 0.7, risk: 0.8 },
+    'DST': { scarcity: 0.8, risk: 0.85 }
   };
+  
+  return adjustments[position] || { scarcity: 1.0, risk: 1.0 };
 }
 
-function calculateDynastyImpact(trade: TradeOffer) {
-  const years = 3;
-  const team1YearOverYear = [];
-  const team2YearOverYear = [];
-  
-  for (let year = 0; year < years; year++) {
-    // Calculate value degradation/appreciation over time
-    const team1Degradation = trade.team1Gives.reduce((sum, p) => {
-      const ageImpact = calculateAgeDegradation(p.age + year, p.position);
-      return sum + (p.futureValue * ageImpact);
-    }, 0);
-    
-    const team1Appreciation = trade.team2Gives.reduce((sum, p) => {
-      const ageImpact = calculateAgeDegradation(p.age + year, p.position);
-      return sum + (p.futureValue * ageImpact);
-    }, 0);
-    
-    team1YearOverYear.push(team1Appreciation - team1Degradation);
-    
-    // Same for team 2
-    const team2Degradation = trade.team2Gives.reduce((sum, p) => {
-      const ageImpact = calculateAgeDegradation(p.age + year, p.position);
-      return sum + (p.futureValue * ageImpact);
-    }, 0);
-    
-    const team2Appreciation = trade.team1Gives.reduce((sum, p) => {
-      const ageImpact = calculateAgeDegradation(p.age + year, p.position);
-      return sum + (p.futureValue * ageImpact);
-    }, 0);
-    
-    team2YearOverYear.push(team2Appreciation - team2Degradation);
-  }
-  
-  return {
-    team1YearOverYear,
-    team2YearOverYear
-  };
-}
-
-async function analyzeMarketContext(leagueId: string, trade: TradeOffer) {
-  // Fetch recent trades in the league
-  const recentTrades = await prisma.trade.findMany({
-    where: {
-      leagueId,
-      status: 'ACCEPTED',
-      processedAt: {
-        gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) // Last 30 days
-      }
-    },
-    include: {
-      items: true
-    },
-    orderBy: { processedAt: 'desc' },
-    take: 5
-  });
-  
-  // Analyze similar trades
-  const similarTrades = recentTrades.map(t => ({
-    date: t.processedAt?.toLocaleDateString() || 'Unknown',
-    description: `${t.items.length} players traded`,
-    fairnessScore: 75 + Math.random() * 20 // Simulated score
-  }));
-  
-  // Determine market trend
-  const totalGiven = trade.team1Gives.length + trade.team2Gives.length;
-  const veteransTraded = [...trade.team1Gives, ...trade.team2Gives].filter(p => p.age > 27).length;
-  const rookiesTraded = [...trade.team1Gives, ...trade.team2Gives].filter(p => p.age < 24).length;
-  
-  let marketTrend: 'buyers' | 'sellers' | 'balanced';
-  if (veteransTraded > rookiesTraded * 1.5) {
-    marketTrend = 'buyers'; // Teams trading for win-now players
-  } else if (rookiesTraded > veteransTraded * 1.5) {
-    marketTrend = 'sellers'; // Teams rebuilding
-  } else {
-    marketTrend = 'balanced';
-  }
-  
-  return {
-    similarTrades,
-    marketTrend
-  };
-}
-
-function generateRecommendations(
-  fairnessScore: number,
-  team1Impact: any,
-  team2Impact: any,
-  trade: TradeOffer
-): string[] {
-  const recommendations = [];
-  
-  // Fairness recommendations
-  if (fairnessScore >= 80) {
-    recommendations.push('Trade appears fair - both teams benefit appropriately');
-  } else if (fairnessScore >= 60) {
-    recommendations.push('Consider minor adjustments to balance the trade better');
-  } else {
-    recommendations.push('Trade is significantly unbalanced - major adjustments recommended');
-  }
-  
-  // Team 1 specific recommendations
-  if (team1Impact.immediateValue > 0 && team1Impact.winProbabilityChange > 5) {
-    recommendations.push(`Strong win-now move for ${trade.team1.name}`);
-  }
-  if (team1Impact.futureValue > team1Impact.immediateValue) {
-    recommendations.push(`${trade.team1.name} is building for the future - good dynasty move`);
-  }
-  
-  // Position-based recommendations
-  const team1StrengthGains = team1Impact.strengthChanges.filter((s: any) => s.change > 10);
-  if (team1StrengthGains.length > 0) {
-    recommendations.push(`${trade.team1.name} significantly improves at ${team1StrengthGains.map((s: any) => s.position).join(', ')}`);
-  }
-  
-  // Market timing
-  if (trade.team1.projectedRank <= 3 && team1Impact.immediateValue > 0) {
-    recommendations.push('Good timing for a championship push');
-  }
-  
-  // Age considerations
-  const youngPlayers = trade.team2Gives.filter(p => p.age < 25);
-  if (youngPlayers.length > 2) {
-    recommendations.push(`${trade.team1.name} acquires ${youngPlayers.length} young assets for long-term value`);
-  }
-  
-  return recommendations.slice(0, 5);
-}
-
-function identifyRisks(
-  trade: TradeOffer,
-  team1Impact: any,
-  team2Impact: any
-): string[] {
+function assessRiskFactors(player: any, seasonStats: any[], rosProjections: any[]) {
   const risks = [];
   
-  // Injury risks
-  const injuryRisks = [...trade.team1Gives, ...trade.team2Gives].filter(p => p.injuryRisk > 0.5);
-  if (injuryRisks.length > 0) {
-    risks.push(`${injuryRisks.length} players have elevated injury risk`);
+  // Injury status
+  if (player.injuryStatus && player.injuryStatus !== 'HEALTHY') {
+    risks.push({
+      factor: 'Injury',
+      level: player.injuryStatus === 'OUT' ? 'high' : 'medium',
+      description: `Currently ${player.injuryStatus.toLowerCase()}`
+    });
   }
   
-  // Age-related risks
-  const agingPlayers = [...trade.team1Gives, ...trade.team2Gives].filter(p => p.age > 29);
-  if (agingPlayers.length > 0) {
-    risks.push(`${agingPlayers.length} players past peak age may decline rapidly`);
+  // Age (if available)
+  if (player.age && player.age > 30) {
+    risks.push({
+      factor: 'Age',
+      level: player.age > 32 ? 'high' : 'medium',
+      description: `${player.age} years old - decline risk`
+    });
   }
   
-  // Consistency risks
-  const inconsistentPlayers = [...trade.team1Gives, ...trade.team2Gives].filter(p => p.consistency < 0.5);
-  if (inconsistentPlayers.length > 0) {
-    risks.push(`${inconsistentPlayers.length} players have inconsistent performance history`);
+  // Performance volatility
+  if (seasonStats.length >= 5) {
+    const points = seasonStats.map(stat => stat.fantasyPoints?.toNumber() || 0);
+    const mean = points.reduce((sum, p) => sum + p, 0) / points.length;
+    const stdDev = Math.sqrt(points.reduce((sum, p) => sum + Math.pow(p - mean, 2), 0) / points.length);
+    const cv = mean > 0 ? (stdDev / mean) : 0;
+    
+    if (cv > 0.8) {
+      risks.push({
+        factor: 'Volatility',
+        level: 'high',
+        description: 'Highly inconsistent week-to-week performance'
+      });
+    }
   }
   
-  // Position depth risks
-  if (team1Impact.strengthChanges.some((s: any) => s.change < -20)) {
-    risks.push(`${trade.team1.name} significantly weakens at key positions`);
-  }
-  if (team2Impact.strengthChanges.some((s: any) => s.change < -20)) {
-    risks.push(`${trade.team2.name} significantly weakens at key positions`);
-  }
-  
-  // Dynasty risks
-  if (team1Impact.futureValue < -50) {
-    risks.push(`${trade.team1.name} sacrifices significant future value`);
-  }
-  if (team2Impact.futureValue < -50) {
-    risks.push(`${trade.team2.name} sacrifices significant future value`);
+  // Bye week upcoming
+  const currentWeek = getCurrentWeek();
+  if (player.byeWeek && player.byeWeek === currentWeek + 1) {
+    risks.push({
+      factor: 'Bye Week',
+      level: 'low',
+      description: `Bye week next week (Week ${player.byeWeek})`
+    });
   }
   
-  return risks.slice(0, 5);
+  return risks;
 }
 
-// Helper functions
-function calculateAgeMultiplier(age: number, position: string): number {
-  // Different positions peak at different ages
-  let peakAge = 26;
-  let declineRate = 0.05;
+function analyzeTradeItems(tradeItems: any[], playerAnalysis: any[], teams: any[]) {
+  const team1Items = tradeItems.filter(item => item.fromTeamId === teams[0].id);
+  const team2Items = tradeItems.filter(item => item.fromTeamId === teams[1].id);
   
-  switch (position) {
-    case 'RB':
-      peakAge = 24;
-      declineRate = 0.15;
-      break;
-    case 'WR':
-      peakAge = 27;
-      declineRate = 0.08;
-      break;
-    case 'QB':
-      peakAge = 30;
-      declineRate = 0.04;
-      break;
-    case 'TE':
-      peakAge = 28;
-      declineRate = 0.06;
-      break;
-  }
+  const team1Value = calculateTeamTradeValue(team1Items, playerAnalysis);
+  const team2Value = calculateTeamTradeValue(team2Items, playerAnalysis);
   
-  if (age <= peakAge) {
-    return 1.0 - ((peakAge - age) * 0.02);
-  } else {
-    return Math.max(0.5, 1.0 - ((age - peakAge) * declineRate));
-  }
+  const totalValue = team1Value + team2Value;
+  const valueDifference = Math.abs(team1Value - team2Value);
+  const fairnessScore = totalValue > 0 ? Math.max(0, 100 - ((valueDifference / totalValue) * 100)) : 50;
+  
+  const riskLevel = calculateTradeRiskLevel(tradeItems, playerAnalysis);
+  
+  return {
+    team1: {
+      id: teams[0].id,
+      name: teams[0].name || teams[0].owner.name,
+      giving: team1Items,
+      value: team1Value
+    },
+    team2: {
+      id: teams[1].id,
+      name: teams[1].name || teams[1].owner.name,
+      giving: team2Items,
+      value: team2Value
+    },
+    totalValue,
+    valueDifference,
+    fairnessScore,
+    riskLevel
+  };
 }
 
-function calculateAgeDegradation(age: number, position: string): number {
-  return calculateAgeMultiplier(age, position);
-}
-
-function calculateDraftPickValue(round: number, year: number): number {
-  const currentYear = new Date().getFullYear();
-  const yearDiscount = Math.pow(0.9, year - currentYear);
-  
-  // Base values by round (approximate)
-  const roundValues = [100, 75, 55, 40, 30, 22, 16, 12, 9, 7, 5, 3];
-  const baseValue = roundValues[round - 1] || 2;
-  
-  return baseValue * yearDiscount;
-}
-
-function estimateTeamPoints(team: any): number {
-  if (!team || !team.roster) return 100;
-  
-  return team.roster.reduce((sum: number, rosterPlayer: any) => {
-    const stats = rosterPlayer.player.playerStats || [];
-    const avgPoints = stats.length > 0
-      ? stats.reduce((total: number, stat: any) => total + Number(stat.fantasyPoints || 0), 0) / stats.length
-      : 0;
-    return sum + avgPoints;
+function calculateTeamTradeValue(items: any[], playerAnalysis: any[]) {
+  return items.reduce((total, item) => {
+    if (item.itemType === 'PLAYER') {
+      const player = playerAnalysis.find(p => p.playerId === item.playerId);
+      return total + (player?.rankings.tradeValue || 0);
+    } else if (item.itemType === 'FAAB_MONEY') {
+      // FAAB has diminishing returns
+      return total + (item.metadata?.faabAmount || 0) * 0.1;
+    } else if (item.itemType === 'DRAFT_PICK') {
+      // Draft pick values (simplified)
+      const pick = item.metadata?.draftPick;
+      if (pick) {
+        const round = pick.round || 1;
+        const baseValue = Math.max(0, 20 - (round * 3));
+        return total + baseValue;
+      }
+    }
+    return total;
   }, 0);
 }
 
-function calculatePlayoffOddsChange(
-  currentRank: number,
-  valueChange: number,
-  leagueSize: number
-): number {
-  const playoffSpots = Math.floor(leagueSize / 2);
-  const currentOdds = currentRank <= playoffSpots ? 80 : 40;
+function calculateTradeRiskLevel(tradeItems: any[], playerAnalysis: any[]): 'low' | 'medium' | 'high' {
+  let riskScore = 0;
+  let playerCount = 0;
   
-  // Value change affects playoff odds
-  const oddsChange = (valueChange / 100) * 20;
+  tradeItems.forEach(item => {
+    if (item.itemType === 'PLAYER') {
+      const player = playerAnalysis.find(p => p.playerId === item.playerId);
+      if (player) {
+        playerCount++;
+        riskScore += player.riskFactors.length;
+        
+        // Add risk for high volatility
+        if (player.metrics.volatility > 5) riskScore += 1;
+        
+        // Add risk for declining trend
+        if (player.metrics.trend === 'down') riskScore += 1;
+      }
+    }
+  });
   
-  return Math.min(20, Math.max(-20, oddsChange));
+  const avgRisk = playerCount > 0 ? riskScore / playerCount : 0;
+  
+  if (avgRisk >= 2) return 'high';
+  if (avgRisk >= 1) return 'medium';
+  return 'low';
 }
 
-function calculateStrengthChanges(
-  playersGiving: TradePlayer[],
-  playersReceiving: TradePlayer[]
-): { position: string; change: number }[] {
-  const positionChanges = new Map<string, number>();
+function calculateTeamImpacts(tradeItems: any[], teams: any[], playerAnalysis: any[]) {
+  return teams.map(team => {
+    const givingItems = tradeItems.filter(item => item.fromTeamId === team.id);
+    const receivingItems = tradeItems.filter(item => item.toTeamId === team.id);
+    
+    const givingValue = calculateTeamTradeValue(givingItems, playerAnalysis);
+    const receivingValue = calculateTeamTradeValue(receivingItems, playerAnalysis);
+    const netValue = receivingValue - givingValue;
+    
+    // Analyze positional impacts
+    const positionalImpact = analyzePositionalImpact(givingItems, receivingItems, playerAnalysis);
+    
+    return {
+      teamId: team.id,
+      teamName: team.name || team.owner.name,
+      giving: givingItems.length,
+      receiving: receivingItems.length,
+      valueGiving: givingValue,
+      valueReceiving: receivingValue,
+      netValue: netValue,
+      netImpact: netValue > 5 ? 'positive' : netValue < -5 ? 'negative' : 'neutral',
+      positionalImpact: positionalImpact,
+      rosterHealthAfter: calculateRosterHealth(team, givingItems, receivingItems, playerAnalysis)
+    };
+  });
+}
+
+function analyzePositionalImpact(giving: any[], receiving: any[], playerAnalysis: any[]) {
+  const positions = ['QB', 'RB', 'WR', 'TE', 'K', 'DST'];
   
-  // Calculate value lost by position
-  for (const player of playersGiving) {
-    const current = positionChanges.get(player.position) || 0;
-    positionChanges.set(player.position, current - player.currentValue);
+  return positions.map(position => {
+    const givingAtPosition = giving.filter(item => {
+      if (item.itemType !== 'PLAYER') return false;
+      const player = playerAnalysis.find(p => p.playerId === item.playerId);
+      return player?.position === position;
+    }).length;
+    
+    const receivingAtPosition = receiving.filter(item => {
+      if (item.itemType !== 'PLAYER') return false;
+      const player = playerAnalysis.find(p => p.playerId === item.playerId);
+      return player?.position === position;
+    }).length;
+    
+    return {
+      position,
+      giving: givingAtPosition,
+      receiving: receivingAtPosition,
+      net: receivingAtPosition - givingAtPosition
+    };
+  });
+}
+
+function calculateRosterHealth(team: any, giving: any[], receiving: any[], playerAnalysis: any[]) {
+  // Simplified roster health calculation
+  const currentRosterSize = team.roster?.length || 0;
+  const netPlayerChange = receiving.filter(i => i.itemType === 'PLAYER').length - 
+                         giving.filter(i => i.itemType === 'PLAYER').length;
+  
+  const newRosterSize = currentRosterSize + netPlayerChange;
+  
+  return {
+    currentSize: currentRosterSize,
+    projectedSize: newRosterSize,
+    healthScore: Math.min(100, Math.max(0, (newRosterSize / 16) * 100)) // Assuming 16 is optimal
+  };
+}
+
+function generateDetailedRecommendation(tradeAnalysis: any, teamImpacts: any[], playerAnalysis: any[]) {
+  const fairness = tradeAnalysis.fairnessScore;
+  const risk = tradeAnalysis.riskLevel;
+  
+  let verdict: string;
+  let confidence: string;
+  let reasoning: string[] = [];
+  
+  // Determine verdict based on fairness
+  if (fairness >= 85) {
+    verdict = 'ACCEPT';
+    confidence = 'high';
+    reasoning.push('Values are very well balanced');
+  } else if (fairness >= 70) {
+    verdict = 'CONSIDER';
+    confidence = 'medium';
+    reasoning.push('Generally fair trade with acceptable value difference');
+  } else if (fairness >= 50) {
+    verdict = 'RISKY';
+    confidence = 'medium';
+    reasoning.push('Significant value imbalance - proceed with caution');
+  } else {
+    verdict = 'REJECT';
+    confidence = 'high';
+    reasoning.push('Major value discrepancy detected');
   }
   
-  // Calculate value gained by position
-  for (const player of playersReceiving) {
-    const current = positionChanges.get(player.position) || 0;
-    positionChanges.set(player.position, current + player.currentValue);
+  // Add risk considerations
+  if (risk === 'high') {
+    reasoning.push('High injury or performance risk involved');
+    if (verdict === 'ACCEPT') verdict = 'CONSIDER';
+  } else if (risk === 'low') {
+    reasoning.push('Low risk profile for all players involved');
   }
   
-  // Convert to percentage changes
-  const changes = Array.from(positionChanges.entries()).map(([position, change]) => ({
-    position,
-    change: Math.round((change / 10) * 10) // Normalize to percentage
-  }));
+  // Add team-specific insights
+  teamImpacts.forEach(impact => {
+    if (impact.netImpact === 'positive') {
+      reasoning.push(`${impact.teamName} benefits significantly from this trade`);
+    } else if (impact.netImpact === 'negative') {
+      reasoning.push(`${impact.teamName} gives up more value than they receive`);
+    }
+  });
   
-  return changes.sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
+  return {
+    verdict,
+    confidence,
+    reasoning,
+    fairnessScore: fairness,
+    riskLevel: risk,
+    summary: generateTradeSummary(tradeAnalysis, teamImpacts),
+    alternativeConsiderations: generateAlternatives(playerAnalysis)
+  };
+}
+
+function generateTradeSummary(tradeAnalysis: any, teamImpacts: any[]) {
+  const team1 = tradeAnalysis.team1;
+  const team2 = tradeAnalysis.team2;
+  
+  return `${team1.name} trades ${team1.giving.length} asset(s) (value: ${team1.value.toFixed(1)}) for ${team2.name}'s ${team2.giving.length} asset(s) (value: ${team2.value.toFixed(1)}). Fairness score: ${tradeAnalysis.fairnessScore.toFixed(0)}/100.`;
+}
+
+function generateAlternatives(playerAnalysis: any[]) {
+  // Simplified alternative suggestions
+  const suggestions = [];
+  
+  const highValuePlayers = playerAnalysis.filter(p => p.rankings.tradeValue > 15);
+  if (highValuePlayers.length > 0) {
+    suggestions.push('Consider adding smaller assets to balance high-value players');
+  }
+  
+  const riskyPlayers = playerAnalysis.filter(p => p.riskFactors.length > 1);
+  if (riskyPlayers.length > 0) {
+    suggestions.push('High-risk players detected - consider injury insurance');
+  }
+  
+  return suggestions;
 }
