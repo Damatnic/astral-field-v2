@@ -10,6 +10,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
+    const leagueId = searchParams.get('leagueId');
     
     // Get session from cookies
     const cookieStore = cookies();
@@ -35,14 +36,26 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    // Get user's team
+    // Get user's team for the specified league
+    const targetLeagueId = leagueId || await getDefaultLeagueId(session.userId);
+    
+    if (!targetLeagueId) {
+      return NextResponse.json(
+        { error: 'League not found' },
+        { status: 404 }
+      );
+    }
+    
     const team = await prisma.team.findFirst({
-      where: { ownerId: session.userId }
+      where: { 
+        ownerId: session.userId,
+        leagueId: targetLeagueId
+      }
     });
     
     if (!team) {
       return NextResponse.json(
-        { error: 'Team not found' },
+        { error: 'Team not found in this league' },
         { status: 404 }
       );
     }
@@ -95,4 +108,12 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+async function getDefaultLeagueId(userId: string): Promise<string | null> {
+  const team = await prisma.team.findFirst({
+    where: { ownerId: userId },
+    select: { leagueId: true }
+  });
+  return team?.leagueId || null;
 }

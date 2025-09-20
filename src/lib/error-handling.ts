@@ -34,7 +34,7 @@ export function logError(error: Error | string, context: ErrorContext = {}): voi
   } else {
     // In production, log errors to a monitoring service
     // Using a lightweight error tracking approach
-    if (typeof window !== 'undefined' && window.fetch) {
+    if (typeof window !== 'undefined' && typeof window.fetch === 'function') {
       // Client-side: Send error to API endpoint
       fetch('/api/errors', {
         method: 'POST',

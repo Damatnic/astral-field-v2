@@ -594,23 +594,25 @@ export default function TradeCenter({ leagueId, userId, teamId }: TradeCenterPro
                   <h3 className="font-semibold mb-3">Select Team to Trade With</h3>
                   <div className="space-y-2">
                     {teams.map(team => (
-                      <button
+                      <motion.button
                         key={team.id}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
                         onClick={() => setSelectedTeam(team)}
-                        className={`w-full text-left p-3 rounded-lg border transition-all ${
+                        className={`w-full text-left p-3 rounded-lg border transition-all touch-manipulation ${
                           selectedTeam?.id === team.id
                             ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
                             : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50'
                         }`}
                       >
                         <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-semibold text-sm">{team.name}</p>
-                            <p className="text-xs text-gray-600 dark:text-gray-400">
+                          <div className="min-w-0 flex-1">
+                            <p className="font-semibold text-sm truncate">{team.name}</p>
+                            <p className="text-xs text-gray-600 dark:text-gray-400 truncate">
                               {team.ownerName || 'Owner'} • {team.record || 'N/A'} {team.rank ? `(#${team.rank})` : ''}
                             </p>
                           </div>
-                          <ChevronDown className="h-4 w-4 text-gray-400" />
+                          <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0 ml-2" />
                         </div>
                         {team.needs && team.needs.length > 0 && (
                           <div className="mt-2 flex gap-1 flex-wrap">
@@ -621,7 +623,7 @@ export default function TradeCenter({ leagueId, userId, teamId }: TradeCenterPro
                             ))}
                           </div>
                         )}
-                      </button>
+                      </motion.button>
                     ))}
                   </div>
                 </div>
@@ -634,7 +636,7 @@ export default function TradeCenter({ leagueId, userId, teamId }: TradeCenterPro
                     {/* My Roster */}
                     <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
                       <h3 className="font-semibold mb-3">Your Players to Offer</h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {myTeam?.roster?.map(rosterPlayer => (
                           <PlayerCard
                             key={rosterPlayer.id}
@@ -659,7 +661,7 @@ export default function TradeCenter({ leagueId, userId, teamId }: TradeCenterPro
                     {/* Their Roster */}
                     <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
                       <h3 className="font-semibold mb-3">Request from {selectedTeam.name}</h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {selectedTeam.roster?.map(rosterPlayer => (
                           <PlayerCard
                             key={rosterPlayer.id}

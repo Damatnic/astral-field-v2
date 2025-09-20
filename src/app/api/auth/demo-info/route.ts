@@ -10,7 +10,6 @@ export async function GET() {
       success: true,
       message: 'Demo credentials for testing',
       credentials: {
-        password: demoInfo.password,
         users: demoInfo.users
       }
     });

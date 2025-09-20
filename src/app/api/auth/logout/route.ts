@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { cookies } from 'next/headers';
+import { withRateLimit, RATE_LIMIT_CONFIGS } from '@/lib/rate-limiter';
 
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic';
 
 // POST /api/auth/logout - Logout user
 export async function POST(request: NextRequest) {
+  return withRateLimit(request, RATE_LIMIT_CONFIGS.api, async () => {
   try {
     // Get session from cookies
     const cookieStore = cookies();
@@ -38,4 +40,5 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+  });
 }

@@ -1,6 +1,7 @@
 import { createSwaggerSpec } from 'next-swagger-doc';
 
 const swaggerSpec = createSwaggerSpec({
+  definition: {
   openapi: '3.0.0',
   info: {
     title: 'Fantasy Football Platform API',
@@ -272,6 +273,7 @@ Authorization: Bearer <your-jwt-token>
       description: 'Statistical analysis and insights'
     }
   ]
+  }
 });
 
 export default swaggerSpec;

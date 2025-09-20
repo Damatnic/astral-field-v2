@@ -96,3 +96,185 @@ export function SafeAreaProvider({ children }: { children: React.ReactNode }) {
 
   return <>{children}</>;
 }
+
+// Enhanced mobile utilities
+export function useScrollDirection() {
+  const [scrollDirection, setScrollDirection] = useState<'up' | 'down' | null>(null);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
+  useEffect(() => {
+    const updateScrollDirection = () => {
+      const scrollY = window.scrollY;
+      const direction = scrollY > lastScrollY ? 'down' : 'up';
+      
+      if (direction !== scrollDirection && (scrollY - lastScrollY > 10 || scrollY - lastScrollY < -10)) {
+        setScrollDirection(direction);
+      }
+      
+      setLastScrollY(scrollY > 0 ? scrollY : 0);
+    };
+
+    window.addEventListener('scroll', updateScrollDirection);
+    return () => window.removeEventListener('scroll', updateScrollDirection);
+  }, [scrollDirection, lastScrollY]);
+
+  return scrollDirection;
+}
+
+// Swipe gesture detection
+export function useSwipeGesture(
+  onSwipeLeft?: () => void,
+  onSwipeRight?: () => void,
+  onSwipeUp?: () => void,
+  onSwipeDown?: () => void,
+  threshold = 50
+) {
+  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
+  const [touchEnd, setTouchEnd] = useState<{ x: number; y: number } | null>(null);
+
+  const handleTouchStart = (e: TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart({
+      x: e.targetTouches[0].clientX,
+      y: e.targetTouches[0].clientY
+    });
+  };
+
+  const handleTouchMove = (e: TouchEvent) => {
+    setTouchEnd({
+      x: e.targetTouches[0].clientX,
+      y: e.targetTouches[0].clientY
+    });
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+
+    const deltaX = touchStart.x - touchEnd.x;
+    const deltaY = touchStart.y - touchEnd.y;
+    const absDeltaX = Math.abs(deltaX);
+    const absDeltaY = Math.abs(deltaY);
+
+    if (absDeltaX > absDeltaY) {
+      // Horizontal swipe
+      if (absDeltaX > threshold) {
+        if (deltaX > 0 && onSwipeLeft) {
+          onSwipeLeft();
+        } else if (deltaX < 0 && onSwipeRight) {
+          onSwipeRight();
+        }
+      }
+    } else {
+      // Vertical swipe
+      if (absDeltaY > threshold) {
+        if (deltaY > 0 && onSwipeUp) {
+          onSwipeUp();
+        } else if (deltaY < 0 && onSwipeDown) {
+          onSwipeDown();
+        }
+      }
+    }
+  };
+
+  return {
+    onTouchStart: handleTouchStart,
+    onTouchMove: handleTouchMove,
+    onTouchEnd: handleTouchEnd
+  };
+}
+
+// Mobile-friendly modal/sheet behavior
+export function useMobileSheet() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [startY, setStartY] = useState(0);
+  const [currentY, setCurrentY] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setStartY(e.touches[0].clientY);
+    setCurrentY(e.touches[0].clientY);
+    setIsDragging(true);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging) return;
+    setCurrentY(e.touches[0].clientY);
+  };
+
+  const handleTouchEnd = () => {
+    if (!isDragging) return;
+    
+    const deltaY = currentY - startY;
+    if (deltaY > 100) {
+      setIsOpen(false);
+    }
+    
+    setIsDragging(false);
+    setStartY(0);
+    setCurrentY(0);
+  };
+
+  const dragOffset = isDragging ? Math.max(0, currentY - startY) : 0;
+
+  return {
+    isOpen,
+    setIsOpen,
+    dragOffset,
+    dragHandlers: {
+      onTouchStart: handleTouchStart,
+      onTouchMove: handleTouchMove,
+      onTouchEnd: handleTouchEnd
+    }
+  };
+}
+
+// Keyboard height detection for mobile inputs
+export function useKeyboardHeight() {
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleResize = () => {
+      const viewport = window.visualViewport;
+      if (viewport) {
+        const keyboardHeight = window.innerHeight - viewport.height;
+        setKeyboardHeight(keyboardHeight);
+        setIsKeyboardOpen(keyboardHeight > 150);
+      }
+    };
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleResize);
+      return () => window.visualViewport?.removeEventListener('resize', handleResize);
+    }
+  }, []);
+
+  return { keyboardHeight, isKeyboardOpen };
+}
+
+// Mobile-optimized intersection observer
+export function useMobileIntersection(threshold = 0.1) {
+  const [isIntersecting, setIsIntersecting] = useState(false);
+  const [ref, setRef] = useState<Element | null>(null);
+
+  useEffect(() => {
+    if (!ref) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsIntersecting(entry.isIntersecting);
+      },
+      {
+        threshold,
+        rootMargin: '0px 0px -50px 0px' // Account for mobile browsers' UI
+      }
+    );
+
+    observer.observe(ref);
+    return () => observer.disconnect();
+  }, [ref, threshold]);
+
+  return [setRef, isIntersecting] as const;
+}

@@ -148,7 +148,7 @@ export default function NotificationBell() {
       <PopoverTrigger asChild>
         <Button 
           variant="ghost" 
-          size="icon" 
+          size="sm" 
           className="relative"
         >
           <Bell className="h-5 w-5" />

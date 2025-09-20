@@ -1,9 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { cookies } from 'next/headers';
+import { getPlayersLockStatus, isWeekLocked } from '@/lib/gameTimeUtils';
 
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic';
+
+// Types for lineup management
+interface LineupChange {
+  playerId: string;
+  newPosition: string;
+  oldPosition?: string;
+}
+
+interface LineupValidationResult {
+  isValid: boolean;
+  error?: string;
+  warnings?: string[];
+}
+
+interface OptimalLineupPlayer {
+  playerId: string;
+  playerName: string;
+  position: string;
+  projectedPoints: number;
+  playerPosition: string;
+  confidence: number;
+}
+
+// Standard fantasy football roster requirements
+const DEFAULT_ROSTER_SLOTS = {
+  QB: 1,
+  RB: 2,
+  WR: 2,
+  TE: 1,
+  FLEX: 1,
+  K: 1,
+  DST: 1,
+  BENCH: 6,
+  IR: 2
+};
 
 // GET /api/lineup - Get current lineup
 export async function GET(request: NextRequest) {
@@ -104,38 +140,59 @@ export async function GET(request: NextRequest) {
     });
     
     const settings = league?.settings as any;
-    const rosterRequirements = settings?.rosterSlots || {
-      QB: 1,
-      RB: 2,
-      WR: 2,
-      TE: 1,
-      FLEX: 1,
-      DST: 1,
-      K: 1,
-      BENCH: 6
-    };
+    const rosterRequirements = settings?.rosterSlots || DEFAULT_ROSTER_SLOTS;
+    const currentWeek = league?.currentWeek || 15;
+    const targetWeek = week ? parseInt(week) : currentWeek;
+    
+    // Check for locked players
+    const lockStatuses = await getPlayersLockStatus(team.roster.map(p => p.playerId), targetWeek);
+    const lockedPlayerIds = lockStatuses.filter(ls => ls.isLocked).map(ls => ls.playerId);
     
     // Organize lineup by position
     const lineup = {
-      starters: team.roster.filter(p => p.position !== 'BENCH' && p.position !== 'IR'),
-      bench: team.roster.filter(p => p.position === 'BENCH'),
-      injuredReserve: team.roster.filter(p => p.position === 'IR'),
+      starters: team.roster.filter(p => 
+        p.position !== 'BENCH' && 
+        p.position !== 'IR' && 
+        p.position !== 'TAXI'
+      ).map(rp => ({
+        ...rp,
+        isLocked: lockedPlayerIds.includes(rp.playerId),
+        projectedPoints: rp.player.projections[0]?.projectedPoints || 0,
+        scoredPoints: rp.player.playerStats[0]?.fantasyPoints || 0
+      })),
+      bench: team.roster.filter(p => p.position === 'BENCH').map(rp => ({
+        ...rp,
+        isLocked: lockedPlayerIds.includes(rp.playerId),
+        projectedPoints: rp.player.projections[0]?.projectedPoints || 0,
+        scoredPoints: rp.player.playerStats[0]?.fantasyPoints || 0
+      })),
+      injuredReserve: team.roster.filter(p => p.position === 'IR').map(rp => ({
+        ...rp,
+        isLocked: lockedPlayerIds.includes(rp.playerId),
+        projectedPoints: rp.player.projections[0]?.projectedPoints || 0,
+        scoredPoints: rp.player.playerStats[0]?.fantasyPoints || 0
+      })),
       requirements: rosterRequirements,
       teamId: team.id,
-      teamName: team.name
+      teamName: team.name,
+      week: targetWeek
     };
     
-    // Calculate total projected points
+    // Calculate total projected points for starters
     const totalProjected = lineup.starters.reduce((sum, rp) => {
-      const projection = rp.player.projections[0];
-      return sum + (projection ? Number(projection.projectedPoints) : 0);
+      return sum + Number(rp.projectedPoints || 0);
     }, 0);
     
-    // Calculate total scored points
+    // Calculate total scored points for starters
     const totalScored = lineup.starters.reduce((sum, rp) => {
-      const stats = rp.player.playerStats[0];
-      return sum + (stats ? Number(stats.fantasyPoints) : 0);
+      return sum + Number(rp.scoredPoints || 0);
     }, 0);
+    
+    // Validate current lineup
+    const validation = validateCurrentLineup(lineup.starters, rosterRequirements);
+    
+    // Get optimal lineup suggestion
+    const optimalLineup = await generateOptimalLineup(team.roster, rosterRequirements, targetWeek);
     
     return NextResponse.json({
       success: true,
@@ -143,7 +200,10 @@ export async function GET(request: NextRequest) {
         ...lineup,
         totalProjected: Math.round(totalProjected * 10) / 10,
         totalScored: Math.round(totalScored * 10) / 10,
-        currentWeek: league?.currentWeek || 15
+        currentWeek: currentWeek,
+        validation,
+        optimalLineup,
+        lineupLocked: await isWeekLocked(targetWeek)
       }
     });
     
@@ -217,6 +277,22 @@ export async function POST(request: NextRequest) {
       );
     }
     
+    // Get league and current week
+    const league = await prisma.league.findUnique({
+      where: { id: targetLeagueId },
+      select: { currentWeek: true, settings: true }
+    });
+    
+    const targetWeek = week || league?.currentWeek || 15;
+    
+    // Check if lineup is locked for this week
+    if (await isWeekLocked(targetWeek)) {
+      return NextResponse.json({
+        error: 'Lineup is locked - games have started for this week',
+        code: 'LINEUP_LOCKED'
+      }, { status: 400 });
+    }
+    
     // Validate all players belong to the team
     const playerIds = changes.map(c => c.playerId);
     const rosterPlayers = await prisma.rosterPlayer.findMany({
@@ -236,28 +312,35 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Check if any games have started (lineup lock)
-    const league = await prisma.league.findUnique({
-      where: { id: targetLeagueId },
-      select: { currentWeek: true }
-    });
-    
-    const targetWeek = week || league?.currentWeek || 15;
-    
     // Check for locked players (games started)
-    const lockedPlayers = await checkLockedPlayers(playerIds, targetWeek);
-    if (lockedPlayers.length > 0) {
+    const lockStatuses = await getPlayersLockStatus(playerIds, targetWeek);
+    const lockedPlayerIds = lockStatuses.filter(ls => ls.isLocked).map(ls => ls.playerId);
+    const lockedChanges = changes.filter(c => lockedPlayerIds.includes(c.playerId));
+    
+    if (lockedChanges.length > 0) {
+      const lockedNames = rosterPlayers
+        .filter(rp => lockedChanges.some(lc => lc.playerId === rp.playerId))
+        .map(rp => rp.player.name);
+      
       return NextResponse.json({
-        error: 'Cannot modify lineup - games have started',
-        lockedPlayers: lockedPlayers.map(p => p.name)
+        error: 'Cannot modify lineup - some players\' games have started',
+        lockedPlayers: lockedNames,
+        code: 'PLAYERS_LOCKED'
       }, { status: 400 });
     }
     
     // Validate lineup requirements
-    const validation = await validateLineupChanges(team.id, changes, targetLeek);
+    const settings = league?.settings as any;
+    const rosterRequirements = settings?.rosterSlots || DEFAULT_ROSTER_SLOTS;
+    
+    const validation = await validateLineupChanges(team.id, changes, rosterRequirements);
     if (!validation.isValid) {
       return NextResponse.json(
-        { error: validation.error },
+        { 
+          error: validation.error,
+          warnings: validation.warnings,
+          code: 'VALIDATION_FAILED'
+        },
         { status: 400 }
       );
     }
@@ -275,16 +358,48 @@ export async function POST(request: NextRequest) {
             }
           },
           data: {
-            position: change.newPosition,
-            rosterSlot: change.newPosition, // Update the slot as well
+            position: change.newPosition as any,
+            rosterSlot: change.newPosition as any,
             lastModified: new Date()
           },
           include: {
-            player: true
+            player: {
+              include: {
+                projections: {
+                  where: {
+                    week: targetWeek,
+                    season: 2024
+                  },
+                  take: 1,
+                  orderBy: {
+                    confidence: 'desc'
+                  }
+                }
+              }
+            }
           }
         });
         updates.push(update);
       }
+      
+      // Create lineup history entry
+      await tx.lineupHistory.create({
+        data: {
+          userId: session.userId,
+          teamId: team.id,
+          week: targetWeek,
+          season: 2024,
+          changes: {
+            timestamp: new Date().toISOString(),
+            modifications: changes.map(c => ({
+              playerId: c.playerId,
+              playerName: rosterPlayers.find(rp => rp.playerId === c.playerId)?.player.name,
+              oldPosition: c.oldPosition,
+              newPosition: c.newPosition
+            }))
+          }
+        }
+      });
       
       // Create audit log
       await tx.auditLog.create({
@@ -296,7 +411,11 @@ export async function POST(request: NextRequest) {
           entityId: team.id,
           after: {
             changes: changes.length,
-            week: targetWeek
+            week: targetWeek,
+            playersModified: changes.map(c => ({
+              playerId: c.playerId,
+              newPosition: c.newPosition
+            }))
           }
         }
       });
@@ -307,7 +426,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'Lineup updated successfully',
-      data: updatedRoster
+      data: {
+        updatedPlayers: updatedRoster.length,
+        week: targetWeek,
+        changes: changes.length
+      }
     });
     
   } catch (error) {
@@ -319,7 +442,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// POST /api/lineup/optimize - Auto-optimize lineup
+// PUT /api/lineup - Auto-optimize lineup
 export async function PUT(request: NextRequest) {
   try {
     const { leagueId, week, strategy = 'highest-projected' } = await request.json();
@@ -388,31 +511,50 @@ export async function PUT(request: NextRequest) {
     // Get league settings
     const league = await prisma.league.findUnique({
       where: { id: targetLeagueId },
-      select: { settings: true }
+      select: { settings: true, currentWeek: true }
     });
     
     const settings = league?.settings as any;
-    const rosterSlots = settings?.rosterSlots || {
-      QB: 1,
-      RB: 2,
-      WR: 2,
-      TE: 1,
-      FLEX: 1,
-      DST: 1,
-      K: 1,
-      BENCH: 6
-    };
+    const rosterSlots = settings?.rosterSlots || DEFAULT_ROSTER_SLOTS;
+    const targetWeek = week || league?.currentWeek || 15;
+    
+    // Check if lineup is locked
+    if (await isWeekLocked(targetWeek)) {
+      return NextResponse.json({
+        error: 'Cannot optimize lineup - games have started for this week',
+        code: 'LINEUP_LOCKED'
+      }, { status: 400 });
+    }
+    
+    // Get locked players
+    const lockStatuses = await getPlayersLockStatus(team.roster.map(p => p.playerId), targetWeek);
+    const lockedPlayerIds = lockStatuses.filter(ls => ls.isLocked).map(ls => ls.playerId);
     
     // Optimize lineup based on strategy
-    const optimizedLineup = optimizeLineup(team.roster, rosterSlots, strategy);
+    const optimizedLineup = await generateOptimalLineup(team.roster, rosterSlots, targetWeek, lockedPlayerIds, strategy);
+    
+    // Calculate changes needed
+    const changes: LineupChange[] = [];
+    for (const optPlayer of optimizedLineup) {
+      const currentPlayer = team.roster.find(rp => rp.playerId === optPlayer.playerId);
+      if (currentPlayer && currentPlayer.position !== optPlayer.position) {
+        changes.push({
+          playerId: optPlayer.playerId,
+          newPosition: optPlayer.position,
+          oldPosition: currentPlayer.position
+        });
+      }
+    }
+    
+    if (changes.length === 0) {
+      return NextResponse.json({
+        success: true,
+        message: 'Lineup is already optimal',
+        data: { changes: 0, optimizedLineup }
+      });
+    }
     
     // Apply optimized lineup
-    const changes = optimizedLineup.map(ol => ({
-      playerId: ol.playerId,
-      newPosition: ol.position
-    }));
-    
-    // Update in database
     await prisma.$transaction(async (tx) => {
       for (const change of changes) {
         await tx.rosterPlayer.update({
@@ -423,18 +565,45 @@ export async function PUT(request: NextRequest) {
             }
           },
           data: {
-            position: change.newPosition,
-            rosterSlot: change.newPosition,
+            position: change.newPosition as any,
+            rosterSlot: change.newPosition as any,
             lastModified: new Date()
           }
         });
       }
+      
+      // Create lineup history
+      await tx.lineupHistory.create({
+        data: {
+          userId: session.userId,
+          teamId: team.id,
+          week: targetWeek,
+          season: 2024,
+          changes: {
+            timestamp: new Date().toISOString(),
+            type: 'OPTIMIZATION',
+            strategy: strategy,
+            modifications: changes.map(c => ({
+              playerId: c.playerId,
+              oldPosition: c.oldPosition,
+              newPosition: c.newPosition
+            }))
+          }
+        }
+      });
     });
     
     return NextResponse.json({
       success: true,
       message: 'Lineup optimized successfully',
-      data: optimizedLineup
+      data: {
+        changes: changes.length,
+        strategy,
+        optimizedLineup,
+        totalProjected: optimizedLineup
+          .filter(p => p.position !== 'BENCH' && p.position !== 'IR')
+          .reduce((sum, p) => sum + Number(p.projectedPoints || 0), 0)
+      }
     });
     
   } catch (error) {
@@ -446,6 +615,8 @@ export async function PUT(request: NextRequest) {
   }
 }
 
+// Helper Functions
+
 async function getDefaultLeagueId(userId: string): Promise<string | null> {
   const team = await prisma.team.findFirst({
     where: { ownerId: userId },
@@ -454,34 +625,61 @@ async function getDefaultLeagueId(userId: string): Promise<string | null> {
   return team?.leagueId || null;
 }
 
-async function checkLockedPlayers(playerIds: string[], week: number) {
-  // In a real implementation, this would check actual NFL game times
-  // For now, we'll assume no players are locked
-  return [];
-}
 
-async function validateLineupChanges(teamId: string, changes: any[], targetLeagueId: string) {
-  // Get league settings
-  const league = await prisma.league.findUnique({
-    where: { id: targetLeagueId },
-    select: { settings: true }
+function validateCurrentLineup(starters: any[], requirements: any): LineupValidationResult {
+  const positionCounts: { [key: string]: number } = {};
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  
+  // Count positions
+  starters.forEach(player => {
+    const pos = player.position;
+    positionCounts[pos] = (positionCounts[pos] || 0) + 1;
   });
   
-  const settings = league?.settings as any;
-  const rosterSlots = settings?.rosterSlots || {
-    QB: 1,
-    RB: 2,
-    WR: 2,
-    TE: 1,
-    FLEX: 1,
-    DST: 1,
-    K: 1,
-    BENCH: 6
+  // Check required positions
+  Object.entries(requirements).forEach(([position, required]) => {
+    if (position === 'BENCH' || position === 'IR' || position === 'TAXI') return;
+    
+    const actual = positionCounts[position] || 0;
+    const req = Number(required);
+    
+    if (actual < req) {
+      errors.push(`Not enough ${position} players. Required: ${req}, Current: ${actual}`);
+    } else if (actual > req) {
+      errors.push(`Too many ${position} players. Max: ${req}, Current: ${actual}`);
+    }
+  });
+  
+  // Check FLEX eligibility
+  const flexPlayers = starters.filter(p => p.position === 'FLEX');
+  for (const flexPlayer of flexPlayers) {
+    if (!['RB', 'WR', 'TE'].includes(flexPlayer.player.position)) {
+      errors.push(`Invalid player in FLEX position: ${flexPlayer.player.name} (${flexPlayer.player.position})`);
+    }
+  }
+  
+  // Check for injured players in starting lineup
+  const injuredStarters = starters.filter(p => 
+    p.player.injuryStatus && !['Healthy', 'Probable'].includes(p.player.injuryStatus)
+  );
+  
+  if (injuredStarters.length > 0) {
+    warnings.push(`Starting injured players: ${injuredStarters.map(p => `${p.player.name} (${p.player.injuryStatus})`).join(', ')}`);
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    error: errors.length > 0 ? errors.join('; ') : undefined,
+    warnings
   };
-  
-  // Count positions after changes
-  const positionCounts: { [key: string]: number } = {};
-  
+}
+
+async function validateLineupChanges(
+  teamId: string, 
+  changes: LineupChange[], 
+  requirements: any
+): Promise<LineupValidationResult> {
   // Get current roster
   const currentRoster = await prisma.rosterPlayer.findMany({
     where: { teamId },
@@ -497,61 +695,81 @@ async function validateLineupChanges(teamId: string, changes: any[], targetLeagu
     };
   });
   
-  // Count each position
-  newLineup.forEach(rp => {
-    const pos = rp.position;
-    positionCounts[pos] = (positionCounts[pos] || 0) + 1;
-  });
+  // Get just the starters for validation
+  const starters = newLineup.filter(rp => 
+    rp.position !== 'BENCH' && 
+    rp.position !== 'IR' && 
+    rp.position !== 'TAXI'
+  );
   
-  // Validate requirements
-  for (const [position, required] of Object.entries(rosterSlots)) {
-    if (position === 'BENCH' || position === 'IR') continue;
-    
-    const actual = positionCounts[position] || 0;
-    if (actual > required) {
-      return {
-        isValid: false,
-        error: `Too many players in ${position} position. Max: ${required}, Actual: ${actual}`
-      };
-    }
-  }
-  
-  // Validate FLEX position
-  if (rosterSlots.FLEX) {
-    const flexCount = positionCounts['FLEX'] || 0;
-    const flexPlayers = newLineup.filter(rp => 
-      rp.position === 'FLEX' && 
-      ['RB', 'WR', 'TE'].includes(rp.player.position)
-    );
-    
-    if (flexPlayers.length !== flexCount) {
-      return {
-        isValid: false,
-        error: 'Invalid player in FLEX position. Only RB, WR, or TE allowed.'
-      };
-    }
-  }
-  
-  return { isValid: true };
+  return validateCurrentLineup(starters, requirements);
 }
 
-function optimizeLineup(roster: any[], rosterSlots: any, strategy: string) {
-  const optimized = [];
+async function generateOptimalLineup(
+  roster: any[], 
+  rosterSlots: any, 
+  week: number,
+  lockedPlayerIds: string[] = [],
+  strategy: string = 'highest-projected'
+): Promise<OptimalLineupPlayer[]> {
+  const optimized: OptimalLineupPlayer[] = [];
   const used = new Set<string>();
   
-  // Sort players by projected points
-  const sortedRoster = [...roster].sort((a, b) => {
-    const aProj = a.player.projections[0]?.projectedPoints || 0;
-    const bProj = b.player.projections[0]?.projectedPoints || 0;
-    return Number(bProj) - Number(aProj);
-  });
+  // Add locked players first
+  const lockedPlayers = roster.filter(rp => lockedPlayerIds.includes(rp.playerId));
+  for (const lockedPlayer of lockedPlayers) {
+    optimized.push({
+      playerId: lockedPlayer.playerId,
+      playerName: lockedPlayer.player.name,
+      position: lockedPlayer.position,
+      projectedPoints: Number(lockedPlayer.player.projections[0]?.projectedPoints || 0),
+      playerPosition: lockedPlayer.player.position,
+      confidence: Number(lockedPlayer.player.projections[0]?.confidence || 0)
+    });
+    used.add(lockedPlayer.playerId);
+  }
   
-  // Fill required positions first
+  // Sort available players by strategy
+  const availableRoster = roster.filter(rp => !used.has(rp.playerId));
+  let sortedRoster: any[];
+  
+  switch (strategy) {
+    case 'highest-projected':
+      sortedRoster = [...availableRoster].sort((a, b) => {
+        const aProj = Number(a.player.projections[0]?.projectedPoints || 0);
+        const bProj = Number(b.player.projections[0]?.projectedPoints || 0);
+        return bProj - aProj;
+      });
+      break;
+    case 'safest-floor':
+      sortedRoster = [...availableRoster].sort((a, b) => {
+        const aFloor = Number(a.player.projections[0]?.floorPoints || 0);
+        const bFloor = Number(b.player.projections[0]?.floorPoints || 0);
+        return bFloor - aFloor;
+      });
+      break;
+    case 'highest-ceiling':
+      sortedRoster = [...availableRoster].sort((a, b) => {
+        const aCeiling = Number(a.player.projections[0]?.ceilingPoints || 0);
+        const bCeiling = Number(b.player.projections[0]?.ceilingPoints || 0);
+        return bCeiling - aCeiling;
+      });
+      break;
+    default:
+      sortedRoster = [...availableRoster].sort((a, b) => {
+        const aProj = Number(a.player.projections[0]?.projectedPoints || 0);
+        const bProj = Number(b.player.projections[0]?.projectedPoints || 0);
+        return bProj - aProj;
+      });
+  }
+  
+  // Fill required positions (excluding already placed locked players)
   const positions = ['QB', 'RB', 'WR', 'TE', 'K', 'DST'];
   
   for (const position of positions) {
     const required = rosterSlots[position] || 0;
-    let filled = 0;
+    const alreadyFilled = optimized.filter(p => p.position === position).length;
+    let filled = alreadyFilled;
     
     for (const rp of sortedRoster) {
       if (filled >= required) break;
@@ -562,7 +780,9 @@ function optimizeLineup(roster: any[], rosterSlots: any, strategy: string) {
         playerId: rp.playerId,
         playerName: rp.player.name,
         position: position,
-        projectedPoints: rp.player.projections[0]?.projectedPoints || 0
+        projectedPoints: Number(rp.player.projections[0]?.projectedPoints || 0),
+        playerPosition: rp.player.position,
+        confidence: Number(rp.player.projections[0]?.confidence || 0)
       });
       
       used.add(rp.playerId);
@@ -572,10 +792,11 @@ function optimizeLineup(roster: any[], rosterSlots: any, strategy: string) {
   
   // Fill FLEX with best available RB/WR/TE
   const flexRequired = rosterSlots.FLEX || 0;
-  let flexFilled = 0;
+  const flexFilled = optimized.filter(p => p.position === 'FLEX').length;
+  let currentFlexFilled = flexFilled;
   
   for (const rp of sortedRoster) {
-    if (flexFilled >= flexRequired) break;
+    if (currentFlexFilled >= flexRequired) break;
     if (used.has(rp.playerId)) continue;
     if (!['RB', 'WR', 'TE'].includes(rp.player.position)) continue;
     
@@ -583,11 +804,13 @@ function optimizeLineup(roster: any[], rosterSlots: any, strategy: string) {
       playerId: rp.playerId,
       playerName: rp.player.name,
       position: 'FLEX',
-      projectedPoints: rp.player.projections[0]?.projectedPoints || 0
+      projectedPoints: Number(rp.player.projections[0]?.projectedPoints || 0),
+      playerPosition: rp.player.position,
+      confidence: Number(rp.player.projections[0]?.confidence || 0)
     });
     
     used.add(rp.playerId);
-    flexFilled++;
+    currentFlexFilled++;
   }
   
   // Put remaining players on bench
@@ -598,7 +821,9 @@ function optimizeLineup(roster: any[], rosterSlots: any, strategy: string) {
       playerId: rp.playerId,
       playerName: rp.player.name,
       position: 'BENCH',
-      projectedPoints: rp.player.projections[0]?.projectedPoints || 0
+      projectedPoints: Number(rp.player.projections[0]?.projectedPoints || 0),
+      playerPosition: rp.player.position,
+      confidence: Number(rp.player.projections[0]?.confidence || 0)
     });
   }
   

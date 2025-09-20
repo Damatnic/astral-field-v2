@@ -239,6 +239,27 @@ async function handleTradeAcceptance(tradeId: string, userId: string, trade: any
       }
     });
 
+    // Send notification to trade proposer if trade is fully accepted
+    if (!requiresVoting || approveVotes >= votesRequired) {
+      try {
+        await tx.notification.create({
+          data: {
+            userId: trade.proposerId,
+            type: 'TRADE_ACCEPTED',
+            title: 'Trade Accepted',
+            content: 'Your trade proposal has been accepted and processed',
+            metadata: {
+              tradeId,
+              acceptedBy: userId,
+              timestamp: new Date()
+            }
+          }
+        });
+      } catch (error) {
+        console.error('Failed to send trade acceptance notification:', error);
+      }
+    }
+
     // Return updated trade
     return await tx.trade.findUnique({
       where: { id: tradeId },
@@ -277,10 +298,16 @@ async function handleTradeRejection(tradeId: string, userId: string, notes?: str
       }
     });
 
+    // Get trade details for audit log
+    const tradeForAudit = await tx.trade.findUnique({ 
+      where: { id: tradeId }, 
+      select: { leagueId: true, proposerId: true } 
+    });
+
     // Create audit log
     await tx.auditLog.create({
       data: {
-        leagueId: (await tx.trade.findUnique({ where: { id: tradeId }, select: { leagueId: true } }))!.leagueId,
+        leagueId: tradeForAudit!.leagueId,
         userId,
         action: isProposer ? 'TRADE_CANCELLED' : 'TRADE_REJECTED',
         entityType: 'Trade',
@@ -293,6 +320,28 @@ async function handleTradeRejection(tradeId: string, userId: string, notes?: str
         }
       }
     });
+
+    // Send notification to trade proposer if not self-cancellation
+    if (!isProposer && tradeForAudit?.proposerId) {
+      try {
+        await tx.notification.create({
+          data: {
+            userId: tradeForAudit.proposerId,
+            type: 'TRADE_REJECTED',
+            title: 'Trade Rejected',
+            content: `Your trade proposal has been rejected${notes ? `: ${notes}` : ''}`,
+            metadata: {
+              tradeId,
+              rejectedBy: userId,
+              notes,
+              timestamp: new Date()
+            }
+          }
+        });
+      } catch (error) {
+        console.error('Failed to send trade rejection notification:', error);
+      }
+    }
 
     // Return updated trade
     return await tx.trade.findUnique({

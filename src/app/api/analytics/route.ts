@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { cookies } from 'next/headers';
+import { sleeperRealTimeScoringService } from '@/services/sleeper/realTimeScoringService';
+import { gameStatusService } from '@/services/sleeper/gameStatusService';
 
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic';
@@ -83,6 +85,10 @@ export async function GET(request: NextRequest) {
     // Get player performance stats
     const topPlayers = await getTopPlayers(targetLeagueId);
     
+    // Get live scoring context
+    const gameStatus = await gameStatusService.getCurrentGameStatus();
+    const liveScores = await sleeperRealTimeScoringService.getLiveScores(targetLeagueId);
+    
     return NextResponse.json({
       success: true,
       data: {
@@ -95,7 +101,15 @@ export async function GET(request: NextRequest) {
         teamStats,
         leagueStats,
         recentActivity,
-        topPlayers
+        topPlayers,
+        liveScoring: {
+          isLive: gameStatus.isAnyGameActive,
+          activeGames: gameStatus.activeGames.length,
+          lastUpdate: liveScores?.lastUpdated || null,
+          nextUpdate: liveScores?.nextUpdate || null,
+          scoringPriority: gameStatus.scoringPriority,
+          updateInterval: gameStatus.recommendedUpdateInterval
+        }
       }
     });
     
@@ -313,41 +327,148 @@ async function getRecentActivity(leagueId: string) {
 }
 
 async function getTopPlayers(leagueId: string) {
-  // Get top players from rosters in this league
-  // Since we don't have playerStats, we'll get the top rostered players
-  const topPlayers = await prisma.player.findMany({
-    where: {
-      rosterPlayers: {
-        some: {
-          team: {
-            leagueId
+  try {
+    // Get current league info
+    const league = await prisma.league.findUnique({
+      where: { id: leagueId },
+      select: { currentWeek: true, season: true }
+    });
+
+    if (!league) {
+      throw new Error('League not found');
+    }
+
+    const currentWeek = league.currentWeek || 1;
+    const season = league.season;
+
+    // First try to get live scoring data with player performance
+    const liveScores = await sleeperRealTimeScoringService.getLiveScores(leagueId);
+    
+    if (liveScores && liveScores.matchups) {
+      // Extract all player scores from live matchups
+      const allPlayerScores: any[] = [];
+      
+      liveScores.matchups.forEach((matchup: any) => {
+        if (matchup.playerScores && Array.isArray(matchup.playerScores)) {
+          allPlayerScores.push(...matchup.playerScores);
+        }
+      });
+
+      // Sort by actual points and take top 10
+      const topLivePlayers = allPlayerScores
+        .filter((player: any) => player.actualPoints > 0 && player.isStarting)
+        .sort((a: any, b: any) => b.actualPoints - a.actualPoints)
+        .slice(0, 10)
+        .map((player: any) => ({
+          id: player.playerId,
+          name: player.playerName,
+          position: player.position,
+          team: player.nflTeam,
+          points: player.actualPoints,
+          week: currentWeek,
+          isLive: liveScores.isLive || false
+        }));
+
+      if (topLivePlayers.length > 0) {
+        return topLivePlayers;
+      }
+    }
+
+    // Fallback: Get top players from stored stats
+    const topPlayersFromStats = await prisma.playerStats.findMany({
+      where: {
+        week: currentWeek,
+        season,
+        player: {
+          rosterPlayers: {
+            some: {
+              team: {
+                leagueId
+              }
+            }
           }
         }
       },
-      status: 'ACTIVE'
-    },
-    orderBy: {
-      searchRank: 'asc' // Use searchRank as proxy for performance
-    },
-    take: 10,
-    select: {
-      id: true,
-      name: true,
-      position: true,
-      nflTeam: true,
-      searchRank: true
+      include: {
+        player: {
+          select: {
+            id: true,
+            name: true,
+            position: true,
+            nflTeam: true
+          }
+        }
+      },
+      orderBy: {
+        fantasyPoints: 'desc'
+      },
+      take: 10
+    });
+
+    if (topPlayersFromStats.length > 0) {
+      return topPlayersFromStats.map(stat => ({
+        id: stat.player.id,
+        name: stat.player.name,
+        position: stat.player.position,
+        team: stat.player.nflTeam,
+        points: Number(stat.fantasyPoints) || 0,
+        week: currentWeek,
+        isLive: false
+      }));
     }
-  });
-  
-  // Mock points for now - in production this would come from external stats API
-  return topPlayers.map((player, index) => ({
-    id: player.id,
-    name: player.name,
-    position: player.position,
-    team: player.nflTeam,
-    points: Math.round((200 - index * 15) + Math.random() * 20), // Mock points based on rank
-    week: 15 // Current week
-  }));
+
+    // Final fallback: Get top rostered players by rank
+    const topPlayers = await prisma.player.findMany({
+      where: {
+        rosterPlayers: {
+          some: {
+            team: {
+              leagueId
+            }
+          }
+        },
+        status: 'ACTIVE'
+      },
+      orderBy: {
+        searchRank: 'asc' // Use searchRank as proxy for performance
+      },
+      take: 10,
+      select: {
+        id: true,
+        name: true,
+        position: true,
+        nflTeam: true,
+        searchRank: true
+      }
+    });
+    
+    // Use search rank to estimate points
+    return topPlayers.map((player, index) => ({
+      id: player.id,
+      name: player.name,
+      position: player.position,
+      team: player.nflTeam,
+      points: Math.max(0, 25 - (player.searchRank || 999) / 10), // Estimate based on search rank
+      week: currentWeek,
+      isLive: false,
+      isEstimate: true
+    }));
+
+  } catch (error) {
+    console.error('Error getting top players:', error);
+    
+    // Emergency fallback with minimal data
+    return [{
+      id: 'unknown',
+      name: 'Data Unavailable',
+      position: 'N/A',
+      team: 'N/A',
+      points: 0,
+      week: 1,
+      isLive: false,
+      error: true
+    }];
+  }
 }
 
 function getTeamColor(index: number): string {

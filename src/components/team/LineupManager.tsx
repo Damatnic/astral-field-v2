@@ -388,15 +388,18 @@ export default function LineupManager({ teamId, week, isOwner = true }: LineupMa
 
     return (
       <motion.div
-        className={`bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 shadow-sm border transition-all ${
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        className={`bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm border transition-all touch-manipulation select-none ${
           isDragging 
-            ? 'shadow-lg scale-105 rotate-1' 
-            : 'hover:shadow-md'
+            ? 'shadow-xl scale-105 rotate-1 z-50' 
+            : 'hover:shadow-md active:shadow-lg'
         } ${(rosterPlayer.isLocked || isLocked) ? 'opacity-60' : ''} ${
-          !isOwner ? 'cursor-default' : 'cursor-move'
+          !isOwner ? 'cursor-default' : 'cursor-move active:cursor-grabbing'
         }`}
         style={{
-          borderColor: (rosterPlayer.isLocked || isLocked) ? '#ef4444' : '#e5e7eb'
+          borderColor: (rosterPlayer.isLocked || isLocked) ? '#ef4444' : '#e5e7eb',
+          touchAction: 'none' // Prevent default touch behaviors during drag
         }}
       >
         <div className="flex items-center justify-between mb-2">
@@ -611,9 +614,7 @@ export default function LineupManager({ teamId, week, isOwner = true }: LineupMa
                   <div
                     ref={provided.innerRef}
                     {...provided.droppableProps}
-                    className={`grid grid-cols-1 gap-3 ${
-                      window.innerWidth >= 768 ? 'md:grid-cols-2' : ''
-                    } ${
+                    className={`grid grid-cols-1 md:grid-cols-2 gap-3 ${
                       snapshot.isDraggingOver && !isLocked
                         ? 'bg-blue-50 dark:bg-blue-900/10 rounded-lg p-2' 
                         : ''
@@ -682,31 +683,41 @@ export default function LineupManager({ teamId, week, isOwner = true }: LineupMa
         </div>
       </DragDropContext>
       
-      {/* Mobile Save/Reset Bar */}
+      {/* Mobile Save/Reset Bar with Enhanced Touch Interactions */}
       {isOwner && !isLocked && hasChanges && (
-        <div className="fixed bottom-4 left-4 right-4 z-50 lg:hidden">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-3 flex gap-3">
-            <button
+        <motion.div 
+          initial={{ y: 100, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 100, opacity: 0 }}
+          className="fixed bottom-4 left-4 right-4 z-50 lg:hidden"
+          style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+        >
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 p-4 flex gap-3 backdrop-blur-lg bg-opacity-95">
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               onClick={resetLineup}
-              className="flex-1 px-4 py-2 rounded-lg font-medium flex items-center justify-center gap-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-all"
+              className="flex-1 px-6 py-4 rounded-xl font-semibold flex items-center justify-center gap-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all touch-manipulation min-h-[48px]"
             >
-              <RotateCcw className="h-4 w-4" />
+              <RotateCcw className="h-5 w-5" />
               Reset
-            </button>
-            <button
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               onClick={saveLineup}
               disabled={isSaving}
-              className="flex-1 px-4 py-2 rounded-lg font-medium flex items-center justify-center gap-2 bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="flex-1 px-6 py-4 rounded-xl font-semibold flex items-center justify-center gap-2 bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all touch-manipulation min-h-[48px]"
             >
               {isSaving ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
-                <Save className="h-4 w-4" />
+                <Save className="h-5 w-5" />
               )}
               {isSaving ? 'Saving...' : 'Save Changes'}
-            </button>
+            </motion.button>
           </div>
-        </div>
+        </motion.div>
       )}
     </div>
   );

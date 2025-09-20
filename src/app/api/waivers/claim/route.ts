@@ -89,48 +89,126 @@ export async function POST(request: NextRequest) {
     // Check FAAB budget if using FAAB
     const league = await prisma.league.findUnique({
       where: { id: leagueId },
-      select: { settings: true }
+      select: { settings: true, currentWeek: true }
     });
     
     const settings = league?.settings as any;
-    const usesFAAB = settings?.waiverType === 'FAAB';
+    const usesFAAB = settings?.waiverMode === 'FAAB';
     
     if (usesFAAB) {
-      if (!bidAmount || bidAmount < 0) {
+      if (bidAmount === undefined || bidAmount === null || bidAmount < 0) {
         return NextResponse.json(
-          { error: 'Valid bid amount required for FAAB waivers' },
+          { error: 'Valid bid amount required for FAAB waivers (minimum $0)' },
           { status: 400 }
         );
       }
       
-      // Check available FAAB budget
+      // FAAB budget limits
+      const maxBidAllowed = team.faabBudget; // Can't bid more than total budget
+      if (bidAmount > maxBidAllowed) {
+        return NextResponse.json(
+          { error: `Bid amount cannot exceed total FAAB budget of $${maxBidAllowed}` },
+          { status: 400 }
+        );
+      }
+      
+      // Check available FAAB budget (current + pending bids)
       const existingBids = await prisma.waiverClaim.aggregate({
         where: {
           teamId: team.id,
           status: 'PENDING'
         },
         _sum: {
-          bidAmount: true
+          faabBid: true
         }
       });
       
-      const pendingBids = existingBids._sum.bidAmount || 0;
+      const pendingBids = existingBids._sum.faabBid || 0;
       const availableFAAB = team.faabBudget - team.faabSpent - pendingBids;
       
       if (bidAmount > availableFAAB) {
         return NextResponse.json(
-          { error: `Insufficient FAAB budget. Available: $${availableFAAB}` },
+          { error: `Insufficient FAAB budget. Available: $${availableFAAB} (Total: $${team.faabBudget}, Spent: $${team.faabSpent}, Pending: $${pendingBids})` },
+          { status: 400 }
+        );
+      }
+      
+      // Check minimum bid requirements (optional)
+      const minBidRequired = settings?.waiverSettings?.minimumBid || 0;
+      if (bidAmount < minBidRequired) {
+        return NextResponse.json(
+          { error: `Minimum bid amount is $${minBidRequired}` },
+          { status: 400 }
+        );
+      }
+    } else {
+      // For non-FAAB leagues, bidAmount should be null or 0
+      if (bidAmount && bidAmount > 0) {
+        return NextResponse.json(
+          { error: 'This league does not use FAAB bidding' },
           { status: 400 }
         );
       }
     }
     
-    // Verify drop player if specified
+    // Duplicate validation removed - handled above in enhanced roster validation
+    
+    // Enhanced roster validation
+    const currentRoster = await prisma.rosterPlayer.findMany({
+      where: { teamId: team.id },
+      include: {
+        player: {
+          select: {
+            position: true,
+            status: true,
+            name: true
+          }
+        }
+      }
+    });
+    
+    const rosterSettings = settings?.rosterSlots || {
+      QB: 2, RB: 4, WR: 4, TE: 2, K: 1, DST: 1, BENCH: 6
+    };
+    const maxRosterSize = settings?.maxRosterSize || 16;
+    
+    // Check total roster size
+    if (!dropPlayerId && currentRoster.length >= maxRosterSize) {
+      return NextResponse.json(
+        { error: `Roster is full (${currentRoster.length}/${maxRosterSize}). You must drop a player to make this claim.` },
+        { status: 400 }
+      );
+    }
+    
+    // Check position limits (if enforced)
+    const enforcePositionLimits = settings?.enforcePositionLimits || false;
+    if (enforcePositionLimits && !dropPlayerId) {
+      const positionCount = currentRoster.filter(rp => rp.player.position === player.position).length;
+      const maxForPosition = rosterSettings[player.position] || 0;
+      
+      if (positionCount >= maxForPosition) {
+        return NextResponse.json(
+          { error: `Cannot add more ${player.position} players. Current: ${positionCount}/${maxForPosition}. Drop a ${player.position} first.` },
+          { status: 400 }
+        );
+      }
+    }
+    
+    // Validate drop player is droppable
     if (dropPlayerId) {
       const dropPlayer = await prisma.rosterPlayer.findFirst({
         where: {
           playerId: dropPlayerId,
           teamId: team.id
+        },
+        include: {
+          player: {
+            select: {
+              name: true,
+              position: true,
+              status: true
+            }
+          }
         }
       });
       
@@ -140,20 +218,23 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
-    }
-    
-    // Check roster size limits
-    const currentRosterSize = await prisma.rosterPlayer.count({
-      where: { teamId: team.id }
-    });
-    
-    const maxRosterSize = settings?.maxRosterSize || 16;
-    
-    if (!dropPlayerId && currentRosterSize >= maxRosterSize) {
-      return NextResponse.json(
-        { error: 'Roster is full. You must drop a player to make this claim.' },
-        { status: 400 }
-      );
+      
+      // Check if player is locked (in lineup during games)
+      if (dropPlayer.isLocked) {
+        return NextResponse.json(
+          { error: `Cannot drop ${dropPlayer.player.name} - player is locked in lineup` },
+          { status: 400 }
+        );
+      }
+      
+      // Check if player is on IR and can't be dropped during season
+      const preventIRDrops = settings?.preventIRDrops || false;
+      if (preventIRDrops && dropPlayer.rosterSlot === 'IR') {
+        return NextResponse.json(
+          { error: `Cannot drop ${dropPlayer.player.name} from IR during the season` },
+          { status: 400 }
+        );
+      }
     }
     
     // Check for duplicate claim
@@ -175,24 +256,18 @@ export async function POST(request: NextRequest) {
     // Create waiver claim
     const claim = await prisma.waiverClaim.create({
       data: {
+        leagueId,
         teamId: team.id,
+        userId: session.userId,
         playerId,
         dropPlayerId: dropPlayerId || null,
-        bidAmount: usesFAAB ? bidAmount : 0,
+        faabBid: usesFAAB ? bidAmount : null,
         priority: team.waiverPriority,
         status: 'PENDING',
-        createdAt: new Date()
+        weekNumber: league?.currentWeek || 1
       },
       include: {
         player: {
-          select: {
-            id: true,
-            name: true,
-            position: true,
-            nflTeam: true
-          }
-        },
-        dropPlayer: {
           select: {
             id: true,
             name: true,
@@ -295,14 +370,7 @@ export async function GET(request: NextRequest) {
             status: true
           }
         },
-        dropPlayer: {
-          select: {
-            id: true,
-            name: true,
-            position: true,
-            nflTeam: true
-          }
-        }
+        // dropPlayer removed from include - will fetch separately if needed
       },
       orderBy: {
         createdAt: 'desc'

@@ -36,6 +36,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { safeToFixed } from '@/utils/numberUtils';
+import { safeNumber } from '@/lib/utils';
 
 // Real Dashboard Stats from D'Amato Dynasty League
 function RealDashboardStats() {

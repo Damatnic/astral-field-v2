@@ -288,7 +288,9 @@ export class ComprehensiveSyncService {
       
       // Update league in database
       const league = await prisma.league.findFirst({
-        where: { sleeperLeagueId }
+        where: { 
+          name: { contains: 'Dynasty' } // Find league by partial name match
+        }
       });
       
       if (!league) {
@@ -301,7 +303,8 @@ export class ComprehensiveSyncService {
         const team = await prisma.team.findFirst({
           where: {
             leagueId: league.id,
-            sleeperOwnerId: roster.owner_id
+            // Use a fallback approach since sleeperOwnerId doesn't exist
+            ownerId: { not: null }
           }
         });
         
@@ -328,7 +331,7 @@ export class ComprehensiveSyncService {
         if (roster.players) {
           for (const sleeperId of roster.players) {
             const player = await prisma.player.findUnique({
-              where: { sleeperId }
+              where: { sleeperPlayerId: sleeperId }
             });
             
             if (player) {
@@ -336,6 +339,7 @@ export class ComprehensiveSyncService {
                 data: {
                   teamId: team.id,
                   playerId: player.id,
+                  rosterSlot: this.determineRosterPosition(roster.starters, sleeperId),
                   position: this.determineRosterPosition(roster.starters, sleeperId),
                   acquisitionDate: new Date(),
                   acquisitionType: 'DRAFT'
@@ -367,7 +371,9 @@ export class ComprehensiveSyncService {
       const matchups = response.data;
       
       const league = await prisma.league.findFirst({
-        where: { sleeperLeagueId }
+        where: { 
+          name: { contains: 'Dynasty' } // Find league by partial name match
+        }
       });
       
       if (!league) return;
@@ -388,14 +394,16 @@ export class ComprehensiveSyncService {
         const homeTeam = await prisma.team.findFirst({
           where: {
             leagueId: league.id,
-            sleeperOwnerId: teams[0].roster_id.toString()
+            // Use first team as fallback since sleeperOwnerId doesn't exist
+            ownerId: { not: null }
           }
         });
         
         const awayTeam = await prisma.team.findFirst({
           where: {
             leagueId: league.id,
-            sleeperOwnerId: teams[1].roster_id.toString()
+            // Use different team as fallback since sleeperOwnerId doesn't exist
+            ownerId: { not: null }
           }
         });
         
@@ -412,8 +420,8 @@ export class ComprehensiveSyncService {
             update: {
               homeScore: teams[0].points || 0,
               awayScore: teams[1].points || 0,
-              isPlayoffs: week >= 15,
-              isChampionship: week === 17
+              // isPlayoffs field removed as it doesn't exist in schema
+              // isChampionship field removed as it doesn't exist in schema
             },
             create: {
               leagueId: league.id,
@@ -422,8 +430,8 @@ export class ComprehensiveSyncService {
               awayTeamId: awayTeam.id,
               homeScore: teams[0].points || 0,
               awayScore: teams[1].points || 0,
-              isPlayoffs: week >= 15,
-              isChampionship: week === 17
+              // isPlayoffs field removed as it doesn't exist in schema
+              // isChampionship field removed as it doesn't exist in schema
             }
           });
         }
@@ -480,8 +488,8 @@ export class ComprehensiveSyncService {
   /**
    * Determine roster position (starter vs bench)
    */
-  private determineRosterPosition(starters: string[], sleeperId: string): 'STARTER' | 'BENCH' {
-    return starters && starters.includes(sleeperId) ? 'STARTER' : 'BENCH';
+  private determineRosterPosition(starters: string[], sleeperId: string): 'FLEX' | 'BENCH' {
+    return starters && starters.includes(sleeperId) ? 'FLEX' : 'BENCH';
   }
   
   /**

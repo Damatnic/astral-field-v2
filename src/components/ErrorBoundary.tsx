@@ -38,12 +38,21 @@ class ErrorBoundary extends Component<Props, State> {
     // Log error to monitoring service
     console.error('ErrorBoundary caught an error:', error, errorInfo);
     
-    // Report to error tracking service (e.g., Sentry)
+    // Use comprehensive error tracking system
     if (typeof window !== 'undefined') {
-      // Only report in production
-      if (process.env.NODE_ENV === 'production') {
-        // Example: Sentry.captureException(error);
-      }
+      const { captureError, ErrorCategory } = require('@/lib/error-tracking');
+      
+      const errorId = captureError(error, ErrorCategory.SYSTEM_ERROR, {
+        component: 'ErrorBoundary',
+        metadata: {
+          componentStack: errorInfo.componentStack,
+          errorBoundary: errorInfo.errorBoundary,
+          errorInfo: errorInfo
+        }
+      });
+
+      // Store error ID for user reference
+      this.setState({ errorId });
     }
 
     // Call custom error handler if provided
@@ -158,10 +167,17 @@ export function useErrorHandler() {
   return (error: Error, errorInfo?: string) => {
     console.error('Application Error:', error);
     
-    // In a real app, report to error tracking service
-    if (process.env.NODE_ENV === 'production') {
-      // Example: Sentry.captureException(error);
+    // Use comprehensive error tracking system
+    if (typeof window !== 'undefined') {
+      const { captureError, ErrorCategory } = require('@/lib/error-tracking');
+      
+      return captureError(error, ErrorCategory.USER_ERROR, {
+        component: 'useErrorHandler',
+        metadata: { errorInfo }
+      });
     }
+    
+    return null;
   };
 }
 

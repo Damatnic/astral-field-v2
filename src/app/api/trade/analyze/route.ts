@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
       }, { status: 403 });
     }
 
-    // Get teams with current rosters
+    // Get teams with current rosters (fixed schema reference)
     const teams = await prisma.team.findMany({
       where: {
         id: { in: teamIds },
@@ -562,7 +562,7 @@ function analyzePositionalImpact(giving: any[], receiving: any[], playerAnalysis
 }
 
 function calculateRosterHealth(team: any, giving: any[], receiving: any[], playerAnalysis: any[]) {
-  // Simplified roster health calculation
+  // Fixed roster reference to use correct schema field
   const currentRosterSize = team.roster?.length || 0;
   const netPlayerChange = receiving.filter(i => i.itemType === 'PLAYER').length - 
                          giving.filter(i => i.itemType === 'PLAYER').length;

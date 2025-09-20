@@ -109,14 +109,14 @@ export default function MatchupsPage() {
               {weekOptions.map((week) => (
                 <Button
                   key={week}
-                  variant={selectedWeek === week ? 'default' : 'outline'}
+                  variant={selectedWeek === week ? 'secondary' : 'outline'}
                   size="sm"
                   onClick={() => setSelectedWeek(week)}
                   className="relative"
                 >
                   Week {week}
                   {week === currentWeek && (
-                    <Badge className="absolute -top-2 -right-2 h-5 px-1" variant="destructive">
+                    <Badge className="absolute -top-2 -right-2 h-5 px-1" variant="danger">
                       Current
                     </Badge>
                   )}

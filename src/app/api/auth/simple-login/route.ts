@@ -4,26 +4,38 @@ import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/db';
 import { UserRole } from '@prisma/client';
 import { nanoid } from 'nanoid';
+import { withRateLimit, RATE_LIMIT_CONFIGS } from '@/lib/rate-limiter';
+import { loginSchema } from '@/lib/validations/auth';
+import { z } from 'zod';
 
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
+  return withRateLimit(request, RATE_LIMIT_CONFIGS.auth, async () => {
   try {
     const body = await request.json();
-    const { email, password } = body;
     
-    if (!email || !password) {
+    // Validate input with Zod
+    const validationResult = loginSchema.safeParse(body);
+    
+    if (!validationResult.success) {
       return NextResponse.json(
-        { success: false, error: 'Email and password are required' },
+        { 
+          success: false, 
+          error: 'Invalid input',
+          errors: validationResult.error.flatten().fieldErrors 
+        },
         { status: 400 }
       );
     }
     
+    const { email, password } = validationResult.data;
+    
     // Find user in database
     const user = await prisma.user.findUnique({
       where: { 
-        email: email.toLowerCase() 
+        email: email 
       },
       include: {
         teams: {
@@ -40,62 +52,11 @@ export async function POST(request: NextRequest) {
     });
     
     if (!user) {
-      // User doesn't exist - for development, create a new user
-      // In production, this should return an error
-      if (process.env.NODE_ENV === 'development') {
-        const hashedPassword = await bcrypt.hash(password, 10);
-        
-        const newUser = await prisma.user.create({
-          data: {
-            email: email.toLowerCase(),
-            password: hashedPassword,
-            name: email.split('@')[0],
-            role: UserRole.PLAYER,
-            teamName: `${email.split('@')[0]}'s Team`
-          }
-        });
-        
-        // Create session
-        const sessionId = nanoid();
-        const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
-        
-        await prisma.userSession.create({
-          data: {
-            userId: newUser.id,
-            sessionId,
-            expiresAt,
-            ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
-            userAgent: request.headers.get('user-agent') || 'unknown'
-          }
-        });
-        
-        // Set session cookie
-        const cookieStore = cookies();
-        cookieStore.set('session', sessionId, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
-          path: '/'
-        });
-        
-        return NextResponse.json({
-          success: true,
-          sessionId, // Return session ID for testing
-          user: {
-            id: newUser.id,
-            email: newUser.email,
-            name: newUser.name,
-            role: newUser.role,
-            teamName: newUser.teamName
-          }
-        });
-      } else {
-        return NextResponse.json(
-          { success: false, error: 'Invalid email or password' },
-          { status: 401 }
-        );
-      }
+      // User doesn't exist - always return error
+      return NextResponse.json(
+        { success: false, error: 'Invalid email or password' },
+        { status: 401 }
+      );
     }
     
     // Check password
@@ -182,6 +143,7 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+  });
 }
 
 export async function GET() {

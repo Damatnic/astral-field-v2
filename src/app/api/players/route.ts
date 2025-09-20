@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
 import { handleComponentError } from '@/lib/error-handling';
 import { authenticateFromRequest } from '@/lib/auth';
 import { Player, PlayerSearchFilters, PaginatedResponse } from '@/types/fantasy';
+import { getPlayersOptimized } from '@/lib/db-optimized';
+import { redisCache, fantasyKeys } from '@/lib/redis-cache';
+import { CACHE_TAGS } from '@/lib/cache';
+import { getCacheHeaders } from '@/lib/cache';
 
 export const dynamic = 'force-dynamic';
 
-// GET /api/players - Search and get players
+// GET /api/players - Search and get players with optimized caching
 export async function GET(request: NextRequest) {
+  const startTime = Date.now();
+  
   try {
     const user = await authenticateFromRequest(request);
     if (!user) {
@@ -19,7 +24,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '20');
+    const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100); // Cap at 100
     const searchQuery = searchParams.get('search') || '';
     const positions = searchParams.get('positions')?.split(',') || [];
     const teams = searchParams.get('teams')?.split(',') || [];
@@ -27,155 +32,57 @@ export async function GET(request: NextRequest) {
     const availability = searchParams.get('availability') || 'all';
     const leagueId = searchParams.get('leagueId');
 
-    const skip = (page - 1) * limit;
+    // Create cache key based on search parameters
+    const filterString = JSON.stringify({
+      page,
+      limit,
+      search: searchQuery,
+      positions: positions.sort(),
+      teams: teams.sort(),
+      statuses: statuses.sort(),
+      availability,
+      leagueId,
+    });
+    const cacheKey = fantasyKeys.players(Buffer.from(filterString).toString('base64'));
 
-    // Build where clause
-    const whereClause: any = {
-      AND: []
-    };
+    // Try to get from cache first
+    const cached = await redisCache.get<{ players: any[], totalCount: number }>(
+      cacheKey,
+      [CACHE_TAGS.PLAYERS]
+    );
 
-    // Search by name
-    if (searchQuery) {
-      whereClause.AND.push({
-        name: {
-          contains: searchQuery,
-          mode: 'insensitive'
-        }
-      });
+    let players, totalCount;
+
+    if (cached) {
+      console.log('✅ Players cache hit');
+      ({ players, totalCount } = cached);
+    } else {
+      console.log('❌ Players cache miss, fetching from database');
+      
+      // Fetch from optimized database function
+      const filters = {
+        search: searchQuery,
+        positions,
+        teams,
+        availability,
+        leagueId,
+        limit,
+        offset: (page - 1) * limit,
+      };
+
+      const result = await getPlayersOptimized(filters);
+      players = result.players;
+      totalCount = result.totalCount;
+
+      // Cache the result (shorter TTL for search results)
+      const ttl = searchQuery ? 300 : 900; // 5 min for search, 15 min for browsing
+      await redisCache.set(
+        cacheKey,
+        { players, totalCount },
+        ttl,
+        [CACHE_TAGS.PLAYERS]
+      );
     }
-
-    // Filter by positions
-    if (positions.length > 0) {
-      whereClause.AND.push({
-        position: {
-          in: positions
-        }
-      });
-    }
-
-    // Filter by NFL teams
-    if (teams.length > 0) {
-      whereClause.AND.push({
-        nflTeam: {
-          in: teams
-        }
-      });
-    }
-
-    // Filter by player status
-    if (statuses.length > 0) {
-      whereClause.AND.push({
-        status: {
-          in: statuses
-        }
-      });
-    }
-
-    // Filter by availability (rostered vs available)
-    if (availability !== 'all' && leagueId) {
-      if (availability === 'available') {
-        whereClause.AND.push({
-          NOT: {
-            rosterPlayers: {
-              some: {
-                team: {
-                  leagueId: leagueId
-                }
-              }
-            }
-          }
-        });
-      } else if (availability === 'rostered') {
-        whereClause.AND.push({
-          rosterPlayers: {
-            some: {
-              team: {
-                leagueId: leagueId
-              }
-            }
-          }
-        });
-      }
-    }
-
-    // If no filters, add a basic filter to avoid returning all players
-    if (whereClause.AND.length === 0) {
-      whereClause.AND.push({
-        status: {
-          in: ['ACTIVE', 'QUESTIONABLE', 'DOUBTFUL']
-        }
-      });
-    }
-
-    const currentWeek = getCurrentWeek();
-    const currentSeason = new Date().getFullYear();
-
-    const [players, totalCount] = await Promise.all([
-      prisma.player.findMany({
-        where: whereClause,
-        include: {
-          playerStats: {
-            where: {
-              season: currentSeason,
-              week: {
-                lte: currentWeek
-              }
-            },
-            orderBy: {
-              week: 'desc'
-            },
-            take: 5
-          },
-          projections: {
-            where: {
-              season: currentSeason,
-              week: currentWeek
-            },
-            orderBy: {
-              confidence: 'desc'
-            },
-            take: 1
-          },
-          playerNews: {
-            orderBy: {
-              timestamp: 'desc'
-            },
-            take: 3
-          },
-          rosterPlayers: leagueId ? {
-            where: {
-              team: {
-                leagueId: leagueId
-              }
-            },
-            include: {
-              team: {
-                select: {
-                  id: true,
-                  name: true,
-                  owner: {
-                    select: {
-                      id: true,
-                      name: true
-                    }
-                  }
-                }
-              }
-            }
-          } : false
-        },
-        orderBy: [
-          { searchRank: 'asc' },
-          { position: 'asc' },
-          { name: 'asc' }
-        ],
-        skip,
-        take: limit
-      }),
-      prisma.player.count({
-        where: whereClause
-      })
-    ]);
 
     // Transform players data with comprehensive stats
     const transformedPlayers = players.map(player => {
@@ -273,15 +180,28 @@ export async function GET(request: NextRequest) {
         page,
         limit,
         total: totalCount,
-        hasMore: skip + limit < totalCount
+        hasMore: (page - 1) * limit + limit < totalCount
+      },
+      meta: {
+        requestTime: Date.now() - startTime,
+        cached: !!cached,
+        timestamp: Date.now(),
       }
     };
 
-    return NextResponse.json(response);
+    // Set appropriate cache headers
+    const cacheType = searchQuery ? 'dynamic' : 'static';
+    const headers = getCacheHeaders(cacheType);
+
+    return NextResponse.json(response, { headers });
   } catch (error) {
-    handleComponentError(error as Error, 'route');
+    handleComponentError(error as Error, 'players-api');
     return NextResponse.json(
-      { success: false, message: 'Internal server error' },
+      { 
+        success: false, 
+        message: 'Internal server error',
+        requestTime: Date.now() - startTime,
+      },
       { status: 500 }
     );
   }

@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
           id: n.id,
           type: n.type,
           title: n.title,
-          message: n.message,
+          content: n.content,
           isRead: n.isRead,
           createdAt: n.createdAt,
           metadata: n.metadata
@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { userId, type, title, message, leagueId, metadata } = body;
+    const { userId, type, title, content, leagueId, metadata } = body;
     
     // Get session from cookies
     const cookieStore = cookies();
@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Validate required fields
-    if (!userId || !type || !title || !message) {
+    if (!userId || !type || !title || !content) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
         leagueId: leagueId || await getDefaultLeagueId(userId),
         type,
         title,
-        message,
+        content,
         metadata: metadata || {}
       }
     });
@@ -335,7 +335,7 @@ export async function createSystemNotification(
   userId: string,
   type: 'TRADE' | 'WAIVER' | 'LINEUP' | 'DRAFT' | 'SYSTEM' | 'MENTION',
   title: string,
-  message: string,
+  content: string,
   metadata?: any
 ) {
   try {
@@ -347,7 +347,7 @@ export async function createSystemNotification(
         leagueId,
         type,
         title,
-        message,
+        content,
         metadata: metadata || {}
       }
     });

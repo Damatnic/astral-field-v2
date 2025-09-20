@@ -61,7 +61,7 @@ export async function GET(
     });
     
   } catch (error) {
-    handleComponentError(error as Error, 'route');
+    console.error('Avatar route error:', error);
     // Return default avatar on error
     return new NextResponse(DEFAULT_AVATAR_SVG, {
       status: 200,

@@ -5,6 +5,7 @@ import { sleeperClient } from './core/sleeperClient';
 import { nflStateService } from './nflStateService';
 import { sleeperCache, SleeperCacheManager } from './core/cacheManager';
 import { prisma as db } from '@/lib/db';
+import { scoringErrorHandler } from '@/services/scoring/errorHandler';
 
 import { handleComponentError } from '@/lib/error-handling';
 export interface LiveScoreUpdate {
@@ -531,6 +532,19 @@ export class SleeperRealTimeScoringService {
       return await this.updateLeagueScores(leagueId);
     } catch (error) {
       handleComponentError(error as Error, 'realTimeScoringService');
+      
+      // Use error handler for recovery
+      const recoveryAction = await scoringErrorHandler.handleError(error as Error, {
+        service: 'realTimeScoringService',
+        operation: 'getLiveScores',
+        leagueId
+      });
+
+      if (recoveryAction.type === 'fallback') {
+        const fallbackData = await scoringErrorHandler.getFallbackData(leagueId);
+        return fallbackData.liveScores;
+      }
+
       return null;
     }
   }

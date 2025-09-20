@@ -457,6 +457,7 @@ async function forceTrade(tradeId: string, leagueId: string) {
           data: {
             teamId: item.toTeamId,
             playerId: item.playerId,
+            rosterSlot: 'BENCH',
             position: 'BENCH',
             acquisitionType: 'TRADE',
             acquisitionDate: new Date()

@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { handleComponentError } from '@/lib/error-handling';
 import { authenticateFromRequest } from '@/lib/auth';
 import { CreateTradeRequest, ApiResponse, Trade } from '@/types/fantasy';
+import { validateCompleteTrade, analyzeRosterImpact, calculateTradeFairness } from '@/lib/trade-validation';
 
 
 // Force dynamic rendering for this route
@@ -91,8 +92,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate trade items
-    const validationResults = await validateTradeItems(body.tradeItems, body.leagueId, userTeam.id);
+    // Comprehensive trade validation
+    const validationResults = await validateCompleteTrade(body.tradeItems, body.leagueId, user.id);
     if (!validationResults.isValid) {
       return NextResponse.json(
         { success: false, message: validationResults.error },
@@ -100,14 +101,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check roster size limits after trade
-    const rosterValidation = await validateRosterLimits(body.tradeItems, body.leagueId);
-    if (!rosterValidation.isValid) {
-      return NextResponse.json(
-        { success: false, message: rosterValidation.error },
-        { status: 400 }
-      );
-    }
+    // Analyze roster impact for all teams
+    const rosterImpacts = await analyzeRosterImpact(body.tradeItems, body.leagueId);
+    
+    // Calculate trade fairness
+    const fairnessAnalysis = await calculateTradeFairness(body.tradeItems);
 
     // Set expiration time (default 48 hours)
     const expirationHours = body.expirationHours || 48;
@@ -202,13 +200,43 @@ export async function POST(request: NextRequest) {
           tradeId: trade.id,
           proposer: user.name,
           targetTeams: targetTeams.map(t => t.name),
-          itemCount: body.tradeItems.length
+          itemCount: body.tradeItems.length,
+          fairnessScore: fairnessAnalysis.fairnessScore,
+          rosterImpacts: rosterImpacts.map(impact => ({
+            teamName: impact.teamName,
+            playersAdded: impact.playersAdded,
+            playersRemoved: impact.playersRemoved,
+            warnings: impact.warnings
+          })),
+          validationWarnings: validationResults.warnings
         }
       }
     });
 
-    // TODO: Send notifications to target team owners
-    // This would integrate with a notification service
+    // Send notifications to target team owners
+    const notificationPromises = targetTeams.map(async (team) => {
+      try {
+        await prisma.notification.create({
+          data: {
+            userId: team.ownerId,
+            type: 'TRADE_PROPOSAL',
+            title: 'New Trade Proposal',
+            content: `You have received a trade proposal from ${user.name || 'another manager'}`,
+            metadata: {
+              tradeId: trade.id,
+              proposerName: user.name,
+              leagueId: body.leagueId,
+              itemCount: body.tradeItems.length
+            }
+          }
+        });
+      } catch (error) {
+        console.error(`Failed to notify team owner ${team.ownerId}:`, error);
+      }
+    });
+
+    // Execute all notifications (non-blocking)
+    await Promise.allSettled(notificationPromises);
 
     const response: ApiResponse<Trade> = {
       success: true,
@@ -226,160 +254,4 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function validateTradeItems(tradeItems: any[], leagueId: string, proposerTeamId: string) {
-  try {
-    // Check that proposer owns all players they're trading away
-    const proposerItems = tradeItems.filter(item => item.fromTeamId === proposerTeamId && item.playerId);
-    
-    if (proposerItems.length > 0) {
-      const proposerPlayerIds = proposerItems.map(item => item.playerId);
-      const ownedPlayers = await prisma.rosterPlayer.findMany({
-        where: {
-          teamId: proposerTeamId,
-          playerId: { in: proposerPlayerIds }
-        }
-      });
-
-      if (ownedPlayers.length !== proposerPlayerIds.length) {
-        return { isValid: false, error: 'You can only trade players you own' };
-      }
-    }
-
-    // Validate all players exist and are not injured reserve (if that's a league rule)
-    const allPlayerIds = tradeItems
-      .filter(item => item.playerId)
-      .map(item => item.playerId);
-
-    if (allPlayerIds.length > 0) {
-      const players = await prisma.player.findMany({
-        where: { id: { in: allPlayerIds } },
-        select: { id: true, status: true, position: true }
-      });
-
-      if (players.length !== allPlayerIds.length) {
-        return { isValid: false, error: 'One or more players not found' };
-      }
-
-      // Check for suspended or retired players
-      const invalidPlayers = players.filter(p => 
-        p.status === 'SUSPENDED' || p.status === 'RETIRED'
-      );
-
-      if (invalidPlayers.length > 0) {
-        return { isValid: false, error: 'Cannot trade suspended or retired players' };
-      }
-    }
-
-    // Validate team ownership of all items
-    for (const item of tradeItems) {
-      const team = await prisma.team.findFirst({
-        where: {
-          id: item.fromTeamId,
-          leagueId
-        }
-      });
-
-      if (!team) {
-        return { isValid: false, error: `Team ${item.fromTeamId} not found in league` };
-      }
-
-      // If trading a player, verify ownership
-      if (item.playerId) {
-        const rosterPlayer = await prisma.rosterPlayer.findFirst({
-          where: {
-            teamId: item.fromTeamId,
-            playerId: item.playerId
-          }
-        });
-
-        if (!rosterPlayer) {
-          return { isValid: false, error: `Player not owned by team ${item.fromTeamId}` };
-        }
-      }
-    }
-
-    return { isValid: true };
-  } catch (error) {
-    handleComponentError(error as Error, 'route');
-    return { isValid: false, error: 'Validation error occurred' };
-  }
-}
-
-async function validateRosterLimits(tradeItems: any[], leagueId: string) {
-  try {
-    // Get league roster requirements
-    const settings = await prisma.settings.findUnique({
-      where: { leagueId },
-      select: { rosterSlots: true }
-    });
-
-    if (!settings) {
-      return { isValid: false, error: 'League settings not found' };
-    }
-
-    const rosterSlots = settings.rosterSlots as any;
-    const maxRosterSize = Object.values(rosterSlots).reduce((sum: number, count: any) => sum + count, 0);
-
-    // Group items by team
-    const teamItems = new Map<string, { adding: string[], removing: string[] }>();
-
-    for (const item of tradeItems) {
-      if (!item.playerId) continue; // Skip non-player items
-
-      // Initialize team entries
-      if (!teamItems.has(item.fromTeamId)) {
-        teamItems.set(item.fromTeamId, { adding: [], removing: [] });
-      }
-      if (!teamItems.has(item.toTeamId)) {
-        teamItems.set(item.toTeamId, { adding: [], removing: [] });
-      }
-
-      // Add to removing for fromTeam and adding for toTeam
-      teamItems.get(item.fromTeamId)!.removing.push(item.playerId);
-      teamItems.get(item.toTeamId)!.adding.push(item.playerId);
-    }
-
-    // Validate each team's roster size after trade
-    for (const [teamId, changes] of teamItems) {
-      const currentRosterCount = await prisma.rosterPlayer.count({
-        where: { teamId }
-      });
-
-      const netChange = changes.adding.length - changes.removing.length;
-      const newRosterSize = currentRosterCount + netChange;
-
-      if (newRosterSize > maxRosterSize) {
-        const team = await prisma.team.findUnique({
-          where: { id: teamId },
-          select: { name: true }
-        });
-        return { 
-          isValid: false, 
-          error: `Trade would exceed roster limit for ${team?.name}. Max: ${maxRosterSize}, After trade: ${newRosterSize}` 
-        };
-      }
-
-      // Ensure minimum roster size (e.g., at least starting lineup)
-      const minStarterSlots = (rosterSlots.QB || 0) + (rosterSlots.RB || 0) + 
-                             (rosterSlots.WR || 0) + (rosterSlots.TE || 0) + 
-                             (rosterSlots.FLEX || 0) + (rosterSlots.K || 0) + 
-                             (rosterSlots.DST || 0);
-
-      if (newRosterSize < minStarterSlots) {
-        const team = await prisma.team.findUnique({
-          where: { id: teamId },
-          select: { name: true }
-        });
-        return { 
-          isValid: false, 
-          error: `Trade would leave ${team?.name} with insufficient players to field a starting lineup` 
-        };
-      }
-    }
-
-    return { isValid: true };
-  } catch (error) {
-    handleComponentError(error as Error, 'route');
-    return { isValid: false, error: 'Roster validation error occurred' };
-  }
-}
+// Validation functions moved to /lib/trade-validation.ts for reusability

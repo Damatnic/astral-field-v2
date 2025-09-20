@@ -124,21 +124,21 @@ export default function TeamsPage() {
           </div>
           <div className="flex items-center gap-2">
             <Button
-              variant={sortBy === 'rank' ? 'default' : 'outline'}
+              variant={sortBy === 'rank' ? 'secondary' : 'outline'}
               size="sm"
               onClick={() => setSortBy('rank')}
             >
               By Rank
             </Button>
             <Button
-              variant={sortBy === 'points' ? 'default' : 'outline'}
+              variant={sortBy === 'points' ? 'secondary' : 'outline'}
               size="sm"
               onClick={() => setSortBy('points')}
             >
               By Points
             </Button>
             <Button
-              variant={sortBy === 'record' ? 'default' : 'outline'}
+              variant={sortBy === 'record' ? 'secondary' : 'outline'}
               size="sm"
               onClick={() => setSortBy('record')}
             >

@@ -312,7 +312,7 @@ export default function AnalyticsPage() {
             ].map((tab) => (
               <Button
                 key={tab.id}
-                variant={selectedView === tab.id ? 'default' : 'ghost'}
+                variant={selectedView === tab.id ? 'secondary' : 'ghost'}
                 size="sm"
                 onClick={() => setSelectedView(tab.id as any)}
                 className="flex items-center gap-2"
@@ -385,8 +385,8 @@ export default function AnalyticsPage() {
                     <Flame className="h-6 w-6 text-yellow-600" />
                     <h3 className="font-bold text-yellow-800">Highest Weekly Score</h3>
                   </div>
-                  <p className="text-2xl font-bold text-yellow-900">{leagueStats.highestWeeklyScore.score}</p>
-                  <p className="text-sm text-yellow-700">{leagueStats.highestWeeklyScore.team} • Week {leagueStats.highestWeeklyScore.week}</p>
+                  <p className="text-2xl font-bold text-yellow-900">{leagueStats?.highestWeeklyScore.score}</p>
+                  <p className="text-sm text-yellow-700">{leagueStats?.highestWeeklyScore.team} • Week {leagueStats?.highestWeeklyScore.week}</p>
                 </CardContent>
               </Card>
 
@@ -396,7 +396,7 @@ export default function AnalyticsPage() {
                     <Shield className="h-6 w-6 text-green-600" />
                     <h3 className="font-bold text-green-800">Most Consistent</h3>
                   </div>
-                  <p className="text-lg font-bold text-green-900">{leagueStats.mostConsistent}</p>
+                  <p className="text-lg font-bold text-green-900">{leagueStats?.mostConsistent}</p>
                   <p className="text-sm text-green-700">Lowest score variance</p>
                 </CardContent>
               </Card>
@@ -407,7 +407,7 @@ export default function AnalyticsPage() {
                     <Zap className="h-6 w-6 text-red-600" />
                     <h3 className="font-bold text-red-800">Most Volatile</h3>
                   </div>
-                  <p className="text-lg font-bold text-red-900">{leagueStats.mostVolatile}</p>
+                  <p className="text-lg font-bold text-red-900">{leagueStats?.mostVolatile}</p>
                   <p className="text-sm text-red-700">Highest score variance</p>
                 </CardContent>
               </Card>
@@ -552,7 +552,7 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-center">
-                  <div className="text-4xl font-bold text-green-600 mb-2">{leagueStats.tradeCount}</div>
+                  <div className="text-4xl font-bold text-green-600 mb-2">{leagueStats?.tradeCount}</div>
                   <p className="text-gray-600">Total Trades This Season</p>
                   <div className="mt-4 text-sm text-gray-500">
                     <p>League Average: 2.4 trades per team</p>
@@ -571,7 +571,7 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-center">
-                  <div className="text-4xl font-bold text-blue-600 mb-2">{leagueStats.waiversClaimed}</div>
+                  <div className="text-4xl font-bold text-blue-600 mb-2">{leagueStats?.waiversClaimed}</div>
                   <p className="text-gray-600">Waiver Claims</p>
                   <div className="mt-4 text-sm text-gray-500">
                     <p>Average: 18.6 per team</p>

@@ -201,8 +201,8 @@ export async function POST(request: NextRequest) {
         leagueId: targetLeagueId,
         userId: session.userId,
         content: content.trim(),
-        type: messageType === 'trade_alert' ? 'TRADE' : 
-              messageType === 'system' ? 'SYSTEM' : 'GENERAL',
+        type: messageType === 'trade_alert' ? 'TRADE_PROPOSAL' : 
+              messageType === 'system' ? 'ANNOUNCEMENT' : 'GENERAL',
         metadata: {
           channel,
           teamId: team?.id,
@@ -474,13 +474,13 @@ async function createMentionNotifications(
     .filter(user => user.id !== senderId) // Don't notify self
     .map(user => ({
       userId: user.id,
-      leagueId,
-      type: 'MENTION' as const,
+      type: 'NEWS_UPDATE' as const,
       title: 'You were mentioned in chat',
-      message: `You were mentioned in a chat message`,
+      content: `You were mentioned in a chat message`,
       metadata: {
         messageId,
-        senderId
+        senderId,
+        leagueId
       }
     }));
   

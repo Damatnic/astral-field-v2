@@ -172,7 +172,7 @@ class DraftWebSocketServer {
       id: draftId,
       status: 'active',
       currentRound: 1,
-      currentPick: 1,
+      currentPickNumber: 1,
       timeRemaining: 90,
       picks: [],
       currentPick: {

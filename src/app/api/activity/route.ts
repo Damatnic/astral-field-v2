@@ -125,7 +125,7 @@ export async function GET(request: NextRequest) {
             playerName: waiver.player.name,
             dropPlayerId: waiver.dropPlayerId,
             dropPlayerName: null, // Would need separate query for dropPlayer name
-            bidAmount: waiver.bidAmount
+            bidAmount: waiver.faabBid
           }
         });
       });
@@ -329,8 +329,8 @@ function getWaiverDescription(waiver: any): string {
   const player = waiver.player.name;
   
   if (waiver.dropPlayerId) {
-    return `${team} claimed ${player} and dropped a player${waiver.bidAmount > 0 ? ` ($${waiver.bidAmount} FAAB)` : ''}`;
+    return `${team} claimed ${player} and dropped a player${waiver.faabBid && waiver.faabBid > 0 ? ` ($${waiver.faabBid} FAAB)` : ''}`;
   }
   
-  return `${team} claimed ${player}${waiver.bidAmount > 0 ? ` ($${waiver.bidAmount} FAAB)` : ''}`;
+  return `${team} claimed ${player}${waiver.faabBid && waiver.faabBid > 0 ? ` ($${waiver.faabBid} FAAB)` : ''}`;
 }

@@ -72,12 +72,11 @@ export async function POST(request: NextRequest) {
       },
       include: {
         team: true,
-        player: true,
-        dropPlayer: true
+        player: true
       },
       orderBy: usesFAAB 
         ? [
-            { bidAmount: 'desc' },
+            { faabBid: 'desc' },
             { priority: 'asc' },
             { createdAt: 'asc' }
           ]
@@ -131,8 +130,8 @@ export async function POST(request: NextRequest) {
         }
         
         // Check FAAB budget if applicable
-        if (usesFAAB) {
-          const hasEnoughFAAB = await checkFAABBudget(claim.teamId, claim.bidAmount);
+        if (usesFAAB && claim.faabBid) {
+          const hasEnoughFAAB = await checkFAABBudget(claim.teamId, claim.faabBid);
           if (!hasEnoughFAAB) {
             await markClaimFailed(claim.id, 'Insufficient FAAB budget');
             failedClaims.push(claim);
@@ -143,14 +142,72 @@ export async function POST(request: NextRequest) {
         // Process the claim
         try {
           await prisma.$transaction(async (tx) => {
-            // Drop player if specified
+            // Verify roster space and constraints before processing
+            const currentRoster = await tx.rosterPlayer.findMany({
+              where: { teamId: claim.teamId },
+              include: { player: true }
+            });
+            
+            const maxRosterSize = 16; // Could be from settings
+            const wouldExceedRoster = !claim.dropPlayerId && currentRoster.length >= maxRosterSize;
+            
+            if (wouldExceedRoster) {
+              throw new Error(`Roster would exceed maximum size (${maxRosterSize})`);
+            }
+            
+            // Handle drop player with comprehensive validation
             if (claim.dropPlayerId) {
+              const dropPlayerEntry = await tx.rosterPlayer.findFirst({
+                where: {
+                  teamId: claim.teamId,
+                  playerId: claim.dropPlayerId
+                },
+                include: { player: true }
+              });
+              
+              if (!dropPlayerEntry) {
+                throw new Error('Drop player not found on roster');
+              }
+              
+              if (dropPlayerEntry.isLocked) {
+                throw new Error('Cannot drop locked player');
+              }
+              
+              // Remove player from roster
               await tx.rosterPlayer.deleteMany({
                 where: {
                   teamId: claim.teamId,
                   playerId: claim.dropPlayerId
                 }
               });
+              
+              // Create transaction record for dropped player
+              await tx.transaction.create({
+                data: {
+                  leagueId,
+                  teamId: claim.teamId,
+                  playerId: claim.dropPlayerId,
+                  type: 'DROP',
+                  metadata: {
+                    viaWaiver: true,
+                    claimId: claim.id,
+                    playerName: dropPlayerEntry.player.name,
+                    week: currentWeek
+                  }
+                }
+              });
+            }
+            
+            // Verify the claimed player is still available
+            const existingRosterEntry = await tx.rosterPlayer.findFirst({
+              where: {
+                playerId: claim.playerId,
+                team: { leagueId }
+              }
+            });
+            
+            if (existingRosterEntry) {
+              throw new Error('Player is already rostered by another team');
             }
             
             // Add new player to roster
@@ -158,19 +215,53 @@ export async function POST(request: NextRequest) {
               data: {
                 teamId: claim.teamId,
                 playerId: claim.playerId,
+                rosterSlot: 'BENCH',
                 position: 'BENCH',
                 acquisitionDate: new Date(),
-                acquisitionType: 'WAIVER'
+                acquisitionType: 'WAIVER',
+                week: currentWeek
               }
             });
             
-            // Update FAAB if applicable
-            if (usesFAAB && claim.bidAmount > 0) {
+            // Create transaction record for added player
+            await tx.transaction.create({
+              data: {
+                leagueId,
+                teamId: claim.teamId,
+                playerId: claim.playerId,
+                type: 'ADD',
+                metadata: {
+                  viaWaiver: true,
+                  claimId: claim.id,
+                  playerName: claim.player.name,
+                  faabBid: claim.faabBid,
+                  week: currentWeek
+                }
+              }
+            });
+            
+            // Update FAAB if applicable with validation
+            if (usesFAAB && claim.faabBid && claim.faabBid > 0) {
+              // Double-check FAAB budget before spending
+              const teamData = await tx.team.findUnique({
+                where: { id: claim.teamId },
+                select: { faabBudget: true, faabSpent: true }
+              });
+              
+              if (!teamData) {
+                throw new Error('Team not found');
+              }
+              
+              const availableFAAB = teamData.faabBudget - teamData.faabSpent;
+              if (claim.faabBid > availableFAAB) {
+                throw new Error(`Insufficient FAAB: bid $${claim.faabBid}, available $${availableFAAB}`);
+              }
+              
               await tx.team.update({
                 where: { id: claim.teamId },
                 data: {
                   faabSpent: {
-                    increment: claim.bidAmount
+                    increment: claim.faabBid
                   }
                 }
               });
@@ -180,8 +271,9 @@ export async function POST(request: NextRequest) {
             await tx.waiverClaim.update({
               where: { id: claim.id },
               data: {
-                status: 'PROCESSED',
-                processedAt: new Date()
+                status: 'SUCCESSFUL',
+                processedAt: new Date(),
+                successful: true
               }
             });
             
@@ -196,8 +288,27 @@ export async function POST(request: NextRequest) {
                 after: {
                   player: claim.player.name,
                   team: claim.team.name,
-                  bid: claim.bidAmount,
-                  dropped: claim.dropPlayer?.name
+                  bid: claim.faabBid,
+                  dropped: claim.dropPlayerId ? 'Player dropped' : null
+                }
+              }
+            });
+            
+            // Create success notification
+            await tx.notification.create({
+              data: {
+                userId: claim.team.ownerId,
+                type: 'WAIVER_PROCESSED',
+                title: 'Waiver Claim Successful',
+                content: `You successfully claimed ${claim.player.name} ${claim.faabBid ? `for $${claim.faabBid}` : ''}${claim.dropPlayerId ? ' (player dropped)' : ''}.`,
+                metadata: {
+                  leagueId,
+                  playerId: claim.playerId,
+                  playerName: claim.player.name,
+                  teamId: claim.teamId,
+                  teamName: claim.team.name,
+                  bidAmount: claim.faabBid,
+                  successful: true
                 }
               }
             });
@@ -238,7 +349,7 @@ export async function POST(request: NextRequest) {
         successful: processedClaims.map(c => ({
           team: c.team.name,
           player: c.player.name,
-          bid: c.bidAmount
+          bid: c.faabBid
         })),
         failed: failedClaims.map(c => ({
           team: c.team.name,
@@ -286,12 +397,47 @@ async function checkFAABBudget(teamId: string, bidAmount: number): Promise<boole
 }
 
 async function markClaimFailed(claimId: string, reason: string) {
-  await prisma.waiverClaim.update({
+  const claim = await prisma.waiverClaim.findUnique({
     where: { id: claimId },
-    data: {
-      status: 'FAILED',
-      processedAt: new Date()
+    include: {
+      team: true,
+      player: true
     }
+  });
+  
+  if (!claim) return;
+  
+  await prisma.$transaction(async (tx) => {
+    // Update claim status
+    await tx.waiverClaim.update({
+      where: { id: claimId },
+      data: {
+        status: 'FAILED',
+        processedAt: new Date(),
+        successful: false,
+        failureReason: reason
+      }
+    });
+    
+    // Create failure notification
+    await tx.notification.create({
+      data: {
+        userId: claim.team.ownerId,
+        type: 'WAIVER_PROCESSED',
+        title: 'Waiver Claim Failed',
+        content: `Your waiver claim for ${claim.player.name} failed: ${reason}`,
+        metadata: {
+          leagueId: claim.leagueId,
+          playerId: claim.playerId,
+          playerName: claim.player.name,
+          teamId: claim.teamId,
+          teamName: claim.team.name,
+          bidAmount: claim.faabBid,
+          successful: false,
+          failureReason: reason
+        }
+      }
+    });
   });
 }
 

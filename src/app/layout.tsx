@@ -1,16 +1,11 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
 import './globals.css';
 import AuthProvider from '@/components/AuthProvider';
 import { ResponsiveNavigation, SafeAreaProvider } from '@/components/mobile/ResponsiveUtils';
 import { ToastProvider } from '@/components/ui/Toast';
 
-// Font configuration
-const inter = Inter({ 
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-inter'
-});
+// Local font configuration (no Google Fonts dependency for faster builds)
+const fontClass = 'font-sans';
 
 // Metadata configuration
 export const metadata: Metadata = {
@@ -106,11 +101,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${inter.variable} h-full`} suppressHydrationWarning>
+    <html lang="en" className={`${fontClass} h-full`} suppressHydrationWarning>
       <head>
         {/* Preconnect to external domains for performance */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         
         {/* Favicon and app icons */}
         <link rel="icon" href="/favicon.ico" sizes="any" />
@@ -122,7 +115,7 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="//api.astralfield.com" />
       </head>
       <body 
-        className={`${inter.className} h-full bg-gray-50 text-gray-900 antialiased`}
+        className={`${fontClass} h-full bg-gray-50 text-gray-900 antialiased`}
         suppressHydrationWarning
       >
         {/* Skip to main content link for accessibility */}
@@ -151,81 +144,102 @@ export default function RootLayout({
             </ToastProvider>
           </SafeAreaProvider>
 
-          {/* Footer */}
+          {/* Mobile-Responsive Footer */}
           <footer className="bg-white border-t border-gray-200 mt-auto">
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-                {/* Company info */}
-                <div className="col-span-1 md:col-span-2">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
+                {/* Company info - Full width on mobile, spans 2 cols on desktop */}
+                <div className="col-span-1 sm:col-span-2">
                   <div className="flex items-center space-x-2 mb-4">
                     <div className="h-8 w-8 bg-primary-600 rounded-lg flex items-center justify-center">
                       <span className="text-white font-bold text-sm">AF</span>
                     </div>
-                    <span className="text-xl font-bold text-gray-900">AstralField</span>
+                    <span className="text-lg sm:text-xl font-bold text-gray-900">AstralField</span>
                   </div>
-                  <p className="text-sm text-gray-600 max-w-md">
+                  <p className="text-sm text-gray-600 max-w-md mb-4">
                     The ultimate fantasy football platform with AI-powered insights, 
                     advanced analytics, and immersive league management.
                   </p>
-                  <div className="mt-4">
+                  <div className="flex flex-wrap gap-4 mb-4 sm:hidden">
+                    {/* Mobile-only social links */}
+                    <a href="/help" className="text-sm text-gray-600 hover:text-gray-900 font-medium">
+                      Help
+                    </a>
+                    <a href="/contact" className="text-sm text-gray-600 hover:text-gray-900 font-medium">
+                      Contact
+                    </a>
+                    <a href="/features" className="text-sm text-gray-600 hover:text-gray-900 font-medium">
+                      Features
+                    </a>
+                  </div>
+                  <div>
                     <p className="text-xs text-gray-500">
                       © 2024 AstralField. All rights reserved.
                     </p>
                   </div>
                 </div>
                 
-                {/* Quick links */}
-                <div>
+                {/* Quick links - Hidden on mobile, shown on larger screens */}
+                <div className="hidden sm:block">
                   <h3 className="text-sm font-semibold text-gray-900 mb-3">Platform</h3>
                   <ul className="space-y-2">
                     <li>
-                      <a href="/features" className="text-sm text-gray-600 hover:text-gray-900">
+                      <a href="/features" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
                         Features
                       </a>
                     </li>
                     <li>
-                      <a href="/pricing" className="text-sm text-gray-600 hover:text-gray-900">
+                      <a href="/pricing" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
                         Pricing
                       </a>
                     </li>
                     <li>
-                      <a href="/api" className="text-sm text-gray-600 hover:text-gray-900">
+                      <a href="/api" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
                         API
                       </a>
                     </li>
                     <li>
-                      <a href="/docs" className="text-sm text-gray-600 hover:text-gray-900">
+                      <a href="/docs" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
                         Documentation
                       </a>
                     </li>
                   </ul>
                 </div>
                 
-                {/* Support links */}
-                <div>
+                {/* Support links - Hidden on mobile, shown on larger screens */}
+                <div className="hidden sm:block">
                   <h3 className="text-sm font-semibold text-gray-900 mb-3">Support</h3>
                   <ul className="space-y-2">
                     <li>
-                      <a href="/help" className="text-sm text-gray-600 hover:text-gray-900">
+                      <a href="/help" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
                         Help Center
                       </a>
                     </li>
                     <li>
-                      <a href="/contact" className="text-sm text-gray-600 hover:text-gray-900">
+                      <a href="/contact" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
                         Contact
                       </a>
                     </li>
                     <li>
-                      <a href="/privacy" className="text-sm text-gray-600 hover:text-gray-900">
+                      <a href="/privacy" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
                         Privacy Policy
                       </a>
                     </li>
                     <li>
-                      <a href="/terms" className="text-sm text-gray-600 hover:text-gray-900">
+                      <a href="/terms" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
                         Terms of Service
                       </a>
                     </li>
                   </ul>
+                </div>
+              </div>
+              
+              {/* Mobile bottom border for visual separation */}
+              <div className="mt-6 pt-4 border-t border-gray-100 sm:hidden">
+                <div className="flex justify-center space-x-6 text-xs text-gray-500">
+                  <a href="/privacy" className="hover:text-gray-700">Privacy</a>
+                  <a href="/terms" className="hover:text-gray-700">Terms</a>
+                  <a href="/api" className="hover:text-gray-700">API</a>
                 </div>
               </div>
             </div>

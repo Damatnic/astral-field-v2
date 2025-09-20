@@ -52,8 +52,7 @@ export interface AuthResult {
   error?: string;
 }
 
-// Password for all users (in production, use hashed passwords)
-const DEFAULT_PASSWORD = 'player123!';
+// No default passwords - all users must have hashed passwords in database
 
 // Database-based session storage for production
 
@@ -163,22 +162,19 @@ export async function login(credentials: LoginCredentials): Promise<AuthResult> 
     
     // Verify password using bcrypt
     if (!dbUser.password) {
-      // Fallback: if no hashed password exists, check against default
-      if (password !== DEFAULT_PASSWORD) {
-        return { 
-          success: false, 
-          error: 'Invalid email or password' 
-        };
-      }
-    } else {
-      // Use bcrypt to verify hashed password
-      const isValidPassword = await bcrypt.compare(password, dbUser.password);
-      if (!isValidPassword) {
-        return { 
-          success: false, 
-          error: 'Invalid email or password' 
-        };
-      }
+      return { 
+        success: false, 
+        error: 'Password not set for this account. Please contact your administrator.' 
+      };
+    }
+    
+    // Use bcrypt to verify hashed password
+    const isValidPassword = await bcrypt.compare(password, dbUser.password);
+    if (!isValidPassword) {
+      return { 
+        success: false, 
+        error: 'Invalid email or password' 
+      };
     }
     
     // Create session
