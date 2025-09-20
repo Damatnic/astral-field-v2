@@ -1,39 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server';
-// Use simplified auth when database is not available
-import { logout as logoutSimple } from '@/lib/auth-simple';
-import { handleComponentError } from '@/lib/error-handling';
-import { logout as logoutFull } from '@/lib/auth';
+import { prisma } from '@/lib/db';
+import { cookies } from 'next/headers';
 
-const useSimpleAuth = process.env.NODE_ENV === 'production' || !process.env.DATABASE_URL;
-const logout = useSimpleAuth ? logoutSimple : logoutFull;
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
 
-export async function POST() {
+// POST /api/auth/logout - Logout user
+export async function POST(request: NextRequest) {
   try {
-    // Use our auth.ts logout function
-    await logout();
-
-    return NextResponse.json({
+    // Get session from cookies
+    const cookieStore = cookies();
+    const sessionId = cookieStore.get('session')?.value;
+    
+    if (sessionId) {
+      // Delete session from database
+      await prisma.userSession.delete({
+        where: { sessionId }
+      }).catch(() => {
+        // Session might not exist, that's okay
+      });
+    }
+    
+    // Clear session cookie
+    const response = NextResponse.json({
       success: true,
       message: 'Logged out successfully'
     });
-
+    
+    response.cookies.delete('session');
+    
+    return response;
+    
   } catch (error) {
-    // handleComponentError(error as Error, 'route');
+    console.error('Logout error:', error);
     return NextResponse.json(
-      { success: false, error: 'Internal server error' },
+      { error: 'Failed to logout' },
       { status: 500 }
     );
   }
-}
-
-// Handle OPTIONS for CORS
-export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 200,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
-    },
-  });
 }

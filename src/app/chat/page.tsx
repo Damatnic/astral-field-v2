@@ -52,6 +52,7 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [channelStats, setChannelStats] = useState<Record<string, number>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const channels: Channel[] = [
@@ -61,7 +62,7 @@ export default function ChatPage() {
       description: 'League-wide discussions',
       icon: Hash,
       color: 'text-gray-600',
-      messageCount: 247
+      messageCount: channelStats.general || 0
     },
     {
       id: 'trades',
@@ -69,7 +70,7 @@ export default function ChatPage() {
       description: 'Trade discussions and proposals',
       icon: DollarSign,
       color: 'text-green-600',
-      messageCount: 89
+      messageCount: channelStats.trades || 0
     },
     {
       id: 'trash-talk',
@@ -77,7 +78,7 @@ export default function ChatPage() {
       description: 'Friendly competitive banter',
       icon: Trophy,
       color: 'text-yellow-600',
-      messageCount: 156
+      messageCount: channelStats['trash-talk'] || 0
     },
     {
       id: 'commissioner',
@@ -85,145 +86,90 @@ export default function ChatPage() {
       description: 'Commissioner updates',
       icon: Crown,
       color: 'text-purple-600',
-      messageCount: 23
+      messageCount: channelStats.commissioner || 0
     }
   ];
 
-  // Mock messages for the D'Amato Dynasty League
-  const mockMessages: Message[] = [
-    {
-      id: '1',
-      content: 'Week 15 playoffs are here! Good luck everyone! 🏆',
-      author: {
-        id: '10',
-        name: 'Nicholas D Amato',
-        avatar: 'ND',
-        role: 'COMMISSIONER',
-        teamName: 'D Amato Dynasty'
-      },
-      timestamp: new Date(Date.now() - 1000 * 60 * 30),
-      channel: 'general',
-      type: 'message'
-    },
-    {
-      id: '2',
-      content: 'Anyone interested in trading a RB? I need depth for playoffs',
-      author: {
-        id: '2',
-        name: 'Jack McCaigue',
-        avatar: 'JM',
-        role: 'PLAYER',
-        teamName: 'McCaigue Mayhem'
-      },
-      timestamp: new Date(Date.now() - 1000 * 60 * 25),
-      channel: 'trades',
-      type: 'message'
-    },
-    {
-      id: '3',
-      content: 'Larry team is absolutely stacked this year. Championship bound! 🚀',
-      author: {
-        id: '4',
-        name: 'Renee McCaigue',
-        avatar: 'RM',
-        role: 'PLAYER',
-        teamName: 'Renee Reign'
-      },
-      timestamp: new Date(Date.now() - 1000 * 60 * 20),
-      channel: 'general',
-      type: 'message'
-    },
-    {
-      id: '4',
-      content: 'Thanks! Been working the waiver wire all season. Dynasty mindset! 💪',
-      author: {
-        id: '3',
-        name: 'Larry McCaigue',
-        avatar: 'LM',
-        role: 'PLAYER',
-        teamName: 'Larry Legends'
-      },
-      timestamp: new Date(Date.now() - 1000 * 60 * 18),
-      channel: 'general',
-      type: 'message'
-    },
-    {
-      id: '5',
-      content: 'Setting lineups for Week 16 semifinals. May the best teams win!',
-      author: {
-        id: '10',
-        name: 'Nicholas D Amato',
-        avatar: 'ND',
-        role: 'COMMISSIONER',
-        teamName: 'D Amato Dynasty'
-      },
-      timestamp: new Date(Date.now() - 1000 * 60 * 15),
-      channel: 'commissioner',
-      type: 'message'
-    },
-    {
-      id: '6',
-      content: 'My team is ready to upset some higher seeds! Watch out! 😤',
-      author: {
-        id: '6',
-        name: 'Jon Kornbeck',
-        avatar: 'JK',
-        role: 'PLAYER',
-        teamName: 'Kornbeck Crushers'
-      },
-      timestamp: new Date(Date.now() - 1000 * 60 * 10),
-      channel: 'trash-talk',
-      type: 'message'
-    },
-    {
-      id: '7',
-      content: 'Still can\'t believe I made playoffs with this roster 😅',
-      author: {
-        id: '9',
-        name: 'Cason Minor',
-        avatar: 'CM',
-        role: 'PLAYER',
-        teamName: 'Minor Miracles'
-      },
-      timestamp: new Date(Date.now() - 1000 * 60 * 5),
-      channel: 'general',
-      type: 'message'
+  // Fetch messages from API
+  const fetchMessages = async (channel: string) => {
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/chat?channel=${channel}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setMessages(data.data.messages.map((msg: any) => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp)
+        })));
+        setChannelStats(data.data.channelStats || {});
+      }
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+      setMessages([]);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
   useEffect(() => {
-    // Simulate loading messages
-    setTimeout(() => {
-      setMessages(mockMessages.filter(msg => msg.channel === selectedChannel));
-      setLoading(false);
-    }, 500);
-  }, [selectedChannel]);
+    if (user) {
+      fetchMessages(selectedChannel);
+    }
+  }, [selectedChannel, user]);
 
   useEffect(() => {
     // Scroll to bottom when new messages arrive
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const sendMessage = () => {
+  // Poll for new messages every 5 seconds
+  useEffect(() => {
+    if (!user) return;
+    
+    const interval = setInterval(() => {
+      fetchMessages(selectedChannel);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [selectedChannel, user]);
+
+  const sendMessage = async () => {
     if (!newMessage.trim() || !user) return;
 
-    const message: Message = {
-      id: Date.now().toString(),
-      content: newMessage,
-      author: {
-        id: user.id,
-        name: user.name || 'Unknown User',
-        avatar: user.name?.split(' ').map(n => n[0]).join('') || 'U',
-        role: user.role === 'COMMISSIONER' ? 'COMMISSIONER' : 'PLAYER',
-        teamName: 'Your Team' // This would come from user context
-      },
-      timestamp: new Date(),
-      channel: selectedChannel,
-      type: 'message'
-    };
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          content: newMessage,
+          channel: selectedChannel
+        })
+      });
 
-    setMessages(prev => [...prev, message]);
-    setNewMessage('');
+      const data = await response.json();
+      
+      if (data.success) {
+        // Add the new message to the list
+        setMessages(prev => [...prev, {
+          ...data.message,
+          timestamp: new Date(data.message.timestamp)
+        }]);
+        setNewMessage('');
+        
+        // Update channel stats
+        setChannelStats(prev => ({
+          ...prev,
+          [selectedChannel]: (prev[selectedChannel] || 0) + 1
+        }));
+      } else {
+        console.error('Failed to send message:', data.error);
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {

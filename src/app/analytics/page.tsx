@@ -54,9 +54,43 @@ interface LeagueStats {
 export default function AnalyticsPage() {
   const [selectedView, setSelectedView] = useState<'overview' | 'power' | 'trends' | 'trades'>('overview');
   const [loading, setLoading] = useState(true);
+  const [teamStats, setTeamStats] = useState<TeamStats[]>([]);
+  const [leagueStats, setLeagueStats] = useState<LeagueStats | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  // Mock data for D'Amato Dynasty League
-  const teamStats: TeamStats[] = [
+  // Fetch real data on mount
+  useEffect(() => {
+    fetchAnalytics();
+  }, []);
+
+  const fetchAnalytics = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/analytics');
+      const data = await response.json();
+      
+      if (data.success) {
+        setTeamStats(data.data.teamStats);
+        setLeagueStats(data.data.leagueStats);
+      } else {
+        setError(data.error || 'Failed to load analytics');
+        // Use mock data as fallback
+        setTeamStats(mockTeamStats);
+        setLeagueStats(mockLeagueStats);
+      }
+    } catch (err) {
+      setError('Failed to load analytics data');
+      console.error('Analytics fetch error:', err);
+      // Use mock data as fallback
+      setTeamStats(mockTeamStats);
+      setLeagueStats(mockLeagueStats);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Mock data for D'Amato Dynasty League (fallback)
+  const mockTeamStats: TeamStats[] = [
     {
       id: '1',
       name: "D'Amato Dynasty",
@@ -209,7 +243,7 @@ export default function AnalyticsPage() {
     }
   ];
 
-  const leagueStats: LeagueStats = {
+  const mockLeagueStats: LeagueStats = {
     totalPoints: 14585.3,
     avgWeeklyScore: 109.7,
     highestWeeklyScore: { score: 167.3, team: "Larry's Legends", week: 14 },
@@ -220,10 +254,9 @@ export default function AnalyticsPage() {
     waiversClaimed: 186
   };
 
-  useEffect(() => {
-    // Simulate loading
-    setTimeout(() => setLoading(false), 800);
-  }, []);
+  // Use real data or fallback to mock
+  const displayTeamStats = teamStats.length > 0 ? teamStats : mockTeamStats;
+  const displayLeagueStats = leagueStats || mockLeagueStats;
 
   const getTrendIcon = (trend: string) => {
     switch (trend) {
@@ -300,7 +333,7 @@ export default function AnalyticsPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-gray-600">Total Points</p>
-                      <p className="text-2xl font-bold">{leagueStats.totalPoints.toLocaleString()}</p>
+                      <p className="text-2xl font-bold">{displayLeagueStats.totalPoints.toLocaleString()}</p>
                     </div>
                     <Calculator className="h-8 w-8 text-blue-500" />
                   </div>
@@ -312,7 +345,7 @@ export default function AnalyticsPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-gray-600">Avg Weekly Score</p>
-                      <p className="text-2xl font-bold">{leagueStats.avgWeeklyScore}</p>
+                      <p className="text-2xl font-bold">{displayLeagueStats.avgWeeklyScore}</p>
                     </div>
                     <Target className="h-8 w-8 text-green-500" />
                   </div>
@@ -324,7 +357,7 @@ export default function AnalyticsPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-gray-600">Total Trades</p>
-                      <p className="text-2xl font-bold">{leagueStats.tradeCount}</p>
+                      <p className="text-2xl font-bold">{displayLeagueStats.tradeCount}</p>
                     </div>
                     <DollarSign className="h-8 w-8 text-purple-500" />
                   </div>
@@ -336,7 +369,7 @@ export default function AnalyticsPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-gray-600">Waiver Claims</p>
-                      <p className="text-2xl font-bold">{leagueStats.waiversClaimed}</p>
+                      <p className="text-2xl font-bold">{displayLeagueStats.waiversClaimed}</p>
                     </div>
                     <Users className="h-8 w-8 text-orange-500" />
                   </div>
@@ -392,7 +425,7 @@ export default function AnalyticsPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {teamStats
+                {displayTeamStats
                   .sort((a, b) => a.powerRanking - b.powerRanking)
                   .map((team, index) => (
                     <div key={team.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
@@ -453,7 +486,7 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {teamStats
+                  {displayTeamStats
                     .sort((a, b) => b.pointsFor - a.pointsFor)
                     .slice(0, 5)
                     .map((team, index) => (
@@ -484,7 +517,7 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {teamStats
+                  {displayTeamStats
                     .sort((a, b) => a.pointsAgainst - b.pointsAgainst)
                     .slice(0, 5)
                     .map((team, index) => (

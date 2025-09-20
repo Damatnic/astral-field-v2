@@ -373,7 +373,7 @@ function generateInsights(lineup: any[]): string[] {
   const qb = lineup.find(l => l.player.position === 'QB');
   const teamReceivers = lineup.filter(l => 
     ['WR', 'TE'].includes(l.player.position) && 
-    l.player.team === qb?.player.team
+    l.player.nflTeam === qb?.player.nflTeam
   );
   if (teamReceivers.length > 0) {
     insights.push(`QB stack opportunity with ${teamReceivers.length} pass catchers`);

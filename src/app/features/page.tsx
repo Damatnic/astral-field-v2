@@ -79,40 +79,6 @@ const features = [
     ]
   },
   {
-    category: 'Blockchain & Rewards',
-    icon: Coins,
-    items: [
-      {
-        name: 'NFT Achievement System',
-        description: 'Earn unique NFT trophies and badges for fantasy achievements, tradeable on secondary markets',
-        status: 'Active',
-        premium: true,
-        path: '/blockchain/achievements'
-      },
-      {
-        name: 'Cryptocurrency Rewards',
-        description: 'Custom AstralField tokens earned through performance, trades, and league participation',
-        status: 'Active',
-        premium: true,
-        path: '/blockchain/rewards'
-      },
-      {
-        name: 'Smart Contract Payouts',
-        description: 'Automated prize distribution using blockchain smart contracts for transparent, instant payouts',
-        status: 'Beta',
-        premium: true,
-        path: '/blockchain/contracts'
-      },
-      {
-        name: 'Decentralized Governance',
-        description: 'Token-based voting system for league rule changes and feature development decisions',
-        status: 'Coming Soon',
-        premium: true,
-        path: '/governance'
-      }
-    ]
-  },
-  {
     category: 'Advanced Analytics',
     icon: BarChart3,
     items: [
@@ -247,7 +213,7 @@ export default function FeaturesPage() {
           </div>
           <p className="text-xl text-slate-600 max-w-4xl mx-auto">
             Experience the most advanced fantasy football platform ever built. From AI-powered lineup optimization 
-            to blockchain rewards, AstralField delivers cutting-edge features that give you the competitive edge.
+            to advanced analytics, AstralField delivers cutting-edge features that give you the competitive edge.
           </p>
           <div className="flex items-center justify-center gap-4 mt-6">
             <Badge className="bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0 px-3 py-1">
@@ -377,7 +343,7 @@ export default function FeaturesPage() {
               <h3 className="text-3xl font-bold mb-4">The Future of Fantasy Football</h3>
               <p className="text-xl text-blue-100 max-w-3xl mx-auto mb-8">
                 AstralField isn&apos;t just a fantasy platform—it&apos;s your secret weapon. With cutting-edge AI,
-                immersive experiences, and blockchain rewards, you&apos;re not just playing fantasy football,
+                immersive experiences, and comprehensive analytics, you&apos;re not just playing fantasy football,
                 you&apos;re dominating it.
               </p>
               <div className="flex justify-center gap-4">

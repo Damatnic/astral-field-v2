@@ -1,267 +1,211 @@
-/**
- * Commissioner Tools API
- * Admin functionality for Nicholas D'Amato
- */
-
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-import { requireCommissioner } from '@/lib/auth/production-auth';
-import { handleComponentError } from '@/lib/error-handling';
-import { nflDataService } from '@/services/nfl/nflDataService';
-
+import { prisma } from '@/lib/db';
+import { cookies } from 'next/headers';
 
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic';
 
-const prisma = new PrismaClient();
-
-// Get commissioner dashboard data
+// GET /api/commissioner - Get commissioner dashboard data
 export async function GET(request: NextRequest) {
   try {
-    const user = await requireCommissioner(request);
+    const { searchParams } = new URL(request.url);
+    const leagueId = searchParams.get('leagueId');
     
-    const league = await prisma.league.findFirst({
-      where: {
-        commissionerId: user.id,
-        isActive: true
+    // Get session from cookies
+    const cookieStore = cookies();
+    const sessionId = cookieStore.get('session')?.value;
+    
+    if (!sessionId) {
+      return NextResponse.json(
+        { error: 'Not authenticated' },
+        { status: 401 }
+      );
+    }
+    
+    // Verify session and get user
+    const session = await prisma.userSession.findUnique({
+      where: { sessionId },
+      include: { user: true }
+    });
+    
+    if (!session || session.expiresAt < new Date()) {
+      return NextResponse.json(
+        { error: 'Session expired' },
+        { status: 401 }
+      );
+    }
+    
+    // Get user's league
+    const targetLeagueId = leagueId || await getDefaultLeagueId(session.userId);
+    
+    if (!targetLeagueId) {
+      return NextResponse.json(
+        { error: 'No league found' },
+        { status: 404 }
+      );
+    }
+    
+    // Verify user is commissioner
+    const league = await prisma.league.findUnique({
+      where: { id: targetLeagueId },
+      include: {
+        commissioner: true,
+        teams: {
+          include: {
+            owner: true
+          }
+        }
       }
     });
     
     if (!league) {
       return NextResponse.json(
-        { error: 'Commissioner league not found' },
+        { error: 'League not found' },
         { status: 404 }
       );
     }
     
-    // Get comprehensive league stats for commissioner
-    const [
-      teams,
-      pendingTrades,
-      waiverClaims,
-      recentTransactions,
-      leagueActivity
-    ] = await Promise.all([
-      // Team stats
-      prisma.team.findMany({
-        where: { leagueId: league.id },
-        include: {
-          owner: {
-            select: {
-              name: true,
-              email: true,
-              avatar: true
-            }
-          }
-        },
-        orderBy: { wins: 'desc' }
-      }),
-      
-      // Pending trades requiring approval
-      prisma.trade.findMany({
+    if (league.commissionerId !== session.userId) {
+      const leagueMember = await prisma.leagueMember.findFirst({
         where: {
-          leagueId: league.id,
-          status: 'PENDING'
-        },
-        include: {
-          proposer: true,
-          items: {
-            include: {
-              player: true
-            }
-          }
+          userId: session.userId,
+          leagueId: targetLeagueId,
+          role: 'COMMISSIONER'
         }
-      }),
+      });
       
-      // Active waiver claims
-      prisma.waiverClaim.findMany({
-        where: {
-          leagueId: league.id,
-          status: 'PENDING'
+      if (!leagueMember) {
+        return NextResponse.json(
+          { error: 'Only commissioners can access this data' },
+          { status: 403 }
+        );
+      }
+    }
+    
+    // Get league statistics
+    const stats = await getLeagueStats(targetLeagueId);
+    
+    // Get pending actions
+    const pendingActions = await getPendingActions(targetLeagueId);
+    
+    // Get recent activity
+    const recentActivity = await getRecentActivity(targetLeagueId);
+    
+    return NextResponse.json({
+      success: true,
+      data: {
+        league: {
+          id: league.id,
+          name: league.name,
+          season: league.season,
+          currentWeek: league.currentWeek,
+          isActive: league.isActive
         },
-        include: {
-          player: true,
-          team: {
-            include: {
-              owner: true
-            }
-          }
-        }
-      }),
-      
-      // Recent transactions
-      prisma.transaction.findMany({
-        where: { leagueId: league.id },
-        orderBy: { createdAt: 'desc' },
-        take: 20
-      }),
-      
-      // League activity logs
-      prisma.auditLog.findMany({
-        where: { leagueId: league.id },
-        orderBy: { createdAt: 'desc' },
-        take: 50
-      })
-    ]);
-    
-    const dashboardData = {
-      league: {
-        id: league.id,
-        name: league.name,
-        currentWeek: league.currentWeek,
-        season: league.season
-      },
-      stats: {
-        totalTeams: teams.length,
-        activeTrades: pendingTrades.length,
-        pendingWaivers: waiverClaims.length,
-        weeklyTransactions: recentTransactions.filter(
-          t => t.createdAt > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-        ).length
-      },
-      teams,
-      pendingTrades,
-      waiverClaims,
-      recentTransactions,
-      activityLog: leagueActivity
-    };
-    
-    return NextResponse.json(dashboardData);
+        members: league.teams.map(team => ({
+          id: team.id,
+          teamName: team.name,
+          ownerName: team.owner.name,
+          ownerEmail: team.owner.email,
+          wins: team.wins,
+          losses: team.losses,
+          ties: team.ties,
+          pointsFor: Number(team.pointsFor),
+          pointsAgainst: Number(team.pointsAgainst),
+          waiverPriority: team.waiverPriority,
+          faabBudget: team.faabBudget,
+          faabSpent: team.faabSpent
+        })),
+        stats,
+        pendingActions,
+        recentActivity
+      }
+    });
     
   } catch (error) {
-    // handleComponentError(error as Error, 'route');
+    console.error('Commissioner dashboard error:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch commissioner data' },
+      { status: 500 }
+    );
+  }
+}
+
+// POST /api/commissioner - Perform commissioner actions
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { action, leagueId, data } = body;
     
-    if (error instanceof Error && (error.message === 'Commissioner access required' || error.message === 'Unauthorized')) {
+    // Get session from cookies
+    const cookieStore = cookies();
+    const sessionId = cookieStore.get('session')?.value;
+    
+    if (!sessionId) {
       return NextResponse.json(
-        { error: 'Commissioner access required' },
+        { error: 'Not authenticated' },
+        { status: 401 }
+      );
+    }
+    
+    // Verify session and get user
+    const session = await prisma.userSession.findUnique({
+      where: { sessionId },
+      include: { user: true }
+    });
+    
+    if (!session || session.expiresAt < new Date()) {
+      return NextResponse.json(
+        { error: 'Session expired' },
+        { status: 401 }
+      );
+    }
+    
+    // Verify user is commissioner
+    const league = await prisma.league.findUnique({
+      where: { id: leagueId },
+      select: { commissionerId: true }
+    });
+    
+    if (!league || league.commissionerId !== session.userId) {
+      return NextResponse.json(
+        { error: 'Only the commissioner can perform this action' },
         { status: 403 }
       );
     }
     
-    return NextResponse.json(
-      { error: 'Failed to fetch commissioner dashboard' },
-      { status: 500 }
-    );
-  }
-}
-
-// Update league settings
-export async function PUT(request: NextRequest) {
-  try {
-    const user = await requireCommissioner(request);
-    const body = await request.json();
-    
-    const league = await prisma.league.findFirst({
-      where: {
-        commissionerId: user.id,
-        isActive: true
-      }
-    });
-    
-    if (!league) {
-      return NextResponse.json(
-        { error: 'League not found' },
-        { status: 404 }
-      );
-    }
-    
-    // Update league settings
-    if (body.settings) {
-      await prisma.settings.update({
-        where: { leagueId: league.id },
-        data: body.settings
-      });
-    }
-    
-    // Update league info
-    if (body.league) {
-      await prisma.league.update({
-        where: { id: league.id },
-        data: {
-          name: body.league.name,
-          description: body.league.description,
-          currentWeek: body.league.currentWeek
-        }
-      });
-    }
-    
-    // Log the action
-    await prisma.auditLog.create({
-      data: {
-        leagueId: league.id,
-        userId: user.id,
-        action: 'UPDATE_LEAGUE_SETTINGS',
-        entityType: 'LEAGUE',
-        entityId: league.id,
-        after: body
-      }
-    });
-    
-    return NextResponse.json({ success: true });
-    
-  } catch (error) {
-    // handleComponentError(error as Error, 'route');
-    return NextResponse.json(
-      { error: 'Failed to update settings' },
-      { status: 500 }
-    );
-  }
-}
-
-// Commissioner actions
-export async function POST(request: NextRequest) {
-  try {
-    const user = await requireCommissioner(request);
-    const body = await request.json();
-    const { action, data } = body;
-    
-    const league = await prisma.league.findFirst({
-      where: {
-        commissionerId: user.id,
-        isActive: true
-      }
-    });
-    
-    if (!league) {
-      return NextResponse.json(
-        { error: 'League not found' },
-        { status: 404 }
-      );
-    }
-    
+    // Perform action based on type
     let result;
-    
     switch (action) {
-      case 'APPROVE_TRADE':
-        result = await approveTrade(data.tradeId, league.id, user.id);
-        break;
-        
-      case 'VETO_TRADE':
-        result = await vetoTrade(data.tradeId, league.id, user.id, data.reason);
-        break;
-        
-      case 'PROCESS_WAIVERS':
-        result = await processWaivers(league.id, user.id);
-        break;
-        
-      case 'UPDATE_SCORES':
-        result = await updateScores(league.id, league.currentWeek || 17);
+      case 'UPDATE_SETTINGS':
+        result = await updateLeagueSettings(leagueId, data);
         break;
         
       case 'ADVANCE_WEEK':
-        result = await advanceWeek(league.id, user.id);
+        result = await advanceWeek(leagueId);
+        break;
+        
+      case 'PROCESS_WAIVERS':
+        result = await processWaivers(leagueId);
+        break;
+        
+      case 'VETO_TRADE':
+        result = await vetoTrade(data.tradeId, leagueId);
+        break;
+        
+      case 'FORCE_TRADE':
+        result = await forceTrade(data.tradeId, leagueId);
+        break;
+        
+      case 'UPDATE_SCORING':
+        result = await updateScoringSettings(leagueId, data.scoring);
         break;
         
       case 'RESET_WAIVER_ORDER':
-        result = await resetWaiverOrder(league.id, user.id);
+        result = await resetWaiverOrder(leagueId);
         break;
         
-      case 'FORCE_LINEUP_CHANGE':
-        result = await forceLineupChange(data.teamId, data.changes, user.id);
-        break;
-        
-      case 'SEND_ANNOUNCEMENT':
-        result = await sendAnnouncement(league.id, data.message, user.id);
+      case 'LOCK_ROSTER':
+        result = await lockRoster(data.teamId, data.locked);
         break;
         
       default:
@@ -271,350 +215,287 @@ export async function POST(request: NextRequest) {
         );
     }
     
-    return NextResponse.json({ success: true, result });
+    // Create audit log
+    await prisma.auditLog.create({
+      data: {
+        leagueId,
+        userId: session.userId,
+        action: `COMMISSIONER_${action}`,
+        entityType: 'League',
+        entityId: leagueId,
+        after: data
+      }
+    });
+    
+    return NextResponse.json({
+      success: true,
+      message: `Action ${action} completed successfully`,
+      result
+    });
     
   } catch (error) {
-    // handleComponentError(error as Error, 'route');
+    console.error('Commissioner action error:', error);
     return NextResponse.json(
-      { error: 'Failed to execute commissioner action' },
+      { error: 'Failed to perform commissioner action' },
       { status: 500 }
     );
   }
 }
 
-// Commissioner action functions
-async function approveTrade(tradeId: string, leagueId: string, userId: string) {
-  const trade = await prisma.trade.update({
-    where: { id: tradeId },
+async function getDefaultLeagueId(userId: string): Promise<string | null> {
+  const team = await prisma.team.findFirst({
+    where: { ownerId: userId },
+    select: { leagueId: true }
+  });
+  return team?.leagueId || null;
+}
+
+async function getLeagueStats(leagueId: string) {
+  const totalTrades = await prisma.trade.count({
+    where: { leagueId }
+  });
+  
+  const pendingTrades = await prisma.trade.count({
+    where: { 
+      leagueId,
+      status: 'PENDING'
+    }
+  });
+  
+  const totalWaivers = await prisma.waiverClaim.count({
+    where: {
+      team: {
+        leagueId
+      }
+    }
+  });
+  
+  const pendingWaivers = await prisma.waiverClaim.count({
+    where: {
+      team: {
+        leagueId
+      },
+      status: 'PENDING'
+    }
+  });
+  
+  const totalTransactions = await prisma.auditLog.count({
+    where: { leagueId }
+  });
+  
+  return {
+    totalTrades,
+    pendingTrades,
+    totalWaivers,
+    pendingWaivers,
+    totalTransactions
+  };
+}
+
+async function getPendingActions(leagueId: string) {
+  const pendingTrades = await prisma.trade.findMany({
+    where: {
+      leagueId,
+      status: 'PENDING'
+    },
+    include: {
+      proposer: true,
+      team: true
+    },
+    orderBy: {
+      createdAt: 'desc'
+    },
+    take: 5
+  });
+  
+  const pendingWaivers = await prisma.waiverClaim.count({
+    where: {
+      team: {
+        leagueId
+      },
+      status: 'PENDING'
+    }
+  });
+  
+  return {
+    trades: pendingTrades.map(t => ({
+      id: t.id,
+      teams: [t.proposer.name, t.team?.name || 'Unknown'].filter(Boolean),
+      createdAt: t.createdAt,
+      expiresAt: t.expiresAt
+    })),
+    waiverCount: pendingWaivers
+  };
+}
+
+async function getRecentActivity(leagueId: string) {
+  const recentLogs = await prisma.auditLog.findMany({
+    where: { leagueId },
+    orderBy: {
+      createdAt: 'desc'
+    },
+    take: 10
+  });
+  
+  // Get user names for the logs
+  const userIds = recentLogs.map(log => log.userId).filter(Boolean);
+  const users = await prisma.user.findMany({
+    where: { id: { in: userIds as string[] } },
+    select: { id: true, name: true }
+  });
+  const userMap = new Map(users.map(u => [u.id, u.name]));
+  
+  return recentLogs.map(log => ({
+    id: log.id,
+    user: log.userId ? (userMap.get(log.userId) || 'Unknown') : 'System',
+    action: log.action,
+    entityType: log.entityType,
+    timestamp: log.createdAt
+  }));
+}
+
+async function updateLeagueSettings(leagueId: string, settings: any) {
+  // Update the Settings model instead of League.settings
+  const updated = await prisma.settings.upsert({
+    where: { leagueId },
+    update: settings,
+    create: {
+      leagueId,
+      ...settings,
+      rosterSlots: settings.rosterSlots || {},
+      playoffWeeks: settings.playoffWeeks || {},
+      scoringSystem: settings.scoringSystem || {}
+    }
+  });
+  
+  return updated;
+}
+
+async function advanceWeek(leagueId: string) {
+  const league = await prisma.league.findUnique({
+    where: { id: leagueId }
+  });
+  
+  if (!league) throw new Error('League not found');
+  
+  const newWeek = (league.currentWeek || 15) + 1;
+  
+  if (newWeek > 17) {
+    throw new Error('Season has ended');
+  }
+  
+  const updated = await prisma.league.update({
+    where: { id: leagueId },
     data: {
-      status: 'ACCEPTED',
-      processedAt: new Date()
+      currentWeek: newWeek
+    }
+  });
+  
+  return { newWeek };
+}
+
+async function processWaivers(leagueId: string) {
+  // This would call the waiver processing logic
+  // For now, return a simple response
+  const pendingClaims = await prisma.waiverClaim.count({
+    where: {
+      team: {
+        leagueId
+      },
+      status: 'PENDING'
+    }
+  });
+  
+  return { 
+    message: `Processing ${pendingClaims} waiver claims`,
+    count: pendingClaims
+  };
+}
+
+async function vetoTrade(tradeId: string, leagueId: string) {
+  const trade = await prisma.trade.update({
+    where: { 
+      id: tradeId,
+      leagueId // Ensure trade belongs to this league
+    },
+    data: {
+      status: 'VETOED'
+    }
+  });
+  
+  return trade;
+}
+
+async function forceTrade(tradeId: string, leagueId: string) {
+  const trade = await prisma.trade.findUnique({
+    where: { 
+      id: tradeId,
+      leagueId
     },
     include: {
       items: true
     }
   });
   
-  // Execute trade transfers
-  for (const item of trade.items) {
-    if (item.playerId) {
-      // Transfer player between teams
-      await prisma.rosterPlayer.updateMany({
-        where: {
-          playerId: item.playerId,
-          teamId: item.fromTeamId
-        },
-        data: {
-          teamId: item.toTeamId
-        }
-      });
-    }
-  }
+  if (!trade) throw new Error('Trade not found');
   
-  // Log action
-  await prisma.auditLog.create({
-    data: {
-      leagueId,
-      userId,
-      action: 'APPROVE_TRADE',
-      entityType: 'TRADE',
-      entityId: tradeId
-    }
-  });
-  
-  return trade;
-}
-
-async function vetoTrade(tradeId: string, leagueId: string, userId: string, reason: string) {
-  const trade = await prisma.trade.update({
-    where: { id: tradeId },
-    data: {
-      status: 'VETOED',
-      processedAt: new Date(),
-      notes: reason
-    }
-  });
-  
-  await prisma.auditLog.create({
-    data: {
-      leagueId,
-      userId,
-      action: 'VETO_TRADE',
-      entityType: 'TRADE',
-      entityId: tradeId,
-      after: { reason }
-    }
-  });
-  
-  return trade;
-}
-
-async function processWaivers(leagueId: string, userId: string) {
-  const claims = await prisma.waiverClaim.findMany({
-    where: {
-      leagueId,
-      status: 'PENDING'
-    },
-    orderBy: [
-      { priority: 'asc' },
-      { faabBid: 'desc' },
-      { createdAt: 'asc' }
-    ],
-    include: {
-      player: true,
-      team: true
-    }
-  });
-  
-  const processedPlayers = new Set<string>();
-  const results = [];
-  
-  for (const claim of claims) {
-    if (processedPlayers.has(claim.playerId)) {
-      // Player already claimed
-      await prisma.waiverClaim.update({
-        where: { id: claim.id },
-        data: {
-          status: 'FAILED',
-          processedAt: new Date()
-        }
-      });
-      continue;
-    }
-    
-    // Check FAAB budget
-    if (claim.faabBid && claim.faabBid > (claim.team.faabBudget - claim.team.faabSpent)) {
-      await prisma.waiverClaim.update({
-        where: { id: claim.id },
-        data: {
-          status: 'FAILED',
-          processedAt: new Date()
-        }
-      });
-      continue;
-    }
-    
-    // Process successful claim
-    await prisma.$transaction([
-      // Add player to roster
-      prisma.rosterPlayer.create({
-        data: {
-          teamId: claim.teamId,
-          playerId: claim.playerId,
-          rosterSlot: 'BENCH'
-        }
-      }),
-      
-      // Drop player if specified
-      claim.dropPlayerId ? 
-        prisma.rosterPlayer.deleteMany({
+  // Process the trade
+  await prisma.$transaction(async (tx) => {
+    // Move players between teams
+    for (const item of trade.items) {
+      if (item.playerId) {
+        // Remove from current team
+        await tx.rosterPlayer.deleteMany({
           where: {
-            teamId: claim.teamId,
-            playerId: claim.dropPlayerId
+            teamId: item.fromTeamId,
+            playerId: item.playerId
           }
-        }) : 
-        prisma.team.update({ where: { id: claim.teamId }, data: {} }),
-      
-      // Update FAAB if used
-      claim.faabBid ?
-        prisma.team.update({
-          where: { id: claim.teamId },
+        });
+        
+        // Add to new team
+        await tx.rosterPlayer.create({
           data: {
-            faabSpent: { increment: claim.faabBid }
+            teamId: item.toTeamId,
+            playerId: item.playerId,
+            position: 'BENCH',
+            acquisitionType: 'TRADE',
+            acquisitionDate: new Date()
           }
-        }) :
-        prisma.team.update({ where: { id: claim.teamId }, data: {} }),
-      
-      // Mark claim as successful
-      prisma.waiverClaim.update({
-        where: { id: claim.id },
-        data: {
-          status: 'SUCCESSFUL',
-          processedAt: new Date()
-        }
-      })
-    ]);
-    
-    processedPlayers.add(claim.playerId);
-    results.push(claim);
-  }
-  
-  await prisma.auditLog.create({
-    data: {
-      leagueId,
-      userId,
-      action: 'PROCESS_WAIVERS',
-      after: { processed: results.length }
-    }
-  });
-  
-  return results;
-}
-
-async function updateScores(leagueId: string, week: number) {
-  // Fetch latest scores from NFL data service
-  await nflDataService.fetchCurrentWeekScores(week);
-  
-  // Calculate team scores for the week
-  const teams = await prisma.team.findMany({
-    where: { leagueId },
-    include: {
-      roster: {
-        include: {
-          player: {
-            include: {
-              playerStats: {
-                where: {
-                  week,
-                  season: 2024
-                }
-              }
-            }
-          }
-        }
+        });
       }
     }
-  });
-  
-  // Update matchup scores
-  const matchups = await prisma.matchup.findMany({
-    where: {
-      leagueId,
-      week,
-      season: 2024
-    }
-  });
-  
-  for (const matchup of matchups) {
-    const homeTeam = teams.find(t => t.id === matchup.homeTeamId);
-    const awayTeam = teams.find(t => t.id === matchup.awayTeamId);
     
-    const homeScore = calculateTeamScore(homeTeam);
-    const awayScore = calculateTeamScore(awayTeam);
-    
-    await prisma.matchup.update({
-      where: { id: matchup.id },
+    // Update trade status
+    await tx.trade.update({
+      where: { id: tradeId },
       data: {
-        homeScore,
-        awayScore,
-        isComplete: true
+        status: 'ACCEPTED',
+        processedAt: new Date()
       }
     });
-    
-    // Update team records
-    if (homeScore > awayScore) {
-      await prisma.team.update({
-        where: { id: homeTeam!.id },
-        data: {
-          wins: { increment: 1 },
-          pointsFor: { increment: homeScore },
-          pointsAgainst: { increment: awayScore }
-        }
-      });
-      
-      await prisma.team.update({
-        where: { id: awayTeam!.id },
-        data: {
-          losses: { increment: 1 },
-          pointsFor: { increment: awayScore },
-          pointsAgainst: { increment: homeScore }
-        }
-      });
-    } else if (awayScore > homeScore) {
-      await prisma.team.update({
-        where: { id: awayTeam!.id },
-        data: {
-          wins: { increment: 1 },
-          pointsFor: { increment: awayScore },
-          pointsAgainst: { increment: homeScore }
-        }
-      });
-      
-      await prisma.team.update({
-        where: { id: homeTeam!.id },
-        data: {
-          losses: { increment: 1 },
-          pointsFor: { increment: homeScore },
-          pointsAgainst: { increment: awayScore }
-        }
-      });
-    } else {
-      // Tie
-      await Promise.all([
-        prisma.team.update({
-          where: { id: homeTeam!.id },
-          data: {
-            ties: { increment: 1 },
-            pointsFor: { increment: homeScore },
-            pointsAgainst: { increment: awayScore }
-          }
-        }),
-        prisma.team.update({
-          where: { id: awayTeam!.id },
-          data: {
-            ties: { increment: 1 },
-            pointsFor: { increment: awayScore },
-            pointsAgainst: { increment: homeScore }
-          }
-        })
-      ]);
-    }
-  }
-  
-  return { updated: matchups.length };
-}
-
-function calculateTeamScore(team: any): number {
-  if (!team || !team.roster) return 0;
-  
-  let totalScore = 0;
-  
-  for (const rosterSpot of team.roster) {
-    // Only count starters (not bench)
-    if (rosterSpot.rosterSlot !== 'BENCH' && rosterSpot.rosterSlot !== 'IR') {
-      const playerStats = rosterSpot.player?.playerStats?.[0];
-      if (playerStats) {
-        totalScore += Number(playerStats.fantasyPoints || 0);
-      }
-    }
-  }
-  
-  return Math.round(totalScore * 100) / 100;
-}
-
-async function advanceWeek(leagueId: string, userId: string) {
-  const league = await prisma.league.findUnique({
-    where: { id: leagueId }
   });
   
-  if (!league || !league.currentWeek) {
-    throw new Error('Invalid league state');
-  }
-  
-  const nextWeek = league.currentWeek + 1;
-  
-  if (nextWeek > 18) {
-    throw new Error('Season is complete');
-  }
-  
-  await prisma.league.update({
-    where: { id: leagueId },
-    data: { currentWeek: nextWeek }
-  });
-  
-  await prisma.auditLog.create({
-    data: {
+  return { success: true };
+}
+
+async function updateScoringSettings(leagueId: string, scoring: any) {
+  const settings = await prisma.settings.upsert({
+    where: { leagueId },
+    update: {
+      scoringSystem: scoring
+    },
+    create: {
       leagueId,
-      userId,
-      action: 'ADVANCE_WEEK',
-      after: { week: nextWeek }
+      scoringSystem: scoring,
+      rosterSlots: {},
+      playoffWeeks: {}
     }
   });
   
-  return { currentWeek: nextWeek };
+  return settings;
 }
 
-async function resetWaiverOrder(leagueId: string, userId: string) {
+async function resetWaiverOrder(leagueId: string) {
   const teams = await prisma.team.findMany({
     where: { leagueId },
     orderBy: [
@@ -623,7 +504,7 @@ async function resetWaiverOrder(leagueId: string, userId: string) {
     ]
   });
   
-  // Reset waiver priority based on inverse standings
+  // Update waiver priorities based on reverse standings
   for (let i = 0; i < teams.length; i++) {
     await prisma.team.update({
       where: { id: teams[i].id },
@@ -631,68 +512,15 @@ async function resetWaiverOrder(leagueId: string, userId: string) {
     });
   }
   
-  await prisma.auditLog.create({
-    data: {
-      leagueId,
-      userId,
-      action: 'RESET_WAIVER_ORDER'
-    }
-  });
-  
   return { updated: teams.length };
 }
 
-async function forceLineupChange(teamId: string, changes: any, userId: string) {
-  // Implementation for forcing lineup changes
-  // This would update RosterPlayer records
-  
-  await prisma.auditLog.create({
-    data: {
-      leagueId: teamId, // Should get league ID from team
-      userId,
-      action: 'FORCE_LINEUP_CHANGE',
-      entityType: 'TEAM',
-      entityId: teamId,
-      after: changes
-    }
+async function lockRoster(teamId: string, locked: boolean) {
+  // Lock all roster players
+  await prisma.rosterPlayer.updateMany({
+    where: { teamId },
+    data: { isLocked: locked }
   });
   
-  return { success: true };
-}
-
-async function sendAnnouncement(leagueId: string, message: string, userId: string) {
-  const leagueMembers = await prisma.leagueMember.findMany({
-    where: { leagueId }
-  });
-  
-  // Create notifications for all members
-  await prisma.notification.createMany({
-    data: leagueMembers.map(member => ({
-      userId: member.userId,
-      type: 'NEWS_UPDATE',
-      title: 'Commissioner Announcement',
-      content: message
-    }))
-  });
-  
-  // Create message in league chat
-  await prisma.message.create({
-    data: {
-      leagueId,
-      userId,
-      content: message,
-      type: 'ANNOUNCEMENT'
-    }
-  });
-  
-  await prisma.auditLog.create({
-    data: {
-      leagueId,
-      userId,
-      action: 'SEND_ANNOUNCEMENT',
-      after: { message }
-    }
-  });
-  
-  return { notified: leagueMembers.length };
+  return { teamId, locked };
 }

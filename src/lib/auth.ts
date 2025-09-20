@@ -304,8 +304,9 @@ export async function getCurrentUser(): Promise<User | null> {
 
 export async function authenticateFromRequest(request: NextRequest): Promise<User | null> {
   try {
-    // Try to get session from main auth cookie
-    const sessionId = request.cookies.get(SESSION_COOKIE_NAME)?.value;
+    // Try to get session from main auth cookie or simple-login cookie
+    const sessionId = request.cookies.get(SESSION_COOKIE_NAME)?.value || 
+                     request.cookies.get('session')?.value;
     
     if (sessionId) {
       const session = await getSession(sessionId);
