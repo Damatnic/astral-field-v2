@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { TeamRosterProps, RosterSlot, Position } from '@/types/fantasy';
+import { safeToFixed } from '@/utils/numberUtils';
 
 export default function RosterView({ team, isOwner, currentWeek }: TeamRosterProps) {
   const [sortBy, setSortBy] = useState<'position' | 'name' | 'points'>('position');
@@ -270,13 +271,13 @@ function RosterPlayerCard({
         <div>
           <p className="text-xs text-gray-500">Avg Points</p>
           <p className="text-lg font-semibold text-gray-900">
-            {player.averagePoints?.toFixed(1) || '0.0'}
+            {safeToFixed(player.averagePoints, 1, '0.0')}
           </p>
         </div>
         <div>
           <p className="text-xs text-gray-500">Projection</p>
           <p className="text-lg font-semibold text-gray-900">
-            {player.projectedPoints?.toFixed(1) || '0.0'}
+            {safeToFixed(player.projectedPoints, 1, '0.0')}
           </p>
         </div>
       </div>

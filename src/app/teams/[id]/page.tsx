@@ -7,6 +7,7 @@ import { useParams } from 'next/navigation';
 import { Team, RosterSlot } from '@/types/fantasy';
 import RosterView from '@/components/team/RosterView';
 import LineupSetter from '@/components/team/LineupSetter';
+import { safeToFixed, safePercentage } from '@/utils/numberUtils';
 
 export default function TeamPage() {
   const params = useParams();
@@ -122,9 +123,9 @@ export default function TeamPage() {
                   {team.record.ties > 0 && `-${team.record.ties}`}
                 </span>
                 <span>•</span>
-                <span>{team.pointsFor.toFixed(1)} PF</span>
+                <span>{safeToFixed(team.pointsFor, 1, '0.0')} PF</span>
                 <span>•</span>
-                <span>{team.pointsAgainst.toFixed(1)} PA</span>
+                <span>{safeToFixed(team.pointsAgainst, 1, '0.0')} PA</span>
                 <span>•</span>
                 <span>#{team.standings?.rank || 'N/A'} in league</span>
               </div>
@@ -208,27 +209,27 @@ export default function TeamPage() {
                   {team.record.ties > 0 && `-${team.record.ties}`}
                 </p>
                 <p className="text-sm text-blue-700">
-                  {(team.record.percentage * 100).toFixed(1)}% win rate
+                  {safeToFixed(team.record.percentage * 100, 1, '0.0')}% win rate
                 </p>
               </div>
 
               <div className="bg-green-50 rounded-lg p-4">
                 <h4 className="text-sm font-medium text-green-900 mb-2">Points For</h4>
                 <p className="text-2xl font-bold text-green-600">
-                  {team.pointsFor.toFixed(1)}
+                  {safeToFixed(team.pointsFor, 1, '0.0')}
                 </p>
                 <p className="text-sm text-green-700">
-                  Avg: {(team.pointsFor / Math.max(team.record.wins + team.record.losses + team.record.ties, 1)).toFixed(1)}/game
+                  Avg: {safeToFixed(team.pointsFor / Math.max(team.record.wins + team.record.losses + team.record.ties, 1), 1, '0.0')}/game
                 </p>
               </div>
 
               <div className="bg-red-50 rounded-lg p-4">
                 <h4 className="text-sm font-medium text-red-900 mb-2">Points Against</h4>
                 <p className="text-2xl font-bold text-red-600">
-                  {team.pointsAgainst.toFixed(1)}
+                  {safeToFixed(team.pointsAgainst, 1, '0.0')}
                 </p>
                 <p className="text-sm text-red-700">
-                  Avg: {(team.pointsAgainst / Math.max(team.record.wins + team.record.losses + team.record.ties, 1)).toFixed(1)}/game
+                  Avg: {safeToFixed(team.pointsAgainst / Math.max(team.record.wins + team.record.losses + team.record.ties, 1), 1, '0.0')}/game
                 </p>
               </div>
             </div>

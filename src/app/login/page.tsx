@@ -228,7 +228,7 @@ export default function LoginPage() {
           color: selectedAccount.color
         }));
         
-        router.push('/');
+        router.push('/my-team');
         router.refresh();
       } else {
         setError(data.error || 'Login failed');
@@ -256,7 +256,7 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (data.success) {
-        router.push('/');
+        router.push('/my-team');
         router.refresh();
       } else {
         setError(data.error || 'Invalid credentials');

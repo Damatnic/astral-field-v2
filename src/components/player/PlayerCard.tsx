@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { PlayerCardProps, PlayerStatus } from '@/types/fantasy';
+import { safeToFixed } from '@/utils/numberUtils';
 
 export default function PlayerCard({
   player,
@@ -105,13 +106,13 @@ export default function PlayerCard({
           <div>
             <p className="text-xs text-gray-500">Avg Points</p>
             <p className="text-lg font-semibold text-gray-900">
-              {player.averagePoints?.toFixed(1) || '0.0'}
+              {safeToFixed(player.averagePoints, 1, '0.0')}
             </p>
           </div>
           <div>
             <p className="text-xs text-gray-500">Projection</p>
             <p className="text-lg font-semibold text-gray-900">
-              {player.projections?.[0]?.projectedPoints?.toFixed(1) || '0.0'}
+              {safeToFixed(player.projections?.[0]?.projectedPoints, 1, '0.0')}
             </p>
           </div>
         </div>
@@ -148,7 +149,7 @@ export default function PlayerCard({
                       Week {stat.week} vs {stat.opponent}
                     </span>
                     <span className="font-medium text-gray-900">
-                      {stat.points.toFixed(1)} pts
+                      {safeToFixed(stat.points, 1, '0.0')} pts
                     </span>
                   </div>
                 ))}

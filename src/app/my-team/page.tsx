@@ -19,6 +19,7 @@ import {
   BarChart3
 } from 'lucide-react';
 import { handleComponentError } from '@/lib/error-handling';
+import { safeToFixed } from '@/utils/numberUtils';
 
 interface Player {
   id: string;
@@ -220,22 +221,22 @@ export default function MyTeamPage() {
             <div className="flex items-center gap-1">
               {getTrendIcon(player.seasonStats.trend)}
               <span className="text-sm font-medium">
-                {player.seasonStats.averagePoints.toFixed(1)} avg
+                {safeToFixed(player.seasonStats.averagePoints, 1, '0.0')} avg
               </span>
             </div>
             <div className="text-xs text-gray-500">
-              {player.projection.points.toFixed(1)} proj
+              {safeToFixed(player.projection.points, 1, '0.0')} proj
             </div>
           </div>
         </div>
 
         <div className="grid grid-cols-3 gap-2 text-xs">
           <div className="text-center p-1 bg-gray-50 rounded">
-            <div className="font-medium">{player.seasonStats.lastWeekPoints.toFixed(1)}</div>
+            <div className="font-medium">{safeToFixed(player.seasonStats.lastWeekPoints, 1, '0.0')}</div>
             <div className="text-gray-500">Last Week</div>
           </div>
           <div className="text-center p-1 bg-gray-50 rounded">
-            <div className="font-medium">{player.seasonStats.totalPoints.toFixed(1)}</div>
+            <div className="font-medium">{safeToFixed(player.seasonStats.totalPoints, 1, '0.0')}</div>
             <div className="text-gray-500">Total</div>
           </div>
           <div className="text-center p-1 bg-gray-50 rounded">
@@ -300,7 +301,7 @@ export default function MyTeamPage() {
                 {team.record.ties > 0 && `-${team.record.ties}`}
               </div>
               <div className="text-sm text-gray-600">
-                {(team.record.percentage * 100).toFixed(1)}% Win Rate
+                {safeToFixed(team.record.percentage * 100, 1, '0.0')}% Win Rate
               </div>
             </div>
           </div>
@@ -316,7 +317,7 @@ export default function MyTeamPage() {
               <div>
                 <p className="text-sm text-gray-600">This Week Projection</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {team.stats.currentWeekProjection.toFixed(1)}
+                  {safeToFixed(team.stats.currentWeekProjection, 1, '0.0')}
                 </p>
               </div>
             </div>
@@ -327,7 +328,7 @@ export default function MyTeamPage() {
               <div>
                 <p className="text-sm text-gray-600">Season Average</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {team.stats.seasonAverage.toFixed(1)}
+                  {safeToFixed(team.stats.seasonAverage, 1, '0.0')}
                 </p>
               </div>
             </div>
@@ -460,11 +461,11 @@ export default function MyTeamPage() {
                       <div className="space-y-2">
                         <div className="flex justify-between">
                           <span className="text-gray-600">Points For:</span>
-                          <span className="font-medium">{team.pointsFor.toFixed(1)}</span>
+                          <span className="font-medium">{safeToFixed(team.pointsFor, 1, '0.0')}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-600">Points Against:</span>
-                          <span className="font-medium">{team.pointsAgainst.toFixed(1)}</span>
+                          <span className="font-medium">{safeToFixed(team.pointsAgainst, 1, '0.0')}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-600">Point Differential:</span>
@@ -472,7 +473,7 @@ export default function MyTeamPage() {
                             team.pointsFor - team.pointsAgainst > 0 ? 'text-green-600' : 'text-red-600'
                           }`}>
                             {(team.pointsFor - team.pointsAgainst > 0 ? '+' : '')}
-                            {(team.pointsFor - team.pointsAgainst).toFixed(1)}
+                            {safeToFixed(team.pointsFor - team.pointsAgainst, 1, '0.0')}
                           </span>
                         </div>
                       </div>

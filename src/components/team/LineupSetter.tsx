@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { TeamRosterProps, RosterSlot, Position, LineupChange } from '@/types/fantasy';
+import { safeToFixed } from '@/utils/numberUtils';
 
 export default function LineupSetter({ team, isOwner, currentWeek, onLineupChange }: TeamRosterProps) {
   const [pendingChanges, setPendingChanges] = useState<LineupChange[]>([]);
@@ -154,7 +155,7 @@ export default function LineupSetter({ team, isOwner, currentWeek, onLineupChang
           <div className="text-right">
             <p className="text-sm text-gray-500">Projected Points</p>
             <p className="text-2xl font-bold text-blue-600">
-              {getProjectedLineupPoints().toFixed(1)}
+              {safeToFixed(getProjectedLineupPoints(), 1, '0.0')}
             </p>
           </div>
         </div>
@@ -222,7 +223,7 @@ export default function LineupSetter({ team, isOwner, currentWeek, onLineupChang
                                 {displayPlayer.player.nflTeam} • {displayPlayer.player.position}
                               </p>
                               <p className="text-sm font-medium text-blue-600">
-                                {(displayPlayer.player as any).projectedPoints?.toFixed(1) || '0.0'} pts
+                                {safeToFixed((displayPlayer.player as any).projectedPoints, 1, '0.0')} pts
                               </p>
                             </div>
                             {pendingChange && (
@@ -278,7 +279,7 @@ export default function LineupSetter({ team, isOwner, currentWeek, onLineupChang
                           {rosterPlayer.player.nflTeam} • {rosterPlayer.player.position}
                         </p>
                         <p className="text-sm font-medium text-gray-700">
-                          {(rosterPlayer.player as any).projectedPoints?.toFixed(1) || '0.0'} pts
+                          {safeToFixed((rosterPlayer.player as any).projectedPoints, 1, '0.0')} pts
                         </p>
                       </div>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${

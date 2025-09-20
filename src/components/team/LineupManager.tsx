@@ -3,6 +3,7 @@
 
 import { handleComponentError } from '@/lib/error-handling';
 import React, { useState, useEffect, useCallback } from 'react';
+import { safeToFixed } from '@/utils/numberUtils';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { motion } from 'framer-motion';
 import {
@@ -426,14 +427,14 @@ export default function LineupManager({ teamId, week, isOwner = true }: LineupMa
           <div>
             <p className="text-xs text-gray-500 dark:text-gray-400">Projected</p>
             <p className="text-sm sm:text-lg font-bold text-gray-900 dark:text-gray-100">
-              {player.projectedPoints?.toFixed(1) || '0.0'}
+              {safeToFixed(player.projectedPoints, 1, '0.0')}
             </p>
           </div>
           {player.stats && (
             <div className="text-right">
               <p className="text-xs text-gray-500 dark:text-gray-400">Season Avg</p>
               <p className="text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">
-                {player.stats.season.avgPoints.toFixed(1)}
+                {safeToFixed(player.stats.season.avgPoints, 1, '0.0')}
               </p>
             </div>
           )}
@@ -543,7 +544,7 @@ export default function LineupManager({ teamId, week, isOwner = true }: LineupMa
           <div className="text-left sm:text-right">
             <p className="text-xs text-gray-500 dark:text-gray-400">Week {currentWeek} • Projected Total</p>
             <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
-              {projectedTotal.toFixed(1)}
+              {safeToFixed(projectedTotal, 1, '0.0')}
             </p>
           </div>
           

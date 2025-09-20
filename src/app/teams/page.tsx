@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Trophy, TrendingUp, TrendingDown, Target, Shield, Star, Users, ChevronRight } from 'lucide-react';
-import { safeToFixed, safeNumber } from '@/lib/utils';
+import { safeToFixed, safeParseFloat } from '@/utils/numberUtils';
 
 interface TeamData {
   id: string;
@@ -165,7 +165,7 @@ export default function TeamsPage() {
               <div>
                 <p className="text-sm text-green-700 font-medium">Total Points</p>
                 <p className="text-2xl font-bold text-green-900">
-                  {safeToFixed(teams.reduce((sum, team) => sum + safeNumber(team.pointsFor), 0), 0)}
+                  {safeToFixed(teams.reduce((sum, team) => sum + safeParseFloat(team.pointsFor), 0), 0)}
                 </p>
               </div>
             </div>
@@ -221,7 +221,7 @@ export default function TeamsPage() {
                         {team.ties > 0 && `-${team.ties}`}
                       </span>
                       <span className="text-gray-500">
-                        ({safeToFixed(safeNumber(team.record?.percentage) * 100, 0)}%)
+                        ({safeToFixed(safeParseFloat(team.record?.percentage) * 100, 0)}%)
                       </span>
                       <span className="flex items-center gap-1">
                         {getStreakIcon(team.streak)}

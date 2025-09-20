@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { League } from '@/types/fantasy';
+import { safeToFixed } from '@/utils/numberUtils';
 
 export default function LeaguePage() {
   const params = useParams();
@@ -225,14 +226,14 @@ export default function LeaguePage() {
                             {team.wins}-{team.losses}
                             {team.ties > 0 && `-${team.ties}`}
                             <span className="text-gray-500 ml-1">
-                              ({(team.record?.percentage * 100).toFixed(1)}%)
+                              ({safeToFixed(team.record?.percentage * 100, 1, '0.0')}%)
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {team.pointsFor.toFixed(1)}
+                            {safeToFixed(team.pointsFor, 1, '0.0')}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {team.pointsAgainst.toFixed(1)}
+                            {safeToFixed(team.pointsAgainst, 1, '0.0')}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -262,14 +263,14 @@ export default function LeaguePage() {
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600">Total Points Scored</span>
                     <span className="text-sm font-medium text-gray-900">
-                      {league.teams?.reduce((total, team) => total + team.pointsFor, 0).toFixed(1)}
+                      {safeToFixed(league.teams?.reduce((total, team) => total + team.pointsFor, 0), 1, '0.0')}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600">Average Score</span>
                     <span className="text-sm font-medium text-gray-900">
                       {league.teams && league.teams.length > 0 
-                        ? (league.teams.reduce((total, team) => total + team.pointsFor, 0) / league.teams.length / Math.max(league.currentWeek || 1, 1)).toFixed(1)
+                        ? safeToFixed(league.teams.reduce((total, team) => total + team.pointsFor, 0) / league.teams.length / Math.max(league.currentWeek || 1, 1), 1, '0.0')
                         : '0.0'
                       }
                     </span>
@@ -278,7 +279,7 @@ export default function LeaguePage() {
                     <span className="text-sm text-gray-600">Highest Score</span>
                     <span className="text-sm font-medium text-gray-900">
                       {league.teams && league.teams.length > 0 
-                        ? Math.max(...league.teams.map(team => team.pointsFor)).toFixed(1)
+                        ? safeToFixed(Math.max(...league.teams.map(team => team.pointsFor)), 1, '0.0')
                         : '0.0'
                       }
                     </span>
@@ -287,7 +288,7 @@ export default function LeaguePage() {
                     <span className="text-sm text-gray-600">Lowest Score</span>
                     <span className="text-sm font-medium text-gray-900">
                       {league.teams && league.teams.length > 0 
-                        ? Math.min(...league.teams.map(team => team.pointsFor)).toFixed(1)
+                        ? safeToFixed(Math.min(...league.teams.map(team => team.pointsFor)), 1, '0.0')
                         : '0.0'
                       }
                     </span>
@@ -343,7 +344,7 @@ export default function LeaguePage() {
                         <p className="font-medium text-gray-900">{matchup.awayTeam.name}</p>
                         <p className="text-sm text-gray-600">{matchup.awayTeam.owner?.name}</p>
                         <p className="text-2xl font-bold text-gray-900 mt-2">
-                          {matchup.awayScore.toFixed(1)}
+                          {safeToFixed(matchup.awayScore, 1, '0.0')}
                         </p>
                       </div>
                       <div className="px-4">
@@ -353,7 +354,7 @@ export default function LeaguePage() {
                         <p className="font-medium text-gray-900">{matchup.homeTeam.name}</p>
                         <p className="text-sm text-gray-600">{matchup.homeTeam.owner?.name}</p>
                         <p className="text-2xl font-bold text-gray-900 mt-2">
-                          {matchup.homeScore.toFixed(1)}
+                          {safeToFixed(matchup.homeScore, 1, '0.0')}
                         </p>
                       </div>
                     </div>
