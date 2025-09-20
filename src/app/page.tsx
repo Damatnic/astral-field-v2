@@ -553,7 +553,7 @@ const TeamSelectionLogin = () => {
         
         // Smooth transition to dashboard
         await new Promise(resolve => setTimeout(resolve, 1500)); // Show loading animation
-        window.location.href = '/'; // Full page refresh to update auth state
+        router.push('/dashboard'); // Navigate to dashboard instead of self
       } else {
         console.error('Login failed');
       }
