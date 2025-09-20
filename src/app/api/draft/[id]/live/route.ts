@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Server as SocketIOServer } from 'socket.io';
 import { prisma } from '@/lib/db';
-// This would typically be a WebSocket endpoint, but for API route we'll use SSE
+
+// Enhanced Server-Sent Events for real-time draft updates
+// This provides WebSocket-like functionality using SSE
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }

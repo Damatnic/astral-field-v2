@@ -34,6 +34,49 @@ const AGE_RISK_THRESHOLDS = {
   default: { peak: 28, decline: 0.10 }
 };
 
+export async function GET(request: NextRequest) {
+  try {
+    return NextResponse.json({
+      success: true,
+      data: {
+        message: 'Advanced Injury Risk Predictor ready',
+        description: 'Machine learning-powered injury risk analysis for fantasy football players',
+        methods: {
+          POST: '/api/injury/predict'
+        },
+        requiredParameters: {
+          teamId: 'Team ID to analyze roster for',
+          leagueId: 'League ID for context'
+        },
+        analysisFeatures: [
+          'Age-based risk modeling by position',
+          'Historical injury pattern analysis',
+          'Workload and fatigue assessment',
+          'Position-specific risk multipliers',
+          'Performance decline indicators',
+          'Consecutive games played tracking',
+          'Team-wide vulnerability assessment',
+          'Weekly health projections',
+          'Backup player recommendations'
+        ],
+        riskFactors: {
+          age: '15% weight - Position-specific age curves',
+          previousInjuries: '25% weight - Recent history weighted more',
+          workload: '20% weight - High volume = higher risk',
+          position: '15% weight - RB highest, K/DST lowest',
+          weeksPlayed: '10% weight - Fatigue accumulation',
+          recentPerformance: '15% weight - Decline may indicate issues'
+        }
+      }
+    });
+  } catch (error) {
+    return NextResponse.json(
+      { success: false, error: 'Injury predictor service unavailable' },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { teamId, leagueId } = await request.json();

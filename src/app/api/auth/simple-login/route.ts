@@ -64,8 +64,24 @@ const USERS_DB: UsersDatabase = {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    let body;
+    let bodyText;
+    
+    try {
+      bodyText = await request.text();
+      console.log('Raw body:', bodyText);
+      body = JSON.parse(bodyText);
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      return NextResponse.json(
+        { success: false, error: 'Invalid JSON: ' + (parseError as Error).message },
+        { status: 400 }
+      );
+    }
+    
     const { email, password } = body;
+    
+    console.log('Login attempt:', { email, passwordLength: password?.length });
     
     if (!email || !password) {
       return NextResponse.json(
@@ -77,6 +93,9 @@ export async function POST(request: NextRequest) {
     // Check credentials with proper type safety
     const normalizedEmail = email.toLowerCase() as string;
     const user = USERS_DB[normalizedEmail];
+    
+    console.log('User lookup:', { normalizedEmail, userExists: !!user, expectedPassword: user?.password });
+    
     if (!user || user.password !== password) {
       return NextResponse.json(
         { success: false, error: 'Invalid email or password' },
@@ -87,17 +106,8 @@ export async function POST(request: NextRequest) {
     // Create simple session token
     const sessionToken = Buffer.from(`${email}:${Date.now()}`).toString('base64');
     
-    // Set cookie
-    const cookieStore = await cookies();
-    cookieStore.set('session', sessionToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 7 * 24 * 60 * 60 // 7 days
-    });
-    
-    return NextResponse.json({
+    // Create response with success
+    const response = NextResponse.json({
       success: true,
       user: {
         email,
@@ -107,10 +117,23 @@ export async function POST(request: NextRequest) {
       token: sessionToken
     });
     
+    // Set cookie on response
+    response.cookies.set('session', sessionToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60 // 7 days
+    });
+    
+    console.log('Login successful for:', normalizedEmail);
+    
+    return response;
+    
   } catch (error) {
-    handleComponentError(error as Error, 'route');
+    console.error('Login error:', error);
     return NextResponse.json(
-      { success: false, error: 'Login failed' },
+      { success: false, error: 'Login failed: ' + (error as Error).message },
       { status: 500 }
     );
   }

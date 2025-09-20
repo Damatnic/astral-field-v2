@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { sleeperLeagueSyncService } from '@/services/sleeper/leagueSyncService';
+import { handleComponentError } from '@/lib/error-handling';
 
 
 // Force dynamic rendering for this route

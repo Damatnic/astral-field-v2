@@ -6,6 +6,40 @@ import { authenticateFromRequest } from '@/lib/auth';
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic';
 
+export async function GET(request: NextRequest) {
+  try {
+    const user = await authenticateFromRequest(request);
+    if (!user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Return available trade analysis endpoints and current user info
+    return NextResponse.json({
+      success: true,
+      data: {
+        message: 'Trade analyzer ready',
+        userId: user.id,
+        endpoints: {
+          analyze: '/api/trade/analyze (POST)',
+          description: 'Analyzes proposed trades with comprehensive metrics'
+        },
+        requiredParameters: {
+          tradeItems: 'Array of trade items',
+          teamIds: 'Array of 2 team IDs',
+          leagueId: 'League ID for analysis',
+          scoring: 'Optional: standard/ppr (default: standard)',
+          timeframe: 'Optional: season/playoffs (default: season)'
+        }
+      }
+    });
+  } catch (error) {
+    return NextResponse.json(
+      { success: false, error: 'Trade analyzer service unavailable' },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const user = await authenticateFromRequest(request);

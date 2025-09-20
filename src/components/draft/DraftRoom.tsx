@@ -11,8 +11,12 @@ import {
   VolumeX,
   Send,
   Bot,
-  User
+  User,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
+import { useDraftSSE } from '@/hooks/useDraftSSE';
+import { useAuth } from '@/components/AuthProvider';
 
 interface DraftPick {
   id: string;
@@ -74,27 +78,72 @@ interface DraftRoomProps {
   userId?: string;
 }
 
-export default function DraftRoom({ }: DraftRoomProps) {
-  const [draftStarted, setDraftStarted] = useState(false);
-  const [currentPick, setCurrentPick] = useState<DraftPick>({
-    id: '1',
-    round: 1,
-    pick: 1,
-    overall: 1,
-    team: 'Thunder Bolts'
-  });
-  const [timeRemaining, setTimeRemaining] = useState(90); // 90 seconds per pick
-  const [isPaused, setIsPaused] = useState(false);
+export default function DraftRoom({ draftId, userId }: DraftRoomProps) {
+  const { user } = useAuth();
   const [selectedPlayer, setSelectedPlayer] = useState<AvailablePlayer | null>(null);
   const [availablePlayers, setAvailablePlayers] = useState<AvailablePlayer[]>([]);
   const [draftBoard, setDraftBoard] = useState<DraftPick[]>([]);
   const [teams, setTeams] = useState<DraftTeam[]>([]);
   const [positionFilter, setPositionFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [autoPickEnabled, setAutoPickEnabled] = useState(false);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
+
+  // WebSocket integration
+  const {
+    isConnected,
+    draftState,
+    chatMessages,
+    makePick,
+    sendChatMessage,
+    startDraft,
+    pauseDraft,
+    resumeDraft,
+    reconnect
+  } = useDraftSSE({
+    draftId,
+    userId: userId || user?.id,
+    username: user?.name || 'Anonymous',
+    onPickMade: (pick) => {
+      setDraftBoard(prev => [...prev, pick]);
+      setAvailablePlayers(prev => prev.filter(p => p.id !== pick.player?.id));
+      if (soundEnabled) {
+        playDraftSound();
+      }
+    },
+    onChatMessage: (message) => {
+      // Chat messages are handled by the hook
+    },
+    onDraftStateUpdate: (state) => {
+      // Draft state updates are handled by the hook
+    },
+    onTimerUpdate: (timeRemaining) => {
+      // Timer updates are handled by the hook
+    },
+    onError: (error) => {
+      setConnectionError(error);
+    }
+  });
+
+  // Derived state from WebSocket
+  const draftStarted = draftState?.status === 'active';
+  const isPaused = draftState?.status === 'paused';
+  const timeRemaining = draftState?.timeRemaining || 90;
+  const currentPick = draftState ? {
+    id: `${draftState.currentRound}-${draftState.currentPick}`,
+    round: draftState.currentRound,
+    pick: draftState.currentPick,
+    overall: (draftState.currentRound - 1) * 10 + draftState.currentPick,
+    team: draftState.currentTeam?.name || 'Unknown Team'
+  } : {
+    id: '1',
+    round: 1,
+    pick: 1,
+    overall: 1,
+    team: 'Thunder Bolts'
+  };
 
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -190,81 +239,24 @@ export default function DraftRoom({ }: DraftRoomProps) {
     setAvailablePlayers(mockPlayers);
     setTeams(mockTeams);
 
-    // Initial chat messages
-    setChatMessages([
-      {
-        id: '1',
-        user: 'System',
-        message: 'Welcome to the 2025 D\'Amato Dynasty League Draft!',
-        timestamp: new Date().toISOString(),
-        isSystem: true
-      },
-      {
-        id: '2',
-        user: 'Commissioner',
-        message: 'Good luck everyone! Let\'s have a great draft.',
-        timestamp: new Date().toISOString()
-      }
-    ]);
+    // Chat messages will be managed by WebSocket
   }, []);
 
-  const getNextPick = useCallback((): DraftPick => {
-    const totalTeams = teams.length;
-    const isOddRound = currentPick.round % 2 === 1;
-    let nextPick = currentPick.pick + 1;
-    let nextRound = currentPick.round;
-    let nextTeam: string;
-
-    if (nextPick > totalTeams) {
-      nextPick = 1;
-      nextRound++;
-    }
-
-    if (isOddRound) {
-      nextTeam = teams[nextPick - 1]?.name || 'Team';
-    } else {
-      nextTeam = teams[totalTeams - nextPick]?.name || 'Team';
-    }
-
-    return {
-      id: `${nextRound}-${nextPick}`,
-      round: nextRound,
-      pick: nextPick,
-      overall: (nextRound - 1) * totalTeams + nextPick,
-      team: nextTeam
-    };
-  }, [teams, currentPick]);
+  // getNextPick is now handled by WebSocket server
 
   const handleDraftPlayer = useCallback(() => {
     if (!selectedPlayer) return;
 
-    const pick: DraftPick = {
-      ...currentPick,
-      player: {
-        ...selectedPlayer,
-        tier: selectedPlayer.tier
-      },
-      timestamp: new Date().toISOString()
-    };
-
-    setDraftBoard(prev => [...prev, pick]);
-    setAvailablePlayers(prev => prev.filter(p => p.id !== selectedPlayer.id));
-    
-    addSystemMessage(
-      `${currentPick.team} selects ${selectedPlayer.name} (${selectedPlayer.position}, ${selectedPlayer.team})`
+    // Use WebSocket to make the pick
+    makePick(
+      selectedPlayer.id,
+      selectedPlayer.name,
+      selectedPlayer.position,
+      selectedPlayer.team
     );
 
-    // Move to next pick
-    const nextPick = getNextPick();
-    setCurrentPick(nextPick);
     setSelectedPlayer(null);
-    setTimeRemaining(90);
-
-    if (soundEnabled) {
-      // Play draft sound
-      playDraftSound();
-    }
-  }, [selectedPlayer, currentPick, soundEnabled, getNextPick, setDraftBoard, setAvailablePlayers, setCurrentPick, setTimeRemaining]);
+  }, [selectedPlayer, makePick]);
 
   const playDraftSound = () => {
     // Simple beep sound using Audio API
@@ -284,30 +276,7 @@ export default function DraftRoom({ }: DraftRoomProps) {
     oscillator.stop(audioContext.currentTime + 0.5);
   };
 
-  const handleAutoPick = useCallback(() => {
-    const bestAvailable = availablePlayers[0]; // Simple BPA strategy
-    if (bestAvailable) {
-      setSelectedPlayer(bestAvailable);
-      setTimeout(() => handleDraftPlayer(), 500);
-    }
-  }, [availablePlayers, handleDraftPlayer]);
-
-  // Timer countdown
-  useEffect(() => {
-    if (draftStarted && !isPaused && timeRemaining > 0) {
-      const timer = setInterval(() => {
-        setTimeRemaining(prev => {
-          if (prev <= 1) {
-            // Auto-pick logic
-            handleAutoPick();
-            return 90;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-      return () => clearInterval(timer);
-    }
-  }, [draftStarted, isPaused, timeRemaining, handleAutoPick]);
+  // Auto-pick and timer countdown are now handled by WebSocket server
 
   // Auto-scroll chat
   useEffect(() => {
@@ -315,13 +284,15 @@ export default function DraftRoom({ }: DraftRoomProps) {
   }, [chatMessages]);
 
   const handleStartDraft = () => {
-    setDraftStarted(true);
-    addSystemMessage('Draft has started! Thunder Bolts is on the clock.');
+    startDraft();
   };
 
   const handlePauseDraft = () => {
-    setIsPaused(!isPaused);
-    addSystemMessage(isPaused ? 'Draft resumed.' : 'Draft paused.');
+    if (isPaused) {
+      resumeDraft();
+    } else {
+      pauseDraft();
+    }
   };
 
 
@@ -330,25 +301,12 @@ export default function DraftRoom({ }: DraftRoomProps) {
 
 
 
-  const addSystemMessage = (message: string) => {
-    setChatMessages(prev => [...prev, {
-      id: Date.now().toString(),
-      user: 'System',
-      message,
-      timestamp: new Date().toISOString(),
-      isSystem: true
-    }]);
-  };
+  // System messages are now handled by WebSocket
 
-  const sendChatMessage = () => {
+  const handleSendChatMessage = () => {
     if (!newMessage.trim()) return;
 
-    setChatMessages(prev => [...prev, {
-      id: Date.now().toString(),
-      user: 'You',
-      message: newMessage,
-      timestamp: new Date().toISOString()
-    }]);
+    sendChatMessage(newMessage);
     setNewMessage('');
   };
 
@@ -394,9 +352,31 @@ export default function DraftRoom({ }: DraftRoomProps) {
               <h1 className="text-3xl font-bold text-white mb-2">
                 2025 Draft Room
               </h1>
-              <p className="text-gray-300">
-                D&apos;Amato Dynasty League • Snake Draft • 16 Rounds
-              </p>
+              <div className="flex items-center gap-4">
+                <p className="text-gray-300">
+                  D&apos;Amato Dynasty League • Snake Draft • 16 Rounds
+                </p>
+                <div className="flex items-center gap-2">
+                  {isConnected ? (
+                    <><Wifi className="h-4 w-4 text-green-400" />
+                    <span className="text-green-400 text-sm">Connected</span></>
+                  ) : (
+                    <><WifiOff className="h-4 w-4 text-red-400" />
+                    <span className="text-red-400 text-sm">Disconnected</span></>
+                  )}
+                </div>
+              </div>
+              {connectionError && (
+                <div className="mt-2 p-2 bg-red-900/50 border border-red-500 rounded text-red-200 text-sm">
+                  Connection Error: {connectionError}
+                  <button 
+                    onClick={reconnect}
+                    className="ml-2 underline hover:no-underline"
+                  >
+                    Reconnect
+                  </button>
+                </div>
+              )}
             </div>
             
             {/* Timer */}
@@ -622,12 +602,12 @@ export default function DraftRoom({ }: DraftRoomProps) {
                   type="text"
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && sendChatMessage()}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSendChatMessage()}
                   placeholder="Type a message..."
                   className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
                 />
                 <button
-                  onClick={sendChatMessage}
+                  onClick={handleSendChatMessage}
                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
                 >
                   <Send className="h-4 w-4" />

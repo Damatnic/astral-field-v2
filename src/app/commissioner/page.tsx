@@ -243,8 +243,93 @@ export default function CommissionerPage() {
             {activeTab === 'users' && (
               <div className="space-y-6">
                 <h2 className="text-xl font-bold text-gray-900">Manage Users</h2>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="text-gray-600">User management functionality coming soon...</p>
+                
+                {/* League Members Table */}
+                <div className="bg-white border rounded-lg overflow-hidden">
+                  <div className="px-6 py-4 border-b bg-gray-50">
+                    <h3 className="text-lg font-semibold">League Members</h3>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Owner</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Team</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Record</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {[
+                          { name: "Nicholas D'Amato", team: "D'Amato Dynasty", record: "7-6", status: "Active", role: "Commissioner" },
+                          { name: "Jack McCaigue", team: "McCaigue Mayhem", record: "3-10", status: "Active", role: "Player" },
+                          { name: "Larry McCaigue", team: "Larry's Legends", record: "11-3", status: "Active", role: "Player" },
+                          { name: "Renee McCaigue", team: "Renee's Reign", record: "12-5", status: "Active", role: "Player" },
+                          { name: "Nick Hartley", team: "Hartley Heroes", record: "3-4", status: "Active", role: "Player" }
+                        ].map((member, index) => (
+                          <tr key={index} className="hover:bg-gray-50">
+                            <td className="px-6 py-4">
+                              <div className="flex items-center">
+                                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold mr-3">
+                                  {member.name.split(' ').map(n => n[0]).join('')}
+                                </div>
+                                <div>
+                                  <div className="font-medium">{member.name}</div>
+                                  {member.role === 'Commissioner' && (
+                                    <div className="text-xs text-purple-600 flex items-center">
+                                      <Crown className="h-3 w-3 mr-1" />
+                                      Commissioner
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-900">{member.team}</td>
+                            <td className="px-6 py-4 text-sm text-gray-900">{member.record}</td>
+                            <td className="px-6 py-4">
+                              <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                {member.status}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-500">
+                              <div className="flex space-x-2">
+                                <button className="text-blue-600 hover:text-blue-800 text-xs">Edit</button>
+                                <button className="text-red-600 hover:text-red-800 text-xs">Remove</button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Commissioner Actions */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="bg-white border rounded-lg p-4">
+                    <h4 className="font-semibold mb-2">Force Trade</h4>
+                    <p className="text-sm text-gray-600 mb-3">Execute a trade between teams</p>
+                    <button className="w-full bg-blue-600 text-white py-2 px-4 rounded text-sm hover:bg-blue-700">
+                      Manage Trades
+                    </button>
+                  </div>
+                  
+                  <div className="bg-white border rounded-lg p-4">
+                    <h4 className="font-semibold mb-2">Adjust Scores</h4>
+                    <p className="text-sm text-gray-600 mb-3">Manually adjust team scores</p>
+                    <button className="w-full bg-yellow-600 text-white py-2 px-4 rounded text-sm hover:bg-yellow-700">
+                      Score Adjustments
+                    </button>
+                  </div>
+                  
+                  <div className="bg-white border rounded-lg p-4">
+                    <h4 className="font-semibold mb-2">Roster Moves</h4>
+                    <p className="text-sm text-gray-600 mb-3">Force add/drop players</p>
+                    <button className="w-full bg-green-600 text-white py-2 px-4 rounded text-sm hover:bg-green-700">
+                      Manage Rosters
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -252,8 +337,173 @@ export default function CommissionerPage() {
             {activeTab === 'scoring' && (
               <div className="space-y-6">
                 <h2 className="text-xl font-bold text-gray-900">Scoring Management</h2>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="text-gray-600">Scoring management functionality coming soon...</p>
+                
+                {/* Current Scoring Settings */}
+                <div className="bg-white border rounded-lg">
+                  <div className="px-6 py-4 border-b">
+                    <h3 className="text-lg font-semibold">Current Scoring System</h3>
+                  </div>
+                  <div className="p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      
+                      {/* Passing */}
+                      <div>
+                        <h4 className="font-semibold mb-3 text-blue-600">Passing</h4>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span>Passing Yards</span>
+                            <span>1 pt per 25 yards</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Passing TD</span>
+                            <span>4 pts</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Interceptions</span>
+                            <span>-2 pts</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>2-Point Conversion</span>
+                            <span>2 pts</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Rushing */}
+                      <div>
+                        <h4 className="font-semibold mb-3 text-green-600">Rushing</h4>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span>Rushing Yards</span>
+                            <span>1 pt per 10 yards</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Rushing TD</span>
+                            <span>6 pts</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>2-Point Conversion</span>
+                            <span>2 pts</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Fumbles Lost</span>
+                            <span>-2 pts</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Receiving */}
+                      <div>
+                        <h4 className="font-semibold mb-3 text-purple-600">Receiving</h4>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span>Receiving Yards</span>
+                            <span>1 pt per 10 yards</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Receptions (PPR)</span>
+                            <span>1 pt</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Receiving TD</span>
+                            <span>6 pts</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>2-Point Conversion</span>
+                            <span>2 pts</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Kicking */}
+                      <div>
+                        <h4 className="font-semibold mb-3 text-orange-600">Kicking</h4>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span>Extra Points</span>
+                            <span>1 pt</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Field Goals (0-39)</span>
+                            <span>3 pts</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Field Goals (40-49)</span>
+                            <span>4 pts</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Field Goals (50+)</span>
+                            <span>5 pts</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Defense */}
+                      <div>
+                        <h4 className="font-semibold mb-3 text-red-600">Defense/ST</h4>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span>Sacks</span>
+                            <span>1 pt</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Interceptions</span>
+                            <span>2 pts</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Fumble Recoveries</span>
+                            <span>2 pts</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Defensive TD</span>
+                            <span>6 pts</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Points Allowed */}
+                      <div>
+                        <h4 className="font-semibold mb-3 text-gray-600">Points Allowed</h4>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span>0 points</span>
+                            <span>10 pts</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>1-6 points</span>
+                            <span>7 pts</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>7-13 points</span>
+                            <span>4 pts</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>14-20 points</span>
+                            <span>1 pt</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Scoring Actions */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-white border rounded-lg p-4">
+                    <h4 className="font-semibold mb-2">Manual Score Adjustment</h4>
+                    <p className="text-sm text-gray-600 mb-3">Adjust individual player or team scores</p>
+                    <button className="w-full bg-red-600 text-white py-2 px-4 rounded text-sm hover:bg-red-700">
+                      Score Adjustments
+                    </button>
+                  </div>
+                  
+                  <div className="bg-white border rounded-lg p-4">
+                    <h4 className="font-semibold mb-2">Recalculate Scores</h4>
+                    <p className="text-sm text-gray-600 mb-3">Recalculate all scores for a specific week</p>
+                    <button className="w-full bg-blue-600 text-white py-2 px-4 rounded text-sm hover:bg-blue-700">
+                      Recalculate Week
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

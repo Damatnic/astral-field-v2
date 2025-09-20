@@ -60,7 +60,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
 
       const data = await response.json();
-      return data.user || null;
+      if (data.success) {
+        return data.user || null;
+      }
+      return null;
     } catch (error) {
       handleAuthError(error as Error, 'fetchCurrentUser');
       return null;
@@ -90,7 +93,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       setIsLoading(true);
 
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch('/api/auth/simple-login', {
         method: 'POST',
         credentials: 'include',
         headers: {

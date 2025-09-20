@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/components/AuthProvider';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -183,6 +184,7 @@ const specialAccounts = [
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [selectedAccount, setSelectedAccount] = useState<typeof leagueAccounts[0] | null>(null);
@@ -203,22 +205,10 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const res = await fetch('/api/auth/simple-login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: selectedAccount.email,
-          password: selectedAccount.password,
-          teamId: selectedAccount.id,
-          teamName: selectedAccount.teamName
-        }),
-        credentials: 'include'
-      });
+      const result = await login(selectedAccount.email, selectedAccount.password);
 
-      const data = await res.json();
-
-      if (data.success) {
-        // Store additional user info in session storage
+      if (result.success) {
+        // Store additional user info in session storage for UI purposes
         sessionStorage.setItem('currentUser', JSON.stringify({
           id: selectedAccount.id,
           name: selectedAccount.name,
@@ -231,7 +221,7 @@ export default function LoginPage() {
         router.push('/my-team');
         router.refresh();
       } else {
-        setError(data.error || 'Login failed');
+        setError(result.error || 'Login failed');
       }
     } catch (err) {
       setError('Network error. Please try again.');
@@ -246,20 +236,13 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const res = await fetch('/api/auth/simple-login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-        credentials: 'include'
-      });
+      const result = await login(email, password);
 
-      const data = await res.json();
-
-      if (data.success) {
+      if (result.success) {
         router.push('/my-team');
         router.refresh();
       } else {
-        setError(data.error || 'Invalid credentials');
+        setError(result.error || 'Invalid credentials');
       }
     } catch (err) {
       setError('Network error. Please try again.');

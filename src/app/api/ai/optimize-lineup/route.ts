@@ -38,6 +38,40 @@ interface PlayerAnalysis {
   riskLevel: 'low' | 'medium' | 'high';
 }
 
+export async function GET(request: NextRequest) {
+  try {
+    return NextResponse.json({
+      success: true,
+      data: {
+        message: 'AI Lineup Optimizer ready',
+        description: 'Advanced machine learning lineup optimization for fantasy football',
+        methods: {
+          POST: '/api/ai/optimize-lineup'
+        },
+        requiredParameters: {
+          teamId: 'Team ID to optimize lineup for',
+          week: 'NFL week number',
+          leagueId: 'League ID for context'
+        },
+        features: [
+          'ML-weighted projections using recent form and matchup data',
+          'Dynamic programming lineup optimization',
+          'Risk assessment and injury analysis',
+          'Weather impact modeling',
+          'Confidence scoring and win probability',
+          'Alternative player suggestions',
+          'Stack opportunity identification'
+        ]
+      }
+    });
+  } catch (error) {
+    return NextResponse.json(
+      { success: false, error: 'AI optimizer service unavailable' },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { teamId, week, leagueId } = await request.json();

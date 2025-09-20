@@ -284,7 +284,7 @@ export function ErrorState({
 // Empty state component
 export function EmptyState({ 
   title = 'No data available',
-  message = 'There's nothing to show here yet.',
+  message = 'There is nothing to show here yet.',
   icon: Icon = Users,
   action
 }: {
