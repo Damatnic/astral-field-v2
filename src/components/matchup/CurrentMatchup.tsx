@@ -115,8 +115,8 @@ export default function CurrentMatchup() {
     );
   }
 
-  const userScore = matchup.userTeam.score;
-  const opponentScore = matchup.opponent.score;
+  const userScore = Number(matchup.userTeam.score) || 0;
+  const opponentScore = Number(matchup.opponent.score) || 0;
   const isWinning = userScore > opponentScore;
   const isTied = userScore === opponentScore;
   
@@ -196,7 +196,7 @@ export default function CurrentMatchup() {
               <div className="text-2xl font-bold text-gray-900">{userScore.toFixed(1)}</div>
               {matchup.status !== 'completed' && (
                 <div className="text-sm text-gray-500">
-                  Proj: {matchup.projections.userProjected.toFixed(1)}
+                  Proj: {(Number(matchup.projections?.userProjected) || 0).toFixed(1)}
                 </div>
               )}
             </div>
@@ -230,7 +230,7 @@ export default function CurrentMatchup() {
               <div className="text-2xl font-bold text-gray-900">{opponentScore.toFixed(1)}</div>
               {matchup.status !== 'completed' && (
                 <div className="text-sm text-gray-500">
-                  Proj: {matchup.projections.opponentProjected.toFixed(1)}
+                  Proj: {(Number(matchup.projections?.opponentProjected) || 0).toFixed(1)}
                 </div>
               )}
             </div>

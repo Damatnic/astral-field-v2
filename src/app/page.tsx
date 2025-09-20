@@ -427,7 +427,8 @@ function LeagueActivity() {
         const response = await fetch('/api/leagues/league-damato-dynasty-2024/activity');
         if (response.ok) {
           const data = await response.json();
-          setActivities(data.slice(0, 6)); // Show last 6 activities
+          const activities = Array.isArray(data) ? data : (data.data || []);
+          setActivities(activities.slice(0, 6)); // Show last 6 activities
         } else {
           // Fallback to recent matchup results
           const leagueResponse = await fetch('/api/league/damato');

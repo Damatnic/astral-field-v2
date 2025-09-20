@@ -1,41 +1,50 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { handleComponentError } from '@/lib/error-handling';
-import { authenticateFromRequest } from '@/lib/auth';
-
-// console.log('[AUTH DEBUG] /me endpoint - Auth system selection:', {
-//   NODE_ENV: process.env.NODE_ENV,
-//   HAS_DATABASE_URL: !!process.env.DATABASE_URL,
-//   useSimpleAuth,
-//   authSystem: useSimpleAuth ? 'SIMPLE' : 'FULL'
-// });
 
 export async function GET(request: NextRequest) {
   try {
-    // Get current user from session or Bearer token
-    const user = await authenticateFromRequest(request);
-
-    if (!user) {
+    // Check for session cookie from simple-login
+    const sessionCookie = request.cookies.get('session')?.value;
+    
+    if (!sessionCookie) {
       return NextResponse.json(
         { success: false, error: 'Not authenticated' },
         { status: 401 }
       );
     }
 
-    // Return user data
-    return NextResponse.json({
-      success: true,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        avatar: user.avatar,
-        createdAt: user.createdAt
+    // Decode the simple session token (email:timestamp in base64)
+    try {
+      const decoded = Buffer.from(sessionCookie, 'base64').toString();
+      const [email] = decoded.split(':');
+      
+      if (!email) {
+        return NextResponse.json(
+          { success: false, error: 'Invalid session' },
+          { status: 401 }
+        );
       }
-    });
+
+      // Return user data based on email (simplified for simple auth)
+      return NextResponse.json({
+        success: true,
+        user: {
+          id: email.replace('@', '-').replace('.', '-'),
+          email: email,
+          name: email.split('@')[0],
+          role: email.includes('admin') ? 'ADMIN' : 
+                email.includes('commissioner') ? 'COMMISSIONER' : 'PLAYER',
+          avatar: `/api/avatars/${encodeURIComponent(email.split('@')[0])}`,
+          createdAt: new Date().toISOString()
+        }
+      });
+    } catch (decodeError) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid session format' },
+        { status: 401 }
+      );
+    }
 
   } catch (error) {
-    // handleComponentError(error as Error, 'route');
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }
