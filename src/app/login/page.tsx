@@ -5,9 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Trophy, LogIn, Users, Shield, ChevronDown } from 'lucide-react';
+import { Trophy, LogIn, Users, Shield } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 // Dummy test accounts
@@ -133,54 +131,27 @@ export default function LoginPage() {
               
               {/* Account Dropdown Selector */}
               <div className="space-y-3">
-                <Select onValueChange={handleAccountSelect} value={selectedAccount}>
-                  <SelectTrigger className="w-full h-12">
-                    <SelectValue placeholder="Select a test account" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="admin@test.com" className="py-3">
-                      <div className="flex items-center gap-3">
-                        <Shield className="h-4 w-4 text-purple-600" />
-                        <div>
-                          <div className="font-medium">Admin Account</div>
-                          <div className="text-xs text-gray-500">Full system access</div>
-                        </div>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="commissioner@test.com" className="py-3">
-                      <div className="flex items-center gap-3">
-                        <Shield className="h-4 w-4 text-blue-600" />
-                        <div>
-                          <div className="font-medium">Commissioner</div>
-                          <div className="text-xs text-gray-500">League management</div>
-                        </div>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="demo@test.com" className="py-3">
-                      <div className="flex items-center gap-3">
-                        <Users className="h-4 w-4 text-gray-600" />
-                        <div>
-                          <div className="font-medium">Demo User</div>
-                          <div className="text-xs text-gray-500">Try the platform</div>
-                        </div>
-                      </div>
-                    </SelectItem>
-                    <div className="px-2 py-1 text-xs font-medium text-gray-500 bg-gray-50">
-                      Team Owners
-                    </div>
+                <select 
+                  onChange={(e) => handleAccountSelect(e.target.value)} 
+                  value={selectedAccount}
+                  className="w-full h-12 px-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select a test account</option>
+                  <optgroup label="Admin Accounts">
+                    <option value="admin@test.com">Admin - Full system access</option>
+                    <option value="commissioner@test.com">Commissioner - League management</option>
+                  </optgroup>
+                  <optgroup label="Test Account">
+                    <option value="demo@test.com">Demo User - Try the platform</option>
+                  </optgroup>
+                  <optgroup label="Team Owners">
                     {testAccounts.filter(acc => acc.role === 'Team Owner').map(account => (
-                      <SelectItem key={account.email} value={account.email} className="py-3">
-                        <div className="flex items-center gap-3">
-                          <Users className="h-4 w-4 text-green-600" />
-                          <div>
-                            <div className="font-medium">{account.name}</div>
-                            <div className="text-xs text-gray-500">Team Owner</div>
-                          </div>
-                        </div>
-                      </SelectItem>
+                      <option key={account.email} value={account.email}>
+                        {account.name} - Team Owner
+                      </option>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </optgroup>
+                </select>
 
                 {selectedAccount && (
                   <Button
@@ -249,7 +220,7 @@ export default function LoginPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
                 <Input
                   id="email"
                   type="email"
@@ -262,7 +233,7 @@ export default function LoginPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
                 <Input
                   id="password"
                   type="password"
