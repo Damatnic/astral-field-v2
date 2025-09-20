@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Users, Trophy, TrendingUp, Loader2, ExternalLink } from 'lucide-react';
 import { handleComponentError } from '@/lib/error-handling';
+import { safeToFixed, safePercentage } from '@/utils/numberUtils';
 
 interface UserTeam {
   id: string;
@@ -89,9 +90,11 @@ export default function MyTeamCard({ className = '' }: MyTeamCardProps) {
     );
   }
 
-  const winPercentage = team.wins + team.losses + team.ties > 0 
-    ? ((team.wins + team.ties * 0.5) / (team.wins + team.losses + team.ties) * 100).toFixed(1)
-    : '0.0';
+  const totalGames = team.wins + team.losses + team.ties;
+  const winPercentageValue = totalGames > 0 
+    ? ((team.wins + team.ties * 0.5) / totalGames * 100)
+    : 0;
+  const winPercentage = safeToFixed(winPercentageValue, 1, '0.0');
 
   return (
     <div className={`bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl shadow-sm border border-blue-100 p-6 ${className}`}>
@@ -116,7 +119,7 @@ export default function MyTeamCard({ className = '' }: MyTeamCardProps) {
             <TrendingUp className="h-4 w-4 text-green-600 mr-2" />
             <span className="text-sm text-gray-600">Points For</span>
           </div>
-          <div className="text-lg font-semibold text-gray-900">{team.pointsFor.toFixed(1)}</div>
+          <div className="text-lg font-semibold text-gray-900">{safeToFixed(team.pointsFor, 1, '0.0')}</div>
         </div>
         <div className="bg-white/80 rounded-lg p-3">
           <div className="flex items-center">

@@ -35,6 +35,7 @@ import {
   Flame,
   AlertTriangle
 } from 'lucide-react';
+import { safeToFixed } from '@/utils/numberUtils';
 
 // Real Dashboard Stats from D'Amato Dynasty League
 function RealDashboardStats() {
@@ -109,9 +110,9 @@ function RealDashboardStats() {
     },
     {
       label: 'Total Points',
-      value: Number(userTeam.pointsFor).toFixed(1),
-      change: `vs ${Number(userTeam.pointsAgainst).toFixed(1)} against`,
-      trend: Number(userTeam.pointsFor) > Number(userTeam.pointsAgainst) ? 'up' : 'down',
+      value: safeToFixed(userTeam.pointsFor, 1),
+      change: `vs ${safeToFixed(userTeam.pointsAgainst, 1)} against`,
+      trend: safeNumber(userTeam.pointsFor) > safeNumber(userTeam.pointsAgainst) ? 'up' : 'down',
       icon: Target,
       color: 'text-green-600 bg-green-50',
       accent: 'border-green-200'
@@ -119,17 +120,17 @@ function RealDashboardStats() {
     {
       label: 'Record',
       value: `${userTeam.wins}-${userTeam.losses}`,
-      change: `${(userTeam.record.percentage * 100).toFixed(0)}%`,
-      trend: userTeam.record.percentage >= 0.5 ? 'up' : 'down',
+      change: `${safeToFixed(safeNumber(userTeam.record?.percentage) * 100, 0)}%`,
+      trend: safeNumber(userTeam.record?.percentage) >= 0.5 ? 'up' : 'down',
       icon: TrendingUp,
-      color: userTeam.record.percentage >= 0.5 ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50',
-      accent: userTeam.record.percentage >= 0.5 ? 'border-green-200' : 'border-red-200'
+      color: safeNumber(userTeam.record?.percentage) >= 0.5 ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50',
+      accent: safeNumber(userTeam.record?.percentage) >= 0.5 ? 'border-green-200' : 'border-red-200'
     },
     {
       label: 'Proj. This Week',
-      value: userTeam.stats.currentWeekProjection.toFixed(1),
+      value: safeToFixed(userTeam.stats?.currentWeekProjection, 1),
       change: 'points',
-      trend: userTeam.stats.currentWeekProjection > userTeam.stats.seasonAverage ? 'up' : 'down',
+      trend: safeNumber(userTeam.stats?.currentWeekProjection) > safeNumber(userTeam.stats?.seasonAverage) ? 'up' : 'down',
       icon: Activity,
       color: 'text-purple-600 bg-purple-50',
       accent: 'border-purple-200'
@@ -389,7 +390,7 @@ function LeagueTopPerformers() {
             
             <div className="text-right">
               <div className="flex items-center space-x-2">
-                <span className="text-2xl font-bold text-gray-900">{player.points.toFixed(1)}</span>
+                <span className="text-2xl font-bold text-gray-900">{safeToFixed(player.points, 1, '0.0')}</span>
                 <div className={`flex items-center ${
                   player.trend === 'up' ? 'text-green-600' : 'text-gray-400'
                 }`}>
@@ -443,7 +444,7 @@ function LeagueActivity() {
               title: `Week ${matchup.week} Result`,
               description: `${matchup.homeTeam.owner.name} vs ${matchup.awayTeam.owner.name}`,
               time: `${index + 1} day${index > 0 ? 's' : ''} ago`,
-              details: matchup.isCompleted ? `Final: ${Number(matchup.homeScore).toFixed(1)} - ${Number(matchup.awayScore).toFixed(1)}` : 'In progress'
+              details: matchup.isCompleted ? `Final: ${safeToFixed(matchup.homeScore, 1, '0.0')} - ${safeToFixed(matchup.awayScore, 1, '0.0')}` : 'In progress'
             }));
             
             setActivities(mockActivities);

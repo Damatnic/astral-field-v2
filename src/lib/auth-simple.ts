@@ -10,6 +10,8 @@ export interface User {
   email: string;
   name: string;
   role: 'ADMIN' | 'COMMISSIONER' | 'PLAYER';
+  teamId?: number;
+  teamName?: string;
   avatar?: string;
   createdAt: Date;
 }
@@ -32,7 +34,7 @@ export interface AuthResult {
   error?: string;
 }
 
-// Demo users for production
+// Demo users for production - Full league roster
 const DEMO_USERS: Record<string, User> = {
   'admin@astralfield.com': {
     id: 'admin-001',
@@ -42,20 +44,104 @@ const DEMO_USERS: Record<string, User> = {
     avatar: '/api/avatars/admin',
     createdAt: new Date('2024-01-01'),
   },
-  'commissioner@astralfield.com': {
-    id: 'comm-001',
-    email: 'commissioner@astralfield.com',
-    name: 'Commissioner',
+  'dan@astralfield.com': {
+    id: 'user-010',
+    email: 'dan@astralfield.com',
+    name: 'Dan D\'Amato',
     role: 'COMMISSIONER',
-    avatar: '/api/avatars/commissioner',
+    teamId: 10,
+    teamName: 'D\'Amato Dynasty',
+    avatar: '/api/avatars/dan',
     createdAt: new Date('2024-01-01'),
   },
-  'player1@astralfield.com': {
-    id: 'player-001',
-    email: 'player1@astralfield.com',
-    name: 'Player One',
+  'nick@astralfield.com': {
+    id: 'user-001',
+    email: 'nick@astralfield.com',
+    name: 'Nick Hartley',
     role: 'PLAYER',
-    avatar: '/api/avatars/player1',
+    teamId: 1,
+    teamName: 'Hartley Heroes',
+    avatar: '/api/avatars/nick',
+    createdAt: new Date('2024-01-01'),
+  },
+  'jack@astralfield.com': {
+    id: 'user-002',
+    email: 'jack@astralfield.com',
+    name: 'Jack McCaigue',
+    role: 'PLAYER',
+    teamId: 2,
+    teamName: 'McCaigue Mayhem',
+    avatar: '/api/avatars/jack',
+    createdAt: new Date('2024-01-01'),
+  },
+  'larry@astralfield.com': {
+    id: 'user-003',
+    email: 'larry@astralfield.com',
+    name: 'Larry McCaigue',
+    role: 'PLAYER',
+    teamId: 3,
+    teamName: 'Larry\'s Legends',
+    avatar: '/api/avatars/larry',
+    createdAt: new Date('2024-01-01'),
+  },
+  'renee@astralfield.com': {
+    id: 'user-004',
+    email: 'renee@astralfield.com',
+    name: 'Renee McCaigue',
+    role: 'PLAYER',
+    teamId: 4,
+    teamName: 'Renee\'s Reign',
+    avatar: '/api/avatars/renee',
+    createdAt: new Date('2024-01-01'),
+  },
+  'jon@astralfield.com': {
+    id: 'user-005',
+    email: 'jon@astralfield.com',
+    name: 'Jon Kornbeck',
+    role: 'PLAYER',
+    teamId: 5,
+    teamName: 'Kornbeck Crushers',
+    avatar: '/api/avatars/jon',
+    createdAt: new Date('2024-01-01'),
+  },
+  'david@astralfield.com': {
+    id: 'user-006',
+    email: 'david@astralfield.com',
+    name: 'David Jarvey',
+    role: 'PLAYER',
+    teamId: 6,
+    teamName: 'Jarvey\'s Juggernauts',
+    avatar: '/api/avatars/david',
+    createdAt: new Date('2024-01-01'),
+  },
+  'kaity@astralfield.com': {
+    id: 'user-007',
+    email: 'kaity@astralfield.com',
+    name: 'Kaity Lorbecki',
+    role: 'PLAYER',
+    teamId: 7,
+    teamName: 'Lorbecki Lions',
+    avatar: '/api/avatars/kaity',
+    createdAt: new Date('2024-01-01'),
+  },
+  'cason@astralfield.com': {
+    id: 'user-008',
+    email: 'cason@astralfield.com',
+    name: 'Cason Minor',
+    role: 'PLAYER',
+    teamId: 8,
+    teamName: 'Minor Miracles',
+    avatar: '/api/avatars/cason',
+    createdAt: new Date('2024-01-01'),
+  },
+  'brittany@astralfield.com': {
+    id: 'user-009',
+    email: 'brittany@astralfield.com',
+    name: 'Brittany Bergum',
+    role: 'PLAYER',
+    teamId: 9,
+    teamName: 'Bergum Blitz',
+    avatar: '/api/avatars/brittany',
     createdAt: new Date('2024-01-01'),
   },
   'demo@astralfield.com': {
@@ -68,8 +154,21 @@ const DEMO_USERS: Record<string, User> = {
   },
 };
 
-// Demo password
-const DEMO_PASSWORD = 'demo123';
+// Demo passwords
+const DEMO_PASSWORDS: Record<string, string> = {
+  'admin@astralfield.com': 'admin123',
+  'dan@astralfield.com': 'Astral2025!',
+  'nick@astralfield.com': 'Astral2025!',
+  'jack@astralfield.com': 'Astral2025!',
+  'larry@astralfield.com': 'Astral2025!',
+  'renee@astralfield.com': 'Astral2025!',
+  'jon@astralfield.com': 'Astral2025!',
+  'david@astralfield.com': 'Astral2025!',
+  'kaity@astralfield.com': 'Astral2025!',
+  'cason@astralfield.com': 'Astral2025!',
+  'brittany@astralfield.com': 'Astral2025!',
+  'demo@astralfield.com': 'demo123',
+};
 
 // In-memory session storage
 const SESSIONS = new Map<string, AuthSession>();
@@ -130,7 +229,8 @@ export async function login(credentials: LoginCredentials): Promise<AuthResult> 
     }
     
     // Verify password
-    if (password !== DEMO_PASSWORD) {
+    const validPassword = DEMO_PASSWORDS[email.toLowerCase()];
+    if (!validPassword || password !== validPassword) {
       return { 
         success: false, 
         error: 'Invalid email or password' 
@@ -215,12 +315,12 @@ export async function requireAuth(): Promise<User> {
 // Get demo credentials for display
 export function getDemoCredentials() {
   return {
-    emails: Object.keys(DEMO_USERS),
-    password: DEMO_PASSWORD,
     users: Object.values(DEMO_USERS).map(u => ({
       email: u.email,
+      password: DEMO_PASSWORDS[u.email],
       name: u.name,
-      role: u.role
+      role: u.role,
+      teamName: u.teamName
     }))
   };
 }

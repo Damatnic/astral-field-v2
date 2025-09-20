@@ -53,3 +53,35 @@ export function throttle<T extends (...args: any[]) => any>(
     }
   };
 }
+
+// Safe number formatting utilities to prevent toFixed() errors
+export function safeToFixed(value: any, decimals: number = 1): string {
+  // Handle null, undefined, or empty values
+  if (value === null || value === undefined || value === '') {
+    return '0';
+  }
+  
+  // Convert to number and check if valid
+  const num = typeof value === 'number' ? value : Number(value);
+  
+  // Handle NaN or invalid conversions
+  if (isNaN(num)) {
+    return '0';
+  }
+  
+  // Return formatted number
+  return num.toFixed(decimals);
+}
+
+export function safeNumber(value: any, defaultValue: number = 0): number {
+  // Handle null, undefined, or empty values
+  if (value === null || value === undefined || value === '') {
+    return defaultValue;
+  }
+  
+  // Convert to number
+  const num = typeof value === 'number' ? value : Number(value);
+  
+  // Return default if NaN
+  return isNaN(num) ? defaultValue : num;
+}

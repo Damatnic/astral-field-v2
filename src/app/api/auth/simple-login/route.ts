@@ -19,9 +19,20 @@ interface UsersDatabase {
 
 // Your real users with passwords - properly typed
 const USERS_DB: UsersDatabase = {
-  // D'Amato Dynasty League Members - Easy dummy logins
+  // D'Amato Dynasty League Members - Main League Accounts
+  'nicholas@astralfield.com': { password: 'Astral2025!', name: "Nicholas D'Amato", role: UserRole.COMMISSIONER },
+  'nick@astralfield.com': { password: 'Astral2025!', name: 'Nick Hartley', role: UserRole.PLAYER },
+  'jack@astralfield.com': { password: 'Astral2025!', name: 'Jack McCaigue', role: UserRole.PLAYER },
+  'larry@astralfield.com': { password: 'Astral2025!', name: 'Larry McCaigue', role: UserRole.PLAYER },
+  'renee@astralfield.com': { password: 'Astral2025!', name: 'Renee McCaigue', role: UserRole.PLAYER },
+  'jon@astralfield.com': { password: 'Astral2025!', name: 'Jon Kornbeck', role: UserRole.PLAYER },
+  'david@astralfield.com': { password: 'Astral2025!', name: 'David Jarvey', role: UserRole.PLAYER },
+  'kaity@astralfield.com': { password: 'Astral2025!', name: 'Kaity Lorbecki', role: UserRole.PLAYER },
+  'cason@astralfield.com': { password: 'Astral2025!', name: 'Cason Minor', role: UserRole.PLAYER },
+  'brittany@astralfield.com': { password: 'Astral2025!', name: 'Brittany Bergum', role: UserRole.PLAYER },
+  
+  // Alternate login formats
   'nicholas.damato@astralfield.com': { password: 'admin123!', name: "Nicholas D'Amato", role: UserRole.ADMIN },
-  'nicholas@astralfield.com': { password: 'comm123!', name: "Nicholas D'Amato", role: UserRole.COMMISSIONER },
   'nick.hartley@astralfield.com': { password: 'player123!', name: 'Nick Hartley', role: UserRole.PLAYER },
   'jack.mccaigue@astralfield.com': { password: 'player123!', name: 'Jack McCaigue', role: UserRole.PLAYER },
   'larry.mccaigue@astralfield.com': { password: 'player123!', name: 'Larry McCaigue', role: UserRole.PLAYER },
@@ -44,7 +55,11 @@ const USERS_DB: UsersDatabase = {
   'player7@test.com': { password: 'password123', name: 'Kaity Lorbecki', role: UserRole.PLAYER },
   'player8@test.com': { password: 'password123', name: 'Cason Minor', role: UserRole.PLAYER },
   'player9@test.com': { password: 'password123', name: 'Brittany Bergum', role: UserRole.PLAYER },
-  'demo@test.com': { password: 'demo123', name: 'Demo User', role: UserRole.PLAYER }
+  'demo@test.com': { password: 'demo123', name: 'Demo User', role: UserRole.PLAYER },
+  
+  // Special accounts from login page
+  'demo@astralfield.com': { password: 'demo123', name: 'Demo User', role: UserRole.PLAYER },
+  'admin@astralfield.com': { password: 'admin123', name: 'Admin', role: UserRole.ADMIN }
 };
 
 export async function POST(request: NextRequest) {
