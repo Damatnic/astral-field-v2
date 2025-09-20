@@ -23,51 +23,31 @@ export default function WaiversPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Mock waiver players data - replace with API call
-    const mockPlayers: Player[] = [
-      {
-        id: '1',
-        name: 'Gabe Davis',
-        position: 'WR',
-        nflTeam: 'BUF',
-        fantasyPoints: 12.4,
-        availability: 'available',
-        projectedPoints: 14.2
-      },
-      {
-        id: '2',
-        name: 'Kenneth Walker III',
-        position: 'RB',
-        nflTeam: 'SEA',
-        fantasyPoints: 18.7,
-        availability: 'waivers',
-        projectedPoints: 16.8
-      },
-      {
-        id: '3',
-        name: 'Romeo Doubs',
-        position: 'WR',
-        nflTeam: 'GB',
-        fantasyPoints: 8.3,
-        availability: 'available',
-        projectedPoints: 10.1
-      },
-      {
-        id: '4',
-        name: 'Tyler Higbee',
-        position: 'TE',
-        nflTeam: 'LAR',
-        fantasyPoints: 7.2,
-        availability: 'available',
-        projectedPoints: 8.5
+    // Fetch available waiver wire players from API
+    const fetchWaiverPlayers = async () => {
+      try {
+        const response = await fetch('/api/waivers/wire');
+        const data = await response.json();
+        
+        if (data.success && data.data) {
+          setPlayers(data.data.map((player: any) => ({
+            id: player.id,
+            name: player.name,
+            position: player.position,
+            nflTeam: player.nflTeam || 'FA',
+            fantasyPoints: player.fantasyPoints || 0,
+            availability: 'available',
+            projectedPoints: player.projectedPoints || 0
+          })));
+        }
+      } catch (error) {
+        console.error('Error fetching waiver players:', error);
+      } finally {
+        setLoading(false);
       }
-    ];
+    };
 
-    // Simulate API call
-    setTimeout(() => {
-      setPlayers(mockPlayers);
-      setLoading(false);
-    }, 1000);
+    fetchWaiverPlayers();
   }, []);
 
   const filteredPlayers = players.filter(player => {
@@ -78,13 +58,35 @@ export default function WaiversPage() {
   });
 
   const handleAddPlayer = async (playerId: string) => {
-    // Implement waiver claim logic
-    // TODO: Add API call to create waiver claim
-    setPlayers(players.map(p => 
-      p.id === playerId 
-        ? { ...p, availability: 'claimed' as const }
-        : p
-    ));
+    // Create waiver claim via API
+    try {
+      const response = await fetch('/api/waivers/claim', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          playerId,
+          priority: 1,
+          dropPlayerId: null // User can select player to drop in UI if needed
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // Update UI to show player as claimed
+        setPlayers(players.map(p => 
+          p.id === playerId 
+            ? { ...p, availability: 'claimed' as const }
+            : p
+        ));
+      } else {
+        console.error('Failed to create waiver claim:', data.error);
+      }
+    } catch (error) {
+      console.error('Error claiming player:', error);
+    }
   };
 
   if (!user) {

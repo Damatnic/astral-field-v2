@@ -32,9 +32,26 @@ export function logError(error: Error | string, context: ErrorContext = {}): voi
     // eslint-disable-next-line no-console
     console.error('Error:', errorObj.message, 'Context:', context);
   } else {
-    // In production, this would send to monitoring service (Sentry, etc.)
-    // For now, we'll just suppress the error to avoid console warnings
-    // TODO: Implement proper error monitoring
+    // In production, log errors to a monitoring service
+    // Using a lightweight error tracking approach
+    if (typeof window !== 'undefined' && window.fetch) {
+      // Client-side: Send error to API endpoint
+      fetch('/api/errors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: errorObj.message,
+          stack: errorObj.stack,
+          context,
+          timestamp: new Date().toISOString(),
+          userAgent: navigator.userAgent,
+          url: window.location.href
+        })
+      }).catch(() => {
+        // Silently fail if error reporting fails
+      });
+    }
+    // Server-side errors are logged via the API directly
   }
 }
 
