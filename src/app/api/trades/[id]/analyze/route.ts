@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { authenticateFromRequest } from '@/lib/auth';
 import { ApiResponse, TradeAnalysis } from '@/types/fantasy';
+import { calculateDynastyValue, analyzeCompleteTrade } from '@/services/dynasty/dynasty-values';
 
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic';

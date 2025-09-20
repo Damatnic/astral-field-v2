@@ -60,12 +60,6 @@ const nextConfig = {
       };
     }
     
-    // Fix optimization.usedExports error
-    config.optimization = {
-      ...config.optimization,
-      usedExports: false,
-    };
-    
     return config;
   },
 };

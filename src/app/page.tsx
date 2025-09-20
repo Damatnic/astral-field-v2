@@ -1,741 +1,812 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { useAuth } from '@/components/AuthProvider';
+import React, { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useBreakpoint } from '@/components/mobile/ResponsiveUtils';
-import MobileHomepage from './mobile-homepage';
 import { 
-  LiveScoresTicker as EnhancedLiveScoresTicker, 
-  LivePlayerUpdates, 
-  InjuryReport as InjuryReportComponent, 
-  NewsFeed 
-} from '@/components/ui/live-data-components';
-import MyTeamCard from '@/components/team/MyTeamCard';
-import CurrentMatchup from '@/components/matchup/CurrentMatchup';
-import WeekStatus from '@/components/league/WeekStatus';
-import {
-  Trophy,
-  Users,
-  BarChart3,
-  MessageCircle,
-  TrendingUp,
-  Target,
+  Trophy, 
+  Users, 
+  Activity, 
+  Star,
+  Crown,
+  Flame,
   Zap,
   Shield,
-  Crown,
+  Target,
+  ChevronDown,
+  Loader2,
   ArrowRight,
-  Star,
-  Activity,
-  Calendar,
-  ChevronRight,
-  TrendingDown,
-  ExternalLink,
-  Flame,
-  AlertTriangle
+  Sparkles,
+  Play
 } from 'lucide-react';
-import { safeToFixed } from '@/utils/numberUtils';
-import { safeNumber } from '@/lib/utils';
+import { useAuth } from '@/components/AuthProvider';
 
-// Real Dashboard Stats from D'Amato Dynasty League
-function RealDashboardStats() {
-  const [leagueData, setLeagueData] = useState<any>(null);
-  const [userTeam, setUserTeam] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+// Three.js-inspired particle system
+const ParticleField = () => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [leagueResponse, teamResponse] = await Promise.all([
-          fetch('/api/league/damato'),
-          fetch('/api/my-team')
-        ]);
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-        if (leagueResponse.ok && teamResponse.ok) {
-          const league = await leagueResponse.json();
-          const team = await teamResponse.json();
-          setLeagueData(league);
-          setUserTeam(team.data);
-        }
-      } catch (error) {
-        console.error('Failed to fetch dashboard data:', error);
-      } finally {
-        setLoading(false);
-      }
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const particles: any[] = [];
+    const particleCount = 50;
+
+    // Set canvas size
+    const updateCanvasSize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
     };
+    updateCanvasSize();
+    window.addEventListener('resize', updateCanvasSize);
 
-    fetchData();
+    // Create particles
+    for (let i = 0; i < particleCount; i++) {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        vx: (Math.random() - 0.5) * 0.5,
+        vy: (Math.random() - 0.5) * 0.5,
+        size: Math.random() * 2 + 1,
+        opacity: Math.random() * 0.5 + 0.2,
+        hue: Math.random() * 60 + 200, // Blue-green spectrum
+      });
+    }
+
+    // Animation loop
+    const animate = () => {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      particles.forEach((particle) => {
+        // Update position
+        particle.x += particle.vx;
+        particle.y += particle.vy;
+
+        // Bounce off edges
+        if (particle.x < 0 || particle.x > canvas.width) particle.vx *= -1;
+        if (particle.y < 0 || particle.y > canvas.height) particle.vy *= -1;
+
+        // Draw particle
+        ctx.save();
+        ctx.globalAlpha = particle.opacity;
+        ctx.beginPath();
+        ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+        ctx.fillStyle = `hsl(${particle.hue}, 70%, 60%)`;
+        ctx.fill();
+        ctx.restore();
+
+        // Add glow effect
+        ctx.save();
+        ctx.globalAlpha = particle.opacity * 0.3;
+        ctx.beginPath();
+        ctx.arc(particle.x, particle.y, particle.size * 3, 0, Math.PI * 2);
+        ctx.fillStyle = `hsl(${particle.hue}, 70%, 60%)`;
+        ctx.fill();
+        ctx.restore();
+      });
+
+      requestAnimationFrame(animate);
+    };
+    animate();
+
+    return () => {
+      window.removeEventListener('resize', updateCanvasSize);
+    };
   }, []);
 
-  if (loading) {
-    return (
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {[...Array(4)].map((_, i) => (
-          <div key={i} className="bg-white rounded-xl p-6 shadow-sm border animate-pulse">
-            <div className="h-12 bg-gray-200 rounded mb-4"></div>
-            <div className="h-8 bg-gray-200 rounded mb-2"></div>
-            <div className="h-4 bg-gray-200 rounded"></div>
-          </div>
-        ))}
-      </div>
-    );
-  }
+  return (
+    <canvas
+      ref={canvasRef}
+      className="absolute inset-0 pointer-events-none"
+      style={{ mixBlendMode: 'screen' }}
+    />
+  );
+};
 
-  if (!userTeam || !leagueData) {
-    return (
-      <div className="bg-red-50 border border-red-200 rounded-xl p-6 mb-8">
-        <p className="text-red-800">Unable to load team data. Please check your connection.</p>
-      </div>
-    );
-  }
-
-  // Calculate user's league rank
-  const sortedTeams = leagueData.teams?.sort((a: any, b: any) => {
-    if (b.wins !== a.wins) return b.wins - a.wins;
-    return Number(b.pointsFor) - Number(a.pointsFor);
-  }) || [];
-  
-  const userRank = sortedTeams.findIndex((team: any) => team.id === userTeam.id) + 1;
-  const totalTeams = sortedTeams.length;
-  
+// Floating stats preview
+const FloatingStatsPreview = () => {
   const stats = [
-    {
-      label: 'League Rank',
-      value: `#${userRank}`,
-      change: `of ${totalTeams}`,
-      trend: userRank <= totalTeams / 2 ? 'up' : 'down',
-      icon: Trophy,
-      color: userRank <= 3 ? 'text-yellow-600 bg-yellow-50' : 'text-blue-600 bg-blue-50',
-      accent: userRank <= 3 ? 'border-yellow-200' : 'border-blue-200'
-    },
-    {
-      label: 'Total Points',
-      value: safeToFixed(userTeam.pointsFor, 1),
-      change: `vs ${safeToFixed(userTeam.pointsAgainst, 1)} against`,
-      trend: safeNumber(userTeam.pointsFor) > safeNumber(userTeam.pointsAgainst) ? 'up' : 'down',
-      icon: Target,
-      color: 'text-green-600 bg-green-50',
-      accent: 'border-green-200'
-    },
-    {
-      label: 'Record',
-      value: `${userTeam.wins}-${userTeam.losses}`,
-      change: `${safeToFixed(safeNumber(userTeam.record?.percentage) * 100, 0)}%`,
-      trend: safeNumber(userTeam.record?.percentage) >= 0.5 ? 'up' : 'down',
-      icon: TrendingUp,
-      color: safeNumber(userTeam.record?.percentage) >= 0.5 ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50',
-      accent: safeNumber(userTeam.record?.percentage) >= 0.5 ? 'border-green-200' : 'border-red-200'
-    },
-    {
-      label: 'Proj. This Week',
-      value: safeToFixed(userTeam.stats?.currentWeekProjection, 1),
-      change: 'points',
-      trend: safeNumber(userTeam.stats?.currentWeekProjection) > safeNumber(userTeam.stats?.seasonAverage) ? 'up' : 'down',
-      icon: Activity,
-      color: 'text-purple-600 bg-purple-50',
-      accent: 'border-purple-200'
-    }
+    { label: "Total Points", value: "15,247", icon: "📊", color: "from-blue-500/20 to-cyan-500/20" },
+    { label: "Active Players", value: "10", icon: "👥", color: "from-purple-500/20 to-pink-500/20" },
+    { label: "Games Today", value: "5", icon: "🏈", color: "from-green-500/20 to-emerald-500/20" },
+    { label: "Prize Pool", value: "$1,000", icon: "💰", color: "from-yellow-500/20 to-orange-500/20" }
   ];
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-      {stats.map((stat, index) => {
-        const IconComponent = stat.icon;
-        return (
-          <motion.div
-            key={stat.label}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1, duration: 0.5 }}
-            className={`bg-white rounded-xl p-6 shadow-sm border-l-4 ${stat.accent} hover:shadow-md transition-shadow duration-200`}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className={`p-2 rounded-lg ${stat.color}`}>
-                <IconComponent className="h-5 w-5" />
-              </div>
-              <div className={`text-xs font-medium px-2 py-1 rounded-full ${
-                stat.trend === 'up' 
-                  ? 'text-green-700 bg-green-100' 
-                  : 'text-red-700 bg-red-100'
-              }`}>
-                {stat.change}
-              </div>
-            </div>
-            <div className="space-y-1">
-              <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-              <p className="text-sm text-gray-500">{stat.label}</p>
-            </div>
-          </motion.div>
-        );
-      })}
+    <div className="absolute bottom-20 left-0 right-0 flex justify-center gap-6 px-4 z-10">
+      {stats.map((stat, i) => (
+        <motion.div
+          key={stat.label}
+          initial={{ opacity: 0, y: 30, scale: 0.8 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ delay: 1.5 + i * 0.15, duration: 0.6, ease: "easeOut" }}
+          className={`relative bg-gradient-to-br ${stat.color} backdrop-blur-xl rounded-2xl px-6 py-4 border border-white/10 shadow-2xl hover:scale-105 transition-transform duration-300`}
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent rounded-2xl" />
+          <div className="relative z-10 text-center">
+            <div className="text-3xl mb-2">{stat.icon}</div>
+            <p className="text-2xl font-bold text-white mb-1">{stat.value}</p>
+            <p className="text-sm text-gray-300">{stat.label}</p>
+          </div>
+        </motion.div>
+      ))}
     </div>
   );
-}
+};
 
-// ESPN-Style Live Scores Ticker
-// Real Quick Actions Grid - Only Working Features
-function RealQuickActionsGrid() {
-  const [actionStats, setActionStats] = useState<any>({});
-  
-  useEffect(() => {
-    // This would fetch real stats for each action
-    setActionStats({
-      lineup: 'Check starters',
-      trade: 'Analyze trades', 
-      players: 'Research hub',
-      standings: 'View rankings'
-    });
-  }, []);
-
-  const actions = [
-    {
-      name: 'My Team',
-      description: 'Manage lineup and roster',
-      href: '/teams',
-      icon: Users,
-      gradient: 'from-blue-500 to-blue-600',
-      hoverGradient: 'from-blue-600 to-blue-700',
-      stats: actionStats.lineup || 'Manage lineup'
-    },
-    {
-      name: 'Trade Analyzer',
-      description: 'Evaluate trade proposals',
-      href: '/trade',
-      icon: ArrowRight,
-      gradient: 'from-purple-500 to-purple-600',
-      hoverGradient: 'from-purple-600 to-purple-700',
-      stats: actionStats.trade || 'AI-powered'
-    },
-    {
-      name: 'Player Research',
-      description: 'Stats and player analysis',
-      href: '/players',
-      icon: BarChart3,
-      gradient: 'from-orange-500 to-orange-600',
-      hoverGradient: 'from-orange-600 to-orange-700',
-      stats: actionStats.players || 'Real-time data'
-    },
-    {
-      name: 'League Standings',
-      description: 'View current rankings',
-      href: '/league',
-      icon: Trophy,
-      gradient: 'from-yellow-500 to-yellow-600',
-      hoverGradient: 'from-yellow-600 to-yellow-700',
-      stats: actionStats.standings || '10 teams'
-    }
-  ];
-
+// Enhanced Team Profile Card
+const TeamProfileCard = ({ team, index, isSelected, onClick }: any) => {
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-      {actions.map((action, index) => {
-        const IconComponent = action.icon;
-        return (
+    <motion.div
+      initial={{ opacity: 0, y: 60, rotateX: -20 }}
+      animate={{ opacity: 1, y: 0, rotateX: 0 }}
+      transition={{ delay: index * 0.1, duration: 0.6, ease: "easeOut" }}
+      whileHover={{ y: -15, scale: 1.05, rotateY: 5 }}
+      onClick={onClick}
+      className={`
+        relative cursor-pointer group perspective-1000 transform-gpu
+        ${isSelected ? 'ring-4 ring-white/50 ring-opacity-100' : ''}
+      `}
+    >
+      {/* Card Container */}
+      <div 
+        className="relative h-72 rounded-3xl overflow-hidden backdrop-blur-xl border border-white/20 shadow-2xl"
+        style={{
+          background: `linear-gradient(135deg, ${team.primaryColor}15, ${team.secondaryColor}25, rgba(0,0,0,0.6))`,
+        }}
+      >
+        {/* Animated gradient overlay */}
+        <div 
+          className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+          style={{
+            background: `radial-gradient(circle at 50% 50%, ${team.primaryColor}30, transparent 70%)`,
+          }}
+        />
+
+        {/* Sparkle effects */}
+        <div className="absolute inset-0 pointer-events-none">
+          {[...Array(3)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute w-1 h-1 bg-white rounded-full"
+              style={{
+                top: `${20 + i * 30}%`,
+                left: `${15 + i * 25}%`,
+              }}
+              animate={{
+                opacity: [0, 1, 0],
+                scale: [0, 1, 0],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                delay: i * 0.7,
+              }}
+            />
+          ))}
+        </div>
+
+        {/* Trophy Badge */}
+        {team.trophies > 0 && (
+          <div className="absolute top-4 right-4 bg-gradient-to-br from-yellow-400/30 to-orange-500/30 backdrop-blur-sm rounded-full p-3 border border-yellow-400/20">
+            <div className="relative">
+              <Trophy className="w-5 h-5 text-yellow-400" />
+              <span className="absolute -top-2 -right-2 bg-yellow-400 text-black text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                {team.trophies}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Ranking Badge */}
+        <div className="absolute top-4 left-4 bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-sm rounded-full px-4 py-2 border border-white/20">
+          <span className="text-sm font-bold text-white">#{team.ranking}</span>
+        </div>
+
+        {/* Team Content */}
+        <div className="flex flex-col items-center justify-center h-full p-6 relative z-10">
+          {/* Avatar Container */}
+          <div className="relative mb-4">
+            <div className="relative w-24 h-24 rounded-full overflow-hidden border-4 border-white/30 group-hover:border-white/60 transition-all duration-300 shadow-xl">
+              <img 
+                src={team.avatar} 
+                alt={team.owner}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+            </div>
+            
+            {/* Live indicator with pulse */}
+            <div className="absolute -bottom-1 -right-1">
+              <div className="relative">
+                <div className="w-6 h-6 bg-green-500 rounded-full border-3 border-black shadow-lg" />
+                <div className="absolute inset-0 bg-green-500 rounded-full animate-ping opacity-75" />
+              </div>
+            </div>
+
+            {/* Glow effect */}
+            <div 
+              className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-xl"
+              style={{
+                background: `radial-gradient(circle, ${team.primaryColor}40, transparent)`,
+                transform: 'scale(1.5)',
+              }}
+            />
+          </div>
+
+          {/* Team Info */}
+          <div className="text-center space-y-2">
+            <h3 className="text-white font-bold text-lg leading-tight">
+              {team.teamName}
+            </h3>
+            <p className="text-gray-300 text-sm font-medium">{team.owner}</p>
+            <div className="flex items-center justify-center space-x-3 text-sm">
+              <span className="text-gray-400">{team.record}</span>
+              <div className="w-1 h-1 bg-gray-500 rounded-full" />
+              <span className="text-green-400 font-semibold">{team.points} pts</span>
+            </div>
+          </div>
+
+          {/* Team Motto */}
+          <motion.div 
+            className="absolute bottom-6 left-4 right-4 text-center"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: isSelected ? 1 : 0, y: isSelected ? 0 : 10 }}
+            whileHover={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <p className="text-xs text-white/90 italic font-medium px-3 py-2 bg-black/20 rounded-full backdrop-blur-sm border border-white/10">
+              "{team.motto}"
+            </p>
+          </motion.div>
+        </div>
+
+        {/* Selection Indicator */}
+        {isSelected && (
           <motion.div
-            key={action.name}
+            layoutId="selection-indicator"
+            className="absolute inset-0 border-4 border-white rounded-3xl"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: index * 0.1, duration: 0.5 }}
+            transition={{ type: "spring", duration: 0.5 }}
+          />
+        )}
+
+        {/* Hover overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      </div>
+    </motion.div>
+  );
+};
+
+// Quick stat component
+const QuickStat = ({ label, value, trend }: any) => (
+  <div className="text-center">
+    <div className="text-lg font-bold text-white">{value}</div>
+    <div className="text-xs text-gray-400">{label}</div>
+    {trend && <div className="text-xs text-green-400 mt-1">{trend}</div>}
+  </div>
+);
+
+// Enhanced selected team preview
+const SelectedTeamPreview = ({ team, onConfirm, isAuthenticating }: any) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 40, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -40, scale: 0.95 }}
+      transition={{ type: "spring", duration: 0.6 }}
+      className="mt-16 p-8 rounded-3xl relative overflow-hidden"
+      style={{
+        background: `linear-gradient(135deg, ${team.primaryColor}08, ${team.secondaryColor}12, rgba(0,0,0,0.4))`,
+        backdropFilter: 'blur(20px)',
+        border: '1px solid rgba(255,255,255,0.1)'
+      }}
+    >
+      {/* Animated background pattern */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center opacity-30" />
+      </div>
+
+      <div className="relative z-10">
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-8">
+          {/* Team Details */}
+          <div className="flex items-center gap-8">
+            <div className="relative">
+              <div className="w-32 h-32 rounded-3xl overflow-hidden border-4 border-white/20 shadow-2xl">
+                <img src={team.avatar} alt={team.owner} className="w-full h-full object-cover" />
+              </div>
+              <div 
+                className="absolute inset-0 rounded-3xl opacity-50 blur-2xl"
+                style={{
+                  background: `radial-gradient(circle, ${team.primaryColor}60, transparent)`,
+                  transform: 'scale(1.2)',
+                }}
+              />
+            </div>
+            
+            <div className="space-y-3">
+              <h3 className="text-3xl font-bold text-white">{team.teamName}</h3>
+              <p className="text-xl text-gray-300">Managed by <span className="text-white font-semibold">{team.owner}</span></p>
+              <div className="flex gap-6 text-sm">
+                <span className="text-gray-400">Record: <span className="text-white font-bold">{team.record}</span></span>
+                <span className="text-gray-400">Rank: <span className="text-yellow-400 font-bold">#{team.ranking}</span></span>
+                <span className="text-gray-400">Trophies: <span className="text-yellow-500 font-bold">{team.trophies}</span></span>
+              </div>
+              <p className="text-sm text-gray-400 italic max-w-md">"{team.motto}"</p>
+            </div>
+          </div>
+
+          {/* Login Button */}
+          <motion.button
+            onClick={onConfirm}
+            disabled={isAuthenticating}
+            className="relative px-10 py-5 font-bold text-white rounded-2xl overflow-hidden group disabled:opacity-50 min-w-[200px] shadow-2xl"
+            style={{
+              background: `linear-gradient(135deg, ${team.primaryColor}, ${team.secondaryColor})`,
+            }}
+            whileHover={{ scale: 1.05, boxShadow: `0 20px 40px ${team.primaryColor}40` }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 transform -skew-x-12 group-hover:translate-x-full transition-transform duration-700" />
+            
+            {isAuthenticating ? (
+              <div className="flex items-center justify-center gap-3">
+                <Loader2 className="w-6 h-6 animate-spin" />
+                <span>Entering League...</span>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center gap-3">
+                <span className="relative z-10">Enter as {team.owner}</span>
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-200" />
+              </div>
+            )}
+          </motion.button>
+        </div>
+
+        {/* Quick Stats Preview */}
+        <div className="grid grid-cols-4 gap-6 mt-8 pt-8 border-t border-white/10">
+          <QuickStat label="Total Points" value="1,247.5" trend="+12%" />
+          <QuickStat label="Win Streak" value="3" trend="🔥" />
+          <QuickStat label="Trades" value="7" />
+          <QuickStat label="Waiver Priority" value="4th" />
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+// D'Amato Dynasty League 2025 - Real League Members
+const DEMO_TEAMS = [
+  {
+    id: 1,
+    owner: "Nicholas D'Amato",
+    teamName: "D'Amato Dynasty",
+    avatar: "/api/avatars/nicholas",
+    primaryColor: "#C41E3A",
+    secondaryColor: "#FFD700",
+    record: "0-0",
+    ranking: 1,
+    trophies: 2,
+    points: "0",
+    motto: "Dynasty Starts Here",
+    email: "nicholas@damato-dynasty.com"
+  },
+  {
+    id: 2,
+    owner: "Nick Hartley",
+    teamName: "Hartley's Heroes",
+    avatar: "/api/avatars/nick",
+    primaryColor: "#00CED1",
+    secondaryColor: "#4682B4",
+    record: "0-0",
+    ranking: 2,
+    trophies: 1,
+    points: "0",
+    motto: "Heroes Always Win",
+    email: "nick@damato-dynasty.com"
+  },
+  {
+    id: 3,
+    owner: "Jack McCaigue",
+    teamName: "McCaigue Mayhem",
+    avatar: "/api/avatars/jack",
+    primaryColor: "#FF4500",
+    secondaryColor: "#DC143C",
+    record: "0-0",
+    ranking: 3,
+    trophies: 1,
+    points: "0",
+    motto: "Mayhem on the Field",
+    email: "jack@damato-dynasty.com"
+  },
+  {
+    id: 4,
+    owner: "Larry McCaigue",
+    teamName: "Larry Legends",
+    avatar: "/api/avatars/larry",
+    primaryColor: "#32CD32",
+    secondaryColor: "#228B22",
+    record: "0-0",
+    ranking: 4,
+    trophies: 0,
+    points: "0",
+    motto: "Legends Never Die",
+    email: "larry@damato-dynasty.com"
+  },
+  {
+    id: 5,
+    owner: "Renee McCaigue",
+    teamName: "Renee's Reign",
+    avatar: "/api/avatars/renee",
+    primaryColor: "#9370DB",
+    secondaryColor: "#8A2BE2",
+    record: "0-0",
+    ranking: 5,
+    trophies: 0,
+    points: "0",
+    motto: "Reigning Supreme",
+    email: "renee@damato-dynasty.com"
+  },
+  {
+    id: 6,
+    owner: "Jon Kornbeck",
+    teamName: "Kornbeck Crushers",
+    avatar: "/api/avatars/jon",
+    primaryColor: "#1E90FF",
+    secondaryColor: "#000080",
+    record: "0-0",
+    ranking: 6,
+    trophies: 0,
+    points: "0",
+    motto: "Crushing Dreams Since Day One",
+    email: "jon@damato-dynasty.com"
+  },
+  {
+    id: 7,
+    owner: "David Jarvey",
+    teamName: "Jarvey's Juggernauts",
+    avatar: "/api/avatars/david",
+    primaryColor: "#FFA500",
+    secondaryColor: "#FF8C00",
+    record: "0-0",
+    ranking: 7,
+    trophies: 0,
+    points: "0",
+    motto: "Unstoppable Force",
+    email: "david@damato-dynasty.com"
+  },
+  {
+    id: 8,
+    owner: "Kaity Lorbecki",
+    teamName: "Lorbecki Lions",
+    avatar: "/api/avatars/kaity",
+    primaryColor: "#FFB6C1",
+    secondaryColor: "#FF69B4",
+    record: "0-0",
+    ranking: 8,
+    trophies: 0,
+    points: "0",
+    motto: "Hear Us Roar",
+    email: "kaity@damato-dynasty.com"
+  },
+  {
+    id: 9,
+    owner: "Cason Minor",
+    teamName: "Minor Miracles",
+    avatar: "/api/avatars/cason",
+    primaryColor: "#40E0D0",
+    secondaryColor: "#48D1CC",
+    record: "0-0",
+    ranking: 9,
+    trophies: 0,
+    points: "0",
+    motto: "Miracles Happen Every Sunday",
+    email: "cason@damato-dynasty.com"
+  },
+  {
+    id: 10,
+    owner: "Brittany Bergum",
+    teamName: "Bergum Blitz",
+    avatar: "/api/avatars/brittany",
+    primaryColor: "#DA70D6",
+    secondaryColor: "#BA55D3",
+    record: "0-0",
+    ranking: 10,
+    trophies: 0,
+    points: "0",
+    motto: "Blitz to Victory",
+    email: "brittany@damato-dynasty.com"
+  }
+];
+
+// Team Selection Component
+const TeamSelectionLogin = () => {
+  const [selectedTeam, setSelectedTeam] = useState<any>(null);
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const router = useRouter();
+
+  const handleLogin = async (team: any) => {
+    setIsAuthenticating(true);
+    
+    try {
+      // Demo mode: instant authentication with team selection
+      const response = await fetch('/api/auth/simple-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          email: team.email,
+          password: 'Dynasty2025!',
+          teamId: team.id,
+          demo: true,
+          season: '2025'
+        })
+      });
+
+      if (response.ok) {
+        // Store team selection
+        localStorage.setItem('selected_team', JSON.stringify(team));
+        
+        // Smooth transition to dashboard
+        await new Promise(resolve => setTimeout(resolve, 1500)); // Show loading animation
+        window.location.href = '/'; // Full page refresh to update auth state
+      } else {
+        console.error('Login failed');
+      }
+    } catch (error) {
+      console.error('Login failed:', error);
+    } finally {
+      setIsAuthenticating(false);
+    }
+  };
+
+  return (
+    <section id="login" className="relative min-h-screen py-20 overflow-hidden">
+      {/* Background gradient */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black via-gray-900/95 to-black" />
+      
+      {/* Animated grid pattern */}
+      <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center opacity-5 [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]" />
+
+      {/* Section Header */}
+      <motion.div 
+        className="relative z-10 text-center mb-20"
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.8 }}
+      >
+        <motion.h2 
+          className="text-6xl md:text-7xl font-bold mb-6"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.2, duration: 0.8 }}
+        >
+          <span className="bg-gradient-to-r from-blue-400 via-purple-500 to-green-400 bg-clip-text text-transparent">
+            Choose Your
+          </span>
+          <br />
+          <span className="text-white">Dynasty</span>
+        </motion.h2>
+        <motion.p 
+          className="text-xl md:text-2xl text-gray-300 max-w-2xl mx-auto"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.4, duration: 0.8 }}
+        >
+          Select your team to enter the <span className="text-transparent bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text font-semibold">2025 D'Amato Dynasty Championship</span>
+        </motion.p>
+      </motion.div>
+
+      {/* Team Selection Grid */}
+      <div className="relative z-10 container mx-auto px-4 max-w-7xl">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-6 mb-12">
+          {DEMO_TEAMS.map((team, index) => (
+            <TeamProfileCard
+              key={team.id}
+              team={team}
+              index={index}
+              isSelected={selectedTeam?.id === team.id}
+              onClick={() => setSelectedTeam(team)}
+            />
+          ))}
+        </div>
+
+        {/* Selected Team Preview */}
+        <AnimatePresence mode="wait">
+          {selectedTeam && (
+            <SelectedTeamPreview
+              team={selectedTeam}
+              onConfirm={() => handleLogin(selectedTeam)}
+              isAuthenticating={isAuthenticating}
+            />
+          )}
+        </AnimatePresence>
+      </div>
+    </section>
+  );
+};
+
+// Main Landing Page Component
+const CinematicLandingPage = () => {
+  const scrollToLogin = () => {
+    document.getElementById('login')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  return (
+    <div className="relative min-h-screen overflow-hidden bg-black">
+      {/* Animated Background */}
+      <div className="absolute inset-0">
+        {/* Particle field */}
+        <ParticleField />
+        
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/50 to-black/80" />
+        
+        {/* Stadium lights effect */}
+        <div className="absolute inset-0">
+          {[...Array(6)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute w-1 h-40 bg-gradient-to-b from-white/20 to-transparent"
+              style={{
+                left: `${15 + i * 15}%`,
+                top: '10%',
+                transformOrigin: 'top center',
+              }}
+              animate={{
+                rotate: [0, 5, -5, 0],
+                opacity: [0.2, 0.5, 0.2],
+              }}
+              transition={{
+                duration: 4,
+                repeat: Infinity,
+                delay: i * 0.5,
+              }}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Hero Section */}
+      <section className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, ease: "easeOut" }}
+          className="text-center max-w-4xl mx-auto"
+        >
+          {/* Logo/Brand */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.5, duration: 0.8, ease: "easeOut" }}
+            className="mb-8"
+          >
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 shadow-2xl mb-6">
+              <Trophy className="w-10 h-10 text-white" />
+            </div>
+          </motion.div>
+
+          {/* Main Title */}
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.7, duration: 0.8 }}
+            className="text-6xl md:text-8xl lg:text-9xl font-bold mb-6 leading-none"
+          >
+            <span className="bg-gradient-to-r from-green-400 via-blue-500 to-purple-600 bg-clip-text text-transparent">
+              D'AMATO
+            </span>
+            <br />
+            <span className="bg-gradient-to-r from-purple-600 via-pink-500 to-orange-500 bg-clip-text text-transparent">
+              DYNASTY
+            </span>
+          </motion.h1>
+
+          {/* Subtitle */}
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.9, duration: 0.8 }}
+            className="text-2xl md:text-3xl lg:text-4xl text-gray-300 mb-4 font-light"
+          >
+            2025 Championship Season
+          </motion.p>
+
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.1, duration: 0.8 }}
+            className="text-lg md:text-xl text-gray-400 mb-12 max-w-2xl mx-auto"
+          >
+            Welcome to the D'Amato Dynasty League. Ten teams. One champion. Your dynasty starts here.
+          </motion.p>
+          
+          {/* CTA Button */}
+          <motion.button
+            onClick={scrollToLogin}
+            initial={{ opacity: 0, y: 20, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ delay: 1.3, duration: 0.8, ease: "easeOut" }}
+            className="group relative px-12 py-6 text-xl font-bold text-black bg-gradient-to-r from-green-400 to-blue-500 rounded-full shadow-[0_0_50px_rgba(34,197,94,0.5)] hover:shadow-[0_0_80px_rgba(34,197,94,0.8)] transition-all duration-300 overflow-hidden"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            <Link
-              href={action.href as any}
-              className={`block bg-gradient-to-br ${action.gradient} hover:${action.hoverGradient} p-6 rounded-xl text-white shadow-lg hover:shadow-xl transition-all duration-300 group`}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <IconComponent className="h-8 w-8 group-hover:scale-110 transition-transform duration-200" />
-                <ChevronRight className="h-5 w-5 opacity-60 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-200" />
-              </div>
-              <h3 className="font-semibold text-lg mb-2">{action.name}</h3>
-              <p className="text-sm opacity-90 mb-2">{action.description}</p>
-              <div className="text-xs opacity-75 bg-white/20 rounded-full px-3 py-1 inline-block">
-                {action.stats}
-              </div>
-            </Link>
-          </motion.div>
-        );
-      })}
-    </div>
-  );
-}
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <span className="relative z-10 flex items-center gap-3">
+              Enter The League
+              <Play className="w-6 h-6 group-hover:translate-x-1 transition-transform duration-200" />
+            </span>
+          </motion.button>
 
-// Real Top Performers from D'Amato Dynasty League
-function LeagueTopPerformers() {
-  const [topPerformers, setTopPerformers] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchTopPerformers = async () => {
-      try {
-        const response = await fetch('/api/league/damato');
-        if (response.ok) {
-          const league = await response.json();
-          
-          // Extract and sort all players by recent performance
-          const allPlayers: any[] = [];
-          league.teams?.forEach((team: any) => {
-            team.roster?.forEach((rosterSpot: any) => {
-              if (rosterSpot.player?.playerStats?.length > 0) {
-                const latestStats = rosterSpot.player.playerStats[0];
-                allPlayers.push({
-                  name: rosterSpot.player.name,
-                  position: rosterSpot.player.position,
-                  team: rosterSpot.player.nflTeam,
-                  points: Number(latestStats.fantasyPoints || 0),
-                  owner: team.owner.name,
-                  teamName: team.name,
-                  status: rosterSpot.player.status || 'healthy',
-                  trend: 'up' // Would calculate based on recent games
-                });
-              }
-            });
-          });
-          
-          // Sort by points and take top 5
-          const sorted = allPlayers.sort((a, b) => b.points - a.points).slice(0, 5);
-          setTopPerformers(sorted);
-        }
-      } catch (error) {
-        console.error('Failed to fetch top performers:', error);
-        // Fallback to mock data if API fails
-        setTopPerformers([
-          {
-            name: 'Player data loading...',
-            position: '--',
-            team: '--',
-            points: 0,
-            owner: 'Loading...',
-            status: 'unknown',
-            trend: 'up'
-          }
-        ]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTopPerformers();
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="bg-white rounded-xl shadow-sm border p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-gray-900 flex items-center">
-            <Flame className="h-5 w-5 text-orange-500 mr-2" />
-            League Leaders
-          </h2>
-        </div>
-        <div className="space-y-4">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="flex items-center justify-between p-4 rounded-lg animate-pulse">
-              <div className="flex items-center space-x-4">
-                <div className="w-8 h-8 bg-gray-200 rounded"></div>
-                <div className="space-y-2">
-                  <div className="h-4 bg-gray-200 rounded w-24"></div>
-                  <div className="h-3 bg-gray-200 rounded w-16"></div>
-                </div>
-              </div>
-              <div className="h-6 bg-gray-200 rounded w-12"></div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="bg-white rounded-xl shadow-sm border p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-gray-900 flex items-center">
-          <Flame className="h-5 w-5 text-orange-500 mr-2" />
-          League Leaders
-        </h2>
-        <Link href="/players" className="text-blue-600 hover:text-blue-700 text-sm font-medium">
-          View All
-        </Link>
-      </div>
-      
-      <div className="space-y-4">
-        {topPerformers.map((player, index) => (
+          {/* Scroll indicator */}
           <motion.div
-            key={`${player.name}-${index}`}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: index * 0.1 }}
-            className="flex items-center justify-between p-4 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 2, duration: 1 }}
+            className="mt-16"
           >
-            <div className="flex items-center space-x-4">
-              <div className="text-lg font-bold text-gray-600 w-6">
-                #{index + 1}
-              </div>
-              <div>
-                <div className="flex items-center space-x-2">
-                  <h3 className="font-semibold text-gray-900">{player.name}</h3>
-                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                    player.status === 'healthy' || player.status === 'active'
-                      ? 'bg-green-100 text-green-700'
-                      : player.status === 'questionable'
-                      ? 'bg-yellow-100 text-yellow-700'
-                      : 'bg-red-100 text-red-700'
-                  }`}>
-                    {player.status || 'Active'}
-                  </span>
-                </div>
-                <p className="text-sm text-gray-500">{player.position} • {player.team}</p>
-                <p className="text-xs text-blue-600">{player.owner}</p>
-              </div>
-            </div>
-            
-            <div className="text-right">
-              <div className="flex items-center space-x-2">
-                <span className="text-2xl font-bold text-gray-900">{safeToFixed(player.points, 1, '0.0')}</span>
-                <div className={`flex items-center ${
-                  player.trend === 'up' ? 'text-green-600' : 'text-gray-400'
-                }`}>
-                  {player.trend === 'up' ? (
-                    <TrendingUp className="h-4 w-4" />
-                  ) : (
-                    <TrendingDown className="h-4 w-4" />
-                  )}
-                </div>
-              </div>
-              <p className="text-xs text-gray-500">Last week</p>
-            </div>
+            <motion.div
+              animate={{ y: [0, 10, 0] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="flex flex-col items-center gap-2 text-gray-400"
+            >
+              <span className="text-sm">Scroll to choose your team</span>
+              <ChevronDown className="w-6 h-6" />
+            </motion.div>
           </motion.div>
-        ))}
-      </div>
-      
-      {topPerformers.length === 0 && (
-        <div className="text-center py-8 text-gray-500">
-          <p>No player data available yet.</p>
-          <p className="text-sm">Check back after games are played.</p>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// Real League Activity Feed
-function LeagueActivity() {
-  const [activities, setActivities] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchLeagueActivity = async () => {
-      try {
-        const response = await fetch('/api/leagues/league-damato-dynasty-2024/activity');
-        if (response.ok) {
-          const data = await response.json();
-          const activities = Array.isArray(data) ? data : (data.data || []);
-          setActivities(activities.slice(0, 6)); // Show last 6 activities
-        } else {
-          // Fallback to recent matchup results
-          const leagueResponse = await fetch('/api/league/damato');
-          if (leagueResponse.ok) {
-            const league = await leagueResponse.json();
-            const recentMatchups = league.matchups?.slice(0, 5) || [];
-            
-            const mockActivities = recentMatchups.map((matchup: any, index: number) => ({
-              type: 'matchup',
-              icon: Trophy,
-              color: 'text-blue-600 bg-blue-100',
-              title: `Week ${matchup.week} Result`,
-              description: `${matchup.homeTeam.owner.name} vs ${matchup.awayTeam.owner.name}`,
-              time: `${index + 1} day${index > 0 ? 's' : ''} ago`,
-              details: matchup.isCompleted ? `Final: ${safeToFixed(matchup.homeScore, 1, '0.0')} - ${safeToFixed(matchup.awayScore, 1, '0.0')}` : 'In progress'
-            }));
-            
-            setActivities(mockActivities);
-          }
-        }
-      } catch (error) {
-        console.error('Failed to fetch league activity:', error);
-        setActivities([
-          {
-            type: 'info',
-            icon: Activity,
-            color: 'text-gray-600 bg-gray-100',
-            title: 'League Activity',
-            description: 'Recent league activity will appear here',
-            time: 'Loading...',
-            details: 'Check back soon'
-          }
-        ]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchLeagueActivity();
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="bg-white rounded-xl shadow-sm border p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-6">League Activity</h2>
-        <div className="space-y-4">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="flex items-start space-x-4 p-3 rounded-lg animate-pulse">
-              <div className="w-8 h-8 bg-gray-200 rounded-lg"></div>
-              <div className="flex-1 space-y-2">
-                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="bg-white rounded-xl shadow-sm border p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-gray-900">League Activity</h2>
-        <Link href="/league" className="text-blue-600 hover:text-blue-700 text-sm font-medium">
-          View All
-        </Link>
-      </div>
-      
-      <div className="space-y-4">
-        {activities.map((activity, index) => {
-          const IconComponent = activity.icon;
-          return (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className="flex items-start space-x-4 p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
-            >
-              <div className={`p-2 rounded-lg ${activity.color}`}>
-                <IconComponent className="h-4 w-4" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-gray-900 truncate">{activity.title}</h3>
-                  <span className="text-xs text-gray-500 ml-2">{activity.time}</span>
-                </div>
-                <p className="text-sm text-gray-600 mt-1">{activity.description}</p>
-                <p className="text-xs text-gray-500 mt-1">{activity.details}</p>
-              </div>
-            </motion.div>
-          );
-        })}
-      </div>
-      
-      {activities.length === 0 && (
-        <div className="text-center py-6 text-gray-500">
-          <Activity className="h-8 w-8 mx-auto mb-2 opacity-50" />
-          <p>No recent activity</p>
-          <p className="text-sm">League activity will appear here</p>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// Simple login redirect for unauthenticated users
-function LoginRedirect() {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-center max-w-md mx-auto p-8"
-      >
-        <div className="h-16 w-16 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center shadow-lg mx-auto mb-6">
-          <span className="text-white font-bold text-xl">🏈</span>
-        </div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">
-          Welcome to AstralField
-        </h1>
-        <p className="text-gray-600 mb-8">
-          The ultimate fantasy football platform for the D'Amato Dynasty League.
-        </p>
-        <Link
-          href="/login"
-          className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 space-x-2"
-        >
-          <span>Sign In to Continue</span>
-          <ExternalLink className="h-4 w-4" />
-        </Link>
-        
-        <div className="mt-8 text-sm text-gray-500">
-          <p>D'Amato Dynasty League • 2024 Season</p>
-        </div>
-      </motion.div>
-    </div>
-  );
-}
-
-// Real D'Amato Dynasty League Dashboard
-function RealAuthenticatedDashboard() {
-  const { user } = useAuth();
-  const [currentWeek, setCurrentWeek] = useState(2);
-  
-  useEffect(() => {
-    // Get current week from league data
-    const fetchCurrentWeek = async () => {
-      try {
-        const response = await fetch('/api/league/damato');
-        if (response.ok) {
-          const league = await response.json();
-          setCurrentWeek(league.currentWeek || 2);
-        }
-      } catch (error) {
-        console.error('Failed to fetch current week:', error);
-      }
-    };
-    
-    fetchCurrentWeek();
-  }, []);
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Welcome Header with Real League Info */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Welcome back, {user?.name?.split(' ')[0] || 'Manager'}! 🏈
-              </h1>
-              <p className="text-gray-600">
-                D'Amato Dynasty League • Week {currentWeek} • 2024 Season
-              </p>
-            </div>
-            <div className="text-right">
-              <div className="text-sm text-gray-500">Last updated</div>
-              <div className="text-sm font-medium text-gray-900">{new Date().toLocaleTimeString()}</div>
-            </div>
-          </div>
         </motion.div>
 
-        {/* Real Stats Grid */}
-        <RealDashboardStats />
+        {/* Floating Stats Preview */}
+        <FloatingStatsPreview />
+      </section>
 
-        {/* Live Scores Ticker */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-        >
-          <EnhancedLiveScoresTicker />
-        </motion.div>
-
-        {/* Real Quick Actions Grid */}
-        <RealQuickActionsGrid />
-
-        {/* Main Content Grid */}
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Left Column */}
-          <div className="lg:col-span-2 space-y-8">
-            <LeagueTopPerformers />
-            
-            {/* Live Player Updates */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
-            >
-              <LivePlayerUpdates />
-            </motion.div>
-
-            {/* News Feed */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.8 }}
-            >
-              <NewsFeed />
-            </motion.div>
-          </div>
-
-          {/* Right Column */}
-          <div className="space-y-8">
-            {/* Current Matchup */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.4 }}
-            >
-              <CurrentMatchup />
-            </motion.div>
-
-            {/* My Team Card */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.5 }}
-            >
-              <MyTeamCard />
-            </motion.div>
-
-            {/* Week Status */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.6 }}
-            >
-              <WeekStatus />
-            </motion.div>
-            
-            <LeagueActivity />
-            
-            {/* Injury Report */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.7 }}
-            >
-              <InjuryReportComponent />
-            </motion.div>
-          </div>
-        </div>
-      </div>
+      {/* Team Selection Section */}
+      <TeamSelectionLogin />
     </div>
   );
-}
+};
 
-// Main Component - D'Amato Dynasty League Home
-export default function AstralFieldHomePage() {
+// Main component with auth check
+export default function FantasyEliteLandingPage() {
   const { user, isLoading } = useAuth();
-  const { isMobile } = useBreakpoint();
 
-  // Return mobile version for mobile devices
-  if (isMobile && user) {
-    return <MobileHomepage />;
-  }
-
-  // Loading State
+  // Show landing page for non-authenticated users
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+      <div className="min-h-screen bg-black flex items-center justify-center">
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           className="text-center"
         >
-          <div className="h-16 w-16 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center shadow-lg mx-auto mb-6">
-            <span className="text-white font-bold text-xl animate-pulse">🏈</span>
+          <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-2xl mx-auto mb-6">
+            <Trophy className="w-10 h-10 text-white animate-pulse" />
           </div>
-          <div className="w-12 h-12 mx-auto mb-4">
-            <div className="w-full h-full border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-          </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Loading AstralField</h2>
-          <p className="text-blue-600">Preparing your league dashboard...</p>
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"
+          />
+          <h2 className="text-2xl font-bold text-white mb-2">Fantasy Elite</h2>
+          <p className="text-blue-400">Loading the ultimate fantasy experience...</p>
         </motion.div>
       </div>
     );
   }
 
-  return user ? <RealAuthenticatedDashboard /> : <LoginRedirect />;
+  // Redirect authenticated users to dashboard
+  if (user) {
+    window.location.href = '/dashboard';
+    return null;
+  }
+
+  return <CinematicLandingPage />;
 }

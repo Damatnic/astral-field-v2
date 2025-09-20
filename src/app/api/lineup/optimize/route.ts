@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { cookies } from 'next/headers';
+import { getBulkProjections, getComprehensiveProjection } from '@/services/sleeper/projections';
 
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic';
@@ -51,11 +52,20 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    // Sort players by name for now (would use projections in real app)
+    // Get real projections from Sleeper API
+    const sleeperIds = team.roster
+      .map(rp => rp.player.sleeperId)
+      .filter(id => id != null) as string[];
+    
+    const projections = await getBulkProjections(sleeperIds);
+    
+    // Map projections to players
     const playersWithProjections = team.roster
       .map(rp => ({
         ...rp,
-        projectedPoints: Math.random() * 20 // Mock projection
+        projectedPoints: rp.player.sleeperId 
+          ? projections.get(rp.player.sleeperId) || 8.0 
+          : 8.0 // Default projection if no Sleeper ID
       }))
       .sort((a, b) => b.projectedPoints - a.projectedPoints);
     

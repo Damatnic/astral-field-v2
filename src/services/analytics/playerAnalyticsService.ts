@@ -69,7 +69,7 @@ export interface PositionAnalysis {
     median: number;
     standardDeviation: number;
     topPerformer: { name: string; points: number };
-    biggest disappointment: { name: string; underperformance: number };
+    biggestDisappointment: { name: string; underperformance: number };
   };
   trends: {
     emergingPlayers: Array<{ name: string; trend: number }>;
