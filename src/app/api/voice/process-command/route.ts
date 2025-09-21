@@ -48,7 +48,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json(result);
     
   } catch (error) {
-    handleComponentError(error as Error, 'route');
+    console.error('Voice command processing error:', error);
     return NextResponse.json({
       success: false,
       error: 'Failed to process voice command',
