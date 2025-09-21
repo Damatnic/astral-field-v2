@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { handleComponentError } from '@/lib/error-handling';
-import { Position } from '@prisma/client';
 
 // Machine Learning weights for player scoring predictions
 const ML_WEIGHTS = {
@@ -84,28 +83,24 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch team's roster with player data
-    const roster = await prisma.rosterPlayer.findMany({
+    const roster = await prisma.roster.findMany({
       where: { teamId },
       include: {
         player: {
           include: {
-            playerStats: {
-              where: { season: 2024 },
+            stats: {
+              where: { season: "2024" },
               orderBy: { week: 'desc' },
               take: 5
             },
             projections: {
               where: { 
                 week,
-                season: 2024 
+                season: "2024" 
               }
             },
-            injuryReports: {
-              where: { 
-                season: 2024,
-                week
-              },
-              orderBy: { updatedAt: 'desc' },
+            news: {
+              orderBy: { publishedAt: 'desc' },
               take: 1
             }
           }
@@ -132,9 +127,9 @@ export async function POST(request: NextRequest) {
     // Analyze each player using ML-inspired algorithms
     const analyzedPlayers = roster.map(rosterPlayer => {
       const player = rosterPlayer.player;
-      const stats = player.playerStats || [];
+      const stats = player.stats || [];
       const projection = player.projections?.[0];
-      const injury = player.injuryReports?.[0];
+      const injury = player.injuryStatus;
       
       // Calculate recent form (last 3 games average)
       const recentGames = stats.slice(0, 3);
@@ -154,7 +149,7 @@ export async function POST(request: NextRequest) {
       const weatherImpact = simulateWeatherImpact(player.position);
       
       // Calculate injury risk factor
-      const injuryRisk = calculateInjuryRisk(injury?.status);
+      const injuryRisk = calculateInjuryRisk(injury);
       
       // ML-weighted projection calculation
       const baseProjection = projection?.projectedPoints 
@@ -192,7 +187,7 @@ export async function POST(request: NextRequest) {
         opponent: getOpponent(player.nflTeam, week),
         projectedPoints: mlProjection,
         confidenceScore,
-        injuryStatus: injury?.status,
+        injuryStatus: injury,
         weather: {
           condition: weatherImpact > 0.9 ? 'Clear' : weatherImpact > 0.7 ? 'Cloudy' : 'Rain',
           windSpeed: Math.random() * 20,
@@ -396,25 +391,25 @@ function generateInsights(lineup: any[]): string[] {
   return insights;
 }
 
-function calculateMatchupDifficulty(position: Position | null): number {
+function calculateMatchupDifficulty(position: string | null): number {
   // Simulate matchup difficulty based on defensive rankings
   const baseDifficulty = 0.5 + Math.random() * 0.5;
   
   // Adjust for position
-  if (position === Position.QB) return baseDifficulty * 1.1;
-  if (position === Position.RB) return baseDifficulty * 0.95;
-  if (position === Position.WR) return baseDifficulty * 1.05;
-  if (position === Position.TE) return baseDifficulty * 0.9;
+  if (position === 'QB') return baseDifficulty * 1.1;
+  if (position === 'RB') return baseDifficulty * 0.95;
+  if (position === 'WR') return baseDifficulty * 1.05;
+  if (position === 'TE') return baseDifficulty * 0.9;
   
   return baseDifficulty;
 }
 
-function simulateWeatherImpact(position: Position | null): number {
+function simulateWeatherImpact(position: string | null): number {
   const baseImpact = 0.7 + Math.random() * 0.3;
   
   // Kickers and QBs more affected by weather
-  if (position === Position.K) return baseImpact * 0.8;
-  if (position === Position.QB) return baseImpact * 0.9;
+  if (position === 'K') return baseImpact * 0.8;
+  if (position === 'QB') return baseImpact * 0.9;
   
   return baseImpact;
 }

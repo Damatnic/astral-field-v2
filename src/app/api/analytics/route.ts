@@ -252,15 +252,15 @@ async function calculateLeagueStats(league: any) {
   const avgWeeklyScore = totalPoints / (allMatchups.length * 2); // 2 teams per matchup
   
   // Get trade and waiver counts
-  const trades = await prisma.trade.count({
+  const trades = await prisma.tradeProposal.count({
     where: { 
-      leagueId: league.id,
-      status: 'ACCEPTED'
+      status: 'accepted'
     }
   });
   
-  const waivers = await prisma.waiverClaim.count({
+  const waivers = await prisma.transaction.count({
     where: { 
+      type: 'waiver',
       team: {
         leagueId: league.id
       },
@@ -282,46 +282,44 @@ async function calculateLeagueStats(league: any) {
 
 async function getRecentActivity(leagueId: string) {
   // Get recent trades
-  const trades = await prisma.trade.findMany({
+  const trades = await prisma.tradeProposal.findMany({
     where: { 
-      leagueId,
-      status: 'ACCEPTED'
+      status: 'accepted'
     },
     orderBy: { createdAt: 'desc' },
     take: 5,
     include: {
-      proposer: true,
-      team: true
+      proposingTeam: true
     }
   });
   
-  // Get recent waiver claims
-  const waivers = await prisma.waiverClaim.findMany({
+  // Get recent transactions (waiver claims)
+  const waivers = await prisma.transaction.findMany({
     where: {
+      type: 'waiver',
       team: {
         leagueId
       },
-      status: 'SUCCESSFUL'
+      status: 'completed'
     },
-    orderBy: { processedAt: 'desc' },
+    orderBy: { createdAt: 'desc' },
     take: 5,
     include: {
-      team: true,
-      player: true
+      team: true
     }
   });
   
   return {
     trades: trades.map(t => ({
       id: t.id,
-      teams: [t.proposer.name, t.team?.name || 'Unknown'].filter(Boolean),
+      teams: [t.proposingTeam.name].filter(Boolean),
       date: t.createdAt
     })),
     waivers: waivers.map(w => ({
       id: w.id,
       team: w.team.name,
-      player: w.player.name,
-      date: w.processedAt
+      type: 'waiver_claim',
+      date: w.createdAt
     }))
   };
 }
@@ -380,7 +378,7 @@ async function getTopPlayers(leagueId: string) {
         week: currentWeek,
         season,
         player: {
-          rosterPlayers: {
+          roster: {
             some: {
               team: {
                 leagueId
@@ -420,17 +418,17 @@ async function getTopPlayers(leagueId: string) {
     // Final fallback: Get top rostered players by rank
     const topPlayers = await prisma.player.findMany({
       where: {
-        rosterPlayers: {
+        roster: {
           some: {
             team: {
               leagueId
             }
           }
         },
-        status: 'ACTIVE'
+        status: 'active'
       },
       orderBy: {
-        searchRank: 'asc' // Use searchRank as proxy for performance
+        rank: 'asc' // Use rank as proxy for performance
       },
       take: 10,
       select: {
@@ -438,7 +436,7 @@ async function getTopPlayers(leagueId: string) {
         name: true,
         position: true,
         nflTeam: true,
-        searchRank: true
+        rank: true
       }
     });
     
@@ -448,7 +446,7 @@ async function getTopPlayers(leagueId: string) {
       name: player.name,
       position: player.position,
       team: player.nflTeam,
-      points: Math.max(0, 25 - (player.searchRank || 999) / 10), // Estimate based on search rank
+      points: Math.max(0, 25 - (player.rank || 999) / 10), // Estimate based on rank
       week: currentWeek,
       isLive: false,
       isEstimate: true

@@ -36,9 +36,9 @@ export class VerifierAgent {
       // Verify critical data integrity
       const issues: string[] = [];
       
-      // Check for teams without owners
+      // Check for teams without owners (ownerId is required, so we check for empty string instead)
       const orphanedTeams = await prisma.team.count({
-        where: { ownerId: null }
+        where: { ownerId: '' }
       });
       if (orphanedTeams > 0) {
         issues.push(`Found ${orphanedTeams} teams without owners`);

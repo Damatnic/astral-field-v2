@@ -21,6 +21,7 @@ model User {
   emailVerified   DateTime?
   accounts        Account[]
   sessions        Session[]
+  userSessions    UserSession[]
   leagues         League[]
   teams           Team[]
   notifications   Notification[]
@@ -61,6 +62,21 @@ model Session {
   
   @@index([userId])
   @@map("sessions")
+}
+
+model UserSession {
+  id           String   @id @default(cuid())
+  sessionId    String   @unique
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isActive     Boolean  @default(true)
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([sessionId])
+  @@map("user_sessions")
 }
 
 // ==================== LEAGUES & TEAMS ====================
@@ -129,7 +145,7 @@ model Player {
   name            String
   firstName       String?
   lastName        String?
-  position        String
+  position        Position
   nflTeam         String?
   jerseyNumber    Int?
   height          String?
@@ -164,7 +180,7 @@ model Roster {
   team            Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
   playerId        String
   player          Player    @relation(fields: [playerId], references: [id])
-  position        String    // QB, RB1, RB2, WR1, WR2, TE, FLEX, K, DEF, BENCH
+  position        Position    // QB, RB1, RB2, WR1, WR2, TE, FLEX, K, DEF, BENCH
   isStarter       Boolean   @default(true)
   acquisitionDate DateTime  @default(now())
   acquisitionType String    @default("draft") // draft, trade, waiver, free_agent
@@ -330,4 +346,42 @@ model UserPreferences {
   updatedAt       DateTime  @updatedAt
   
   @@map("user_preferences")
+}
+
+// ==================== ENUMS ====================
+
+enum Position {
+  QB
+  RB
+  WR
+  TE
+  K
+  DEF
+  FLEX
+  SUPER_FLEX
+  BENCH
+  IR
+}
+
+enum RosterSlot {
+  QB
+  RB1
+  RB2
+  WR1
+  WR2
+  WR3
+  TE
+  FLEX
+  SUPER_FLEX
+  K
+  DEF
+  BENCH
+  IR
+}
+
+enum AcquisitionType {
+  DRAFT
+  TRADE
+  WAIVER
+  FREE_AGENT
 }

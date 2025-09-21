@@ -459,8 +459,7 @@ async function getLeagueDetails(leagueId: string) {
             select: { id: true, name: true, email: true }
           }
         }
-      },
-      settings: true
+      }
     }
   });
 
@@ -562,22 +561,19 @@ async function getAdvancedCompetitionMetrics(leagueId: string) {
 
 async function getDetailedFairnessAnalysis(leagueId: string, timeRange: string) {
   // Detailed trade fairness analysis
-  const trades = await prisma.trade.findMany({
+  const trades = await prisma.tradeProposal.findMany({
     where: {
-      leagueId,
-      status: 'ACCEPTED',
+      status: 'accepted',
       createdAt: {
         gte: getTimeRangeDate(timeRange)
       }
     },
     include: {
-      items: {
+      proposingTeam: {
         include: {
-          player: true
+          league: true
         }
-      },
-      proposer: true,
-      team: true
+      }
     }
   });
 
@@ -587,7 +583,7 @@ async function getDetailedFairnessAnalysis(leagueId: string, timeRange: string) 
       id: trade.id,
       score: Math.random() * 10, // Would calculate actual fairness
       flags: [],
-      participants: [trade.proposer.name, trade.team?.name].filter(Boolean)
+      participants: [trade.proposingTeam.name].filter(Boolean)
     })),
     suspiciousActivity: [],
     recommendations: [
@@ -651,17 +647,13 @@ async function getEngagementAnalysis(leagueId: string) {
     where: { leagueId },
     include: {
       owner: true,
-      lineupHistory: {
-        orderBy: { submittedAt: 'desc' },
+      transactions: {
+        orderBy: { createdAt: 'desc' },
         take: 10
       },
-      trades: {
+      tradeProposals: {
         orderBy: { createdAt: 'desc' },
         take: 5
-      },
-      waiverClaims: {
-        orderBy: { createdAt: 'desc' },
-        take: 10
       }
     }
   });
@@ -716,23 +708,23 @@ function getTimeRangeDate(timeRange: string): Date {
 function calculateEngagementScore(team: any): number {
   let score = 0;
   
-  // Lineup management
-  score += Math.min(30, team.lineupHistory.length * 3);
+  // Transaction activity
+  score += Math.min(30, (team.transactions?.length || 0) * 3);
   
-  // Trade activity
-  score += Math.min(25, team.trades.length * 5);
+  // Trade proposals
+  score += Math.min(25, (team.tradeProposals?.length || 0) * 5);
   
-  // Waiver activity
-  score += Math.min(25, team.waiverClaims.length * 2.5);
+  // Base participation score
+  score += 20; // Base score for being in the league
   
   // Recent activity boost
-  const recentActivity = [...team.lineupHistory, ...team.trades, ...team.waiverClaims]
+  const recentActivity = [...(team.transactions || []), ...(team.tradeProposals || [])]
     .filter((item: any) => {
-      const date = item.submittedAt || item.createdAt;
+      const date = item.createdAt;
       return date > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     });
   
-  score += Math.min(20, recentActivity.length * 4);
+  score += Math.min(25, recentActivity.length * 5);
   
   return Math.min(100, score);
 }
@@ -746,9 +738,8 @@ function getEngagementLevel(team: any): 'high' | 'medium' | 'low' {
 
 function getLastActivity(team: any): Date | null {
   const activities = [
-    ...team.lineupHistory.map((l: any) => l.submittedAt),
-    ...team.trades.map((t: any) => t.createdAt),
-    ...team.waiverClaims.map((w: any) => w.createdAt)
+    ...(team.transactions || []).map((t: any) => t.createdAt),
+    ...(team.tradeProposals || []).map((p: any) => p.createdAt)
   ].filter(Boolean).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
   
   return activities.length > 0 ? new Date(activities[0]) : null;
