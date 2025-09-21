@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
 }
 
 // WebSocket server setup (this would typically be in a separate file or server)
-export function initializeWebSocketServer(server: HTTPServer) {
+function initializeWebSocketServer(server: HTTPServer) {
   if (io) {
     return io;
   }
@@ -247,12 +247,12 @@ function setupPeriodicBroadcasts() {
 }
 
 // Get the socket server instance
-export function getSocketServer(): SocketIOServer | null {
+function getSocketServer(): SocketIOServer | null {
   return io;
 }
 
-// Cleanup function
-export function cleanupWebSocketServer() {
+// Cleanup function  
+function cleanupWebSocketServer() {
   if (io) {
     io.close();
     io = null;

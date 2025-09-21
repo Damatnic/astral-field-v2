@@ -489,29 +489,12 @@ const TeamSelectionLogin = () => {
     setIsAuthenticating(true);
     
     try {
-      // Demo mode: instant authentication with team selection
-      const response = await fetch('/api/auth/simple-login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          email: team.email,
-          password: 'Dynasty2025!',
-          teamId: team.id,
-          demo: true,
-          season: '2025'
-        })
-      });
-
-      if (response.ok) {
-        // Store team selection
-        localStorage.setItem('selected_team', JSON.stringify(team));
-        
-        // Smooth transition to dashboard
-        await new Promise(resolve => setTimeout(resolve, 1500)); // Show loading animation
-        router.push('/dashboard'); // Navigate to dashboard instead of self
-      } else {
-        console.error('Login failed');
-      }
+      // Store team selection
+      localStorage.setItem('selected_team', JSON.stringify(team));
+      
+      // Smooth transition to dashboard  
+      await new Promise(resolve => setTimeout(resolve, 1500)); // Show loading animation
+      router.push('/dashboard');
     } catch (error) {
       console.error('Login failed:', error);
     } finally {
@@ -745,6 +728,14 @@ const CinematicLandingPage = () => {
 // Main component with auth check
 export default function FantasyEliteLandingPage() {
   const { user, isLoading } = useAuth();
+  const router = useRouter();
+
+  // Redirect authenticated users to dashboard
+  React.useEffect(() => {
+    if (!isLoading && user) {
+      router.push('/dashboard');
+    }
+  }, [user, isLoading, router]);
 
   // Show landing page for non-authenticated users
   if (isLoading) {
@@ -763,16 +754,15 @@ export default function FantasyEliteLandingPage() {
             transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
             className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"
           />
-          <h2 className="text-2xl font-bold text-white mb-2">Fantasy Elite</h2>
+          <h2 className="text-2xl font-bold text-white mb-2">AstralField</h2>
           <p className="text-blue-400">Loading the ultimate fantasy experience...</p>
         </motion.div>
       </div>
     );
   }
 
-  // Redirect authenticated users to dashboard
+  // Don't show content for authenticated users (they'll be redirected)
   if (user) {
-    window.location.href = '/dashboard';
     return null;
   }
 

@@ -1,0 +1,242 @@
+{
+  "testSummary": {
+    "duration": 51571,
+    "samplesCollected": 11,
+    "samplingInterval": 5000
+  },
+  "memoryMetrics": {
+    "baseline": {
+      "heapUsed": 9002000,
+      "rss": 61161472
+    },
+    "final": {
+      "heapUsed": 7179976,
+      "rss": 113061888
+    },
+    "growth": {
+      "heap": -1822024,
+      "rss": 51900416,
+      "percentage": -20.24021328593646
+    },
+    "peak": 85072552,
+    "average": 24782597
+  },
+  "leakDetection": {
+    "potentialLeaks": [],
+    "suspiciousObjects": [
+      {
+        "testName": "arrayLeakTest",
+        "memoryIncrease": 60124312,
+        "objectsCreated": 1000,
+        "objectsRetained": 696,
+        "timestamp": 215.74260000000004
+      },
+      {
+        "testName": "objectLeakTest",
+        "memoryIncrease": 34811160,
+        "objectsCreated": 5000,
+        "objectsRetained": 4031,
+        "timestamp": 10606.436300000001
+      },
+      {
+        "testName": "closureLeakTest",
+        "memoryIncrease": 78109656,
+        "objectsCreated": 2000,
+        "objectsRetained": 1814,
+        "timestamp": 20920.714
+      },
+      {
+        "testName": "eventListenerLeakTest",
+        "memoryIncrease": 7862248,
+        "objectsCreated": 1000,
+        "objectsRetained": 849,
+        "timestamp": 31241.895899999996
+      },
+      {
+        "testName": "bufferLeakTest",
+        "memoryIncrease": -7879056,
+        "objectsCreated": 500,
+        "objectsRetained": 385,
+        "timestamp": 41555.9953
+      }
+    ],
+    "growthAnalysis": {
+      "overall": "unknown",
+      "totalGrowth": -1845160,
+      "averageGrowthRate": -36903.19999999999,
+      "positiveGrowthPercentage": 60,
+      "stablePercentage": 20
+    }
+  },
+  "recommendations": [
+    "High object retention rates detected. Ensure proper cleanup of unused objects.",
+    "Implement object pooling for frequently created/destroyed objects.",
+    "Use WeakMap/WeakSet for caching to allow garbage collection.",
+    "Monitor memory usage in production with tools like clinic.js or 0x.",
+    "Consider running with --inspect and using Chrome DevTools for heap analysis."
+  ],
+  "rawData": {
+    "memorySnapshots": [
+      {
+        "timestamp": 0.09700000000020736,
+        "heapUsed": 9012320,
+        "heapTotal": 12279808,
+        "external": 2475407,
+        "rss": 61161472,
+        "arrayBuffers": 19279
+      },
+      {
+        "timestamp": 5005.6756000000005,
+        "heapUsed": 69163152,
+        "heapTotal": 108744704,
+        "external": 2474763,
+        "rss": 156954624,
+        "arrayBuffers": 18635
+      },
+      {
+        "timestamp": 10018.954300000001,
+        "heapUsed": 8042104,
+        "heapTotal": 9916416,
+        "external": 2474763,
+        "rss": 58867712,
+        "arrayBuffers": 18635
+      },
+      {
+        "timestamp": 15030.020999999999,
+        "heapUsed": 43031408,
+        "heapTotal": 67825664,
+        "external": 2472244,
+        "rss": 116936704,
+        "arrayBuffers": 18635
+      },
+      {
+        "timestamp": 20032.2407,
+        "heapUsed": 6947824,
+        "heapTotal": 9392128,
+        "external": 2472244,
+        "rss": 58290176,
+        "arrayBuffers": 18635
+      },
+      {
+        "timestamp": 25044.135599999998,
+        "heapUsed": 85072552,
+        "heapTotal": 122638336,
+        "external": 2472244,
+        "rss": 170696704,
+        "arrayBuffers": 18635
+      },
+      {
+        "timestamp": 30051.763199999998,
+        "heapUsed": 6953720,
+        "heapTotal": 9392128,
+        "external": 2472244,
+        "rss": 58220544,
+        "arrayBuffers": 18635
+      },
+      {
+        "timestamp": 35064.1518,
+        "heapUsed": 15025696,
+        "heapTotal": 30363648,
+        "external": 2472244,
+        "rss": 70991872,
+        "arrayBuffers": 18635
+      },
+      {
+        "timestamp": 40078.5838,
+        "heapUsed": 15027704,
+        "heapTotal": 30363648,
+        "external": 2472244,
+        "rss": 70991872,
+        "arrayBuffers": 18635
+      },
+      {
+        "timestamp": 45092.2982,
+        "heapUsed": 7164928,
+        "heapTotal": 10964992,
+        "external": 44572244,
+        "rss": 113020928,
+        "arrayBuffers": 42118635
+      },
+      {
+        "timestamp": 50102.7339,
+        "heapUsed": 7167160,
+        "heapTotal": 10964992,
+        "external": 44572244,
+        "rss": 113020928,
+        "arrayBuffers": 42118635
+      }
+    ],
+    "memoryGrowthTrend": [
+      {
+        "timestamp": 5005.6756000000005,
+        "heapGrowth": 60150832,
+        "rssGrowth": 95793152,
+        "heapGrowthRate": 12030166.4,
+        "rssGrowthRate": 19158630.4
+      },
+      {
+        "timestamp": 10018.954300000001,
+        "heapGrowth": -61121048,
+        "rssGrowth": -98086912,
+        "heapGrowthRate": -12224209.6,
+        "rssGrowthRate": -19617382.4
+      },
+      {
+        "timestamp": 15030.020999999999,
+        "heapGrowth": 34989304,
+        "rssGrowth": 58068992,
+        "heapGrowthRate": 6997860.8,
+        "rssGrowthRate": 11613798.4
+      },
+      {
+        "timestamp": 20032.2407,
+        "heapGrowth": -36083584,
+        "rssGrowth": -58646528,
+        "heapGrowthRate": -7216716.8,
+        "rssGrowthRate": -11729305.6
+      },
+      {
+        "timestamp": 25044.135599999998,
+        "heapGrowth": 78124728,
+        "rssGrowth": 112406528,
+        "heapGrowthRate": 15624945.6,
+        "rssGrowthRate": 22481305.6
+      },
+      {
+        "timestamp": 30051.763199999998,
+        "heapGrowth": -78118832,
+        "rssGrowth": -112476160,
+        "heapGrowthRate": -15623766.4,
+        "rssGrowthRate": -22495232
+      },
+      {
+        "timestamp": 35064.1518,
+        "heapGrowth": 8071976,
+        "rssGrowth": 12771328,
+        "heapGrowthRate": 1614395.2,
+        "rssGrowthRate": 2554265.6
+      },
+      {
+        "timestamp": 40078.5838,
+        "heapGrowth": 2008,
+        "rssGrowth": 0,
+        "heapGrowthRate": 401.6,
+        "rssGrowthRate": 0
+      },
+      {
+        "timestamp": 45092.2982,
+        "heapGrowth": -7862776,
+        "rssGrowth": 42029056,
+        "heapGrowthRate": -1572555.2,
+        "rssGrowthRate": 8405811.2
+      },
+      {
+        "timestamp": 50102.7339,
+        "heapGrowth": 2232,
+        "rssGrowth": 0,
+        "heapGrowthRate": 446.4,
+        "rssGrowthRate": 0
+      }
+    ]
+  }
+}

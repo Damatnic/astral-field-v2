@@ -383,7 +383,9 @@ function NavigationItem({
 
   return (
     <>
-      <li role="treeitem" aria-expanded={hasChildren ? isExpanded : undefined}>
+      <li role="treeitem"
+                  aria-selected={isActive} 
+                  aria-expanded={hasChildren ? isExpanded : undefined}>
         <button
           onClick={hasChildren ? onToggle : onSelect}
           className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${

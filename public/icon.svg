@@ -1,0 +1,38 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="iconBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#1d4ed8;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1e40af;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="textGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#e2e8f0;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="256" fill="url(#iconBg)" />
+  
+  <!-- Football field lines -->
+  <rect x="80" y="200" width="352" height="8" fill="white" opacity="0.3" />
+  <rect x="80" y="240" width="352" height="4" fill="white" opacity="0.2" />
+  <rect x="80" y="268" width="352" height="4" fill="white" opacity="0.2" />
+  <rect x="80" y="304" width="352" height="8" fill="white" opacity="0.3" />
+  
+  <!-- Main "AF" text -->
+  <text x="256" y="320" font-family="Arial, sans-serif" font-size="160" font-weight="bold" 
+        text-anchor="middle" fill="url(#textGrad)" stroke="rgba(255,255,255,0.1)" stroke-width="2">AF</text>
+  
+  <!-- Stars around the logo -->
+  <polygon points="256,60 266,90 296,90 272,108 282,138 256,120 230,138 240,108 216,90 246,90" 
+           fill="white" opacity="0.8" />
+  <polygon points="100,200 105,210 115,210 107,216 112,226 100,220 88,226 93,216 85,210 95,210" 
+           fill="white" opacity="0.6" />
+  <polygon points="412,200 417,210 427,210 419,216 424,226 412,220 400,226 405,216 397,210 407,210" 
+           fill="white" opacity="0.6" />
+  
+  <!-- Bottom text -->
+  <text x="256" y="420" font-family="Arial, sans-serif" font-size="24" font-weight="600" 
+        text-anchor="middle" fill="white" opacity="0.8">FANTASY FOOTBALL</text>
+</svg>

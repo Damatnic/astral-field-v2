@@ -1,0 +1,49 @@
+# Netlify Configuration for AstralField Fantasy Football Platform
+
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "18"
+  NEXT_TELEMETRY_DISABLED = "1"
+
+# Note: Next.js plugin removed due to incompatibility
+
+# Headers for security
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "origin-when-cross-origin"
+
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Cache-Control = "public, max-age=0, s-maxage=60, stale-while-revalidate=300"
+
+# Redirects
+[[redirects]]
+  from = "/healthz"
+  to = "/api/health"
+  status = 200
+
+[[redirects]]
+  from = "/dashboard"
+  to = "/"
+  status = 302
+
+# Functions configuration for API routes
+[functions]
+  directory = ".netlify/functions"
+  included_files = ["src/**"]
+
+# Development settings
+[dev]
+  framework = "next"
+  targetPort = 3000
+  port = 8888
+  publish = ".next"
+  autoLaunch = false

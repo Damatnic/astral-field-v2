@@ -318,7 +318,7 @@ export function useAsyncErrorHandler() {
   const { reportError, reportNetworkError } = useErrorReporting();
 
   return {
-    handleAsyncError: async <T>(
+    handleAsyncError: async <T,>(
       operation: () => Promise<T>,
       options: {
         category?: ErrorCategory;

@@ -42,9 +42,8 @@ interface NavItem {
 const mainNavItems: NavItem[] = [
   {
     name: 'Dashboard',
-    href: '/',
+    href: '/dashboard',
     icon: Home,
-    exact: true,
     description: 'Your fantasy home base'
   },
   {

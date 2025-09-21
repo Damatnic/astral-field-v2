@@ -1,0 +1,24 @@
+{
+  "summary": {
+    "startTime": "2025-09-17T22:27:38.984Z",
+    "endTime": null,
+    "duration": 0,
+    "testsRun": [
+      "memory",
+      "api"
+    ],
+    "totalIssues": 0,
+    "criticalIssues": 0,
+    "overallScore": 100
+  },
+  "tests": {
+    "memory": {
+      "error": "Cannot read properties of undefined (reading 'memoryMetrics')"
+    },
+    "api": {
+      "error": "Cannot read properties of undefined (reading 'testSummary')"
+    }
+  },
+  "recommendations": [],
+  "optimizations": []
+}

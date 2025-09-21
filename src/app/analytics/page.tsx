@@ -58,11 +58,6 @@ export default function AnalyticsPage() {
   const [leagueStats, setLeagueStats] = useState<LeagueStats | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch real data on mount
-  useEffect(() => {
-    fetchAnalytics();
-  }, []);
-
   const fetchAnalytics = async () => {
     try {
       setLoading(true);
@@ -88,6 +83,11 @@ export default function AnalyticsPage() {
       setLoading(false);
     }
   };
+
+  // Fetch real data on mount
+  useEffect(() => {
+    fetchAnalytics();
+  }, []);
 
   // Mock data for D'Amato Dynasty League (fallback)
   const mockTeamStats: TeamStats[] = [

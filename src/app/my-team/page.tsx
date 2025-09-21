@@ -133,7 +133,7 @@ export default function MyTeamPage() {
 
   useEffect(() => {
     fetchUserTeam();
-  }, []);
+  }, [fetchUserTeam]);
 
   const fetchUserTeam = async () => {
     try {

@@ -1,0 +1,997 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["fullTextSearch"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  // directUrl = env("DATABASE_URL_UNPOOLED")  // Commented out for local development
+}
+
+model User {
+  id                     String                    @id @default(cuid())
+  profileId              String?                   @unique // For simple profile-based auth
+  email                  String                    @unique
+  password               String?                   @db.VarChar(255) // Hashed password for auth
+  name                   String?                   @db.VarChar(255)
+  image                  String?                   @db.VarChar(1000)
+  role                   UserRole                  @default(PLAYER)
+  teamName               String?                   @db.VarChar(255)
+  avatar                 String?                   @db.VarChar(10) // Emoji avatar
+  createdAt              DateTime                  @default(now())
+  updatedAt              DateTime                  @updatedAt
+  leagues                LeagueMember[]
+  commissionedLeagues    League[]                  @relation("Commissioner")
+  messages               Message[]
+  notifications          Notification[]
+  teams                  Team[]
+  trades                 Trade[]
+  tradeVotes             TradeVote[]
+  waiverClaims           WaiverClaim[]
+  roles                  Role[]
+  
+  // Job Management Relations
+  notificationLogs       NotificationLog[]
+  userSessions           UserSession[]
+  pushTokens             PushToken[]
+  notificationPreferences NotificationPreferences?
+  lineupHistory          LineupHistory[]
+
+  @@index([createdAt])
+  @@index([profileId])
+  @@index([role])
+  @@index([email])
+  @@index([role, createdAt])
+  @@index([updatedAt])
+  @@map("users")
+}
+
+model League {
+  id            String         @id @default(cuid())
+  name          String         @db.VarChar(255)
+  description   String?        @db.Text
+  season        Int            @default(2024)
+  isActive      Boolean        @default(true)
+  currentWeek   Int?           @default(1) // Should be 1-22 for NFL season
+  commissionerId String?
+  commissioner  User?          @relation("Commissioner", fields: [commissionerId], references: [id], onDelete: SetNull)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  auditLogs    AuditLog[]
+  members      LeagueMember[]
+  matchups     Matchup[]
+  messages     Message[]
+  settings     Settings?
+  teams        Team[]
+  trades       Trade[]
+  transactions Transaction[]
+  waiverClaims WaiverClaim[]
+  weeks        Week[]
+  draftOrders  DraftOrder[]
+  drafts       Draft[]
+
+  @@index([commissionerId])
+  @@index([season, isActive])
+  @@index([createdAt])
+  @@index([isActive, currentWeek])
+  @@index([season, currentWeek])
+  @@index([name])
+  @@map("leagues")
+}
+
+model LeagueMember {
+  id       String   @id @default(cuid())
+  userId   String
+  leagueId String
+  role     RoleType @default(OWNER)
+  league   League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, leagueId])
+  @@index([role])
+  @@index([leagueId])
+  @@index([userId])
+  @@map("league_members")
+}
+
+model Team {
+  id             String         @id @default(cuid())
+  name           String         @db.VarChar(255)
+  leagueId       String
+  ownerId        String
+  wins           Int            @default(0)
+  losses         Int            @default(0)
+  ties           Int            @default(0)
+  pointsFor      Decimal        @default(0) @db.Decimal(8, 2)
+  pointsAgainst  Decimal        @default(0) @db.Decimal(8, 2)
+  waiverPriority Int            @default(1) // Should be 1-N where N = number of teams
+  faabBudget     Int            @default(100) // Typically 100-1000
+  faabSpent      Int            @default(0) // Should be <= faabBudget
+  draftPosition  Int?           // Draft order position
+  awayMatchups   Matchup[]      @relation("AwayTeam")
+  homeMatchups   Matchup[]      @relation("HomeTeam")
+  roster         RosterPlayer[]
+  // rosters        Roster[]  // REMOVED: Redundant with RosterPlayer
+  league         League         @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  owner          User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  trades         Trade[]
+  waiverClaims   WaiverClaim[]
+  draftOrders    DraftOrder[]
+  draftPicks     DraftPick[]
+  lineupHistory  LineupHistory[]
+
+  @@unique([leagueId, ownerId])
+  @@index([leagueId, pointsFor])
+  @@index([leagueId, waiverPriority])
+  @@index([ownerId])
+  @@index([leagueId, wins])
+  @@index([leagueId, losses])
+  @@index([leagueId, pointsFor, pointsAgainst])
+  @@index([waiverPriority])
+  @@map("teams")
+}
+
+model RosterPlayer {
+  id              String          @id @default(cuid())
+  teamId          String
+  playerId        String
+  rosterSlot      RosterSlot
+  position        RosterSlot      @default(BENCH) // Current lineup position
+  isLocked        Boolean         @default(false)
+  acquisitionDate DateTime        @default(now())
+  acquisitionType AcquisitionType @default(DRAFT)
+  week            Int?            // Week this applies to (null for all weeks)
+  lastModified    DateTime        @updatedAt
+  player          Player          @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  team            Team            @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, playerId])
+  @@index([teamId, rosterSlot])
+  @@index([playerId, isLocked])
+  @@index([rosterSlot, isLocked])
+  @@index([teamId, isLocked])
+  @@index([acquisitionDate])
+  @@map("roster_players")
+}
+
+model Settings {
+  id            String     @id @default(cuid())
+  leagueId      String     @unique
+  rosterSlots   Json
+  scoringSystem Json
+  waiverMode    WaiverMode @default(ROLLING)
+  tradeDeadline DateTime?
+  playoffWeeks  Json
+  league        League     @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+
+  @@map("settings")
+}
+
+model Player {
+  id              String             @id @default(cuid())
+  nflId           String?            @unique  // Made optional since Sleeper uses different IDs
+  sleeperPlayerId String?            @unique  // Sleeper API player ID
+  name            String             @db.VarChar(255)
+  firstName       String?            @db.VarChar(255)
+  lastName        String?            @db.VarChar(255)
+  position        Position
+  nflTeam         String?            @db.VarChar(10)  // Made optional for free agents
+  byeWeek         Int? // Should be 1-18 for NFL season
+  status          PlayerStatus       @default(ACTIVE)
+  injuryStatus    String?            @db.VarChar(50)  // Sleeper injury status
+  isRookie        Boolean            @default(false)
+  yearsExperience Int                @default(0)
+  age             Int?               // Player age
+  height          String?            @db.VarChar(10)  // e.g., "6'2""
+  weight          String?            @db.VarChar(10)  // e.g., "225"
+  college         String?            @db.VarChar(255)
+  searchRank      Int?               // Sleeper search rank for fantasy relevance
+  fantasyPositions Json?             // Array of fantasy positions from Sleeper
+  adp             Float?             // Average draft position
+  depthChartPosition Int?            // Depth chart position
+  depthChartOrder Int?               // Order on depth chart
+  isFantasyRelevant Boolean          @default(false)
+  isActive        Boolean            @default(true)
+  isDynastyTarget Boolean            @default(false)
+  dynastyRank     Int?               // Dynasty ranking
+  lastUpdated     DateTime           @default(now())  // Last sync with Sleeper
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  playerNews      PlayerNews[]
+  projections     PlayerProjection[]
+  playerStats     PlayerStats[]
+  rosterPlayers   RosterPlayer[]
+  // rosters         Roster[]  // REMOVED: Redundant with RosterPlayer
+  tradeItems      TradeItem[]
+  waiverClaims    WaiverClaim[]
+  draftPicks      DraftPick[]
+  
+  // New Job Management Relations
+  injuryReports   InjuryReport[]
+
+  @@index([position, nflTeam])
+  @@index([status])
+  @@index([nflTeam, position])
+  @@index([position, status])
+  @@index([updatedAt])
+  @@index([byeWeek])
+  @@index([isRookie])
+  @@index([yearsExperience])
+  @@index([name])
+  @@index([nflTeam, status])
+  @@index([sleeperPlayerId])
+  @@index([isFantasyRelevant])
+  @@index([isDynastyTarget])
+  @@index([searchRank])
+  @@index([lastUpdated])
+  @@map("players")
+}
+
+model Matchup {
+  id         String   @id @default(cuid())
+  leagueId   String
+  week       Int      // Should be 1-22 for NFL season
+  season     Int      @default(2024)
+  homeTeamId String
+  awayTeamId String
+  homeScore  Decimal  @default(0) @db.Decimal(8, 2) // Increased precision for high-scoring fantasy games
+  awayScore  Decimal  @default(0) @db.Decimal(8, 2) // Increased precision for high-scoring fantasy games
+  team1Score Decimal? @db.Decimal(8, 2) // Alternative scoring fields
+  team2Score Decimal? @db.Decimal(8, 2) // Alternative scoring fields
+  isComplete Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  awayTeam   Team     @relation("AwayTeam", fields: [awayTeamId], references: [id])
+  homeTeam   Team     @relation("HomeTeam", fields: [homeTeamId], references: [id])
+  league     League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+
+  @@unique([leagueId, week, homeTeamId, awayTeamId])
+  @@index([leagueId, season, week])
+  @@index([season, isComplete])
+  @@index([week, isComplete])
+  @@index([leagueId, isComplete])
+  @@index([homeTeamId, week])
+  @@index([awayTeamId, week])
+  @@index([season, week])
+  @@map("matchups")
+}
+
+model Transaction {
+  id        String          @id @default(cuid())
+  leagueId  String
+  teamId    String?
+  playerId  String?
+  type      TransactionType
+  metadata  Json?
+  createdAt DateTime        @default(now())
+  league    League          @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+
+  @@index([leagueId, type, createdAt])
+  @@index([teamId, createdAt])
+  @@map("transactions")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  leagueId   String
+  userId     String?
+  action     String   @db.VarChar(100)
+  entityType String?  @db.VarChar(50)
+  entityId   String?
+  before     Json?
+  after      Json?
+  createdAt  DateTime @default(now())
+  league     League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+
+  @@index([leagueId, createdAt])
+  @@index([userId, createdAt])
+  @@index([action, createdAt])
+  @@index([entityType, entityId])
+  @@map("audit_logs")
+}
+
+
+model Trade {
+  id          String      @id @default(cuid())
+  leagueId    String
+  proposerId  String
+  status      TradeStatus @default(PENDING)
+  expiresAt   DateTime?
+  processedAt DateTime?
+  notes       String?     @db.Text
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  teamId      String?
+  items       TradeItem[]
+  votes       TradeVote[]
+  league      League      @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  proposer    User        @relation(fields: [proposerId], references: [id], onDelete: Restrict)
+  team        Team?       @relation(fields: [teamId], references: [id], onDelete: SetNull)
+
+  @@index([leagueId, status])
+  @@index([proposerId, status])
+  @@index([status, expiresAt])
+  @@index([leagueId, createdAt])
+  @@map("trades")
+}
+
+model TradeItem {
+  id         String        @id @default(cuid())
+  tradeId    String
+  fromTeamId String
+  toTeamId   String
+  playerId   String?
+  itemType   TradeItemType
+  metadata   Json?
+  player     Player?       @relation(fields: [playerId], references: [id], onDelete: SetNull)
+  trade      Trade         @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+
+  @@index([tradeId, itemType])
+  @@index([playerId])
+  @@map("trade_items")
+}
+
+model TradeVote {
+  id      String        @id @default(cuid())
+  tradeId String
+  userId  String
+  vote    TradeVoteType
+  reason  String?
+  votedAt DateTime      @default(now())
+  trade   Trade         @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tradeId, userId])
+  @@map("trade_votes")
+}
+
+model WaiverClaim {
+  id           String       @id @default(cuid())
+  leagueId     String
+  teamId       String
+  userId       String
+  playerId     String
+  dropPlayerId String?
+  priority     Int // Should be 1-N where N = number of teams
+  faabBid      Int? // Should be <= team's remaining FAAB budget
+  status       WaiverStatus @default(PENDING)
+  processedAt  DateTime?
+  successful   Boolean?     // Whether the claim was successful
+  failureReason String?     // Why the claim failed
+  weekNumber   Int          @default(1)
+  createdAt    DateTime     @default(now())
+  league       League       @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  player       Player       @relation(fields: [playerId], references: [id], onDelete: Restrict)
+  team         Team         @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([leagueId, status])
+  @@index([status, processedAt])
+  @@index([leagueId, priority])
+  @@index([playerId, status])
+  @@map("waiver_claims")
+}
+
+model Message {
+  id        String      @id @default(cuid())
+  leagueId  String
+  userId    String?
+  content   String      @db.Text
+  type      MessageType @default(GENERAL)
+  metadata  Json?
+  createdAt DateTime    @default(now())
+  league    League      @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  user      User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([leagueId, type])
+  @@index([userId, createdAt])
+  @@index([leagueId, createdAt])
+  @@map("messages")
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String           @db.VarChar(255)
+  content   String           @db.Text
+  metadata  Json?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([type, createdAt])
+  @@index([userId, type, isRead])
+  @@map("notifications")
+}
+
+
+model PlayerProjection {
+  id              String   @id @default(cuid())
+  playerId        String
+  week            Int
+  season          Int      @default(2024)
+  projectedPoints Decimal  @db.Decimal(6, 2)
+  confidence      Int      @default(50) // Should be 0-100 percentage
+  source          String   @default("SYSTEM") @db.VarChar(50)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  player          Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, week, season, source])
+  @@index([week, season])
+  @@index([source, confidence])
+  @@index([playerId, season])
+  @@map("player_projections")
+}
+
+enum Position {
+  QB
+  RB
+  WR
+  TE
+  K
+  DST
+  P      // Punter for leagues that use them
+  // Individual Defensive Players for IDP leagues
+  LB     // Linebacker
+  DB     // Defensive Back
+  DL     // Defensive Line
+  CB     // Cornerback
+  S      // Safety
+}
+
+enum RosterSlot {
+  QB
+  RB
+  WR
+  TE
+  FLEX
+  SUPER_FLEX  // QB/RB/WR/TE flex position
+  WR_RB_FLEX  // WR/RB only flex
+  K
+  DST
+  BENCH
+  IR          // Injured Reserve
+  TAXI        // Taxi squad (dynasty/keeper leagues)
+  // IDP positions
+  LB
+  DB
+  DL
+  IDP_FLEX    // Any IDP position
+}
+
+enum PlayerStatus {
+  ACTIVE
+  INACTIVE          // Not active on roster
+  OUT
+  DOUBTFUL
+  QUESTIONABLE
+  PROBABLE
+  INJURED_RESERVE
+  PUP               // Physically Unable to Perform
+  SUSPENDED
+  RETIRED
+  PRACTICE_SQUAD
+  UNKNOWN           // Status not yet determined
+  NON_FOOTBALL_INJURY
+}
+
+enum RoleType {
+  ADMIN
+  COMMISSIONER
+  OWNER
+}
+
+enum WaiverMode {
+  ROLLING
+  FAAB
+  REVERSE_STANDINGS
+}
+
+enum TransactionType {
+  ADD
+  DROP
+  TRADE
+  WAIVER
+}
+
+enum TradeStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EXPIRED
+  VETOED
+}
+
+enum TradeItemType {
+  PLAYER
+  DRAFT_PICK
+  FAAB_MONEY
+}
+
+enum TradeVoteType {
+  APPROVE
+  VETO
+}
+
+enum WaiverStatus {
+  PENDING
+  SUCCESSFUL
+  FAILED
+  CANCELLED
+}
+
+enum MessageType {
+  GENERAL
+  TRADE_PROPOSAL
+  WAIVER_CLAIM
+  TRASH_TALK
+  ANNOUNCEMENT
+}
+
+enum NotificationType {
+  TRADE_PROPOSAL
+  TRADE_ACCEPTED
+  TRADE_REJECTED
+  WAIVER_PROCESSED
+  LINEUP_REMINDER
+  SCORE_UPDATE
+  INJURY_ALERT
+  NEWS_UPDATE
+}
+
+enum NewsImpact {
+  POSITIVE
+  NEGATIVE
+  NEUTRAL
+}
+
+model Role {
+  id     String   @id @default(cuid())
+  userId String
+  type   RoleType
+  user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, type])
+  @@map("roles")
+}
+
+model Week {
+  id         String   @id @default(cuid())
+  leagueId   String
+  weekNumber Int
+  isLocked   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  league     League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  
+  @@unique([leagueId, weekNumber])
+  @@map("weeks")
+}
+
+model DraftOrder {
+  id       String @id @default(cuid())
+  leagueId String
+  teamId   String
+  round    Int
+  pick     Int
+  league   League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  team     Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  
+  @@unique([leagueId, round, pick])
+  @@map("draft_orders")
+}
+
+// REMOVED: Roster model - redundant with RosterPlayer
+// model Roster {
+//   id       String     @id @default(cuid())
+//   teamId   String
+//   playerId String
+//   slot     RosterSlot
+//   team     Team       @relation(fields: [teamId], references: [id], onDelete: Cascade)
+//   player   Player     @relation(fields: [playerId], references: [id])
+//   
+//   @@unique([teamId, playerId])
+//   @@map("rosters")
+// }
+
+// Job Management and Tracking Models
+model JobExecution {
+  id            String          @id @default(cuid())
+  jobId         String          // BullMQ job ID
+  jobType       String          // JobType enum value
+  queueName     String
+  status        JobStatus       @default(PENDING)
+  priority      Int?
+  attempts      Int             @default(0)
+  maxAttempts   Int             @default(3)
+  data          Json?           // Job payload data
+  result        Json?           // Job result data
+  error         String?         // Error message if failed
+  stackTrace    String?         // Error stack trace
+  startedAt     DateTime?
+  completedAt   DateTime?
+  duration      Int?            // Processing duration in milliseconds
+  scheduledJobId String?        // Reference to scheduled job if applicable
+  triggeredBy   String?         // User ID who triggered the job
+  metadata      Json?           // Additional metadata
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  
+  // Relations
+  auditLogs     JobAuditLog[]
+  
+  @@index([jobType, status])
+  @@index([queueName, status])
+  @@index([createdAt])
+  @@index([scheduledJobId])
+  @@map("job_executions")
+}
+
+model ScheduledJob {
+  id            String              @id
+  name          String
+  jobType       String              // JobType enum value
+  cronPattern   String
+  timezone      String              @default("America/New_York")
+  enabled       Boolean             @default(true)
+  data          Json?               // Default job data
+  conditions    Json?               // Execution conditions
+  retryPolicy   Json?               // Retry configuration
+  lastRun       DateTime?
+  nextRun       DateTime?
+  runCount      Int                 @default(0)
+  errorCount    Int                 @default(0)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  
+  // Relations
+  auditLogs     JobAuditLog[]
+  
+  @@index([enabled, nextRun])
+  @@index([jobType])
+  @@map("scheduled_jobs")
+}
+
+model JobAuditLog {
+  id              String          @id @default(cuid())
+  jobExecutionId  String?
+  scheduledJobId  String?
+  action          String          // e.g., "created", "started", "completed", "failed", "scheduled", "triggered"
+  details         Json?           // Action-specific details
+  userId          String?         // User who performed the action
+  source          String?         // Source of the action (e.g., "scheduler", "admin-api", "system")
+  timestamp       DateTime        @default(now())
+  
+  // Relations
+  jobExecution    JobExecution?   @relation(fields: [jobExecutionId], references: [id], onDelete: Cascade)
+  scheduledJob    ScheduledJob?   @relation(fields: [scheduledJobId], references: [id], onDelete: Cascade)
+  
+  @@index([timestamp])
+  @@index([action])
+  @@index([userId])
+  @@index([source])
+  @@map("job_audit_logs")
+}
+
+model NotificationLog {
+  id          String               @id @default(cuid())
+  userId      String
+  type        NotificationLogType
+  templateId  String?
+  subject     String?
+  content     String?
+  status      NotificationStatus   @default(PENDING)
+  error       String?
+  sentAt      DateTime?
+  deliveredAt DateTime?
+  openedAt    DateTime?
+  clickedAt   DateTime?
+  metadata    Json?                // Additional tracking data
+  createdAt   DateTime             @default(now())
+  
+  // Relations
+  user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, createdAt])
+  @@index([type, status])
+  @@index([createdAt])
+  @@map("notification_logs")
+}
+
+model PlayerStats {
+  id            String    @id @default(cuid())
+  playerId      String
+  week          Int
+  season        Int
+  gameId        String?   @db.VarChar(50)
+  team          String?   @db.VarChar(10)
+  opponent      String?   @db.VarChar(10)
+  stats         Json      // Statistical data
+  fantasyPoints Decimal?  @default(0) @db.Decimal(8, 2)
+  projectedPoints Decimal? @default(0) @db.Decimal(8, 2)
+  isProjected   Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  player        Player    @relation(fields: [playerId], references: [id], onDelete: Restrict)
+  
+  @@unique([playerId, week, season])
+  @@index([week, season])
+  @@index([gameId])
+  @@index([playerId, season])
+  @@index([season, week, isProjected])
+  @@map("player_stats")
+}
+
+model PlayerNews {
+  id          String      @id @default(cuid())
+  playerId    String
+  headline    String      @db.VarChar(500)
+  content     String?     @db.Text
+  source      String      @db.VarChar(100)
+  timestamp   DateTime
+  impact      NewsImpact  @default(NEUTRAL)
+  category    String?     @db.VarChar(50) // e.g., "injury", "trade", "performance"
+  createdAt   DateTime    @default(now())
+  
+  // Relations
+  player      Player      @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  
+  @@index([playerId, timestamp])
+  @@index([category, timestamp])
+  @@index([impact, timestamp])
+  @@map("player_news")
+}
+
+model InjuryReport {
+  id              String          @id @default(cuid())
+  playerId        String
+  status          InjuryStatus
+  description     String?
+  estimatedReturn DateTime?
+  week            Int             @default(0)
+  season          Int
+  updatedAt       DateTime        @updatedAt
+  createdAt       DateTime        @default(now())
+  
+  // Relations
+  player          Player          @relation(fields: [playerId], references: [id])
+  
+  @@unique([playerId, week, season])
+  @@index([status])
+  @@index([week, season])
+  @@map("injury_reports")
+}
+
+model Game {
+  id            String      @id @default(cuid())
+  gameId        String      @unique
+  week          Int
+  season        Int
+  homeTeam      String
+  awayTeam      String
+  quarter       Int?        @default(0)
+  timeRemaining String?
+  homeScore     Int?        @default(0)
+  awayScore     Int?        @default(0)
+  possession    String?
+  down          Int?
+  distance      Int?
+  yardLine      Int?
+  spread        Decimal?    @db.Decimal(4, 1)
+  overUnder     Decimal?    @db.Decimal(5, 1)
+  status        GameStatus  @default(SCHEDULED)
+  gameTime      DateTime?
+  lastUpdated   DateTime    @updatedAt
+  createdAt     DateTime    @default(now())
+  
+  @@index([week, season])
+  @@index([status])
+  @@index([gameTime])
+  @@map("games")
+}
+
+model UserSession {
+  id          String    @id @default(cuid())
+  userId      String
+  sessionId   String    @unique
+  ipAddress   String?
+  userAgent   String?
+  isActive    Boolean   @default(true)
+  lastActivity DateTime @default(now())
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
+  
+  // Relations
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, isActive])
+  @@index([expiresAt])
+  @@map("user_sessions")
+}
+
+model PushToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  platform  String   // e.g., "ios", "android", "web"
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, isActive])
+  @@map("push_tokens")
+}
+
+model NotificationPreferences {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  emailEnabled       Boolean  @default(true)
+  pushEnabled        Boolean  @default(true)
+  lineupReminders    Boolean  @default(true)
+  tradeAlerts        Boolean  @default(true)
+  waiversProcessed   Boolean  @default(true)
+  gameUpdates        Boolean  @default(true)
+  weeklyRecap        Boolean  @default(true)
+  injuryAlerts       Boolean  @default(true)
+  tradeOffers        Boolean  @default(true)
+  quietHours         Json?    // { start: "22:00", end: "08:00", timezone: "America/New_York" }
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  
+  // Relations
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("notification_preferences")
+}
+
+// Enums for Job Management
+enum JobStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+  FAILED
+  DELAYED
+  STALLED
+  CANCELLED
+}
+
+enum NotificationLogType {
+  EMAIL
+  PUSH
+  SMS
+  IN_APP
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  DELIVERED
+  OPENED
+  CLICKED
+  FAILED
+  BOUNCED
+}
+
+enum InjuryStatus {
+  HEALTHY
+  QUESTIONABLE
+  DOUBTFUL
+  OUT
+  IR
+  PUP
+  SUSPENDED
+}
+
+enum GameStatus {
+  SCHEDULED
+  PRE_GAME
+  IN_PROGRESS
+  HALFTIME
+  OVERTIME
+  FINAL
+  POSTPONED
+  CANCELLED
+  WEATHER_DELAY
+  SUSPENDED
+}
+
+enum UserRole {
+  ADMIN
+  COMMISSIONER
+  PLAYER
+}
+
+model Draft {
+  id             String      @id @default(cuid())
+  leagueId       String
+  status         DraftStatus @default(PENDING)
+  type           DraftType   @default(SNAKE)
+  rounds         Int         @default(16)
+  pickTimeLimit  Int         @default(120) // seconds
+  currentRound   Int         @default(1)
+  currentPick    Int         @default(1)
+  scheduledStart DateTime?
+  startedAt      DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  
+  // Relations
+  league         League      @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  picks          DraftPick[]
+  
+  @@index([leagueId])
+  @@index([status])
+  @@map("drafts")
+}
+
+model DraftPick {
+  id           String   @id @default(cuid())
+  draftId      String
+  teamId       String
+  playerId     String
+  round        Int
+  pick         Int
+  overallPick  Int
+  pickTime     DateTime @default(now())
+  createdAt    DateTime @default(now())
+  
+  // Relations
+  draft        Draft    @relation(fields: [draftId], references: [id], onDelete: Cascade)
+  team         Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  player       Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  
+  @@unique([draftId, teamId, playerId])
+  @@unique([draftId, round, pick])
+  @@index([draftId, round])
+  @@index([teamId])
+  @@index([playerId])
+  @@map("draft_picks")
+}
+
+model LineupHistory {
+  id           String   @id @default(cuid())
+  teamId       String
+  week         Int
+  lineupData   Json
+  submittedAt  DateTime @default(now())
+  submittedBy  String
+  isOptimal    Boolean  @default(false)
+  
+  // Relations
+  team         Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [submittedBy], references: [id], onDelete: Cascade)
+  
+  @@unique([teamId, week])
+  @@index([week])
+  @@index([submittedAt])
+  @@map("lineup_history")
+}
+
+enum DraftStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum DraftType {
+  SNAKE
+  LINEAR
+  AUCTION
+}
+
+enum AcquisitionType {
+  DRAFT
+  WAIVER
+  FREE_AGENT
+  TRADE
+}

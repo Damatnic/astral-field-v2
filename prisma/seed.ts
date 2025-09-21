@@ -27,67 +27,56 @@ async function main() {
             id: 'admin-1',
             name: "Nicholas D'Amato",
             email: 'nicholas.damato@astralfield.com',
-            role: 'ADMIN'
           },
           {
             id: 'commissioner-1',
             name: "Nicholas D'Amato",
             email: 'nicholas@astralfield.com',
-            role: 'COMMISSIONER'
           },
           {
             id: 'player-1',
             name: 'Nick Hartley',
             email: 'nick.hartley@astralfield.com',
-            role: 'PLAYER'
           },
           {
             id: 'player-2',
             name: 'Jack McCaigue',
             email: 'jack.mccaigue@astralfield.com',
-            role: 'PLAYER'
           },
           {
             id: 'player-3',
             name: 'Larry McCaigue',
             email: 'larry.mccaigue@astralfield.com',
-            role: 'PLAYER'
           },
           {
             id: 'player-4',
             name: 'Renee McCaigue',
             email: 'renee.mccaigue@astralfield.com',
-            role: 'PLAYER'
           },
           {
             id: 'player-5',
             name: 'Jon Kornbeck',
             email: 'jon.kornbeck@astralfield.com',
-            role: 'PLAYER'
           },
           {
             id: 'player-6',
             name: 'David Jarvey',
             email: 'david.jarvey@astralfield.com',
-            role: 'PLAYER'
           },
           {
             id: 'player-7',
             name: 'Kaity Lorbecki',
             email: 'kaity.lorbecki@astralfield.com',
-            role: 'PLAYER'
           },
           {
             id: 'player-8',
             name: 'Cason Minor',
             email: 'cason.minor@astralfield.com',
-            role: 'PLAYER'
           },
           {
             id: 'player-9',
             name: 'Brittany Bergum',
             email: 'brittany.bergum@astralfield.com',
-            role: 'PLAYER'
           }
         ],
         skipDuplicates: true

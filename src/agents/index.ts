@@ -90,7 +90,7 @@ export class NotifierAgent {
       // Check for notifications that need to be sent
       const pendingNotifications = await prisma.notification.count({
         where: {
-          status: 'pending',
+          read: false,
           createdAt: {
             gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24 hours
           }
@@ -103,7 +103,7 @@ export class NotifierAgent {
         // Process notifications
         const notifications = await prisma.notification.findMany({
           where: {
-            status: 'pending',
+            read: false,
             createdAt: {
               gte: new Date(Date.now() - 24 * 60 * 60 * 1000)
             }
@@ -115,7 +115,7 @@ export class NotifierAgent {
           // Mark as processed (actual sending would require email/push service)
           await prisma.notification.update({
             where: { id: notification.id },
-            data: { status: 'sent' }
+            data: { read: true }
           });
         }
         
@@ -136,24 +136,24 @@ export class FallbackAgent {
     try {
       // Handle fallback scenarios for failed operations
       
-      // Check for failed trades that need cleanup
-      const failedTrades = await prisma.trade.count({
+      // Check for rejected trades that need cleanup
+      const rejectedTrades = await prisma.tradeProposal.count({
         where: {
-          status: 'failed',
-          updatedAt: {
+          status: 'rejected',
+          createdAt: {
             gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // Last week
           }
         }
       });
       
-      if (failedTrades > 0) {
-        console.log(`[FallbackAgent] Found ${failedTrades} failed trades to cleanup`);
+      if (rejectedTrades > 0) {
+        console.log(`[FallbackAgent] Found ${rejectedTrades} rejected trades to cleanup`);
         
-        // Clean up failed trades older than 7 days
-        await prisma.trade.deleteMany({
+        // Clean up rejected trades older than 7 days
+        await prisma.tradeProposal.deleteMany({
           where: {
-            status: 'failed',
-            updatedAt: {
+            status: 'rejected',
+            createdAt: {
               lt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
             }
           }
@@ -161,22 +161,19 @@ export class FallbackAgent {
       }
       
       // Check for expired sessions
-      const expiredSessions = await prisma.userSession.count({
+      const expiredSessions = await prisma.session.count({
         where: {
-          expiresAt: { lt: new Date() },
-          isActive: true
+          expires: { lt: new Date() }
         }
       });
       
       if (expiredSessions > 0) {
         console.log(`[FallbackAgent] Cleaning up ${expiredSessions} expired sessions`);
         
-        await prisma.userSession.updateMany({
+        await prisma.session.deleteMany({
           where: {
-            expiresAt: { lt: new Date() },
-            isActive: true
-          },
-          data: { isActive: false }
+            expires: { lt: new Date() }
+          }
         });
       }
       

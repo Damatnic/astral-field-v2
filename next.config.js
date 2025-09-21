@@ -1,67 +1,73 @@
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  experimental: {
-    serverComponentsExternalPackages: ['@prisma/client', 'prisma', 'bcryptjs'],
-  },
-  swcMinify: true,
-  compress: true,
-  poweredByHeader: false,
   reactStrictMode: true,
-  productionBrowserSourceMaps: false,
-  
-  // Configure security headers
+  swcMinify: true,
+  experimental: {
+    serverComponentsExternalPackages: ['@prisma/client'],
+  },
+  images: {
+    domains: [
+      'a.espncdn.com',
+      's.espncdn.com',
+      'static.www.nfl.com',
+      'lh3.googleusercontent.com'
+    ],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**.espncdn.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'static.www.nfl.com',
+      },
+    ],
+  },
   async headers() {
     return [
       {
-        source: '/(.*)',
+        source: '/api/:path*',
         headers: [
-          {
-            key: 'X-Frame-Options',
-            value: 'DENY',
-          },
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-          {
-            key: 'Referrer-Policy',
-            value: 'origin-when-cross-origin',
-          },
-          {
-            key: 'Strict-Transport-Security',
-            value: 'max-age=31536000; includeSubDomains',
-          },
+          { key: 'Access-Control-Allow-Origin', value: '*' },
+          { key: 'Access-Control-Allow-Methods', value: 'GET,POST,PUT,DELETE,OPTIONS' },
+          { key: 'Access-Control-Allow-Headers', value: 'Content-Type, Authorization' },
         ],
       },
     ];
   },
-  
-  // Configure image optimization
-  images: {
-    domains: ['api.sleeper.app', 'sleepercdn.com'],
-    formats: ['image/webp', 'image/avif'],
-    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
-    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
-  },
-  
-  // Configure webpack to handle optional WebSocket dependencies
-  webpack: (config, { isServer }) => {
+  webpack: (config, { isServer, webpack }) => {
+    // Handle node modules that don't work in the browser
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
-        bufferutil: false,
-        'utf-8-validate': false,
+        fs: false,
+        net: false,
+        tls: false,
+        crypto: require.resolve('crypto-browserify'),
+        stream: require.resolve('stream-browserify'),
+        url: require.resolve('url'),
+        zlib: require.resolve('browserify-zlib'),
+        http: require.resolve('stream-http'),
+        https: require.resolve('https-browserify'),
+        assert: require.resolve('assert'),
+        os: require.resolve('os-browserify'),
+        path: require.resolve('path-browserify'),
       };
     }
     
+    // Ignore warnings for punycode
+    config.ignoreWarnings = [
+      { module: /node_modules\/punycode/ },
+      { file: /node_modules\/punycode/ },
+    ];
+    
     return config;
   },
-};
+  // Reduce bundle size
+  compress: true,
+  poweredByHeader: false,
+  generateEtags: false,
+}
 
 module.exports = nextConfig;

@@ -35,9 +35,8 @@ interface NavItem {
 const mainNavItems: NavItem[] = [
   {
     name: 'Dashboard',
-    href: '/',
-    icon: Home,
-    exact: true
+    href: '/dashboard',
+    icon: Home
   },
   {
     name: 'Leagues',
@@ -50,37 +49,19 @@ const mainNavItems: NavItem[] = [
     icon: Users
   },
   {
-    name: 'Analytics',
-    href: '/analytics',
+    name: 'Roster',
+    href: '/roster',
+    icon: UserCircle
+  },
+  {
+    name: 'Trades',
+    href: '/trades',
     icon: BarChart3
-  },
-  {
-    name: 'Schedule',
-    href: '/schedule',
-    icon: Calendar
-  },
-  {
-    name: 'Chat',
-    href: '/chat',
-    icon: MessageCircle
   }
 ];
 
-// Admin/Commissioner only items
-const adminNavItems: NavItem[] = [
-  {
-    name: 'Admin Panel',
-    href: '/admin',
-    icon: Shield,
-    roles: ['ADMIN']
-  },
-  {
-    name: 'Commissioner',
-    href: '/commissioner',
-    icon: Crown,
-    roles: ['ADMIN', 'COMMISSIONER']
-  }
-];
+// Admin/Commissioner only items (empty for now)
+const adminNavItems: NavItem[] = [];
 
 // Mobile navigation component
 function MobileNav({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {

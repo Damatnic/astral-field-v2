@@ -330,8 +330,8 @@ async function getDefaultLeagueId(userId: string): Promise<string | null> {
   return team?.leagueId || null;
 }
 
-// Helper function to create system notifications
-export async function createSystemNotification(
+// Helper function to create system notifications (not a route handler)
+async function createSystemNotification(
   userId: string,
   type: 'TRADE' | 'WAIVER' | 'LINEUP' | 'DRAFT' | 'SYSTEM' | 'MENTION',
   title: string,
@@ -357,7 +357,7 @@ export async function createSystemNotification(
 }
 
 // Helper function to notify trade participants
-export async function notifyTradeParticipants(tradeId: string) {
+async function notifyTradeParticipants(tradeId: string) {
   try {
     const trade = await prisma.trade.findUnique({
       where: { id: tradeId },
@@ -387,7 +387,7 @@ export async function notifyTradeParticipants(tradeId: string) {
 }
 
 // Helper function to notify waiver processed
-export async function notifyWaiverProcessed(waiverClaimId: string) {
+async function notifyWaiverProcessed(waiverClaimId: string) {
   try {
     const claim = await prisma.waiverClaim.findUnique({
       where: { id: waiverClaimId },

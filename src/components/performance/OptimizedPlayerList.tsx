@@ -42,6 +42,10 @@ const PlayerRow = memo(({ index, style, data }: any) => {
   const { players, onPlayerSelect } = data;
   const player = players[index];
 
+  const handleClick = useCallback(() => {
+    onPlayerSelect?.(player);
+  }, [player, onPlayerSelect]);
+
   if (!player) {
     return (
       <div style={style} className="p-2">
@@ -49,10 +53,6 @@ const PlayerRow = memo(({ index, style, data }: any) => {
       </div>
     );
   }
-
-  const handleClick = useCallback(() => {
-    onPlayerSelect?.(player);
-  }, [player, onPlayerSelect]);
 
   return (
     <div style={style} className="p-2">
