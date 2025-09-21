@@ -183,8 +183,23 @@ export default function LeagueActivityFeed({ leagueId, className = '' }: LeagueA
       return activity;
     }));
     
-    // TODO: Send reaction to API
-    // This would be implemented with an activity reactions endpoint
+    // Send reaction to API
+    try {
+      const response = await fetch(`/api/leagues/${leagueId}/activity/${activityId}/reactions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type })
+      });
+      
+      if (!response.ok) {
+        // Revert optimistic update on failure
+        fetchActivities(false);
+      }
+    } catch (error) {
+      console.error('Failed to send reaction:', error);
+      // Revert optimistic update on error
+      fetchActivities(false);
+    }
   };
   
   const handleRefresh = () => {

@@ -529,6 +529,27 @@ async function executeTrade(tx: any, tradeId: string, trade: any) {
       });
     }
 
-    // TODO: Handle draft picks when that feature is implemented
+    // Handle draft picks if included in trade
+    if (trade.proposerDraftPicks && trade.proposerDraftPicks.length > 0) {
+      await prisma.draftPick.updateMany({
+        where: {
+          id: { in: trade.proposerDraftPicks.map((dp: any) => dp.id) }
+        },
+        data: {
+          teamId: receiverTeam.id
+        }
+      });
+    }
+    
+    if (trade.receiverDraftPicks && trade.receiverDraftPicks.length > 0) {
+      await prisma.draftPick.updateMany({
+        where: {
+          id: { in: trade.receiverDraftPicks.map((dp: any) => dp.id) }
+        },
+        data: {
+          teamId: proposerTeam.id
+        }
+      });
+    }
   }
 }
