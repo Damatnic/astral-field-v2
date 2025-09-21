@@ -70,8 +70,6 @@ export async function GET(request: NextRequest) {
               id: user.id,
               email: user.email,
               name: user.name || user.email.split('@')[0],
-              role: user.role,
-              teamName: user.teamName,
               avatar: `/api/avatars/${encodeURIComponent(user.name || user.email.split('@')[0])}`,
               createdAt: user.createdAt.toISOString(),
               updatedAt: user.updatedAt.toISOString()
