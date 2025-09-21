@@ -145,7 +145,7 @@ export class DataSyncService {
           if (stats?.athlete?.stats) {
             const fantasyPoints = this.espn.calculateFantasyPoints(stats.athlete.stats);
             
-            await prisma.playerStats.upsert({
+            await prisma.stats.upsert({
               where: {
                 playerId_week_season: {
                   playerId: player.id,

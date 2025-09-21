@@ -174,7 +174,7 @@ export class ComprehensiveSyncService {
         const fantasyPoints = this.calculateFantasyPoints(playerStats, 'PPR');
         
         // Store stats in PlayerStats table
-        await prisma.playerStats.upsert({
+        await prisma.stats.upsert({
           where: {
             playerId_week_season: {
               playerId: player.id,

@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if player is already on a roster
-    const existingRoster = await prisma.rosterPlayer.findFirst({
+    const existingRoster = await prisma.roster.findFirst({
       where: {
         playerId,
         team: {

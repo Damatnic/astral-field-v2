@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
       where.status = status;
     }
     
-    const trades = await prisma.trade.findMany({
+    const trades = await prisma.tradeProposal.findMany({
       where,
       include: {
         proposingTeam: {

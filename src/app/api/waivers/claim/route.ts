@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     const player = await prisma.player.findUnique({
       where: { id: playerId },
       include: {
-        rosterPlayers: {
+        rosters: {
           where: {
             team: {
               leagueId
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    if (player.rosterPlayers.length > 0) {
+    if (player.rosters.length > 0) {
       return NextResponse.json(
         { error: 'Player is already on a roster' },
         { status: 400 }
@@ -154,7 +154,7 @@ export async function POST(request: NextRequest) {
     // Duplicate validation removed - handled above in enhanced roster validation
     
     // Enhanced roster validation
-    const currentRoster = await prisma.rosterPlayer.findMany({
+    const currentRoster = await prisma.roster.findMany({
       where: { teamId: team.id },
       include: {
         player: {
@@ -196,7 +196,7 @@ export async function POST(request: NextRequest) {
     
     // Validate drop player is droppable
     if (dropPlayerId) {
-      const dropPlayer = await prisma.rosterPlayer.findFirst({
+      const dropPlayer = await prisma.roster.findFirst({
         where: {
           playerId: dropPlayerId,
           teamId: team.id

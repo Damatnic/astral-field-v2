@@ -31,7 +31,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     }
 
     // Get the trade with all necessary data
-    const trade = await prisma.trade.findUnique({
+    const trade = await prisma.tradeProposal.findUnique({
       where: { id: tradeId },
       include: {
         league: {
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
             }
           }
         },
-        votes: true
+        // votes: true // Note: votes model doesn't exist in schema
       }
     });
 
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
     // Check if trade has expired
     if (trade.expiresAt && new Date() > trade.expiresAt) {
-      await prisma.trade.update({
+      await prisma.tradeProposal.update({
         where: { id: tradeId },
         data: { status: 'EXPIRED' }
       });
@@ -152,12 +152,12 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 async function handleTradeAcceptance(tradeId: string, userId: string, trade: any) {
   return await prisma.$transaction(async (tx) => {
     // Check if league requires voting
-    const leagueMembers = await tx.leagueMember.count({
+    const teams = await tx.team.count({
       where: { leagueId: trade.leagueId }
     });
 
-    const requiresVoting = leagueMembers > 2; // Trades require voting in leagues with more than 2 teams
-    const votesRequired = Math.ceil(leagueMembers * 0.5); // Majority vote
+    const requiresVoting = teams > 2; // Trades require voting in leagues with more than 2 teams
+    const votesRequired = Math.ceil(teams * 0.5); // Majority vote
 
     if (requiresVoting) {
       // Create or update vote
@@ -280,7 +280,7 @@ async function handleTradeAcceptance(tradeId: string, userId: string, trade: any
             }
           }
         },
-        votes: true
+        // votes: true // Note: votes model doesn't exist in schema
       }
     });
   });
@@ -363,7 +363,7 @@ async function handleTradeRejection(tradeId: string, userId: string, notes?: str
             }
           }
         },
-        votes: true
+        // votes: true // Note: votes model doesn't exist in schema
       }
     });
   });
@@ -445,7 +445,7 @@ async function handleTradeCounter(tradeId: string, userId: string, counterOffer:
             }
           }
         },
-        votes: true
+        // votes: true // Note: votes model doesn't exist in schema
       }
     });
   });
@@ -456,7 +456,7 @@ async function executeTrade(tx: any, tradeId: string, trade: any) {
   for (const item of trade.items) {
     if (item.itemType === 'PLAYER' && item.playerId) {
       // Remove player from current team
-      await tx.rosterPlayer.delete({
+      await tx.roster.delete({
         where: {
           teamId_playerId: {
             teamId: item.fromTeamId,
@@ -466,7 +466,7 @@ async function executeTrade(tx: any, tradeId: string, trade: any) {
       });
 
       // Add player to new team
-      await tx.rosterPlayer.create({
+      await tx.roster.create({
         data: {
           teamId: item.toTeamId,
           playerId: item.playerId,

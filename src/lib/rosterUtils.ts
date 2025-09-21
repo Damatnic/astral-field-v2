@@ -249,8 +249,8 @@ export async function generateStartSitRecommendations(
         .map(rp => ({
           ...rp,
           projectedPoints: Number(rp.player.projections[0]?.projectedPoints || 0),
-          avgRecent: calculateRecentAverage(rp.player.playerStats),
-          trend: calculateTrend(rp.player.playerStats)
+          avgRecent: calculateRecentAverage(rp.player.stats),
+          trend: calculateTrend(rp.player.stats)
         }))
         .sort((a, b) => b.projectedPoints - a.projectedPoints);
 

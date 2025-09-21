@@ -77,14 +77,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify user has access to analyze this league
-    const leagueMember = await prisma.leagueMember.findFirst({
+    const userTeam = await prisma.team.findFirst({
       where: {
-        userId: user.id,
+        ownerId: user.id,
         leagueId: leagueId
       }
     });
 
-    if (!leagueMember) {
+    if (!userTeam) {
       return NextResponse.json({
         success: false,
         error: 'Access denied - not a league member'
@@ -102,10 +102,10 @@ export async function POST(request: NextRequest) {
           include: {
             player: {
               include: {
-                playerStats: {
+                stats: {
                   where: {
-                    season: new Date().getFullYear(),
-                    isProjected: false
+                    season: new Date().getFullYear().toString(),
+                    isProjection: false
                   },
                   orderBy: {
                     week: 'desc'
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
                 },
                 projections: {
                   where: {
-                    season: new Date().getFullYear(),
+                    season: new Date().getFullYear().toString(),
                     week: getCurrentWeek()
                   },
                   orderBy: {
@@ -153,10 +153,10 @@ export async function POST(request: NextRequest) {
         id: { in: playerIds }
       },
       include: {
-        playerStats: {
+        stats: {
           where: {
-            season: new Date().getFullYear(),
-            isProjected: false
+            season: new Date().getFullYear().toString(),
+            isProjection: false
           },
           orderBy: {
             week: 'desc'
@@ -165,7 +165,7 @@ export async function POST(request: NextRequest) {
         },
         projections: {
           where: {
-            season: new Date().getFullYear(),
+            season: new Date().getFullYear().toString(),
             week: {
               gte: getCurrentWeek(),
               lte: 17
@@ -176,9 +176,9 @@ export async function POST(request: NextRequest) {
             { confidence: 'desc' }
           ]
         },
-        playerNews: {
+        news: {
           orderBy: {
-            timestamp: 'desc'
+            publishedAt: 'desc'
           },
           take: 3
         }
@@ -187,18 +187,18 @@ export async function POST(request: NextRequest) {
 
     // Calculate comprehensive player analysis
     const playerAnalysis = players.map(player => {
-      const seasonStats = player.playerStats;
+      const seasonStats = player.stats;
       const recentStats = seasonStats.slice(0, 5);
       
-      const totalPoints = seasonStats.reduce((sum, stat) => sum + (stat.fantasyPoints?.toNumber() || 0), 0);
+      const totalPoints = seasonStats.reduce((sum, stat) => sum + (stat.fantasyPoints || 0), 0);
       const avgPoints = seasonStats.length > 0 ? totalPoints / seasonStats.length : 0;
       
-      const recentPoints = recentStats.reduce((sum, stat) => sum + (stat.fantasyPoints?.toNumber() || 0), 0);
+      const recentPoints = recentStats.reduce((sum, stat) => sum + (stat.fantasyPoints || 0), 0);
       const recentAvg = recentStats.length > 0 ? recentPoints / recentStats.length : 0;
       
       // Rest of season projections
       const rosProjections = player.projections.slice(0, 17 - getCurrentWeek());
-      const rosProjectedTotal = rosProjections.reduce((sum, proj) => sum + (proj.projectedPoints?.toNumber() || 0), 0);
+      const rosProjectedTotal = rosProjections.reduce((sum, proj) => sum + (proj.projectedPoints || 0), 0);
       
       // Calculate various metrics
       const metrics = calculatePlayerMetrics(player, seasonStats, rosProjections);
@@ -217,8 +217,8 @@ export async function POST(request: NextRequest) {
           seasonAverage: avgPoints,
           recentAverage: recentAvg,
           gamesPlayed: seasonStats.length,
-          highGame: Math.max(...seasonStats.map(stat => stat.fantasyPoints?.toNumber() || 0)),
-          lowGame: seasonStats.length > 0 ? Math.min(...seasonStats.map(stat => stat.fantasyPoints?.toNumber() || 0)) : 0
+          highGame: Math.max(...seasonStats.map(stat => stat.fantasyPoints || 0)),
+          lowGame: seasonStats.length > 0 ? Math.min(...seasonStats.map(stat => stat.fantasyPoints || 0)) : 0
         },
         
         projections: {
@@ -287,7 +287,7 @@ function getCurrentWeek(): number {
 
 function calculatePlayerMetrics(player: any, seasonStats: any[], rosProjections: any[]) {
   // Consistency (coefficient of variation)
-  const points = seasonStats.map(stat => stat.fantasyPoints?.toNumber() || 0);
+  const points = seasonStats.map(stat => stat.fantasyPoints || 0);
   const mean = points.reduce((sum, p) => sum + p, 0) / points.length;
   const variance = points.reduce((sum, p) => sum + Math.pow(p - mean, 2), 0) / points.length;
   const stdDev = Math.sqrt(variance);
@@ -299,8 +299,8 @@ function calculatePlayerMetrics(player: any, seasonStats: any[], rosProjections:
     const recent = seasonStats.slice(0, 3);
     const older = seasonStats.slice(3, 6);
     
-    const recentAvg = recent.reduce((sum, stat) => sum + (stat.fantasyPoints?.toNumber() || 0), 0) / recent.length;
-    const olderAvg = older.reduce((sum, stat) => sum + (stat.fantasyPoints?.toNumber() || 0), 0) / older.length;
+    const recentAvg = recent.reduce((sum, stat) => sum + (stat.fantasyPoints || 0), 0) / recent.length;
+    const olderAvg = older.reduce((sum, stat) => sum + (stat.fantasyPoints || 0), 0) / older.length;
     
     if (recentAvg > olderAvg * 1.15) trend = 'up';
     else if (recentAvg < olderAvg * 0.85) trend = 'down';
@@ -401,7 +401,7 @@ function assessRiskFactors(player: any, seasonStats: any[], rosProjections: any[
   
   // Performance volatility
   if (seasonStats.length >= 5) {
-    const points = seasonStats.map(stat => stat.fantasyPoints?.toNumber() || 0);
+    const points = seasonStats.map(stat => stat.fantasyPoints || 0);
     const mean = points.reduce((sum, p) => sum + p, 0) / points.length;
     const stdDev = Math.sqrt(points.reduce((sum, p) => sum + Math.pow(p - mean, 2), 0) / points.length);
     const cv = mean > 0 ? (stdDev / mean) : 0;

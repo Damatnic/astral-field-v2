@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     const source = searchParams.get('source') || 'database'; // 'database', 'sleeper', or 'both'
 
     // Use default league ID if not provided (for testing)
-    const leagueId = validateAndDefault(rawLeagueId, DEFAULT_LEAGUE_ID, 'leagueId');
+    const leagueId = rawLeagueId || '01234567-89ab-cdef-0123-456789abcdef';
 
     // Get current NFL context
     const nflState = await nflStateService.getCurrentState();
@@ -166,12 +166,12 @@ async function getPlayerProjections(playerId: string, week: number, season: numb
       where: { id: playerId },
       include: {
         projections: {
-          where: { week, season },
+          where: { week, season: String(season) },
           orderBy: { createdAt: 'desc' },
           take: 1,
         },
-        playerStats: includeStats ? {
-          where: { week, season },
+        stats: includeStats ? {
+          where: { week, season: String(season) },
           take: 1,
         } : false,
       },
@@ -214,9 +214,9 @@ async function getPlayerProjections(playerId: string, week: number, season: numb
           stats: sleeperProjection,
         } : null,
       },
-      actualStats: includeStats && player.playerStats?.[0] ? {
-        fantasyPoints: Number(player.playerStats[0].fantasyPoints),
-        stats: player.playerStats[0].stats,
+      actualStats: includeStats && player.stats?.[0] ? {
+        fantasyPoints: Number(player.stats[0].fantasyPoints),
+        stats: player.stats[0].stats,
       } : null,
     };
 
@@ -259,12 +259,12 @@ async function getLeagueProjections(
             player: {
               include: {
                 projections: {
-                  where: { week, season },
+                  where: { week, season: String(season) },
                   orderBy: { createdAt: 'desc' },
                   take: 1,
                 },
-                playerStats: includeStats ? {
-                  where: { week, season },
+                stats: includeStats ? {
+                  where: { week, season: String(season) },
                   take: 1,
                 } : false,
               },
@@ -316,12 +316,12 @@ async function getAllProjections(
       where: whereClause,
       include: {
         projections: {
-          where: { week, season },
+          where: { week, season: String(season) },
           orderBy: { createdAt: 'desc' },
           take: 1,
         },
-        playerStats: includeStats ? {
-          where: { week, season },
+        stats: includeStats ? {
+          where: { week, season: String(season) },
           take: 1,
         } : false,
       },
@@ -343,7 +343,7 @@ async function getAllProjections(
     const playersWithData = players.filter(player => 
       player.projections.length > 0 || 
       (player.sleeperPlayerId && sleeperProjections[player.sleeperPlayerId]) ||
-      (includeStats && player.playerStats && player.playerStats.length > 0)
+      (includeStats && player.stats && player.stats.length > 0)
     );
 
     if (format === 'summary') {
@@ -367,10 +367,10 @@ async function syncProjectionsFromSleeper(week?: number, season?: number, option
     await playerSyncService.syncCurrentWeekProjections();
 
     // Get sync stats
-    const syncedCount = await db.playerProjection.count({
+    const syncedCount = await db.projection.count({
       where: {
         week: targetWeek,
-        season: targetSeason,
+        season: String(targetSeason),
         source: 'sleeper',
         createdAt: {
           gte: new Date(Date.now() - 3600000), // Last hour
@@ -400,7 +400,7 @@ async function updateLeagueProjections(leagueId: string, week?: number, season?:
     const targetSeason = season || parseInt(nflState.season);
 
     // Get all players in the league
-    const leaguePlayerIds = await db.rosterPlayer.findMany({
+    const leaguePlayerIds = await db.roster.findMany({
       where: {
         team: { leagueId },
       },
@@ -416,8 +416,8 @@ async function updateLeagueProjections(leagueId: string, week?: number, season?:
       try {
         // This would trigger individual player projection updates
         // For now, we'll just count existing projections
-        const existing = await db.playerProjection.findFirst({
-          where: { playerId, week: targetWeek, season: targetSeason },
+        const existing = await db.projection.findFirst({
+          where: { playerId, week: targetWeek, season: String(targetSeason) },
         });
         if (existing) updatedCount++;
       } catch (error) {}
@@ -478,8 +478,8 @@ async function compareProjections(week?: number, season?: number, leagueId?: str
     const targetSeason = season || parseInt(nflState.season);
 
     // Get some sample comparisons
-    const dbProjections = await db.playerProjection.count({
-      where: { week: targetWeek, season: targetSeason, source: 'sleeper' },
+    const dbProjections = await db.projection.count({
+      where: { week: targetWeek, season: String(targetSeason), source: 'sleeper' },
     });
 
     return {
@@ -528,7 +528,7 @@ async function generateLineupProjections(leagueId: string, week?: number, season
             player: {
               include: {
                 projections: {
-                  where: { week: targetWeek, season: targetSeason },
+                  where: { week: targetWeek, season: String(targetSeason) },
                   orderBy: { createdAt: 'desc' },
                   take: 1,
                 },
@@ -540,8 +540,8 @@ async function generateLineupProjections(leagueId: string, week?: number, season
     });
 
     const teamProjections = teams.map(team => {
-      const startingLineup = team.roster.filter(rp => 
-        rp.rosterSlot !== 'BENCH' && rp.rosterSlot !== 'IR'
+      const startingLineup = team.roster.filter((rp: any) => 
+        rp.position !== 'BENCH' && rp.position !== 'IR'
       );
 
       const totalProjected = startingLineup.reduce((sum, rp) => {
@@ -556,8 +556,8 @@ async function generateLineupProjections(leagueId: string, week?: number, season
         startingLineup: startingLineup.map(rp => ({
           playerId: rp.player.id,
           playerName: rp.player.name,
-          position: rp.player.position,
-          rosterSlot: rp.rosterSlot,
+          playerPosition: rp.player.position,
+          rosterPosition: rp.position,
           projectedPoints: rp.player.projections[0] ? 
             Number(rp.player.projections[0].projectedPoints) : 0,
         })),
@@ -590,7 +590,7 @@ async function generateLineupProjections(leagueId: string, week?: number, season
 function formatLeagueProjectionsSummary(teams: any[], week: number, season: number, sleeperProjections: any, includeStats: boolean) {
   const teamSummaries = teams.map(team => {
     const startingLineup = team.roster.filter((rp: any) => 
-      rp.rosterSlot !== 'BENCH' && rp.rosterSlot !== 'IR'
+      rp.position !== 'BENCH' && rp.position !== 'IR'
     );
 
     const totalProjected = startingLineup.reduce((sum: number, rp: any) => {
@@ -633,11 +633,11 @@ function formatLeagueProjectionsRoster(teams: any[], week: number, season: numbe
       return {
         playerId: rp.player.id,
         playerName: rp.player.name,
-        position: rp.player.position,
-        rosterSlot: rp.rosterSlot,
+        playerPosition: rp.player.position,
+        rosterPosition: rp.position,
         projectedPoints: dbProjection ? Number(dbProjection.projectedPoints) :
                         sleeperProj ? calculateFantasyPoints(sleeperProj) : 0,
-        isStarting: rp.rosterSlot !== 'BENCH' && rp.rosterSlot !== 'IR',
+        isStarting: rp.position !== 'BENCH' && rp.position !== 'IR',
       };
     }),
   }));
@@ -659,8 +659,8 @@ function formatLeagueProjectionsDetailed(teams: any[], week: number, season: num
           playerName: rp.player.name,
           position: rp.player.position,
           nflTeam: rp.player.nflTeam,
-          rosterSlot: rp.rosterSlot,
-          isStarting: rp.rosterSlot !== 'BENCH' && rp.rosterSlot !== 'IR',
+          rosterPosition: rp.position,
+          isStarting: rp.position !== 'BENCH' && rp.position !== 'IR',
           projections: {
             database: dbProjection ? {
               projectedPoints: Number(dbProjection.projectedPoints),
@@ -672,9 +672,9 @@ function formatLeagueProjectionsDetailed(teams: any[], week: number, season: num
               stats: sleeperProj,
             } : null,
           },
-          actualStats: includeStats && rp.player.playerStats?.[0] ? {
-            fantasyPoints: Number(rp.player.playerStats[0].fantasyPoints),
-            stats: rp.player.playerStats[0].stats,
+          actualStats: includeStats && rp.player.stats?.[0] ? {
+            fantasyPoints: Number(rp.player.stats[0].fantasyPoints),
+            stats: rp.player.stats[0].stats,
           } : null,
         };
       }),
@@ -747,9 +747,9 @@ function formatAllProjectionsDetailed(players: any[], week: number, season: numb
             stats: sleeperProj,
           } : null,
         },
-        actualStats: includeStats && player.playerStats?.[0] ? {
-          fantasyPoints: Number(player.playerStats[0].fantasyPoints),
-          stats: player.playerStats[0].stats,
+        actualStats: includeStats && player.stats?.[0] ? {
+          fantasyPoints: Number(player.stats[0].fantasyPoints),
+          stats: player.stats[0].stats,
         } : null,
       };
     }),

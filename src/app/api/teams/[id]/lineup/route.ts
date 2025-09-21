@@ -36,10 +36,10 @@ export async function GET(
     }
 
     // Get current lineup for the week
-    const rosterPlayers = await prisma.rosterPlayer.findMany({
+    const rosters = await prisma.roster.findMany({
       where: {
-        teamId,
-        week: week // If null, it's the current roster
+        teamId
+        // Note: week filtering removed as not in schema
       },
       include: {
         player: true
@@ -49,17 +49,17 @@ export async function GET(
       }
     });
 
-    // Organize by position
+    // Organize by position (using 'position' field from schema)
     const lineup = {
-      QB: rosterPlayers.filter(rp => rp.rosterSlot === 'QB'),
-      RB: rosterPlayers.filter(rp => rp.rosterSlot === 'RB'),
-      WR: rosterPlayers.filter(rp => rp.rosterSlot === 'WR'),
-      TE: rosterPlayers.filter(rp => rp.rosterSlot === 'TE'),
-      FLEX: rosterPlayers.filter(rp => rp.rosterSlot === 'FLEX'),
-      K: rosterPlayers.filter(rp => rp.rosterSlot === 'K'),
-      DST: rosterPlayers.filter(rp => rp.rosterSlot === 'DST'),
-      BENCH: rosterPlayers.filter(rp => rp.rosterSlot === 'BENCH'),
-      IR: rosterPlayers.filter(rp => rp.rosterSlot === 'IR')
+      QB: rosters.filter(rp => rp.position === 'QB'),
+      RB: rosters.filter(rp => rp.position === 'RB'),
+      WR: rosters.filter(rp => rp.position === 'WR'),
+      TE: rosters.filter(rp => rp.position === 'TE'),
+      FLEX: rosters.filter(rp => rp.position === 'FLEX'),
+      K: rosters.filter(rp => rp.position === 'K'),
+      DST: rosters.filter(rp => rp.position === 'DST'),
+      BENCH: rosters.filter(rp => rp.position === 'BENCH'),
+      IR: rosters.filter(rp => rp.position === 'IR')
     };
 
     // Check if lineup is locked (games have started)
@@ -132,7 +132,7 @@ export async function PUT(
     // Update lineup in transaction
     const result = await prisma.$transaction(async (tx) => {
       // First, get all current roster players
-      const currentRoster = await tx.rosterPlayer.findMany({
+      const currentRoster = await tx.roster.findMany({
         where: { teamId }
       });
 
@@ -151,30 +151,20 @@ export async function PUT(
 
       // Update each player's position
       for (const update of updates) {
-        await tx.rosterPlayer.updateMany({
+        await tx.roster.updateMany({
           where: {
             teamId,
             playerId: update.playerId
           },
           data: {
-            rosterSlot: update.position as any,
-            week: targetWeek,
-            isLocked: false,
-            lastModified: new Date()
+            position: update.position as any,
+            isLocked: false
+            // week and lastModified removed as not in schema
           }
         });
       }
 
-      // Create lineup history record
-      await tx.lineupHistory.create({
-        data: {
-          teamId,
-          week: targetWeek,
-          lineupData: lineup,
-          submittedAt: new Date(),
-          submittedBy: user?.id || 'test-user'
-        }
-      });
+      // Note: lineupHistory model not in schema, skipping history record
 
       return updates;
     });
@@ -228,30 +218,20 @@ export async function POST(
       const result = await prisma.$transaction(async (tx) => {
         for (const [position, players] of Object.entries(optimalLineup)) {
           for (const player of players as any[]) {
-            await tx.rosterPlayer.updateMany({
+            await tx.roster.updateMany({
               where: {
                 teamId,
                 playerId: player.playerId
               },
               data: {
-                rosterSlot: position as any,
-                week: targetWeek,
-                lastModified: new Date()
+                position: position as any
+                // week and lastModified removed as not in schema
               }
             });
           }
         }
 
-        await tx.lineupHistory.create({
-          data: {
-            teamId,
-            week: targetWeek,
-            lineupData: optimalLineup,
-            submittedAt: new Date(),
-            submittedBy: user?.id || 'test-user',
-            isOptimal: true
-          }
-        });
+        // Note: lineupHistory model not in schema, skipping history record
       });
 
       return NextResponse.json({
@@ -332,12 +312,12 @@ function validateLineup(lineup: any): { valid: boolean; error?: string } {
 
 async function generateOptimalLineup(teamId: string, week: number): Promise<any> {
   // Get all roster players with their projections
-  const rosterPlayers = await prisma.rosterPlayer.findMany({
+  const rosters = await prisma.roster.findMany({
     where: { teamId },
     include: {
       player: {
         include: {
-          playerStats: {
+          stats: {
             where: { week },
             take: 1
           }
@@ -347,9 +327,9 @@ async function generateOptimalLineup(teamId: string, week: number): Promise<any>
   });
 
   // Sort by projected points (descending)
-  const sortedPlayers = rosterPlayers.sort((a, b) => {
-    const aPoints = Number(a.player.playerStats[0]?.projectedPoints || 0);
-    const bPoints = Number(b.player.playerStats[0]?.projectedPoints || 0);
+  const sortedPlayers = rosters.sort((a, b) => {
+    const aPoints = Number(a.player.stats[0]?.fantasyPoints || 0);
+    const bPoints = Number(b.player.stats[0]?.fantasyPoints || 0);
     return bPoints - aPoints;
   });
 

@@ -174,7 +174,7 @@ async function updateLeagueScores(leagueId: string, week?: number, season?: numb
     }
 
     const targetWeek = week || league.currentWeek || 1;
-    const targetSeason = season || league.season;
+    const targetSeason = Number(season) || Number(league.season);
 
     // Update scores using real-time service
     const liveUpdate = await sleeperRealTimeScoringService.updateLeagueScores(leagueId);
@@ -267,7 +267,7 @@ async function updateSingleMatchup(matchupId: string, scores?: any, options: any
     await logScoringUpdate({
       leagueId: matchup.leagueId,
       week: matchup.week,
-      season: matchup.season,
+      season: Number(matchup.season),
       updateType: 'matchup_update',
       success: true,
       details: {
@@ -368,13 +368,12 @@ async function processStatCorrection(leagueId: string, week: number, season?: nu
             playerId_week_season: {
               playerId: correction.playerId,
               week,
-              season: targetSeason,
+              season: String(targetSeason),
             },
           },
           data: {
             stats: correction.correctedStats,
             fantasyPoints: correction.correctedPoints,
-            updatedAt: new Date(),
           },
         });
       }

@@ -606,7 +606,7 @@ export class PlayerSyncService {
     const fantasyPoints = this.calculateFantasyPoints(playerStats);
 
     try {
-      await prisma.playerStats.upsert({
+      await prisma.stats.upsert({
         where: {
           playerId_week_season: {
             playerId: player.id,
@@ -625,7 +625,7 @@ export class PlayerSyncService {
           season,
           stats: playerStats as any,
           fantasyPoints,
-          isProjected: false
+          isProjection: false
         }
       });
 

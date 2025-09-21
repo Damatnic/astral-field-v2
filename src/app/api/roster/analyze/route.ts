@@ -79,10 +79,10 @@ export async function GET(request: NextRequest) {
     let flexOptions = null;
     if (includeFlexOptions) {
       // Get current starters to exclude from FLEX options
-      // Note: rosterPlayer model not yet implemented
+      // Note: roster model not yet implemented
       const currentStarters: any[] = [];
       /*
-      const currentStarters = await prisma.rosterPlayer.findMany({
+      const currentStarters = await prisma.roster.findMany({
         where: {
           teamId: team.id,
           position: { notIn: ['BENCH', 'IR', 'TAXI'] }

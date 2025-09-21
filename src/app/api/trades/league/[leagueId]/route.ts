@@ -33,14 +33,14 @@ export async function GET(request: NextRequest, { params }: { params: { leagueId
     const season = searchParams.get('season') ? parseInt(searchParams.get('season')!) : null;
 
     // Verify user is in the league
-    const leagueMember = await prisma.leagueMember.findFirst({
+    const team = await prisma.team.findFirst({
       where: {
         userId: user.id,
         leagueId
       }
     });
 
-    if (!leagueMember) {
+    if (!team) {
       return NextResponse.json(
         { success: false, message: 'User is not a member of this league' },
         { status: 403 }
@@ -88,7 +88,7 @@ export async function GET(request: NextRequest, { params }: { params: { leagueId
 
     // Get trades with all related data
     const [trades, totalCount] = await Promise.all([
-      prisma.trade.findMany({
+      prisma.tradeProposal.findMany({
         where: whereClause,
         include: {
           proposer: {
@@ -139,7 +139,7 @@ export async function GET(request: NextRequest, { params }: { params: { leagueId
         skip,
         take: limit
       }),
-      prisma.trade.count({
+      prisma.tradeProposal.count({
         where: whereClause
       })
     ]);
@@ -407,11 +407,11 @@ async function getLeagueTradeStats(leagueId: string, season: number | null) {
     vetoedTrades,
     avgProcessingTime
   ] = await Promise.all([
-    prisma.trade.count({ where: whereClause }),
-    prisma.trade.count({ where: { ...whereClause, status: 'ACCEPTED' } }),
-    prisma.trade.count({ where: { ...whereClause, status: 'REJECTED' } }),
-    prisma.trade.count({ where: { ...whereClause, status: 'PENDING' } }),
-    prisma.trade.count({ where: { ...whereClause, status: 'VETOED' } }),
+    prisma.tradeProposal.count({ where: whereClause }),
+    prisma.tradeProposal.count({ where: { ...whereClause, status: 'ACCEPTED' } }),
+    prisma.tradeProposal.count({ where: { ...whereClause, status: 'REJECTED' } }),
+    prisma.tradeProposal.count({ where: { ...whereClause, status: 'PENDING' } }),
+    prisma.tradeProposal.count({ where: { ...whereClause, status: 'VETOED' } }),
     calculateAverageProcessingTime(leagueId, season)
   ]);
 
@@ -443,7 +443,7 @@ async function calculateAverageProcessingTime(leagueId: string, season: number |
     whereClause.league = { season };
   }
 
-  const processedTrades = await prisma.trade.findMany({
+  const processedTrades = await prisma.tradeProposal.findMany({
     where: whereClause,
     select: {
       createdAt: true,

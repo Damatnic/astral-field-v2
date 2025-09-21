@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
       liveScores = await sleeperRealTimeScoringService.getLiveScores(leagueId);
     } else {
       // For past/future weeks, calculate from stored data
-      liveScores = await calculateHistoricalScores(leagueId, targetWeek, league.season);
+      liveScores = await calculateHistoricalScores(leagueId, targetWeek, String(league.season));
     }
 
     if (!liveScores) {
@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
 
     // Add projections if requested
     if (includeProjections && format === 'detailed') {
-      responseData.projections = await getWeekProjections(leagueId, targetWeek, league.season);
+      responseData.projections = await getWeekProjections(leagueId, targetWeek, String(league.season));
     }
 
     return NextResponse.json({
@@ -213,7 +213,7 @@ export async function POST(request: NextRequest) {
 }
 
 // Helper function to calculate historical scores
-async function calculateHistoricalScores(leagueId: string, week: number, season: number) {
+async function calculateHistoricalScores(leagueId: string, week: number, season: string) {
   try {
     const matchups = await db.matchup.findMany({
       where: {
@@ -318,7 +318,7 @@ function formatDetailedResponse(liveScores: any, isLive: boolean, gameSchedule: 
 }
 
 // Helper function to get week projections
-async function getWeekProjections(leagueId: string, week: number, season: number) {
+async function getWeekProjections(leagueId: string, week: number, season: string) {
   try {
     // Get all teams in league
     const teams = await db.team.findMany({
@@ -341,11 +341,11 @@ async function getWeekProjections(leagueId: string, week: number, season: number
 
     const projections: Record<string, any> = {};
 
-    teams.forEach(team => {
+    teams.forEach((team: any) => {
       projections[team.id] = {
         teamName: team.name,
         totalProjected: 0,
-        players: team.roster.map(rp => {
+        players: (team.roster || []).map((rp: any) => {
           const projection = rp.player.projections[0];
           const projectedPoints = projection ? Number(projection.projectedPoints) : 0;
           

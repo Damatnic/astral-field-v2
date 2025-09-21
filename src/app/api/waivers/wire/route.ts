@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
     }
     
     // Get all rostered players in the league
-    const rosteredPlayers = await prisma.rosterPlayer.findMany({
+    const rosteredPlayers = await prisma.roster.findMany({
       where: {
         team: {
           leagueId: targetLeagueId
@@ -120,7 +120,7 @@ export async function GET(request: NextRequest) {
     const availablePlayers = await prisma.player.findMany({
       where,
       include: {
-        playerStats: {
+        stats: {
           where: {
             season,
             week: {
@@ -165,7 +165,7 @@ export async function GET(request: NextRequest) {
     // Calculate stats and format players for response
     const playersWithStats = availablePlayers.map(player => {
       // Calculate season stats
-      const seasonStats = player.playerStats || [];
+      const seasonStats = player.stats || [];
       const totalPoints = seasonStats.reduce((sum, stat) => sum + (Number(stat.fantasyPoints) || 0), 0);
       const avgPoints = seasonStats.length > 0 ? totalPoints / seasonStats.length : 0;
       

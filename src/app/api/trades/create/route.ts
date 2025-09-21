@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate user is in the league
-    const userLeagueMember = await prisma.leagueMember.findFirst({
+    const userLeagueMember = await prisma.team.findFirst({
       where: {
         userId: user.id,
         leagueId: body.leagueId
@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Fetch complete trade with all relationships
-    const completeTrade = await prisma.trade.findUnique({
+    const completeTrade = await prisma.tradeProposal.findUnique({
       where: { id: trade.id },
       include: {
         proposer: {

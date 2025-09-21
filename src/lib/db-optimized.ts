@@ -160,7 +160,7 @@ export const getPlayersOptimized = createServerCache(
           // Limit related data to avoid over-fetching
           playerStats: {
             where: {
-              season: new Date().getFullYear(),
+              season: new Date().getFullYear().toString(),
               week: { lte: getCurrentWeek() },
             },
             select: {
@@ -173,7 +173,7 @@ export const getPlayersOptimized = createServerCache(
           },
           projections: {
             where: {
-              season: new Date().getFullYear(),
+              season: new Date().getFullYear().toString(),
               week: getCurrentWeek(),
             },
             select: {
@@ -365,7 +365,7 @@ export const getRosterOptimized = createServerCache(
             // Get latest stats efficiently
             playerStats: {
               where: {
-                season: new Date().getFullYear(),
+                season: new Date().getFullYear().toString(),
               },
               select: {
                 week: true,
@@ -446,7 +446,7 @@ export const batchOperations = {
   }>) {
     return prisma.$transaction(
       updates.map(update =>
-        prisma.playerStats.upsert({
+        prisma.stats.upsert({
           where: {
             playerId_week_season: {
               playerId: update.playerId,

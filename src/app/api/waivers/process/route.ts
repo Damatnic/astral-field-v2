@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
         try {
           await prisma.$transaction(async (tx) => {
             // Verify roster space and constraints before processing
-            const currentRoster = await tx.rosterPlayer.findMany({
+            const currentRoster = await tx.roster.findMany({
               where: { teamId: claim.teamId },
               include: { player: true }
             });
@@ -157,7 +157,7 @@ export async function POST(request: NextRequest) {
             
             // Handle drop player with comprehensive validation
             if (claim.dropPlayerId) {
-              const dropPlayerEntry = await tx.rosterPlayer.findFirst({
+              const dropPlayerEntry = await tx.roster.findFirst({
                 where: {
                   teamId: claim.teamId,
                   playerId: claim.dropPlayerId
@@ -174,7 +174,7 @@ export async function POST(request: NextRequest) {
               }
               
               // Remove player from roster
-              await tx.rosterPlayer.deleteMany({
+              await tx.roster.deleteMany({
                 where: {
                   teamId: claim.teamId,
                   playerId: claim.dropPlayerId
@@ -199,7 +199,7 @@ export async function POST(request: NextRequest) {
             }
             
             // Verify the claimed player is still available
-            const existingRosterEntry = await tx.rosterPlayer.findFirst({
+            const existingRosterEntry = await tx.roster.findFirst({
               where: {
                 playerId: claim.playerId,
                 team: { leagueId }
@@ -211,7 +211,7 @@ export async function POST(request: NextRequest) {
             }
             
             // Add new player to roster
-            await tx.rosterPlayer.create({
+            await tx.roster.create({
               data: {
                 teamId: claim.teamId,
                 playerId: claim.playerId,
@@ -369,7 +369,7 @@ export async function POST(request: NextRequest) {
 }
 
 async function checkPlayerAvailable(playerId: string, leagueId: string): Promise<boolean> {
-  const rosterPlayer = await prisma.rosterPlayer.findFirst({
+  const roster = await prisma.roster.findFirst({
     where: {
       playerId,
       team: {
@@ -378,7 +378,7 @@ async function checkPlayerAvailable(playerId: string, leagueId: string): Promise
     }
   });
   
-  return !rosterPlayer;
+  return !roster;
 }
 
 async function checkFAABBudget(teamId: string, bidAmount: number): Promise<boolean> {

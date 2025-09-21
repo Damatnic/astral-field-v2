@@ -339,7 +339,7 @@ export class NFLDataService {
     // Calculate fantasy points based on scoring system
     const fantasyPoints = this.calculateFantasyPoints(stat);
     
-    await prisma.playerStats.upsert({
+    await prisma.stats.upsert({
       where: {
         playerId_week_season: {
           playerId,
@@ -361,7 +361,7 @@ export class NFLDataService {
         opponent: stat.Opponent,
         stats: stat,
         fantasyPoints,
-        isProjected: false
+        isProjection: false
       }
     });
   }
@@ -436,7 +436,7 @@ export class NFLDataService {
           break;
       }
       
-      await prisma.playerStats.upsert({
+      await prisma.stats.upsert({
         where: {
           playerId_week_season: {
             playerId: player.id,
@@ -454,7 +454,7 @@ export class NFLDataService {
           season: 2024,
           stats: {},
           fantasyPoints: Math.round(fantasyPoints * 100) / 100,
-          isProjected: false
+          isProjection: false
         }
       });
     }}

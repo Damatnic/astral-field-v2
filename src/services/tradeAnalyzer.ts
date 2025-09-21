@@ -168,7 +168,7 @@ export class TradeAnalyzer {
 
     return players.map(player => {
       const avgProjection = player.projections.reduce((sum, p) => sum + Number(p.projectedPoints), 0) / player.projections.length || 0;
-      const avgActual = player.playerStats.reduce((sum, s) => sum + Number(s.fantasyPoints || 0), 0) / player.playerStats.length || 0;
+      const avgActual = player.stats.reduce((sum, s) => sum + Number(s.fantasyPoints || 0), 0) / player.stats.length || 0;
       
       // Simplified value calculation
       const baseValue = (avgProjection * 0.7) + (avgActual * 0.3);
@@ -180,7 +180,7 @@ export class TradeAnalyzer {
         consensusValue: marketValue,
         expertValue: marketValue * 1.1, // Slightly higher expert value
         crowdValue: marketValue * 0.9, // Slightly lower crowd value
-        trendDirection: this.calculateTrendDirection(player.playerStats),
+        trendDirection: this.calculateTrendDirection(player.stats),
         confidenceInterval: [marketValue * 0.8, marketValue * 1.2] as [number, number],
         recentTrades: [] // Would fetch from trade history
       };

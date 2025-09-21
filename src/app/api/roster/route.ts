@@ -18,10 +18,17 @@ export async function GET(request: NextRequest) {
     const team = teamId 
       ? await prisma.team.findUnique({
           where: { id: teamId },
-          include: { owner: true }
+          include: { 
+            owner: true,
+            league: { select: { id: true, name: true } }
+          }
         })
       : await prisma.team.findFirst({
-          where: { ownerId: session.user.id }
+          where: { ownerId: session.user.id },
+          include: { 
+            owner: true,
+            league: { select: { id: true, name: true } }
+          }
         });
     
     if (!team || team.ownerId !== session.user.id) {
@@ -57,18 +64,18 @@ export async function GET(request: NextRequest) {
       playerId: rp.playerId,
       name: rp.player.name,
       position: rp.player.position,
-      team: rp.player.team,
+      team: rp.player.nflTeam,
       rosterSlot: rp.position,
       status: rp.player.status || 'ACTIVE',
       injuryStatus: rp.player.injuryStatus,
       byeWeek: rp.player.byeWeek,
       acquisitionType: rp.acquisitionType,
       acquisitionDate: rp.acquisitionDate,
-      isLocked: rp.isLocked || false,
-      lastWeekPoints: rp.player.stats[0]?.fantasyPoints?.toNumber() || 0,
-      projectedPoints: rp.player.projections[0]?.projectedPoints?.toNumber() || 0,
+      isLocked: rp.isLocked ?? false,
+      lastWeekPoints: rp.player.stats[0]?.fantasyPoints || 0,
+      projectedPoints: rp.player.projections[0]?.projectedPoints || 0,
       averagePoints: rp.player.stats.length > 0 
-        ? rp.player.stats.reduce((sum, stat) => sum + (stat.fantasyPoints?.toNumber() || 0), 0) / rp.player.stats.length
+        ? rp.player.stats.reduce((sum, stat) => sum + (stat.fantasyPoints || 0), 0) / rp.player.stats.length
         : 0
     }));
     
@@ -79,7 +86,7 @@ export async function GET(request: NextRequest) {
       TE: rosterWithStats.filter(r => r.rosterSlot === 'TE'),
       FLEX: rosterWithStats.filter(r => r.rosterSlot === 'FLEX'),
       K: rosterWithStats.filter(r => r.rosterSlot === 'K'),
-      DST: rosterWithStats.filter(r => r.rosterSlot === 'DST'),
+      DST: rosterWithStats.filter(r => r.rosterSlot === 'DEF'),
       BENCH: rosterWithStats.filter(r => r.rosterSlot === 'BENCH')
     };
     
@@ -118,7 +125,7 @@ export async function PUT(request: NextRequest) {
     await prisma.$transaction(async (tx) => {
       for (const move of rosterMoves) {
         await tx.roster.update({
-          where: { id: move.rosterPlayerId },
+          where: { id: move.rosterId },
           data: { position: move.newPosition }
         });
       }

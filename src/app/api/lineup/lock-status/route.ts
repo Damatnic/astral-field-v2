@@ -91,8 +91,8 @@ export async function GET(request: NextRequest) {
       });
       
       if (team) {
-        const rosterPlayerIds = team.roster.map(rp => rp.playerId);
-        playersLockStatus = await getPlayersLockStatus(rosterPlayerIds, targetWeek);
+        const rosterIds = team.roster.map(rp => rp.playerId);
+        playersLockStatus = await getPlayersLockStatus(rosterIds, targetWeek);
       }
     }
     

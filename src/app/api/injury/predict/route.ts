@@ -120,8 +120,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Analyze each player's injury risk
-    const playersAtRisk = team.roster.map(rosterPlayer => {
-      const player = rosterPlayer.player;
+    const playersAtRisk = team.roster.map(roster => {
+      const player = roster.player;
       const analysis = analyzePlayerInjuryRisk(player);
       
       return {
@@ -182,7 +182,7 @@ function analyzePlayerInjuryRisk(player: any) {
   }
 
   // Workload analysis
-  const stats = player.playerStats || [];
+  const stats = player.stats || [];
   const workloadRisk = calculateWorkloadRisk(stats, player.position);
   riskScore += workloadRisk * RISK_FACTORS.workload;
   if (workloadRisk > 40) factors.push('High workload volume');

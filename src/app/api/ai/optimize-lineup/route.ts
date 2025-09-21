@@ -125,8 +125,8 @@ export async function POST(request: NextRequest) {
     });
 
     // Analyze each player using ML-inspired algorithms
-    const analyzedPlayers = roster.map(rosterPlayer => {
-      const player = rosterPlayer.player;
+    const analyzedPlayers = roster.map(roster => {
+      const player = roster.player;
       const stats = player.stats || [];
       const projection = player.projections?.[0];
       const injury = player.injuryStatus;

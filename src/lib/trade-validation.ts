@@ -580,7 +580,7 @@ export async function calculateTradeFairness(tradeItems: any[]): Promise<{
         const player = players.find(p => p.id === item.playerId);
         if (player) {
           // Simple value calculation based on recent performance
-          const recentStats = player.playerStats.slice(0, 3);
+          const recentStats = player.stats.slice(0, 3);
           const avgPoints = recentStats.length > 0 
             ? recentStats.reduce((sum, stat) => sum + (stat.fantasyPoints?.toNumber() || 0), 0) / recentStats.length
             : 10; // Default value

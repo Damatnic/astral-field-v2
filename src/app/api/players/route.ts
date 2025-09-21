@@ -86,12 +86,12 @@ export async function GET(request: NextRequest) {
 
     // Transform players data with comprehensive stats
     const transformedPlayers = players.map(player => {
-      const seasonStats = player.playerStats || [];
+      const seasonStats = player.stats || [];
       const totalPoints = seasonStats.reduce((sum, stat) => sum + (stat.fantasyPoints?.toNumber() || 0), 0);
       const averagePoints = seasonStats.length > 0 ? totalPoints / seasonStats.length : 0;
       const lastGamePoints = seasonStats[0]?.fantasyPoints?.toNumber() || 0;
       const projection = player.projections?.[0];
-      const isRostered = player.rosterPlayers && player.rosterPlayers.length > 0;
+      const isRostered = player.rosters && player.rosters.length > 0;
       
       // Calculate trend
       let trend: 'up' | 'down' | 'stable' = 'stable';
@@ -149,7 +149,7 @@ export async function GET(request: NextRequest) {
           gameId: stat.gameId
         })),
         // News
-        news: (player.playerNews || []).map(news => ({
+        news: (player.news || []).map(news => ({
           id: news.id,
           headline: news.headline,
           content: news.content,
@@ -160,11 +160,11 @@ export async function GET(request: NextRequest) {
         })),
         // Roster information
         isRostered: isRostered,
-        rosterInfo: isRostered && player.rosterPlayers ? {
-          teamId: player.rosterPlayers[0].team.id,
-          teamName: player.rosterPlayers[0].team.name,
-          ownerName: player.rosterPlayers[0].team.owner.name,
-          rosterSlot: player.rosterPlayers[0].rosterSlot
+        rosterInfo: isRostered && player.rosters ? {
+          teamId: player.rosters[0].team.id,
+          teamName: player.rosters[0].team.name,
+          ownerName: player.rosters[0].team.owner.name,
+          rosterSlot: player.rosters[0].rosterSlot
         } : null,
         // Fantasy relevance scoring
         fantasyScore: calculateFantasyScore(player, seasonStats, projection),

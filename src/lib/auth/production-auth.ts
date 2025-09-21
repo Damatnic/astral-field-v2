@@ -42,91 +42,23 @@ export interface AuthSession {
 }
 
 /**
- * Production user credentials for D'Amato Dynasty League
- * These will be replaced with OAuth or secure password reset on first login
+ * Production user setup for D'Amato Dynasty League
+ * Credentials are loaded from environment variables for security
  */
-const PRODUCTION_USERS = [
-  {
-    email: 'nicholas.damato@damatodynasty.com',
-    name: 'Nicholas D\'Amato',
-    teamName: 'The Commissioners',
-    role: UserRole.COMMISSIONER,
-    tempPassword: 'Commissioner2024!',
-    avatar: '👑'
-  },
-  {
-    email: 'nick.hartley@damatodynasty.com',
-    name: 'Nick Hartley',
-    teamName: 'Hartley Heroes',
-    role: UserRole.PLAYER,
-    tempPassword: 'HartleyHeroes2024!',
-    avatar: '🦸'
-  },
-  {
-    email: 'jack.mccaigue@damatodynasty.com',
-    name: 'Jack McCaigue',
-    teamName: 'Jack\'s Juggernauts',
-    role: UserRole.PLAYER,
-    tempPassword: 'Juggernauts2024!',
-    avatar: '💪'
-  },
-  {
-    email: 'larry.mccaigue@damatodynasty.com',
-    name: 'Larry McCaigue',
-    teamName: 'Larry\'s Legends',
-    role: UserRole.PLAYER,
-    tempPassword: 'Legends2024!',
-    avatar: '⭐'
-  },
-  {
-    email: 'renee.mccaigue@damatodynasty.com',
-    name: 'Renee McCaigue',
-    teamName: 'Renee\'s Renegades',
-    role: UserRole.PLAYER,
-    tempPassword: 'Renegades2024!',
-    avatar: '🏴‍☠️'
-  },
-  {
-    email: 'jon.kornbeck@damatodynasty.com',
-    name: 'Jon Kornbeck',
-    teamName: 'Kornbeck Crushers',
-    role: UserRole.PLAYER,
-    tempPassword: 'Crushers2024!',
-    avatar: '🔨'
-  },
-  {
-    email: 'david.jarvey@damatodynasty.com',
-    name: 'David Jarvey',
-    teamName: 'Jarvey\'s Giants',
-    role: UserRole.PLAYER,
-    tempPassword: 'Giants2024!',
-    avatar: '🏔️'
-  },
-  {
-    email: 'kaity.lorbecki@damatodynasty.com',
-    name: 'Kaity Lorbecki',
-    teamName: 'Lorbecki Lightning',
-    role: UserRole.PLAYER,
-    tempPassword: 'Lightning2024!',
-    avatar: '⚡'
-  },
-  {
-    email: 'cason.minor@damatodynasty.com',
-    name: 'Cason Minor',
-    teamName: 'Minor Miracles',
-    role: UserRole.PLAYER,
-    tempPassword: 'Miracles2024!',
-    avatar: '✨'
-  },
-  {
-    email: 'brittany.bergum@damatodynasty.com',
-    name: 'Brittany Bergum',
-    teamName: 'Bergum Blitz',
-    role: UserRole.PLAYER,
-    tempPassword: 'Blitz2024!',
-    avatar: '🚀'
+const getProductionUsers = () => {
+  const users = process.env.PRODUCTION_USERS;
+  if (!users) {
+    throw new Error('PRODUCTION_USERS environment variable not set');
   }
-];
+  
+  try {
+    return JSON.parse(users);
+  } catch (error) {
+    throw new Error('Invalid PRODUCTION_USERS format in environment variable');
+  }
+};
+
+const PRODUCTION_USERS = getProductionUsers();
 
 export class ProductionAuthService {
   /**
@@ -167,8 +99,26 @@ export class ProductionAuthService {
       await this.sendPasswordResetEmail(email);
     }
     
-    // Verify password (temporary for demo)
-    const isValid = password === productionUser.tempPassword;
+    // Verify password using bcrypt for security
+    const bcrypt = require('bcryptjs');
+    let isValid = false;
+    
+    if (user.hashedPassword) {
+      // Use hashed password if available
+      isValid = await bcrypt.compare(password, user.hashedPassword);
+    } else if (productionUser.tempPassword) {
+      // Temporary password verification (deprecated)
+      isValid = password === productionUser.tempPassword;
+      
+      // Hash the password for future use
+      if (isValid) {
+        const hashedPassword = await bcrypt.hash(password, 12);
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { hashedPassword }
+        });
+      }
+    }
     
     if (!isValid) {
       throw new Error('Invalid credentials');

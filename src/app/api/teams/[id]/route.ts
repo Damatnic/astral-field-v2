@@ -40,9 +40,9 @@ export async function GET(
             name: true,
             currentWeek: true,
             season: true,
-            members: user ? {
+            teams: user ? {
               where: {
-                userId: user.id
+                ownerId: user.id
               }
             } : undefined
           }
@@ -51,10 +51,10 @@ export async function GET(
           include: {
             player: {
               include: {
-                playerStats: {
+                stats: {
                   where: {
-                    season: new Date().getFullYear(),
-                    isProjected: false
+                    season: new Date().getFullYear().toString(),
+                    isProjection: false
                   },
                   orderBy: {
                     week: 'desc'
@@ -63,7 +63,7 @@ export async function GET(
                 },
                 projections: {
                   where: {
-                    season: new Date().getFullYear(),
+                    season: new Date().getFullYear().toString(),
                     week: getCurrentWeek()
                   },
                   orderBy: {
@@ -71,9 +71,9 @@ export async function GET(
                   },
                   take: 1
                 },
-                playerNews: {
+                news: {
                   orderBy: {
-                    timestamp: 'desc'
+                    publishedAt: 'desc'
                   },
                   take: 1
                 }
@@ -81,7 +81,7 @@ export async function GET(
             }
           },
           orderBy: [
-            { rosterSlot: 'asc' },
+            { position: 'asc' },
             { player: { position: 'asc' } }
           ]
         },
@@ -141,7 +141,7 @@ export async function GET(
 
     // Check if user has access to this team
     const isOwner = user ? team.ownerId === user.id : false;
-    const isLeagueMember = team.league.members?.length > 0;
+    const isLeagueMember = team.league.teams?.length > 0;
 
     // For testing, skip access check
     // if (!isOwner && !isLeagueMember) {
@@ -152,16 +152,16 @@ export async function GET(
     // }
 
     // Transform roster data
-    const transformedRoster = team.roster.map(rosterPlayer => ({
-      ...rosterPlayer,
+    const transformedRoster = team.roster.map(roster => ({
+      ...roster,
       player: {
-        ...rosterPlayer.player,
-        averagePoints: calculateAveragePoints(rosterPlayer.player.playerStats),
-        projectedPoints: rosterPlayer.player.projections[0]?.projectedPoints?.toNumber() || 0,
-        lastNews: rosterPlayer.player.playerNews[0] || null,
-        weeklyStats: rosterPlayer.player.playerStats.map(stat => ({
+        ...roster.player,
+        averagePoints: calculateAveragePoints(roster.player.stats),
+        projectedPoints: roster.player.projections[0]?.projectedPoints || 0,
+        lastNews: roster.player.news[0] || null,
+        weeklyStats: roster.player.stats.map(stat => ({
           week: stat.week,
-          points: stat.fantasyPoints?.toNumber() || 0,
+          points: stat.fantasyPoints || 0,
           opponent: stat.opponent || '',
           gameTime: new Date(),
           isCompleted: true
@@ -257,12 +257,12 @@ export async function PUT(
       
       await prisma.$transaction(async (tx) => {
         for (const change of changes) {
-          await tx.rosterPlayer.update({
+          await tx.roster.update({
             where: {
-              id: change.rosterPlayerId
+              id: change.rosterId
             },
             data: {
-              rosterSlot: change.toSlot
+              position: change.toSlot
             }
           });
         }
@@ -293,10 +293,10 @@ export async function PUT(
           include: {
             player: {
               include: {
-                playerStats: {
+                stats: {
                   where: {
-                    season: new Date().getFullYear(),
-                    isProjected: false
+                    season: new Date().getFullYear().toString(),
+                    isProjection: false
                   },
                   orderBy: {
                     week: 'desc'
@@ -305,7 +305,7 @@ export async function PUT(
                 },
                 projections: {
                   where: {
-                    season: new Date().getFullYear(),
+                    season: new Date().getFullYear().toString(),
                     week: getCurrentWeek()
                   },
                   take: 1
@@ -343,7 +343,7 @@ function getCurrentWeek(): number {
 
 function calculateAveragePoints(stats: any[]): number {
   if (!stats || stats.length === 0) return 0;
-  const total = stats.reduce((sum, stat) => sum + (stat.fantasyPoints?.toNumber() || 0), 0);
+  const total = stats.reduce((sum, stat) => sum + (stat.fantasyPoints || 0), 0);
   return total / stats.length;
 }
 

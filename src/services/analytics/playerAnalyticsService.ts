@@ -227,14 +227,14 @@ class PlayerAnalyticsService {
       }
 
       // Calculate season statistics
-      const seasonStats = this.calculateSeasonStats(player.playerStats);
+      const seasonStats = this.calculateSeasonStats(player.stats);
       
       // Calculate trends
-      const trends = this.calculatePlayerTrends(player.playerStats);
+      const trends = this.calculatePlayerTrends(player.stats);
       
       // Calculate projection accuracy
       const projectionAccuracy = this.calculateProjectionAccuracy(
-        player.playerStats,
+        player.stats,
         player.projections
       );
       
@@ -242,7 +242,7 @@ class PlayerAnalyticsService {
       const comparisons = await this.calculatePlayerComparisons(player, season);
       
       // Calculate situational performance
-      const situational = this.calculateSituationalPerformance(player.playerStats);
+      const situational = this.calculateSituationalPerformance(player.stats);
       
       // Calculate advanced metrics
       const advanced = await this.calculateAdvancedMetrics(player, season);
@@ -345,7 +345,7 @@ class PlayerAnalyticsService {
       const weekFilter = weeks ? { week: { in: weeks } } : {};
 
       // Get all projections and actual stats
-      const data = await prisma.playerStats.findMany({
+      const data = await prisma.stats.findMany({
         where: {
           season,
           ...weekFilter
@@ -439,7 +439,7 @@ class PlayerAnalyticsService {
       const timeline = this.calculateInjuryTimeline(injury, currentInjury);
       
       // Calculate fantasy impact
-      const fantasyImpact = this.calculateFantasyImpact(player.playerStats, timeline);
+      const fantasyImpact = this.calculateFantasyImpact(player.stats, timeline);
       
       // Find replacement value
       const replacementValue = await this.calculateReplacementValue(player);
@@ -751,7 +751,7 @@ class PlayerAnalyticsService {
     const sortedByPoints = players
       .map(p => ({
         player: p,
-        totalPoints: p.playerStats.reduce((sum: number, stat: any) => sum + (Number(stat.fantasyPoints) || 0), 0)
+        totalPoints: p.stats.reduce((sum: number, stat: any) => sum + (Number(stat.fantasyPoints) || 0), 0)
       }))
       .sort((a, b) => b.totalPoints - a.totalPoints);
 
@@ -775,7 +775,7 @@ class PlayerAnalyticsService {
 
   private calculatePositionScoring(players: any[]) {
     const allPoints = players.flatMap(p => 
-      p.playerStats.map((stat: any) => Number(stat.fantasyPoints) || 0)
+      p.stats.map((stat: any) => Number(stat.fantasyPoints) || 0)
     ).filter(p => p > 0);
 
     if (allPoints.length === 0) {
@@ -798,7 +798,7 @@ class PlayerAnalyticsService {
 
     // Find top performer
     const topPlayer = players.reduce((top, player) => {
-      const points = player.playerStats.reduce((sum: number, stat: any) => sum + (Number(stat.fantasyPoints) || 0), 0);
+      const points = player.stats.reduce((sum: number, stat: any) => sum + (Number(stat.fantasyPoints) || 0), 0);
       return points > (top?.points || 0) ? { name: player.name, points } : top;
     }, null);
 
