@@ -1,257 +1,139 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { handleComponentError } from '@/lib/error-handling';
 import { authenticateFromRequest } from '@/lib/auth';
-import { CreateTradeRequest, ApiResponse, Trade } from '@/types/fantasy';
-import { validateCompleteTrade, analyzeRosterImpact, calculateTradeFairness } from '@/lib/trade-validation';
-
 
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic';
 
-// POST /api/trades/create - Create a new trade proposal
 export async function POST(request: NextRequest) {
   try {
-    const user = await authenticateFromRequest(request);
-    if (!user) {
-      return NextResponse.json(
-        { success: false, message: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+    const body = await request.json();
+    const {
+      proposingTeamId,
+      receivingTeamId,
+      givingPlayerIds,
+      receivingPlayerIds,
+      message
+    } = body;
 
-    const body: CreateTradeRequest = await request.json();
-
-    // Validate required fields
-    if (!body.leagueId || !body.proposedToTeamIds?.length || !body.tradeItems?.length) {
+    // Basic validation
+    if (!proposingTeamId || !receivingTeamId) {
       return NextResponse.json(
-        { success: false, message: 'Missing required fields: leagueId, proposedToTeamIds, or tradeItems' },
+        { success: false, message: 'Both teams are required' },
         { status: 400 }
       );
     }
 
-    // Validate user is in the league
-    const userLeagueMember = await prisma.team.findFirst({
-      where: {
-        userId: user.id,
-        leagueId: body.leagueId
-      }
-    });
-
-    if (!userLeagueMember) {
+    if ((!givingPlayerIds || givingPlayerIds.length === 0) && 
+        (!receivingPlayerIds || receivingPlayerIds.length === 0)) {
       return NextResponse.json(
-        { success: false, message: 'User is not a member of this league' },
-        { status: 403 }
-      );
-    }
-
-    // Get user's team in the league
-    const userTeam = await prisma.team.findFirst({
-      where: {
-        ownerId: user.id,
-        leagueId: body.leagueId
-      }
-    });
-
-    if (!userTeam) {
-      return NextResponse.json(
-        { success: false, message: 'User does not have a team in this league' },
-        { status: 403 }
-      );
-    }
-
-    // Check league settings for trade deadline
-    const leagueSettings = await prisma.settings.findUnique({
-      where: { leagueId: body.leagueId }
-    });
-
-    if (leagueSettings?.tradeDeadline && new Date() > leagueSettings.tradeDeadline) {
-      return NextResponse.json(
-        { success: false, message: 'Trade deadline has passed' },
+        { success: false, message: 'At least one player must be involved in the trade' },
         { status: 400 }
       );
     }
 
-    // Validate that all teams exist and are in the league
-    const targetTeams = await prisma.team.findMany({
-      where: {
-        id: { in: body.proposedToTeamIds },
-        leagueId: body.leagueId
+    // Verify both teams exist and are in the same league
+    const [proposingTeam, receivingTeam] = await Promise.all([
+      prisma.team.findUnique({
+        where: { id: proposingTeamId },
+        include: { league: true }
+      }),
+      prisma.team.findUnique({
+        where: { id: receivingTeamId },
+        include: { league: true }
+      })
+    ]);
+
+    if (!proposingTeam || !receivingTeam) {
+      return NextResponse.json(
+        { success: false, message: 'One or both teams not found' },
+        { status: 404 }
+      );
+    }
+
+    if (proposingTeam.leagueId !== receivingTeam.leagueId) {
+      return NextResponse.json(
+        { success: false, message: 'Teams must be in the same league' },
+        { status: 400 }
+      );
+    }
+
+    // Verify all players exist
+    const allPlayerIds = [...(givingPlayerIds || []), ...(receivingPlayerIds || [])];
+    const players = await prisma.player.findMany({
+      where: { id: { in: allPlayerIds } },
+      select: { id: true, name: true }
+    });
+
+    if (players.length !== allPlayerIds.length) {
+      return NextResponse.json(
+        { success: false, message: 'One or more players not found' },
+        { status: 404 }
+      );
+    }
+
+    // Create the trade proposal
+    const trade = await prisma.tradeProposal.create({
+      data: {
+        proposingTeamId,
+        receivingTeamId,
+        givingPlayerIds: givingPlayerIds || [],
+        receivingPlayerIds: receivingPlayerIds || [],
+        message: message || null,
+        status: 'pending'
       },
       include: {
-        owner: {
-          select: { id: true, name: true, email: true }
-        }
-      }
-    });
-
-    if (targetTeams.length !== body.proposedToTeamIds.length) {
-      return NextResponse.json(
-        { success: false, message: 'One or more target teams not found in league' },
-        { status: 400 }
-      );
-    }
-
-    // Comprehensive trade validation
-    const validationResults = await validateCompleteTrade(body.tradeItems, body.leagueId, user.id);
-    if (!validationResults.isValid) {
-      return NextResponse.json(
-        { success: false, message: validationResults.error },
-        { status: 400 }
-      );
-    }
-
-    // Analyze roster impact for all teams
-    const rosterImpacts = await analyzeRosterImpact(body.tradeItems, body.leagueId);
-    
-    // Calculate trade fairness
-    const fairnessAnalysis = await calculateTradeFairness(body.tradeItems);
-
-    // Set expiration time (default 48 hours)
-    const expirationHours = body.expirationHours || 48;
-    const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + expirationHours);
-
-    // Create trade in a transaction
-    const trade = await prisma.$transaction(async (tx) => {
-      // Create the trade
-      const newTrade = await tx.trade.create({
-        data: {
-          leagueId: body.leagueId,
-          proposerId: user.id,
-          teamId: userTeam.id,
-          status: 'PENDING',
-          expiresAt,
-          notes: body.notes
-        }
-      });
-
-      // Create trade items
-      await tx.tradeItem.createMany({
-        data: body.tradeItems.map(item => ({
-          tradeId: newTrade.id,
-          fromTeamId: item.fromTeamId,
-          toTeamId: item.toTeamId,
-          playerId: item.playerId || null,
-          itemType: item.itemType,
-          metadata: item.draftPick ? JSON.parse(JSON.stringify({
-            draftPick: item.draftPick
-          })) : item.faabAmount ? JSON.parse(JSON.stringify({
-            faabAmount: item.faabAmount
-          })) : undefined
-        }))
-      });
-
-      return newTrade;
-    });
-
-    // Fetch complete trade with all relationships
-    const completeTrade = await prisma.tradeProposal.findUnique({
-      where: { id: trade.id },
-      include: {
-        proposer: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            avatar: true
-          }
-        },
-        team: {
+        proposingTeam: {
           select: {
             id: true,
             name: true,
             ownerId: true
           }
-        },
-        league: {
-          select: {
-            id: true,
-            name: true,
-            currentWeek: true
-          }
-        },
-        items: {
-          include: {
-            player: {
-              select: {
-                id: true,
-                name: true,
-                position: true,
-                nflTeam: true,
-                status: true
-              }
-            }
-          }
-        },
-        votes: true
-      }
-    });
-
-    // Create audit log entry
-    await prisma.auditLog.create({
-      data: {
-        leagueId: body.leagueId,
-        userId: user.id,
-        action: 'TRADE_CREATED',
-        entityType: 'Trade',
-        entityId: trade.id,
-        after: {
-          tradeId: trade.id,
-          proposer: user.name,
-          targetTeams: targetTeams.map(t => t.name),
-          itemCount: body.tradeItems.length,
-          fairnessScore: fairnessAnalysis.fairnessScore,
-          rosterImpacts: rosterImpacts.map(impact => ({
-            teamName: impact.teamName,
-            playersAdded: impact.playersAdded,
-            playersRemoved: impact.playersRemoved,
-            warnings: impact.warnings
-          })),
-          validationWarnings: validationResults.warnings
         }
       }
     });
 
-    // Send notifications to target team owners
-    const notificationPromises = targetTeams.map(async (team) => {
-      try {
-        await prisma.notification.create({
+    // Create notifications for the receiving team owner
+    if (receivingTeam.ownerId) {
+      await prisma.notification.create({
+        data: {
+          userId: receivingTeam.ownerId,
+          type: 'trade_proposal',
+          title: 'New Trade Proposal',
+          message: `${proposingTeam.name} has proposed a trade`,
           data: {
-            userId: team.ownerId,
-            type: 'TRADE_PROPOSAL',
-            title: 'New Trade Proposal',
-            content: `You have received a trade proposal from ${user.name || 'another manager'}`,
-            metadata: {
-              tradeId: trade.id,
-              proposerName: user.name,
-              leagueId: body.leagueId,
-              itemCount: body.tradeItems.length
-            }
+            tradeId: trade.id,
+            proposingTeam: proposingTeam.name,
+            receivingTeam: receivingTeam.name
           }
-        });
-      } catch (error) {
-        console.error(`Failed to notify team owner ${team.ownerId}:`, error);
+        }
+      });
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Trade proposal created successfully',
+      trade: {
+        id: trade.id,
+        status: trade.status,
+        proposingTeam: {
+          id: proposingTeam.id,
+          name: proposingTeam.name
+        },
+        receivingTeam: {
+          id: receivingTeam.id,
+          name: receivingTeam.name
+        },
+        givingPlayers: players.filter(p => givingPlayerIds?.includes(p.id)),
+        receivingPlayers: players.filter(p => receivingPlayerIds?.includes(p.id))
       }
     });
 
-    // Execute all notifications (non-blocking)
-    await Promise.allSettled(notificationPromises);
-
-    const response: ApiResponse<Trade> = {
-      success: true,
-      data: completeTrade as any,
-      message: 'Trade proposal created successfully'
-    };
-
-    return NextResponse.json(response, { status: 201 });
   } catch (error) {
-    handleComponentError(error as Error, 'route');
+    console.error('Error creating trade:', error);
     return NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }
     );
   }
 }
-
-// Validation functions moved to /lib/trade-validation.ts for reusability

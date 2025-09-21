@@ -1,218 +1,120 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from '@/lib/auth/get-session';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/db';
+import { authenticateFromRequest } from '@/lib/auth';
 
+// Force dynamic rendering for this route
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession();
-    
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status');
-    const limit = parseInt(searchParams.get('limit') || '20');
-    
-    const userTeams = await prisma.team.findMany({
-      where: { ownerId: session.user.id }
-    });
-    
-    if (userTeams.length === 0) {
-      return NextResponse.json({ trades: [], teamIds: [] });
-    }
+    const leagueId = searchParams.get('leagueId');
+    const teamId = searchParams.get('teamId');
+    const status = searchParams.get('status') || 'all';
 
-    const teamIds = userTeams.map(t => t.id);
-    const leagueIds = userTeams.map(t => t.leagueId);
-    
-    const where: any = {
-      OR: [
-        { proposingTeamId: { in: teamIds } },
-        { receivingTeamId: { in: teamIds } },
-        { leagueId: { in: leagueIds } }
-      ]
-    };
-    
-    if (status) {
+    // Build where clause
+    const where: any = {};
+    if (status && status !== 'all') {
       where.status = status;
     }
-    
+
+    // Get trades based on filters
+    if (teamId) {
+      // Get trades for a specific team
+      where.OR = [
+        { proposingTeamId: teamId },
+        { receivingTeamId: teamId }
+      ];
+    } else if (leagueId) {
+      // Get all trades for a league
+      const teams = await prisma.team.findMany({
+        where: { leagueId },
+        select: { id: true }
+      });
+      const teamIds = teams.map(t => t.id);
+      
+      where.OR = [
+        { proposingTeamId: { in: teamIds } },
+        { receivingTeamId: { in: teamIds } }
+      ];
+    }
+
     const trades = await prisma.tradeProposal.findMany({
       where,
       include: {
         proposingTeam: {
-          include: { owner: true }
-        },
-        receivingTeam: {
-          include: { owner: true }
-        },
-        league: {
-          select: { id: true, name: true }
-        },
-        tradeItems: {
-          include: {
-            player: true,
-            draftPick: true
+          select: {
+            id: true,
+            name: true,
+            ownerId: true
           }
         }
       },
-      orderBy: { createdAt: 'desc' },
-      take: limit
+      orderBy: { createdAt: 'desc' }
     });
-    
+
+    // Get receiving teams separately
+    const receivingTeamIds = [...new Set(trades.map(t => t.receivingTeamId))];
+    const receivingTeams = await prisma.team.findMany({
+      where: { id: { in: receivingTeamIds } },
+      select: { id: true, name: true, ownerId: true }
+    });
+    const receivingTeamMap = new Map(receivingTeams.map(t => [t.id, t]));
+
+    // Get all player IDs
+    const allPlayerIds = trades.flatMap(t => [
+      ...(t.givingPlayerIds || []),
+      ...(t.receivingPlayerIds || [])
+    ]);
+    const uniquePlayerIds = [...new Set(allPlayerIds)];
+
+    // Get all players
+    const players = await prisma.player.findMany({
+      where: { id: { in: uniquePlayerIds } },
+      select: {
+        id: true,
+        name: true,
+        position: true,
+        nflTeam: true,
+        status: true
+      }
+    });
+    const playerMap = new Map(players.map(p => [p.id, p]));
+
+    // Format trades with all data
     const formattedTrades = trades.map(trade => ({
       id: trade.id,
       status: trade.status,
+      message: trade.message,
+      createdAt: trade.createdAt,
+      respondedAt: trade.respondedAt,
       proposingTeam: {
-        id: trade.proposingTeamId,
-        name: trade.proposingTeam.name,
-        owner: trade.proposingTeam.owner.name
+        id: trade.proposingTeam.id,
+        name: trade.proposingTeam.name
       },
       receivingTeam: {
         id: trade.receivingTeamId,
-        name: trade.receivingTeam.name,
-        owner: trade.receivingTeam.owner.name
+        name: receivingTeamMap.get(trade.receivingTeamId)?.name || 'Unknown'
       },
-      league: trade.league,
-      items: {
-        proposingTeamGives: trade.tradeItems
-          .filter(item => item.fromTeamId === trade.proposingTeamId)
-          .map(item => ({
-            type: item.type,
-            player: item.player ? {
-              id: item.player.id,
-              name: item.player.name,
-              position: item.player.position,
-              team: item.player.team
-            } : null,
-            draftPick: item.draftPick ? {
-              year: item.draftPick.year,
-              round: item.draftPick.round,
-              originalTeam: item.draftPick.originalTeam
-            } : null
-          })),
-        receivingTeamGives: trade.tradeItems
-          .filter(item => item.fromTeamId === trade.receivingTeamId)
-          .map(item => ({
-            type: item.type,
-            player: item.player ? {
-              id: item.player.id,
-              name: item.player.name,
-              position: item.player.position,
-              team: item.player.team
-            } : null,
-            draftPick: item.draftPick ? {
-              year: item.draftPick.year,
-              round: item.draftPick.round,
-              originalTeam: item.draftPick.originalTeam
-            } : null
-          }))
-      },
-      proposedAt: trade.createdAt,
-      expiresAt: trade.expiresAt,
-      processedAt: trade.processedAt,
-      notes: trade.notes,
-      analysis: trade.analysis,
-      isMyProposal: teamIds.includes(trade.proposingTeamId),
-      isMyTrade: teamIds.includes(trade.proposingTeamId) || teamIds.includes(trade.receivingTeamId)
+      givingPlayers: trade.givingPlayerIds
+        .map(id => playerMap.get(id))
+        .filter(p => p !== undefined),
+      receivingPlayers: trade.receivingPlayerIds
+        .map(id => playerMap.get(id))
+        .filter(p => p !== undefined)
     }));
-    
+
     return NextResponse.json({
       success: true,
       trades: formattedTrades,
-      teamIds
+      count: formattedTrades.length
     });
-    
+
   } catch (error) {
-    console.error('Trades fetch error:', error);
-    return NextResponse.json({ error: 'Failed to fetch trades' }, { status: 500 });
-  }
-}
-
-export async function POST(request: NextRequest) {
-  try {
-    const session = await getServerSession();
-    
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const {
-      proposingTeamId,
-      receivingTeamId,
-      proposingTeamGives,
-      receivingTeamGives,
-      notes
-    } = await request.json();
-
-    const proposingTeam = await prisma.team.findUnique({
-      where: { id: proposingTeamId },
-      include: { league: true }
-    });
-
-    if (!proposingTeam || proposingTeam.ownerId !== session.user.id) {
-      return NextResponse.json({ error: 'Invalid proposing team' }, { status: 400 });
-    }
-
-    const receivingTeam = await prisma.team.findUnique({
-      where: { id: receivingTeamId }
-    });
-
-    if (!receivingTeam || receivingTeam.leagueId !== proposingTeam.leagueId) {
-      return NextResponse.json({ error: 'Invalid receiving team' }, { status: 400 });
-    }
-
-    const trade = await prisma.$transaction(async (tx) => {
-      const newTrade = await tx.trade.create({
-        data: {
-          proposingTeamId,
-          receivingTeamId,
-          leagueId: proposingTeam.leagueId,
-          status: 'PENDING',
-          notes: notes || '',
-          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
-        }
-      });
-
-      const allItems = [
-        ...proposingTeamGives.map((item: any) => ({
-          ...item,
-          fromTeamId: proposingTeamId,
-          toTeamId: receivingTeamId
-        })),
-        ...receivingTeamGives.map((item: any) => ({
-          ...item,
-          fromTeamId: receivingTeamId,
-          toTeamId: proposingTeamId
-        }))
-      ];
-
-      for (const item of allItems) {
-        await tx.tradeItem.create({
-          data: {
-            tradeId: newTrade.id,
-            fromTeamId: item.fromTeamId,
-            toTeamId: item.toTeamId,
-            type: item.type,
-            playerId: item.playerId || null,
-            draftPickId: item.draftPickId || null
-          }
-        });
-      }
-
-      return newTrade;
-    });
-
-    return NextResponse.json({
-      success: true,
-      trade: { id: trade.id },
-      message: 'Trade proposal created successfully'
-    });
-    
-  } catch (error) {
-    console.error('Trade creation error:', error);
-    return NextResponse.json({ error: 'Failed to create trade' }, { status: 500 });
+    console.error('Error fetching trades:', error);
+    return NextResponse.json(
+      { success: false, message: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
