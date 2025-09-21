@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Team not found or access denied' }, { status: 404 });
     }
     
-    const roster = await prisma.rosterPlayer.findMany({
+    const roster = await prisma.roster.findMany({
       where: { teamId: team.id },
       include: {
         player: {
@@ -117,7 +117,7 @@ export async function PUT(request: NextRequest) {
 
     await prisma.$transaction(async (tx) => {
       for (const move of rosterMoves) {
-        await tx.rosterPlayer.update({
+        await tx.roster.update({
           where: { id: move.rosterPlayerId },
           data: { position: move.newPosition }
         });
