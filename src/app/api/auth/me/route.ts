@@ -42,8 +42,6 @@ export async function GET(request: NextRequest) {
             id: dbSession.user.id,
             email: dbSession.user.email,
             name: dbSession.user.name || dbSession.user.email.split('@')[0],
-            role: dbSession.user.role,
-            teamName: dbSession.user.teamName,
             avatar: `/api/avatars/${encodeURIComponent(dbSession.user.name || dbSession.user.email.split('@')[0])}`,
             createdAt: dbSession.user.createdAt.toISOString(),
             updatedAt: dbSession.user.updatedAt.toISOString()
