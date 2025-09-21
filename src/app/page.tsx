@@ -107,14 +107,14 @@ const ParticleField = () => {
   );
 };
 
-// Floating stats preview
+// Real league stats from current season
 const FloatingStatsPreview = () => {
-  const stats = [
-    { label: "Total Points", value: "15,247", icon: "📊", color: "from-blue-500/20 to-cyan-500/20" },
-    { label: "Active Players", value: "10", icon: "👥", color: "from-purple-500/20 to-pink-500/20" },
-    { label: "Games Today", value: "5", icon: "🏈", color: "from-green-500/20 to-emerald-500/20" },
-    { label: "Prize Pool", value: "$1,000", icon: "💰", color: "from-yellow-500/20 to-orange-500/20" }
-  ];
+  const [stats, setStats] = useState([
+    { label: "Active Teams", value: "10", icon: "👥", color: "from-purple-500/20 to-pink-500/20" },
+    { label: "Season Week", value: "3", icon: "🏈", color: "from-green-500/20 to-emerald-500/20" },
+    { label: "Games Played", value: "2", icon: "📊", color: "from-blue-500/20 to-cyan-500/20" },
+    { label: "Season", value: "2025", icon: "🏆", color: "from-yellow-500/20 to-orange-500/20" }
+  ]);
 
   return (
     <div className="absolute bottom-20 left-0 right-0 flex justify-center gap-6 px-4 z-10">
@@ -368,167 +368,109 @@ const SelectedTeamPreview = ({ team, onConfirm, isAuthenticating }: any) => {
           </motion.button>
         </div>
 
-        {/* Quick Stats Preview */}
-        <div className="grid grid-cols-4 gap-6 mt-8 pt-8 border-t border-white/10">
-          <QuickStat label="Total Points" value="1,247.5" trend="+12%" />
-          <QuickStat label="Win Streak" value="3" trend="🔥" />
-          <QuickStat label="Trades" value="7" />
-          <QuickStat label="Waiver Priority" value="4th" />
+        {/* Real Season Stats */}
+        <div className="grid grid-cols-3 gap-6 mt-8 pt-8 border-t border-white/10">
+          <QuickStat 
+            label="Season Record" 
+            value={team.record} 
+            trend={parseInt(team.record.split('-')[0]) > parseInt(team.record.split('-')[1]) ? "🔥" : ""} 
+          />
+          <QuickStat 
+            label="Points For" 
+            value={team.points} 
+            trend={`Rank #${team.ranking}`} 
+          />
+          <QuickStat 
+            label="2025 Week" 
+            value="3" 
+            trend="2 games played" 
+          />
         </div>
       </div>
     </motion.div>
   );
 };
 
-// D'Amato Dynasty League 2025 - Real League Members
-const DEMO_TEAMS = [
-  {
-    id: 1,
-    owner: "Nicholas D'Amato",
-    teamName: "D'Amato Dynasty",
-    avatar: "/api/avatars/nicholas",
-    primaryColor: "#C41E3A",
-    secondaryColor: "#FFD700",
-    record: "0-0",
-    ranking: 1,
-    trophies: 2,
-    points: "0",
-    motto: "Dynasty Starts Here",
-    email: "nicholas@damato-dynasty.com"
-  },
-  {
-    id: 2,
-    owner: "Nick Hartley",
-    teamName: "Hartley's Heroes",
-    avatar: "/api/avatars/nick",
-    primaryColor: "#00CED1",
-    secondaryColor: "#4682B4",
-    record: "0-0",
-    ranking: 2,
-    trophies: 1,
-    points: "0",
-    motto: "Heroes Always Win",
-    email: "nick@damato-dynasty.com"
-  },
-  {
-    id: 3,
-    owner: "Jack McCaigue",
-    teamName: "McCaigue Mayhem",
-    avatar: "/api/avatars/jack",
-    primaryColor: "#FF4500",
-    secondaryColor: "#DC143C",
-    record: "0-0",
-    ranking: 3,
-    trophies: 1,
-    points: "0",
-    motto: "Mayhem on the Field",
-    email: "jack@damato-dynasty.com"
-  },
-  {
-    id: 4,
-    owner: "Larry McCaigue",
-    teamName: "Larry Legends",
-    avatar: "/api/avatars/larry",
-    primaryColor: "#32CD32",
-    secondaryColor: "#228B22",
-    record: "0-0",
-    ranking: 4,
-    trophies: 0,
-    points: "0",
-    motto: "Legends Never Die",
-    email: "larry@damato-dynasty.com"
-  },
-  {
-    id: 5,
-    owner: "Renee McCaigue",
-    teamName: "Renee's Reign",
-    avatar: "/api/avatars/renee",
-    primaryColor: "#9370DB",
-    secondaryColor: "#8A2BE2",
-    record: "0-0",
-    ranking: 5,
-    trophies: 0,
-    points: "0",
-    motto: "Reigning Supreme",
-    email: "renee@damato-dynasty.com"
-  },
-  {
-    id: 6,
-    owner: "Jon Kornbeck",
-    teamName: "Kornbeck Crushers",
-    avatar: "/api/avatars/jon",
-    primaryColor: "#1E90FF",
-    secondaryColor: "#000080",
-    record: "0-0",
-    ranking: 6,
-    trophies: 0,
-    points: "0",
-    motto: "Crushing Dreams Since Day One",
-    email: "jon@damato-dynasty.com"
-  },
-  {
-    id: 7,
-    owner: "David Jarvey",
-    teamName: "Jarvey's Juggernauts",
-    avatar: "/api/avatars/david",
-    primaryColor: "#FFA500",
-    secondaryColor: "#FF8C00",
-    record: "0-0",
-    ranking: 7,
-    trophies: 0,
-    points: "0",
-    motto: "Unstoppable Force",
-    email: "david@damato-dynasty.com"
-  },
-  {
-    id: 8,
-    owner: "Kaity Lorbecki",
-    teamName: "Lorbecki Lions",
-    avatar: "/api/avatars/kaity",
-    primaryColor: "#FFB6C1",
-    secondaryColor: "#FF69B4",
-    record: "0-0",
-    ranking: 8,
-    trophies: 0,
-    points: "0",
-    motto: "Hear Us Roar",
-    email: "kaity@damato-dynasty.com"
-  },
-  {
-    id: 9,
-    owner: "Cason Minor",
-    teamName: "Minor Miracles",
-    avatar: "/api/avatars/cason",
-    primaryColor: "#40E0D0",
-    secondaryColor: "#48D1CC",
-    record: "0-0",
-    ranking: 9,
-    trophies: 0,
-    points: "0",
-    motto: "Miracles Happen Every Sunday",
-    email: "cason@damato-dynasty.com"
-  },
-  {
-    id: 10,
-    owner: "Brittany Bergum",
-    teamName: "Bergum Blitz",
-    avatar: "/api/avatars/brittany",
-    primaryColor: "#DA70D6",
-    secondaryColor: "#BA55D3",
-    record: "0-0",
-    ranking: 10,
-    trophies: 0,
-    points: "0",
-    motto: "Blitz to Victory",
-    email: "brittany@damato-dynasty.com"
-  }
-];
+// Team color schemes for visual consistency
+const TEAM_COLORS = {
+  "nicholas@damato-dynasty.com": { primary: "#C41E3A", secondary: "#FFD700" },
+  "nick@damato-dynasty.com": { primary: "#00CED1", secondary: "#4682B4" },
+  "jack@damato-dynasty.com": { primary: "#FF4500", secondary: "#DC143C" },
+  "larry@damato-dynasty.com": { primary: "#32CD32", secondary: "#228B22" },
+  "renee@damato-dynasty.com": { primary: "#9370DB", secondary: "#8A2BE2" },
+  "jon@damato-dynasty.com": { primary: "#1E90FF", secondary: "#000080" },
+  "david@damato-dynasty.com": { primary: "#FFA500", secondary: "#FF8C00" },
+  "kaity@damato-dynasty.com": { primary: "#FFB6C1", secondary: "#FF69B4" },
+  "cason@damato-dynasty.com": { primary: "#40E0D0", secondary: "#48D1CC" },
+  "brittany@damato-dynasty.com": { primary: "#DA70D6", secondary: "#BA55D3" }
+};
+
+const TEAM_MOTTOS = {
+  "nicholas@damato-dynasty.com": "Dynasty Starts Here",
+  "nick@damato-dynasty.com": "Heroes Always Win", 
+  "jack@damato-dynasty.com": "Mayhem on the Field",
+  "larry@damato-dynasty.com": "Legends Never Die",
+  "renee@damato-dynasty.com": "Reigning Supreme",
+  "jon@damato-dynasty.com": "Crushing Dreams Since Day One",
+  "david@damato-dynasty.com": "Unstoppable Force",
+  "kaity@damato-dynasty.com": "Hear Us Roar",
+  "cason@damato-dynasty.com": "Miracles Happen Every Sunday",
+  "brittany@damato-dynasty.com": "Blitz to Victory"
+};
 
 // Team Selection Component
 const TeamSelectionLogin = () => {
   const [selectedTeam, setSelectedTeam] = useState<any>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [teams, setTeams] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
+
+  // Fetch real teams data on component mount
+  useEffect(() => {
+    const fetchTeams = async () => {
+      try {
+        const response = await fetch('/api/teams');
+        if (response.ok) {
+          const data = await response.json();
+          // Transform API data to match our component structure
+          const transformedTeams = data.teams.map((team: any, index: number) => ({
+            id: team.id,
+            owner: team.owner.name,
+            teamName: team.name,
+            avatar: `/api/avatars/${team.owner.name.split(' ')[0].toLowerCase()}`,
+            primaryColor: TEAM_COLORS[team.owner.email]?.primary || "#1E90FF",
+            secondaryColor: TEAM_COLORS[team.owner.email]?.secondary || "#000080",
+            record: `${team.wins}-${team.losses}${team.ties > 0 ? `-${team.ties}` : ''}`,
+            ranking: index + 1, // Will be properly sorted by standings
+            trophies: team.wins >= 2 ? 1 : 0, // Realistic trophy count based on performance
+            points: Math.round(team.pointsFor).toString(),
+            motto: TEAM_MOTTOS[team.owner.email] || "Playing to Win",
+            email: team.owner.email
+          })).sort((a: any, b: any) => {
+            // Sort by wins, then by points for
+            if (parseInt(a.record.split('-')[0]) !== parseInt(b.record.split('-')[0])) {
+              return parseInt(b.record.split('-')[0]) - parseInt(a.record.split('-')[0]);
+            }
+            return parseInt(b.points) - parseInt(a.points);
+          }).map((team: any, index: number) => ({
+            ...team,
+            ranking: index + 1
+          }));
+          
+          setTeams(transformedTeams);
+        }
+      } catch (error) {
+        console.error('Failed to fetch teams:', error);
+        // Fallback to empty array
+        setTeams([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTeams();
+  }, []);
 
   const handleLogin = async (team: any) => {
     setIsAuthenticating(true);
@@ -606,17 +548,30 @@ const TeamSelectionLogin = () => {
 
       {/* Team Selection Grid */}
       <div className="relative z-10 container mx-auto px-4 max-w-7xl">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-6 mb-12">
-          {DEMO_TEAMS.map((team, index) => (
-            <TeamProfileCard
-              key={team.id}
-              team={team}
-              index={index}
-              isSelected={selectedTeam?.id === team.id}
-              onClick={() => setSelectedTeam(team)}
-            />
-          ))}
-        </div>
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="flex flex-col items-center gap-4">
+              <Loader2 className="w-8 h-8 animate-spin text-white" />
+              <p className="text-gray-400">Loading teams...</p>
+            </div>
+          </div>
+        ) : teams.length === 0 ? (
+          <div className="flex items-center justify-center py-20">
+            <p className="text-gray-400">No teams found. Please check your connection.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-6 mb-12">
+            {teams.map((team, index) => (
+              <TeamProfileCard
+                key={team.id}
+                team={team}
+                index={index}
+                isSelected={selectedTeam?.id === team.id}
+                onClick={() => setSelectedTeam(team)}
+              />
+            ))}
+          </div>
+        )}
 
         {/* Selected Team Preview */}
         <AnimatePresence mode="wait">

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/db';
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,39 +13,86 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Decode the simple session token (email:timestamp in base64)
+    // Check if it's a database session ID (from simple-login API)
+    try {
+      const dbSession = await prisma.userSession.findFirst({
+        where: {
+          sessionId: sessionCookie,
+          isActive: true,
+          expiresAt: {
+            gt: new Date() // Not expired
+          }
+        },
+        include: {
+          user: true
+        }
+      });
+
+      if (dbSession && dbSession.user) {
+        // Update last activity
+        await prisma.userSession.update({
+          where: { id: dbSession.id },
+          data: { lastActivity: new Date() }
+        });
+
+        // Return user data from database
+        return NextResponse.json({
+          success: true,
+          user: {
+            id: dbSession.user.id,
+            email: dbSession.user.email,
+            name: dbSession.user.name || dbSession.user.email.split('@')[0],
+            role: dbSession.user.role,
+            teamName: dbSession.user.teamName,
+            avatar: `/api/avatars/${encodeURIComponent(dbSession.user.name || dbSession.user.email.split('@')[0])}`,
+            createdAt: dbSession.user.createdAt.toISOString(),
+            updatedAt: dbSession.user.updatedAt.toISOString()
+          }
+        });
+      }
+    } catch (dbError) {
+      console.error('Database session check failed:', dbError);
+    }
+
+    // Fallback: try to decode as simple base64 session (email:timestamp)
     try {
       const decoded = Buffer.from(sessionCookie, 'base64').toString();
       const [email] = decoded.split(':');
       
-      if (!email) {
-        return NextResponse.json(
-          { success: false, error: 'Invalid session' },
-          { status: 401 }
-        );
-      }
+      if (email) {
+        // Look up user in database by email
+        const user = await prisma.user.findUnique({
+          where: { email: email.toLowerCase() }
+        });
 
-      // Return user data based on email (simplified for simple auth)
-      return NextResponse.json({
-        success: true,
-        user: {
-          id: email.replace('@', '-').replace('.', '-'),
-          email: email,
-          name: email.split('@')[0],
-          role: email.includes('admin') ? 'ADMIN' : 
-                email.includes('commissioner') ? 'COMMISSIONER' : 'PLAYER',
-          avatar: `/api/avatars/${encodeURIComponent(email.split('@')[0])}`,
-          createdAt: new Date().toISOString()
+        if (user) {
+          return NextResponse.json({
+            success: true,
+            user: {
+              id: user.id,
+              email: user.email,
+              name: user.name || user.email.split('@')[0],
+              role: user.role,
+              teamName: user.teamName,
+              avatar: `/api/avatars/${encodeURIComponent(user.name || user.email.split('@')[0])}`,
+              createdAt: user.createdAt.toISOString(),
+              updatedAt: user.updatedAt.toISOString()
+            }
+          });
         }
-      });
+      }
     } catch (decodeError) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid session format' },
-        { status: 401 }
-      );
+      // Not a base64 encoded session, continue to error
     }
 
+    // No valid session found
+    return NextResponse.json(
+      { success: false, error: 'Invalid session' },
+      { status: 401 }
+    );
+
   } catch (error) {
+    console.error('Auth check error:', error);
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }
