@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-
+import { prisma } from '@/lib/db';
+import { authenticateFromRequest } from '@/lib/auth';
+import { handleComponentError } from '@/lib/error-handling';
 
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic';
@@ -9,232 +11,353 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const leagueIdentifier = params.id;
+    const user = await authenticateFromRequest(request);
+    if (!user) {
+      return NextResponse.json(
+        { success: false, message: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const leagueId = params.id;
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '20');
     const offset = parseInt(searchParams.get('offset') || '0');
     const type = searchParams.get('type'); // trade, waiver, matchup, injury, milestone
 
-    // Mock activity data for D'Amato Dynasty League
-    const mockActivities = [
-      {
-        id: 'trade-1',
-        type: 'trade',
-        title: 'Trade Proposal',
-        description: '3 players involved',
-        timestamp: formatTimestamp(new Date(Date.now() - 2 * 60 * 60 * 1000)), // 2 hours ago
-        user: {
-          name: 'Nicholas D\'Amato',
-          team: 'D\'Amato Dynasty',
-          avatar: '👑'
-        },
-        relatedUser: {
-          name: 'Nick Hartley',
-          team: 'Hartley Hawks',
-          avatar: '🦅'
-        },
-        metadata: {
-          players: ['Christian McCaffrey', 'Travis Kelce', '2024 1st Round Pick'],
-          status: 'pending'
-        },
-        reactions: {
-          likes: 5,
-          comments: 2,
-          isLiked: false
-        },
-        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000)
-      },
-      {
-        id: 'waiver-1',
-        type: 'waiver',
-        title: 'Waiver Claim Successful',
-        description: 'Acquired Josh Jacobs',
-        timestamp: formatTimestamp(new Date(Date.now() - 4 * 60 * 60 * 1000)), // 4 hours ago
-        user: {
-          name: 'Jon Kornbeck',
-          team: 'Kornbeck Crushers',
-          avatar: '💪'
-        },
-        metadata: {
-          players: ['Josh Jacobs'],
-          priority: 3,
-          successful: true
-        },
-        reactions: {
-          likes: 8,
-          comments: 1,
-          isLiked: true
-        },
-        createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000)
-      },
-      {
-        id: 'matchup-1',
-        type: 'matchup',
-        title: 'Blowout Victory',
-        description: 'Week 2 matchup result',
-        timestamp: formatTimestamp(new Date(Date.now() - 24 * 60 * 60 * 1000)), // 1 day ago
-        user: {
-          name: 'Brittany Bergum',
-          team: 'Bergum Bombers',
-          avatar: '💥'
-        },
-        relatedUser: {
-          name: 'Jack McCaigue',
-          team: 'McCaigue Maulers',
-          avatar: '🔨'
-        },
-        metadata: {
-          score: '156.8 - 89.2',
-          week: 2
-        },
-        reactions: {
-          likes: 12,
-          comments: 4,
-          isLiked: false
-        },
-        createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000)
-      },
-      {
-        id: 'milestone-1',
-        type: 'milestone',
-        title: 'Weekly High Score',
-        description: 'Outstanding fantasy performance',
-        timestamp: formatTimestamp(new Date(Date.now() - 24 * 60 * 60 * 1000)), // 1 day ago
-        user: {
-          name: 'Larry McCaigue',
-          team: 'McCaigue Sr. Squad',
-          avatar: '🏆'
-        },
-        metadata: {
-          achievement: 'Highest Week 2 score: 178.6 points'
-        },
-        reactions: {
-          likes: 15,
-          comments: 6,
-          isLiked: true
-        },
-        createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000)
-      },
-      {
-        id: 'injury-1',
-        type: 'injury',
-        title: 'Player Status Update',
-        description: 'Saquon Barkley injury report',
-        timestamp: formatTimestamp(new Date(Date.now() - 6 * 60 * 60 * 1000)), // 6 hours ago
-        user: {
-          name: 'Cason Minor',
-          team: 'Minor Threat',
-          avatar: '⚡'
-        },
-        metadata: {
-          players: ['Saquon Barkley'],
-          injury: {
-            player: 'Saquon Barkley',
-            status: 'Questionable - Ankle',
-            impact: 'medium' as const
-          }
-        },
-        reactions: {
-          likes: 3,
-          comments: 2,
-          isLiked: false
-        },
-        createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000)
-      },
-      {
-        id: 'waiver-2',
-        type: 'waiver',
-        title: 'Waiver Claim Failed',
-        description: 'Missed out on Tyler Boyd',
-        timestamp: formatTimestamp(new Date(Date.now() - 12 * 60 * 60 * 1000)), // 12 hours ago
-        user: {
-          name: 'Renee McCaigue',
-          team: 'McCaigue Matriarchs',
-          avatar: '👸'
-        },
-        metadata: {
-          players: ['Tyler Boyd'],
-          priority: 8,
-          successful: false
-        },
-        reactions: {
-          likes: 2,
-          comments: 1,
-          isLiked: false
-        },
-        createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000)
-      },
-      {
-        id: 'trade-2',
-        type: 'trade',
-        title: 'Trade Completed',
-        description: '2 players involved',
-        timestamp: formatTimestamp(new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)), // 3 days ago
-        user: {
-          name: 'David Jarvey',
-          team: 'Jarvey Juggernauts',
-          avatar: '🚀'
-        },
-        relatedUser: {
-          name: 'Kaity Lorbecki',
-          team: 'Lorbecki Lightning',
-          avatar: '⚡'
-        },
-        metadata: {
-          players: ['Tyreek Hill', 'George Kittle'],
-          status: 'accepted'
-        },
-        reactions: {
-          likes: 9,
-          comments: 3,
-          isLiked: true
-        },
-        createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
+    // Verify league exists and user has access
+    const league = await prisma.league.findUnique({
+      where: { id: leagueId },
+      include: {
+        teams: {
+          where: { ownerId: user.id },
+          take: 1
+        }
       }
-    ];
+    });
 
-    // Filter activities by type if specified
-    let activities = mockActivities;
-    if (type && type !== 'all') {
-      activities = mockActivities.filter(activity => activity.type === type);
+    if (!league) {
+      return NextResponse.json(
+        { success: false, message: 'League not found' },
+        { status: 404 }
+      );
     }
 
-    // Sort activities by timestamp
-    const sortedActivities = activities
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .slice(offset, offset + limit);
+    // Build activity query based on type filter
+    const whereClause: any = { leagueId };
+    if (type) {
+      whereClause.type = type;
+    }
+
+    // Fetch real activity from database
+    const activities = await prisma.leagueActivity.findMany({
+      where: whereClause,
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatar: true
+          }
+        },
+        relatedUser: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatar: true
+          }
+        },
+        team: {
+          select: {
+            id: true,
+            name: true
+          }
+        },
+        relatedTeam: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      skip: offset
+    });
+
+    // Count total activities for pagination
+    const totalCount = await prisma.leagueActivity.count({
+      where: whereClause
+    });
+
+    // If no activities exist yet, create some initial ones based on existing data
+    if (activities.length === 0 && offset === 0) {
+      // Create activities from recent matchups
+      const recentMatchups = await prisma.matchup.findMany({
+        where: {
+          leagueId,
+          isComplete: true
+        },
+        include: {
+          homeTeam: {
+            include: { owner: true }
+          },
+          awayTeam: {
+            include: { owner: true }
+          }
+        },
+        orderBy: { week: 'desc' },
+        take: 5
+      });
+
+      for (const matchup of recentMatchups) {
+        const winner = matchup.homeScore > matchup.awayScore ? matchup.homeTeam : matchup.awayTeam;
+        const loser = matchup.homeScore > matchup.awayScore ? matchup.awayTeam : matchup.homeTeam;
+        
+        await prisma.leagueActivity.create({
+          data: {
+            type: 'matchup',
+            title: 'Matchup Result',
+            description: `Week ${matchup.week} - ${winner.name} defeated ${loser.name}`,
+            userId: winner.owner.id,
+            relatedUserId: loser.owner.id,
+            teamId: winner.id,
+            relatedTeamId: loser.id,
+            leagueId,
+            metadata: {
+              week: matchup.week,
+              score: `${matchup.homeScore} - ${matchup.awayScore}`,
+              homeTeam: matchup.homeTeam.name,
+              awayTeam: matchup.awayTeam.name
+            }
+          }
+        });
+      }
+
+      // Create activities from recent trades
+      const recentTrades = await prisma.trade.findMany({
+        where: { leagueId },
+        include: {
+          proposer: {
+            include: { owner: true }
+          },
+          receiver: {
+            include: { owner: true }
+          },
+          proposerPlayers: {
+            include: { player: true }
+          },
+          receiverPlayers: {
+            include: { player: true }
+          }
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 5
+      });
+
+      for (const trade of recentTrades) {
+        await prisma.leagueActivity.create({
+          data: {
+            type: 'trade',
+            title: trade.status === 'accepted' ? 'Trade Completed' : 'Trade Proposal',
+            description: `${trade.proposerPlayers.length + trade.receiverPlayers.length} players involved`,
+            userId: trade.proposer.owner.id,
+            relatedUserId: trade.receiver.owner.id,
+            teamId: trade.proposerId,
+            relatedTeamId: trade.receiverId,
+            leagueId,
+            metadata: {
+              status: trade.status,
+              proposerPlayers: trade.proposerPlayers.map(tp => tp.player.name),
+              receiverPlayers: trade.receiverPlayers.map(tp => tp.player.name)
+            }
+          }
+        });
+      }
+
+      // Create activities from waiver claims
+      const recentWaivers = await prisma.waiverClaim.findMany({
+        where: {
+          team: {
+            leagueId
+          }
+        },
+        include: {
+          team: {
+            include: { owner: true }
+          },
+          player: true,
+          droppedPlayer: true
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 5
+      });
+
+      for (const waiver of recentWaivers) {
+        await prisma.leagueActivity.create({
+          data: {
+            type: 'waiver',
+            title: waiver.status === 'successful' ? 'Waiver Claim Successful' : 'Waiver Claim',
+            description: `Claimed ${waiver.player.name}`,
+            userId: waiver.team.owner.id,
+            teamId: waiver.teamId,
+            leagueId,
+            metadata: {
+              status: waiver.status,
+              player: waiver.player.name,
+              droppedPlayer: waiver.droppedPlayer?.name,
+              priority: waiver.priority
+            }
+          }
+        });
+      }
+
+      // Re-fetch activities after creating them
+      const newActivities = await prisma.leagueActivity.findMany({
+        where: whereClause,
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              avatar: true
+            }
+          },
+          relatedUser: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              avatar: true
+            }
+          },
+          team: {
+            select: {
+              id: true,
+              name: true
+            }
+          },
+          relatedTeam: {
+            select: {
+              id: true,
+              name: true
+            }
+          }
+        },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        skip: offset
+      });
+
+      // Format activities for response
+      const formattedActivities = newActivities.map(activity => ({
+        id: activity.id,
+        type: activity.type,
+        title: activity.title,
+        description: activity.description,
+        timestamp: formatTimestamp(activity.createdAt),
+        user: activity.user ? {
+          name: activity.user.name,
+          team: activity.team?.name || 'Unknown Team',
+          avatar: activity.user.avatar || getDefaultAvatar(activity.user.name)
+        } : null,
+        relatedUser: activity.relatedUser ? {
+          name: activity.relatedUser.name,
+          team: activity.relatedTeam?.name || 'Unknown Team',
+          avatar: activity.relatedUser.avatar || getDefaultAvatar(activity.relatedUser.name)
+        } : null,
+        metadata: activity.metadata,
+        reactions: {
+          likes: 0,
+          comments: 0,
+          isLiked: false
+        },
+        createdAt: activity.createdAt
+      }));
+
+      return NextResponse.json({
+        success: true,
+        data: formattedActivities,
+        pagination: {
+          total: newActivities.length,
+          limit,
+          offset,
+          hasMore: newActivities.length > offset + limit
+        }
+      });
+    }
+
+    // Format existing activities for response
+    const formattedActivities = activities.map(activity => ({
+      id: activity.id,
+      type: activity.type,
+      title: activity.title,
+      description: activity.description,
+      timestamp: formatTimestamp(activity.createdAt),
+      user: activity.user ? {
+        name: activity.user.name,
+        team: activity.team?.name || 'Unknown Team',
+        avatar: activity.user.avatar || getDefaultAvatar(activity.user.name)
+      } : null,
+      relatedUser: activity.relatedUser ? {
+        name: activity.relatedUser.name,
+        team: activity.relatedTeam?.name || 'Unknown Team',
+        avatar: activity.relatedUser.avatar || getDefaultAvatar(activity.relatedUser.name)
+      } : null,
+      metadata: activity.metadata,
+      reactions: {
+        likes: 0,
+        comments: 0,
+        isLiked: false
+      },
+      createdAt: activity.createdAt
+    }));
 
     return NextResponse.json({
       success: true,
-      activities: sortedActivities,
+      data: formattedActivities,
       pagination: {
-        total: activities.length,
+        total: totalCount,
         limit,
         offset,
-        hasMore: activities.length > offset + limit
+        hasMore: totalCount > offset + limit
       }
     });
 
   } catch (error) {
-    console.error('Error fetching league activity:', error);
+    handleComponentError(error as Error, 'league-activity-api');
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch league activity' },
+      { success: false, message: 'Failed to fetch league activity' },
       { status: 500 }
     );
   }
 }
 
+// Helper function to format timestamps
 function formatTimestamp(date: Date): string {
   const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / (1000 * 60));
-  const diffHours = Math.floor(diffMins / 60);
-  const diffDays = Math.floor(diffHours / 24);
-
-  if (diffMins < 1) return 'Just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
+  const diff = now.getTime() - date.getTime();
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const days = Math.floor(hours / 24);
   
-  return date.toLocaleDateString();
+  if (hours < 1) {
+    const minutes = Math.floor(diff / (1000 * 60));
+    return `${minutes} minute${minutes !== 1 ? 's' : ''} ago`;
+  } else if (hours < 24) {
+    return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
+  } else if (days < 30) {
+    return `${days} day${days !== 1 ? 's' : ''} ago`;
+  } else {
+    return date.toLocaleDateString();
+  }
+}
+
+// Helper function to get default avatar emoji
+function getDefaultAvatar(name: string): string {
+  const emojis = ['👑', '🦅', '💪', '💥', '🔨', '🏆', '⚡', '🎯', '🚀', '🔥'];
+  const index = name.charCodeAt(0) % emojis.length;
+  return emojis[index];
 }

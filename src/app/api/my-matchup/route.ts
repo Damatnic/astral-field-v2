@@ -103,6 +103,56 @@ export async function GET(request: NextRequest) {
     const userScore = isHome ? matchup.homeScore : matchup.awayScore;
     const opponentScore = isHome ? matchup.awayScore : matchup.homeScore;
 
+    // Calculate actual projected scores from player projections
+    const userRoster = await prisma.rosterPlayer.findMany({
+      where: { 
+        teamId: userMatchupTeam.id,
+        position: { notIn: ['BENCH', 'IR'] }
+      },
+      include: {
+        player: {
+          include: {
+            projections: {
+              where: {
+                week: currentWeek,
+                season: matchup.league.season
+              }
+            }
+          }
+        }
+      }
+    });
+
+    const opponentRoster = await prisma.rosterPlayer.findMany({
+      where: { 
+        teamId: opponentTeam.id,
+        position: { notIn: ['BENCH', 'IR'] }
+      },
+      include: {
+        player: {
+          include: {
+            projections: {
+              where: {
+                week: currentWeek,
+                season: matchup.league.season
+              }
+            }
+          }
+        }
+      }
+    });
+
+    // Calculate projected points for each team
+    const userProjected = userRoster.reduce((total, rp) => {
+      const projection = rp.player.projections[0];
+      return total + (projection?.projectedPoints?.toNumber() || 0);
+    }, 0);
+
+    const opponentProjected = opponentRoster.reduce((total, rp) => {
+      const projection = rp.player.projections[0];
+      return total + (projection?.projectedPoints?.toNumber() || 0);
+    }, 0);
+
     const matchupData = {
       id: matchup.id,
       week: matchup.week,
@@ -118,10 +168,10 @@ export async function GET(request: NextRequest) {
         isHome: !isHome
       },
       league: matchup.league,
-      // Calculate projected scores (mock data for now)
+      // Use real projected scores from player projections
       projections: {
-        userProjected: 124.5,
-        opponentProjected: 118.2
+        userProjected: Math.round(userProjected * 100) / 100,
+        opponentProjected: Math.round(opponentProjected * 100) / 100
       }
     };
 
