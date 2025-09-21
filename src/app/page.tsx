@@ -430,7 +430,20 @@ const TeamSelectionLogin = () => {
   useEffect(() => {
     const fetchTeams = async () => {
       try {
-        const response = await fetch('/api/teams');
+        // Add a small delay to prevent overwhelming the server on startup
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        const response = await fetch('/api/teams', {
+          cache: 'force-cache', // Use browser cache
+          next: { revalidate: 60 } // Revalidate every 60 seconds
+        });
+        
+        if (response.status === 429) {
+          console.warn('Rate limited - using fallback data');
+          setTeams([]);
+          return;
+        }
+        
         if (response.ok) {
           const data = await response.json();
           // Transform API data to match our component structure
