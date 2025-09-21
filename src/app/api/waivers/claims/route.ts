@@ -19,15 +19,13 @@ export async function GET(request: NextRequest) {
       where: { ownerId: user.id },
       include: {
         league: true,
-        waiverClaims: {
-          include: {
-            player: true
-          },
+        transactions: {
           where: {
-            status: 'PENDING'
+            type: 'waiver',
+            status: 'pending'
           },
           orderBy: {
-            priority: 'asc'
+            createdAt: 'asc'
           }
         }
       }
@@ -37,9 +35,26 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Team not found' }, { status: 404 });
     }
 
+    // Format claims with player data
+    const claimsWithPlayers = await Promise.all(team.transactions.map(async (transaction) => {
+      const data = transaction.relatedData as any;
+      const playerId = transaction.playerIds[0];
+      const player = playerId ? await prisma.player.findUnique({
+        where: { id: playerId }
+      }) : null;
+      
+      return {
+        id: transaction.id,
+        player,
+        faabBid: data?.faabBid,
+        priority: data?.priority,
+        status: transaction.status
+      };
+    }));
+
     return NextResponse.json({
       success: true,
-      claims: team.waiverClaims,
+      claims: claimsWithPlayers,
       faabBudget: team.faabBudget,
       waiverPriority: team.waiverPriority
     });
@@ -115,34 +130,43 @@ export async function POST(request: NextRequest) {
     }
 
     // Get current claims count to set priority
-    const claimsCount = await prisma.waiverClaim.count({
+    const claimsCount = await prisma.transaction.count({
       where: {
         teamId: team.id,
-        status: 'PENDING'
+        type: 'waiver',
+        status: 'pending'
       }
     });
 
-    // Create waiver claim
-    const claim = await prisma.waiverClaim.create({
+    // Create waiver claim as a transaction
+    const claim = await prisma.transaction.create({
       data: {
         leagueId: team.leagueId,
         teamId: team.id,
-        userId: user.id,
-        playerId,
-        dropPlayerId,
-        faabBid: bidAmount,
-        priority: claimsCount + 1,
-        status: 'PENDING',
-        weekNumber: getCurrentWeek()
-      },
-      include: {
-        player: true
+        type: 'waiver',
+        status: 'pending',
+        playerIds: [playerId],
+        relatedData: {
+          userId: user.id,
+          dropPlayerId,
+          faabBid: bidAmount,
+          priority: claimsCount + 1,
+          weekNumber: getCurrentWeek()
+        }
       }
+    });
+
+    // Get player data for response
+    const playerData = await prisma.player.findUnique({
+      where: { id: playerId }
     });
 
     return NextResponse.json({
       success: true,
-      claim,
+      claim: {
+        ...claim,
+        player: playerData
+      },
       message: 'Waiver claim submitted successfully'
     });
 
@@ -174,11 +198,12 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Delete the claim (only if it belongs to the user's team)
-    const deleted = await prisma.waiverClaim.deleteMany({
+    const deleted = await prisma.transaction.deleteMany({
       where: {
         id: claimId,
         teamId: team.id,
-        status: 'PENDING'
+        type: 'waiver',
+        status: 'pending'
       }
     });
 
@@ -190,21 +215,28 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Reorder remaining claims
-    const remainingClaims = await prisma.waiverClaim.findMany({
+    const remainingClaims = await prisma.transaction.findMany({
       where: {
         teamId: team.id,
-        status: 'PENDING'
+        type: 'waiver',
+        status: 'pending'
       },
       orderBy: {
-        priority: 'asc'
+        createdAt: 'asc'
       }
     });
 
-    // Update priorities
+    // Update priorities in relatedData
     for (let i = 0; i < remainingClaims.length; i++) {
-      await prisma.waiverClaim.update({
+      const data = remainingClaims[i].relatedData as any;
+      await prisma.transaction.update({
         where: { id: remainingClaims[i].id },
-        data: { priority: i + 1 }
+        data: { 
+          relatedData: {
+            ...data,
+            priority: i + 1
+          }
+        }
       });
     }
 

@@ -63,27 +63,52 @@ export async function POST(request: NextRequest) {
     const currentWeek = week || league.currentWeek || 15;
     
     // Get all pending claims for this league
-    const pendingClaims = await prisma.waiverClaim.findMany({
+    const pendingTransactions = await prisma.transaction.findMany({
       where: {
-        status: 'PENDING',
-        team: {
-          leagueId
-        }
+        leagueId,
+        type: 'waiver',
+        status: 'pending'
       },
       include: {
-        team: true,
-        player: true
+        team: true
       },
-      orderBy: usesFAAB 
-        ? [
-            { faabBid: 'desc' },
-            { priority: 'asc' },
-            { createdAt: 'asc' }
-          ]
-        : [
-            { priority: 'asc' },
-            { createdAt: 'asc' }
-          ]
+      orderBy: {
+        createdAt: 'asc'
+      }
+    });
+
+    // Transform to claim-like objects with player data
+    const pendingClaims = await Promise.all(pendingTransactions.map(async (transaction) => {
+      const data = transaction.relatedData as any;
+      const playerId = transaction.playerIds[0];
+      const player = playerId ? await prisma.player.findUnique({
+        where: { id: playerId }
+      }) : null;
+      
+      return {
+        id: transaction.id,
+        teamId: transaction.teamId,
+        playerId,
+        dropPlayerId: data?.dropPlayerId,
+        faabBid: data?.faabBid,
+        priority: data?.priority || 0,
+        status: transaction.status,
+        team: transaction.team,
+        player,
+        createdAt: transaction.createdAt
+      };
+    }));
+
+    // Sort by FAAB or priority
+    pendingClaims.sort((a, b) => {
+      if (usesFAAB) {
+        if (b.faabBid !== a.faabBid) return (b.faabBid || 0) - (a.faabBid || 0);
+        if (a.priority !== b.priority) return a.priority - b.priority;
+        return a.createdAt.getTime() - b.createdAt.getTime();
+      } else {
+        if (a.priority !== b.priority) return a.priority - b.priority;
+        return a.createdAt.getTime() - b.createdAt.getTime();
+      }
     });
     
     if (pendingClaims.length === 0) {
@@ -186,14 +211,16 @@ export async function POST(request: NextRequest) {
                 data: {
                   leagueId,
                   teamId: claim.teamId,
-                  playerId: claim.dropPlayerId,
-                  type: 'DROP',
-                  metadata: {
+                  type: 'drop',
+                  status: 'completed',
+                  playerIds: [claim.dropPlayerId],
+                  relatedData: {
                     viaWaiver: true,
                     claimId: claim.id,
                     playerName: dropPlayerEntry.player.name,
                     week: currentWeek
-                  }
+                  },
+                  processedAt: new Date()
                 }
               });
             }
@@ -215,11 +242,10 @@ export async function POST(request: NextRequest) {
               data: {
                 teamId: claim.teamId,
                 playerId: claim.playerId,
-                rosterSlot: 'BENCH',
                 position: 'BENCH',
+                isStarter: false,
                 acquisitionDate: new Date(),
-                acquisitionType: 'WAIVER',
-                week: currentWeek
+                acquisitionType: 'waiver'
               }
             });
             
@@ -228,15 +254,17 @@ export async function POST(request: NextRequest) {
               data: {
                 leagueId,
                 teamId: claim.teamId,
-                playerId: claim.playerId,
-                type: 'ADD',
-                metadata: {
+                type: 'add',
+                status: 'completed',
+                playerIds: [claim.playerId],
+                relatedData: {
                   viaWaiver: true,
                   claimId: claim.id,
-                  playerName: claim.player.name,
+                  playerName: claim.player?.name,
                   faabBid: claim.faabBid,
                   week: currentWeek
-                }
+                },
+                processedAt: new Date()
               }
             });
             
@@ -268,29 +296,35 @@ export async function POST(request: NextRequest) {
             }
             
             // Mark claim as processed
-            await tx.waiverClaim.update({
+            await tx.transaction.update({
               where: { id: claim.id },
               data: {
-                status: 'SUCCESSFUL',
-                processedAt: new Date(),
-                successful: true
+                status: 'completed',
+                processedAt: new Date()
               }
             });
             
-            // Create audit log
-            await tx.auditLog.create({
+            // Create audit transaction
+            await tx.transaction.create({
               data: {
                 leagueId,
-                userId: claim.team.ownerId,
-                action: 'WAIVER_CLAIMED',
-                entityType: 'Player',
-                entityId: claim.playerId,
-                after: {
-                  player: claim.player.name,
-                  team: claim.team.name,
-                  bid: claim.faabBid,
-                  dropped: claim.dropPlayerId ? 'Player dropped' : null
-                }
+                teamId: claim.teamId,
+                type: 'add',
+                status: 'completed',
+                playerIds: [],
+                relatedData: {
+                  action: 'WAIVER_CLAIMED',
+                  userId: claim.team.ownerId,
+                  entityType: 'Player',
+                  entityId: claim.playerId,
+                  after: {
+                    player: claim.player?.name,
+                    team: claim.team.name,
+                    bid: claim.faabBid,
+                    dropped: claim.dropPlayerId ? 'Player dropped' : null
+                  }
+                },
+                processedAt: new Date()
               }
             });
             
@@ -298,13 +332,13 @@ export async function POST(request: NextRequest) {
             await tx.notification.create({
               data: {
                 userId: claim.team.ownerId,
-                type: 'WAIVER_PROCESSED',
+                type: 'SCORE_UPDATE',
                 title: 'Waiver Claim Successful',
-                content: `You successfully claimed ${claim.player.name} ${claim.faabBid ? `for $${claim.faabBid}` : ''}${claim.dropPlayerId ? ' (player dropped)' : ''}.`,
-                metadata: {
+                message: `You successfully claimed ${claim.player?.name || 'Unknown Player'} ${claim.faabBid ? `for $${claim.faabBid}` : ''}${claim.dropPlayerId ? ' (player dropped)' : ''}.`,
+                data: {
                   leagueId,
                   playerId: claim.playerId,
-                  playerName: claim.player.name,
+                  playerName: claim.player?.name,
                   teamId: claim.teamId,
                   teamName: claim.team.name,
                   bidAmount: claim.faabBid,
@@ -397,42 +431,48 @@ async function checkFAABBudget(teamId: string, bidAmount: number): Promise<boole
 }
 
 async function markClaimFailed(claimId: string, reason: string) {
-  const claim = await prisma.waiverClaim.findUnique({
+  const transaction = await prisma.transaction.findUnique({
     where: { id: claimId },
     include: {
-      team: true,
-      player: true
+      team: true
     }
   });
   
-  if (!claim) return;
+  if (!transaction) return;
+  
+  const data = transaction.relatedData as any;
+  const playerId = transaction.playerIds[0];
+  const player = playerId ? await prisma.player.findUnique({ where: { id: playerId } }) : null;
   
   await prisma.$transaction(async (tx) => {
     // Update claim status
-    await tx.waiverClaim.update({
+    await tx.transaction.update({
       where: { id: claimId },
       data: {
-        status: 'FAILED',
+        status: 'failed',
         processedAt: new Date(),
-        successful: false,
-        failureReason: reason
+        relatedData: {
+          ...data,
+          successful: false,
+          failureReason: reason
+        }
       }
     });
     
     // Create failure notification
     await tx.notification.create({
       data: {
-        userId: claim.team.ownerId,
-        type: 'WAIVER_PROCESSED',
+        userId: transaction.team.ownerId,
+        type: 'SCORE_UPDATE',
         title: 'Waiver Claim Failed',
-        content: `Your waiver claim for ${claim.player.name} failed: ${reason}`,
-        metadata: {
-          leagueId: claim.leagueId,
-          playerId: claim.playerId,
-          playerName: claim.player.name,
-          teamId: claim.teamId,
-          teamName: claim.team.name,
-          bidAmount: claim.faabBid,
+        message: `Your waiver claim for ${player?.name || 'Unknown Player'} failed: ${reason}`,
+        data: {
+          leagueId: transaction.leagueId,
+          playerId,
+          playerName: player?.name,
+          teamId: transaction.teamId,
+          teamName: transaction.team.name,
+          bidAmount: data?.faabBid,
           successful: false,
           failureReason: reason
         }

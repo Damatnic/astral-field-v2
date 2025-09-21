@@ -46,8 +46,7 @@ export async function GET(request: NextRequest) {
     
     // Get league settings to check if FAAB is enabled
     const league = await prisma.league.findUnique({
-      where: { id: targetLeagueId },
-      include: { settings: true }
+      where: { id: targetLeagueId }
     });
     
     if (!league) {
@@ -77,18 +76,13 @@ export async function GET(request: NextRequest) {
             teamName: true
           }
         },
-        waiverClaims: {
+        transactions: {
           where: {
-            status: 'PENDING'
+            status: 'pending',
+            type: 'waiver'
           },
           select: {
-            faabBid: true,
-            player: {
-              select: {
-                name: true,
-                position: true
-              }
-            }
+            relatedData: true
           }
         }
       },
@@ -99,7 +93,10 @@ export async function GET(request: NextRequest) {
     
     // Calculate FAAB standings and pending bids
     const faabStandings = teams.map(team => {
-      const pendingBids = team.waiverClaims.reduce((sum, claim) => sum + (claim.faabBid || 0), 0);
+      const pendingBids = team.transactions.reduce((sum, transaction) => {
+        const data = transaction.relatedData as any;
+        return sum + (data?.faabBid || 0);
+      }, 0);
       const availableFAAB = team.faabBudget - team.faabSpent - pendingBids;
       const spentPercentage = team.faabBudget > 0 ? (team.faabSpent / team.faabBudget) * 100 : 0;
       
@@ -112,11 +109,14 @@ export async function GET(request: NextRequest) {
         pending: pendingBids,
         available: availableFAAB,
         spentPercentage: Number(spentPercentage.toFixed(1)),
-        pendingClaims: team.waiverClaims.map(claim => ({
-          bid: claim.faabBid,
-          player: claim.player.name,
-          position: claim.player.position
-        })),
+        pendingClaims: team.transactions.map(transaction => {
+          const data = transaction.relatedData as any;
+          return {
+            bid: data?.faabBid || 0,
+            player: data?.playerName || 'Unknown',
+            position: data?.position || 'N/A'
+          };
+        }),
         isUserTeam: team.ownerId === session.userId
       };
     });
@@ -124,7 +124,10 @@ export async function GET(request: NextRequest) {
     // Get league-wide FAAB statistics
     const totalBudget = teams.reduce((sum, team) => sum + team.faabBudget, 0);
     const totalSpent = teams.reduce((sum, team) => sum + team.faabSpent, 0);
-    const totalPending = teams.reduce((sum, team) => sum + team.waiverClaims.reduce((claimSum, claim) => claimSum + (claim.faabBid || 0), 0), 0);
+    const totalPending = teams.reduce((sum, team) => sum + team.transactions.reduce((claimSum, transaction) => {
+      const data = transaction.relatedData as any;
+      return claimSum + (data?.faabBid || 0);
+    }, 0), 0);
     const avgSpentPercentage = teams.length > 0 ? (totalSpent / totalBudget) * 100 : 0;
     
     // Get highest and lowest spenders
@@ -132,26 +135,16 @@ export async function GET(request: NextRequest) {
     const lowestSpender = faabStandings[faabStandings.length - 1];
     
     // Get recent FAAB transactions
-    const recentTransactions = await prisma.waiverClaim.findMany({
+    const recentTransactions = await prisma.transaction.findMany({
       where: {
-        team: {
-          leagueId: targetLeagueId
-        },
-        status: 'SUCCESSFUL',
-        faabBid: {
-          gt: 0
-        }
+        leagueId: targetLeagueId,
+        type: 'waiver',
+        status: 'completed'
       },
       include: {
         team: {
           select: {
             name: true
-          }
-        },
-        player: {
-          select: {
-            name: true,
-            position: true
           }
         }
       },
@@ -193,14 +186,17 @@ export async function GET(request: NextRequest) {
           team.pendingClaims.length > (max?.pendingClaims.length || 0) ? team : max, null
         )
       },
-      recentTransactions: recentTransactions.map(transaction => ({
-        date: transaction.processedAt,
-        team: transaction.team.name,
-        player: transaction.player.name,
-        position: transaction.player.position,
-        amount: transaction.faabBid,
-        week: transaction.weekNumber
-      }))
+      recentTransactions: recentTransactions.map(transaction => {
+        const data = transaction.relatedData as any;
+        return {
+          date: transaction.processedAt,
+          team: transaction.team.name,
+          player: data?.playerName || 'Unknown',
+          position: data?.position || 'N/A',
+          amount: data?.faabBid || 0,
+          week: data?.weekNumber || 0
+        };
+      })
     });
     
   } catch (error) {
@@ -307,20 +303,25 @@ export async function POST(request: NextRequest) {
         data: { faabBudget: finalBudget }
       });
       
-      // Create audit log
-      await tx.auditLog.create({
+      // Create transaction log for audit trail
+      await tx.transaction.create({
         data: {
           leagueId,
-          userId: session.userId,
-          action: 'FAAB_BUDGET_ADJUSTED',
-          entityType: 'Team',
-          entityId: teamId,
-          before: { faabBudget: oldBudget },
-          after: { 
-            faabBudget: finalBudget,
-            adjustment: finalBudget - oldBudget,
-            reason: reason || 'Commissioner adjustment'
-          }
+          teamId,
+          type: 'add',
+          status: 'completed',
+          playerIds: [],
+          relatedData: {
+            action: 'FAAB_BUDGET_ADJUSTED',
+            userId: session.userId,
+            before: { faabBudget: oldBudget },
+            after: { 
+              faabBudget: finalBudget,
+              adjustment: finalBudget - oldBudget,
+              reason: reason || 'Commissioner adjustment'
+            }
+          },
+          processedAt: new Date()
         }
       });
       
@@ -330,8 +331,8 @@ export async function POST(request: NextRequest) {
           userId: team.ownerId,
           type: 'SCORE_UPDATE', // Using existing type, could add BUDGET_UPDATE
           title: 'FAAB Budget Adjusted',
-          content: `Your FAAB budget has been ${finalBudget > oldBudget ? 'increased' : 'decreased'} from $${oldBudget} to $${finalBudget}${reason ? ` - ${reason}` : ''}.`,
-          metadata: {
+          message: `Your FAAB budget has been ${finalBudget > oldBudget ? 'increased' : 'decreased'} from $${oldBudget} to $${finalBudget}${reason ? ` - ${reason}` : ''}.`,
+          data: {
             leagueId,
             teamId,
             oldBudget,

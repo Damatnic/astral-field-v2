@@ -46,10 +46,7 @@ export async function GET(request: NextRequest) {
     
     // Get league settings and current status
     const league = await prisma.league.findUnique({
-      where: { id: targetLeagueId },
-      include: {
-        settings: true
-      }
+      where: { id: targetLeagueId }
     });
     
     if (!league) {
@@ -72,11 +69,10 @@ export async function GET(request: NextRequest) {
     const schedule = calculateWaiverSchedule(currentDate, currentWeek, waiverDay, waiverTime);
     
     // Get pending claims count
-    const pendingClaims = await prisma.waiverClaim.count({
+    const pendingClaims = await prisma.transaction.count({
       where: {
-        team: {
-          leagueId: targetLeagueId
-        },
+        leagueId: targetLeagueId,
+        type: 'waiver',
         status: 'PENDING'
       }
     });
@@ -144,7 +140,7 @@ export async function POST(request: NextRequest) {
     // Verify user is commissioner
     const league = await prisma.league.findUnique({
       where: { id: leagueId },
-      select: { commissionerId: true }
+      select: { commissionerId: true, settings: true }
     });
     
     if (!league) {
@@ -162,36 +158,18 @@ export async function POST(request: NextRequest) {
     }
     
     // Update league settings
-    const existingSettings = await prisma.settings.findUnique({
-      where: { leagueId }
-    });
-    
-    const currentSettings = existingSettings || {
+    const currentSettings = league.settings as any || {
       rosterSlots: {},
       scoringSystem: {},
-      waiverMode: 'ROLLING' as const,
+      waiverMode: 'ROLLING',
       playoffWeeks: {}
     };
     
-    await prisma.settings.upsert({
-      where: { leagueId },
-      create: {
-        leagueId,
-        rosterSlots: currentSettings.rosterSlots || {},
-        scoringSystem: {
-          ...currentSettings.scoringSystem,
-          waiverSettings: {
-            waiverDay,
-            waiverTime,
-            autoProcess: autoProcess || false
-          }
-        },
-        waiverMode: currentSettings.waiverMode,
-        playoffWeeks: currentSettings.playoffWeeks || {}
-      },
-      update: {
-        scoringSystem: {
-          ...currentSettings.scoringSystem,
+    await prisma.league.update({
+      where: { id: leagueId },
+      data: {
+        settings: {
+          ...currentSettings,
           waiverSettings: {
             waiverDay,
             waiverTime,

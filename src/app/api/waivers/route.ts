@@ -62,34 +62,53 @@ export async function GET(request: NextRequest) {
     
     // Build where clause
     const where: any = {
-      teamId: team.id
+      teamId: team.id,
+      type: 'waiver'
     };
     
     if (status) {
       where.status = status;
     }
     
-    // Get waiver claims
-    const claims = await prisma.waiverClaim.findMany({
+    // Get waiver claims as transactions
+    const transactions = await prisma.transaction.findMany({
       where,
-      include: {
-        player: true
-      },
       orderBy: {
         createdAt: 'desc'
       }
     });
+
+    // Format claims with player data
+    const claims = await Promise.all(transactions.map(async (transaction) => {
+      const data = transaction.relatedData as any;
+      const playerId = transaction.playerIds[0];
+      const player = playerId ? await prisma.player.findUnique({
+        where: { id: playerId }
+      }) : null;
+      
+      return {
+        id: transaction.id,
+        playerId,
+        player,
+        dropPlayerId: data?.dropPlayerId,
+        priority: data?.priority,
+        faabBid: data?.faabBid,
+        status: transaction.status,
+        createdAt: transaction.createdAt,
+        processedAt: transaction.processedAt
+      };
+    }));
     
     return NextResponse.json({
       success: true,
       claims: claims.map(claim => ({
         id: claim.id,
-        player: {
+        player: claim.player ? {
           id: claim.playerId,
           name: claim.player.name,
           position: claim.player.position,
           team: claim.player.nflTeam
-        },
+        } : null,
         dropPlayerId: claim.dropPlayerId,
         priority: claim.priority,
         bidAmount: claim.faabBid,

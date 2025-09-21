@@ -114,7 +114,7 @@ export async function GET(request: NextRequest) {
     });
     
     const currentWeek = league?.currentWeek || 15;
-    const season = league?.season || 2024;
+    const season = league?.season || "2024";
     
     // Get available players with stats and projections
     const availablePlayers = await prisma.player.findMany({
@@ -142,28 +142,14 @@ export async function GET(request: NextRequest) {
           },
           take: 1
         },
-        waiverClaims: {
-          where: {
-            leagueId: targetLeagueId,
-            status: 'PENDING'
-          },
-          select: {
-            team: {
-              select: {
-                name: true
-              }
-            },
-            faabBid: true,
-            priority: true
-          }
-        }
+        // Remove waiverClaims include - will fetch separately
       },
       skip: offset,
       take: limit
     });
     
     // Calculate stats and format players for response
-    const playersWithStats = availablePlayers.map(player => {
+    const playersWithStats = await Promise.all(availablePlayers.map(async (player) => {
       // Calculate season stats
       const seasonStats = player.stats || [];
       const totalPoints = seasonStats.reduce((sum, stat) => sum + (Number(stat.fantasyPoints) || 0), 0);
@@ -181,10 +167,28 @@ export async function GET(request: NextRequest) {
       const projectedPoints = nextWeekProjection ? Number(nextWeekProjection.projectedPoints) : 0;
       
       // Get pending claims info
-      const pendingClaims = player.waiverClaims || [];
-      const highestBid = pendingClaims.reduce((max, claim) => 
-        Math.max(max, claim.faabBid || 0), 0
-      );
+      const pendingClaims = await prisma.transaction.findMany({
+        where: {
+          leagueId: targetLeagueId,
+          type: 'waiver',
+          status: 'pending',
+          playerIds: {
+            has: player.id
+          }
+        },
+        include: {
+          team: {
+            select: {
+              name: true
+            }
+          }
+        }
+      });
+      
+      const highestBid = pendingClaims.reduce((max, transaction) => {
+        const data = transaction.relatedData as any;
+        return Math.max(max, data?.faabBid || 0);
+      }, 0);
       
       return {
         id: player.id,
@@ -197,7 +201,7 @@ export async function GET(request: NextRequest) {
         injuryStatus: player.injuryStatus,
         byeWeek: player.byeWeek,
         age: player.age,
-        yearsExperience: player.yearsExperience,
+        yearsExperience: player.experience,
         height: player.height,
         weight: player.weight,
         college: player.college,
@@ -212,11 +216,11 @@ export async function GET(request: NextRequest) {
         trendingUp: recentGames.length >= 2 ? 
           recentGames[0].points > recentGames[1].points : false,
         adp: player.adp,
-        searchRank: player.searchRank,
-        isRookie: player.isRookie,
-        isDynastyTarget: player.isDynastyTarget
+        searchRank: player.rank,
+        isRookie: (player.experience || 0) <= 1,
+        isDynastyTarget: (player.age || 30) < 25
       };
-    });
+    }));
     
     // Sort players based on sortBy parameter
     playersWithStats.sort((a, b) => {

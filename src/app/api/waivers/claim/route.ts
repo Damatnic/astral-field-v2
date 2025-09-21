@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     const player = await prisma.player.findUnique({
       where: { id: playerId },
       include: {
-        rosters: {
+        roster: {
           where: {
             team: {
               leagueId
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    if (player.rosters.length > 0) {
+    if (player.roster.length > 0) {
       return NextResponse.json(
         { error: 'Player is already on a roster' },
         { status: 400 }
@@ -113,17 +113,18 @@ export async function POST(request: NextRequest) {
       }
       
       // Check available FAAB budget (current + pending bids)
-      const existingBids = await prisma.waiverClaim.aggregate({
+      const existingBids = await prisma.transaction.findMany({
         where: {
           teamId: team.id,
-          status: 'PENDING'
-        },
-        _sum: {
-          faabBid: true
+          status: 'pending',
+          type: 'waiver'
         }
       });
       
-      const pendingBids = existingBids._sum.faabBid || 0;
+      const pendingBids = existingBids.reduce((sum, bid) => {
+        const data = bid.relatedData as any;
+        return sum + (data?.faabBid || 0);
+      }, 0);
       const availableFAAB = team.faabBudget - team.faabSpent - pendingBids;
       
       if (bidAmount > availableFAAB) {
@@ -229,7 +230,7 @@ export async function POST(request: NextRequest) {
       
       // Check if player is on IR and can't be dropped during season
       const preventIRDrops = settings?.preventIRDrops || false;
-      if (preventIRDrops && dropPlayer.rosterSlot === 'IR') {
+      if (preventIRDrops && dropPlayer.position === 'IR') {
         return NextResponse.json(
           { error: `Cannot drop ${dropPlayer.player.name} from IR during the season` },
           { status: 400 }
@@ -238,11 +239,14 @@ export async function POST(request: NextRequest) {
     }
     
     // Check for duplicate claim
-    const existingClaim = await prisma.waiverClaim.findFirst({
+    const existingClaim = await prisma.transaction.findFirst({
       where: {
         teamId: team.id,
-        playerId,
-        status: 'PENDING'
+        playerIds: {
+          has: playerId
+        },
+        status: 'pending',
+        type: 'waiver'
       }
     });
     
@@ -253,34 +257,48 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Create waiver claim
-    const claim = await prisma.waiverClaim.create({
+    // Get player details for response
+    const playerDetails = await prisma.player.findUnique({
+      where: { id: playerId },
+      select: {
+        id: true,
+        name: true,
+        position: true,
+        nflTeam: true
+      }
+    });
+
+    // Create waiver claim as a transaction
+    const claim = await prisma.transaction.create({
       data: {
         leagueId,
         teamId: team.id,
-        userId: session.userId,
-        playerId,
-        dropPlayerId: dropPlayerId || null,
-        faabBid: usesFAAB ? bidAmount : null,
-        priority: team.waiverPriority,
-        status: 'PENDING',
-        weekNumber: league?.currentWeek || 1
-      },
-      include: {
-        player: {
-          select: {
-            id: true,
-            name: true,
-            position: true,
-            nflTeam: true
-          }
+        type: 'waiver',
+        status: 'pending',
+        playerIds: [playerId],
+        relatedData: {
+          userId: session.userId,
+          dropPlayerId: dropPlayerId || null,
+          faabBid: usesFAAB ? bidAmount : null,
+          priority: team.waiverPriority,
+          weekNumber: league?.currentWeek || 1,
+          playerName: playerDetails?.name,
+          playerPosition: playerDetails?.position,
+          playerNflTeam: playerDetails?.nflTeam
         }
       }
     });
     
     return NextResponse.json({
       success: true,
-      data: claim,
+      data: {
+        id: claim.id,
+        playerId,
+        player: playerDetails,
+        faabBid: usesFAAB ? bidAmount : null,
+        status: claim.status,
+        createdAt: claim.createdAt
+      },
       message: 'Waiver claim submitted successfully'
     });
     
@@ -358,28 +376,48 @@ export async function GET(request: NextRequest) {
     }
     
     // Get claims
-    const claims = await prisma.waiverClaim.findMany({
-      where,
-      include: {
-        player: {
-          select: {
-            id: true,
-            name: true,
-            position: true,
-            nflTeam: true,
-            status: true
-          }
-        },
-        // dropPlayer removed from include - will fetch separately if needed
+    const claims = await prisma.transaction.findMany({
+      where: {
+        ...where,
+        type: 'waiver'
       },
       orderBy: {
         createdAt: 'desc'
       }
     });
+
+    // Format claims with player data
+    const formattedClaims = await Promise.all(claims.map(async (claim) => {
+      const data = claim.relatedData as any;
+      const playerId = claim.playerIds[0];
+      const player = playerId ? await prisma.player.findUnique({
+        where: { id: playerId },
+        select: {
+          id: true,
+          name: true,
+          position: true,
+          nflTeam: true,
+          status: true
+        }
+      }) : null;
+      
+      return {
+        id: claim.id,
+        teamId: claim.teamId,
+        playerId,
+        player,
+        faabBid: data?.faabBid,
+        priority: data?.priority,
+        status: claim.status,
+        weekNumber: data?.weekNumber,
+        createdAt: claim.createdAt,
+        processedAt: claim.processedAt
+      };
+    }));
     
     return NextResponse.json({
       success: true,
-      data: claims
+      data: formattedClaims
     });
     
   } catch (error) {
@@ -429,7 +467,7 @@ export async function DELETE(request: NextRequest) {
     }
     
     // Get the claim
-    const claim = await prisma.waiverClaim.findUnique({
+    const claim = await prisma.transaction.findUnique({
       where: { id: claimId },
       include: {
         team: true
@@ -452,7 +490,7 @@ export async function DELETE(request: NextRequest) {
     }
     
     // Check if claim can be cancelled
-    if (claim.status !== 'PENDING') {
+    if (claim.status !== 'pending') {
       return NextResponse.json(
         { error: 'Only pending claims can be cancelled' },
         { status: 400 }
@@ -460,7 +498,7 @@ export async function DELETE(request: NextRequest) {
     }
     
     // Delete the claim
-    await prisma.waiverClaim.delete({
+    await prisma.transaction.delete({
       where: { id: claimId }
     });
     
