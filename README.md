@@ -1,6 +1,8 @@
 # ⚡ Astral Field - Next-Generation Fantasy Football Platform
 
 > **A modern, AI-powered fantasy football platform that surpasses Yahoo and ESPN with superior technology and user experience.**
+> 
+> **Last Updated:** January 2025 - Week 3 NFL Season
 
 [![CI](https://github.com/your-org/astral-field-v2.1/actions/workflows/ci.yml/badge.svg)](https://github.com/your-org/astral-field-v2.1/actions/workflows/ci.yml)
 [![Deploy Production](https://github.com/your-org/astral-field-v2.1/actions/workflows/deploy-production.yml/badge.svg)](https://github.com/your-org/astral-field-v2.1/actions/workflows/deploy-production.yml)
