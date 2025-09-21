@@ -309,7 +309,7 @@ export default function LeaguePage() {
           <div className="flex gap-2 mb-6">
             <Button
               onClick={() => setSelectedView('standings')}
-              variant={selectedView === 'standings' ? 'default' : 'outline'}
+              variant={selectedView === 'standings' ? 'primary' : 'outline'}
               className="flex items-center gap-2"
             >
               <Trophy className="h-4 w-4" />
@@ -317,7 +317,7 @@ export default function LeaguePage() {
             </Button>
             <Button
               onClick={() => setSelectedView('playoffs')}
-              variant={selectedView === 'playoffs' ? 'default' : 'outline'}
+              variant={selectedView === 'playoffs' ? 'primary' : 'outline'}
               className="flex items-center gap-2"
             >
               <Crown className="h-4 w-4" />
@@ -325,7 +325,7 @@ export default function LeaguePage() {
             </Button>
             <Button
               onClick={() => setSelectedView('stats')}
-              variant={selectedView === 'stats' ? 'default' : 'outline'}
+              variant={selectedView === 'stats' ? 'primary' : 'outline'}
               className="flex items-center gap-2"
             >
               <Activity className="h-4 w-4" />

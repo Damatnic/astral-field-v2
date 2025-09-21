@@ -211,7 +211,7 @@ export interface AccessibleButtonProps extends React.ButtonHTMLAttributes<HTMLBu
   children: React.ReactNode;
 }
 
-export function AccessibleButton({
+export const AccessibleButton = React.forwardRef<HTMLButtonElement, AccessibleButtonProps>(({
   variant = 'primary',
   size = 'md',
   loading = false,
@@ -219,7 +219,7 @@ export function AccessibleButton({
   disabled,
   className = '',
   ...props
-}: AccessibleButtonProps) {
+}, ref) => {
   const { settings, announceToScreenReader } = useAccessibility();
 
   const baseClasses = 'inline-flex items-center justify-center font-medium transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
@@ -249,6 +249,7 @@ export function AccessibleButton({
 
   return (
     <button
+      ref={ref}
       className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${contrastClasses} ${motionClasses} ${className}`}
       disabled={disabled || loading}
       aria-describedby={loading ? 'loading-description' : undefined}
@@ -284,7 +285,9 @@ export function AccessibleButton({
       {children}
     </button>
   );
-}
+});
+
+AccessibleButton.displayName = 'AccessibleButton';
 
 // Live Region Component for dynamic content announcements
 export function LiveRegion({ 

@@ -33,16 +33,17 @@ export class TradeAnalyzer {
     }
 
     const involvedTeamIds = this.getInvolvedTeamIds(trade);
+    const tradePlayerIds = [...trade.givingPlayerIds, ...trade.receivingPlayerIds];
     const [
       marketAnalysis,
       teamAnalyses,
       riskFactors,
       recommendations
     ] = await Promise.all([
-      this.analyzeMarket(trade.items),
-      this.analyzeTeamsImpact(involvedTeamIds, trade.items),
-      this.assessRiskFactors(trade.items),
-      this.generateRecommendations(trade.items, involvedTeamIds)
+      this.analyzeMarket(tradePlayerIds),
+      this.analyzeTeamsImpact(involvedTeamIds, tradePlayerIds),
+      this.assessRiskFactors(tradePlayerIds),
+      this.generateRecommendations(tradePlayerIds, involvedTeamIds)
     ]);
 
     const fairnessScore = this.calculateFairnessScore(teamAnalyses, marketAnalysis);
@@ -54,54 +55,20 @@ export class TradeAnalyzer {
       marketAnalysis,
       riskFactors,
       recommendations,
-      similarTrades: await this.findSimilarTrades(trade.items),
+      similarTrades: await this.findSimilarTrades(tradePlayerIds),
       createdAt: new Date()
     };
   }
 
   private async getTradeWithDetails(tradeId: string) {
-    return await prisma.trade.findUnique({
+    return await prisma.tradeProposal.findUnique({
       where: { id: tradeId },
       include: {
-        items: {
+        proposingTeam: {
           include: {
-            player: {
+            roster: {
               include: {
-                projections: {
-                  where: {
-                    season: this.season,
-                    week: { gte: this.currentWeek }
-                  }
-                },
-                playerStats: {
-                  where: {
-                    season: this.season,
-                    week: { lt: this.currentWeek }
-                  }
-                }
-              }
-            }
-          }
-        },
-        league: {
-          include: {
-            settings: true,
-            teams: {
-              include: {
-                roster: {
-                  include: {
-                    player: {
-                      include: {
-                        projections: {
-                          where: {
-                            season: this.season,
-                            week: { gte: this.currentWeek }
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
+                player: true
               }
             }
           }
@@ -111,18 +78,11 @@ export class TradeAnalyzer {
   }
 
   private getInvolvedTeamIds(trade: any): string[] {
-    const teamIds = new Set<string>();
-    trade.items.forEach((item: any) => {
-      teamIds.add(item.fromTeamId);
-      teamIds.add(item.toTeamId);
-    });
-    return Array.from(teamIds);
+    // TradeProposal has proposingTeamId and receivingTeamId
+    return [trade.proposingTeamId, trade.receivingTeamId];
   }
 
-  private async analyzeMarket(tradeItems: any[]): Promise<MarketAnalysis> {
-    const playerIds = tradeItems
-      .filter(item => item.playerId)
-      .map(item => item.playerId);
+  private async analyzeMarket(playerIds: string[]): Promise<MarketAnalysis> {
 
     const [playerValues, positionScarcity] = await Promise.all([
       this.getPlayerMarketValues(playerIds),

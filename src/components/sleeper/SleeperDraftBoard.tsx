@@ -107,12 +107,12 @@ export function SleeperDraftBoard({ draftId, className }: SleeperDraftBoardProps
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant={draft.status === 'complete' ? 'default' : 'secondary'}>
+              <Badge variant={draft.status === 'complete' ? 'secondary' : 'outline'}>
                 {draft.status.replace('_', ' ').toUpperCase()}
               </Badge>
               {draft.status === 'in_progress' && (
                 <Button
-                  variant={isLive ? 'destructive' : 'default'}
+                  variant={isLive ? 'danger' : 'primary'}
                   size="sm"
                   onClick={isLive ? stopLiveDraft : startLiveDraft}
                 >

@@ -83,11 +83,11 @@ export function SleeperTransactionFeed({ leagueId, className }: SleeperTransacti
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'complete':
-        return 'default';
+        return 'success';
       case 'failed':
-        return 'destructive';
+        return 'danger';
       case 'pending':
-        return 'secondary';
+        return 'warning';
       default:
         return 'outline';
     }
@@ -348,7 +348,7 @@ export function SleeperTransactionFeed({ leagueId, className }: SleeperTransacti
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
-                              <Badge variant="default" className="text-xs">
+                              <Badge variant="secondary" className="text-xs">
                                 LIVE
                               </Badge>
                               <Badge variant="outline" className="text-xs">
@@ -390,7 +390,7 @@ export function SleeperTransactionFeed({ leagueId, className }: SleeperTransacti
                 <ArrowUpDown className="h-4 w-4" />
                 Trade Offers
                 {tradeOffers.length > 0 && (
-                  <Badge variant="destructive">{tradeOffers.length}</Badge>
+                  <Badge variant="danger">{tradeOffers.length}</Badge>
                 )}
               </CardTitle>
             </CardHeader>

@@ -217,27 +217,26 @@ export class PlayerSyncService {
     try {
       await prisma.player.upsert({
         where: {
-          nflId: `sleeper_${sleeperPlayerId}`
+          sleeperPlayerId: sleeperPlayerId
         },
         update: {
           name: fullName,
           position,
           nflTeam: playerData.team || 'FA',
           status,
-          yearsExperience: playerData.years_exp || 0,
-          isRookie: (playerData.years_exp || 0) === 0,
+          experience: playerData.years_exp || 0,
           updatedAt: new Date()
           // Store Sleeper-specific data in metadata
           // metadata: this.buildPlayerMetadata(sleeperPlayerId, playerData)
         },
         create: {
-          nflId: `sleeper_${sleeperPlayerId}`,
+          espnId: `sleeper_${sleeperPlayerId}`, // Use sleeper ID as ESPN ID placeholder
+          sleeperPlayerId: sleeperPlayerId,
           name: fullName,
           position,
           nflTeam: playerData.team || 'FA',
           status,
-          yearsExperience: playerData.years_exp || 0,
-          isRookie: (playerData.years_exp || 0) === 0
+          experience: playerData.years_exp || 0
           // metadata: this.buildPlayerMetadata(sleeperPlayerId, playerData)
         }
       });

@@ -180,11 +180,11 @@ function EnhancedMobileNav({ isOpen, onClose }: { isOpen: boolean; onClose: () =
               >
                 <div className="flex items-center space-x-4">
                   <div className="relative">
-                    {user.avatar ? (
+                    {user.image ? (
                       <Image
                         className="h-12 w-12 rounded-full ring-2 ring-blue-400"
-                        src={user.avatar}
-                        alt={user.name}
+                        src={user.image}
+                        alt={user.name || 'User'}
                         width={48}
                         height={48}
                       />
@@ -407,11 +407,11 @@ function MobileHeader() {
               
               {user && (
                 <Link href="/profile" className="flex-shrink-0">
-                  {user.avatar ? (
+                  {user.image ? (
                     <Image
                       className="h-8 w-8 rounded-full ring-2 ring-blue-400"
-                      src={user.avatar}
-                      alt={user.name}
+                      src={user.image}
+                      alt={user.name || 'User'}
                       width={32}
                       height={32}
                     />

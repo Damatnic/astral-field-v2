@@ -46,7 +46,6 @@ class ErrorBoundary extends Component<Props, State> {
         component: 'ErrorBoundary',
         metadata: {
           componentStack: errorInfo.componentStack,
-          errorBoundary: errorInfo.errorBoundary,
           errorInfo: errorInfo
         }
       });

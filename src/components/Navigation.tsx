@@ -136,11 +136,11 @@ function MobileNav({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }
           <div className="border-t border-gray-200 px-4 py-4">
             <div className="flex items-center space-x-3 mb-4">
               <div className="flex-shrink-0">
-                {user.avatar ? (
+                {user.image ? (
                   <Image
                     className="h-10 w-10 rounded-full"
-                    src={user.avatar}
-                    alt={user.name}
+                    src={user.image}
+                    alt={user.name || 'User'}
                     width={40}
                     height={40}
                   />
@@ -217,11 +217,11 @@ function UserMenu() {
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center space-x-3 rounded-full bg-white p-1 text-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
       >
-        {user.avatar ? (
+        {user.image ? (
           <Image
             className="h-8 w-8 rounded-full"
-            src={user.avatar}
-            alt={user.name}
+            src={user.image}
+            alt={user.name || 'User'}
             width={32}
             height={32}
           />

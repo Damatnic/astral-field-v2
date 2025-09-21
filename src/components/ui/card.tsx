@@ -3,7 +3,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-export interface CardProps {
+export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   className?: string;
   variant?: 'default' | 'elevated' | 'outlined' | 'glass' | 'cinematic' | 'gradient';
@@ -43,7 +43,7 @@ interface CardDescriptionProps {
   className?: string;
 }
 
-export function Card({ 
+export const Card = React.forwardRef<HTMLDivElement, CardProps>(({ 
   children, 
   className = '', 
   variant = 'default',
@@ -51,8 +51,9 @@ export function Card({
   hover = false,
   interactive = false,
   onClick,
-  glowEffect = false
-}: CardProps) {
+  glowEffect = false,
+  ...props
+}, ref) => {
   const baseClasses = [
     'rounded-2xl transition-all duration-300 relative overflow-hidden',
     interactive && 'cursor-pointer',
@@ -80,10 +81,12 @@ export function Card({
   
   return (
     <MotionComponent 
+      ref={ref}
       className={`${baseClasses} ${variantClasses[variant]} ${paddingClasses} ${className}`}
       onClick={onClick}
       whileHover={hover || interactive ? { y: -2, scale: 1.01 } : {}}
       transition={{ type: "spring", stiffness: 300, damping: 20 }}
+      {...props}
     >
       {/* Glow effect for cinematic cards */}
       {(glowEffect || variant === 'cinematic') && (
@@ -95,7 +98,9 @@ export function Card({
       </div>
     </MotionComponent>
   );
-}
+});
+
+Card.displayName = 'Card';
 
 export function CardHeader({ 
   children, 

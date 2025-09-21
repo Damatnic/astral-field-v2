@@ -186,7 +186,7 @@ export function SleeperPlayerSearch({
               </Select>
 
               <Button
-                variant={showTrending ? 'default' : 'outline'}
+                variant={showTrending ? 'primary' : 'outline'}
                 size="sm"
                 onClick={() => setShowTrending(!showTrending)}
               >

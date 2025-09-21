@@ -177,11 +177,7 @@ export function ErrorProvider({
       if (enableToastNotifications) {
         toast.error('Too many errors detected. Consider refreshing the page.', {
           duration: 8000,
-          icon: '🔄',
-          action: {
-            label: 'Refresh',
-            onClick: () => window.location.reload()
-          }
+          icon: '🔄'
         });
       }
     }
@@ -283,7 +279,7 @@ export function withErrorReporting<P extends object>(
   Component: React.ComponentType<P>,
   componentName?: string
 ) {
-  const WrappedComponent = React.forwardRef<any, P>((props, ref) => {
+  const WrappedComponent = (props: P) => {
     const { reportError } = useErrorReporting();
 
     return (
@@ -303,10 +299,10 @@ export function withErrorReporting<P extends object>(
           </div>
         }
       >
-        <Component {...props} ref={ref} />
+        <Component {...props} />
       </ErrorBoundary>
     );
-  });
+  };
 
   WrappedComponent.displayName = `withErrorReporting(${componentName || Component.displayName || Component.name})`;
   

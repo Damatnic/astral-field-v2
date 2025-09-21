@@ -384,7 +384,7 @@ interface MobileFloatingActionButtonProps {
     label: string;
     icon: React.ReactNode;
     onClick: () => void;
-    variant?: 'primary' | 'secondary' | 'destructive';
+    variant?: 'primary' | 'secondary' | 'danger';
   }>;
   className?: string;
 }

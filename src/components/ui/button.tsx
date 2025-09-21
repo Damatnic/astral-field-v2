@@ -4,7 +4,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 
-export interface ButtonProps {
+export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode;
   className?: string;
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'success' | 'warning' | 'gradient' | 'glass';
@@ -33,7 +33,8 @@ export function Button({
   fullWidth = false,
   leftIcon,
   rightIcon,
-  glowEffect = false
+  glowEffect = false,
+  ...props
 }: ButtonProps) {
   const baseClasses = [
     'inline-flex items-center justify-center gap-2',
@@ -92,6 +93,7 @@ export function Button({
       whileHover={{ scale: disabled || loading ? 1 : 1.02 }}
       whileTap={{ scale: disabled || loading ? 1 : 0.98 }}
       transition={{ type: "spring", stiffness: 400, damping: 17 }}
+      {...props}
     >
       {/* Glow effect overlay */}
       {glowEffect && !disabled && (

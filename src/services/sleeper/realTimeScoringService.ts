@@ -240,12 +240,12 @@ export class SleeperRealTimeScoringService {
     season: number
   ): Promise<MatchupScore> {
     // Get roster players for both teams
-    const homeRoster = await db.rosterPlayer.findMany({
+    const homeRoster = await db.roster.findMany({
       where: { teamId: dbMatchup.homeTeamId },
       include: { player: true },
     });
 
-    const awayRoster = await db.rosterPlayer.findMany({
+    const awayRoster = await db.roster.findMany({
       where: { teamId: dbMatchup.awayTeamId },
       include: { player: true },
     });

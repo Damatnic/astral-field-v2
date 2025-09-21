@@ -35,13 +35,13 @@ export function SleeperLeagueCard({
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'in_season':
-        return 'default';
+        return 'success';
       case 'post_season':
         return 'secondary';
       case 'complete':
         return 'outline';
       case 'drafting':
-        return 'destructive';
+        return 'warning';
       default:
         return 'secondary';
     }
@@ -139,7 +139,7 @@ export function SleeperLeagueCard({
         {/* Actions */}
         <div className="flex gap-2">
           <Button
-            variant="default"
+            variant="primary"
             size="sm"
             onClick={() => onViewDetails?.(league.id)}
             className="flex-1"
@@ -155,19 +155,14 @@ export function SleeperLeagueCard({
           >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            asChild
+          <a 
+            href={`https://sleeper.app/leagues/${league.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center h-8 w-8 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground"
           >
-            <a 
-              href={`https://sleeper.app/leagues/${league.id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <ExternalLink className="h-4 w-4" />
-            </a>
-          </Button>
+            <ExternalLink className="h-4 w-4" />
+          </a>
         </div>
       </CardContent>
     </Card>

@@ -130,7 +130,7 @@ export function SleeperScoreboard({ leagueId, week, className }: SleeperScoreboa
                 <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
               </Button>
               <Button
-                variant={isLive ? 'destructive' : 'default'}
+                variant={isLive ? 'danger' : 'primary'}
                 size="sm"
                 onClick={isLive ? stopLiveScoring : startLiveScoring}
               >
@@ -432,7 +432,7 @@ export function SleeperScoreboard({ leagueId, week, className }: SleeperScoreboa
                 {Array.from({ length: 18 }, (_, i) => i + 1).map(weekNum => (
                   <Button
                     key={weekNum}
-                    variant={selectedWeek === weekNum ? 'default' : 'outline'}
+                    variant={selectedWeek === weekNum ? 'primary' : 'outline'}
                     size="sm"
                     onClick={() => setSelectedWeek(weekNum)}
                     className="text-xs"
