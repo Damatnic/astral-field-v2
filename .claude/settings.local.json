@@ -41,7 +41,11 @@
       "Bash(npx next build:*)",
       "Bash(set DATABASE_URL=postgresql://neondb_owner:npg_rkDs2yUYZEQ7@ep-proud-pond-adntwlpd-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require)",
       "Bash(npx tsc:*)",
-      "Bash(npx next dev:*)"
+      "Bash(npx next dev:*)",
+      "Bash(sed:*)",
+      "WebFetch(domain:vercel.com)",
+      "Bash(rm:*)",
+      "Bash(tail:*)"
     ],
     "deny": [],
     "ask": []

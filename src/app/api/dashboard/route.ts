@@ -20,7 +20,8 @@ export async function GET(request: NextRequest) {
             id: true,
             name: true,
             currentWeek: true,
-            leagueType: true
+            season: true,
+            isActive: true
           }
         },
         roster: {
@@ -82,7 +83,7 @@ export async function GET(request: NextRequest) {
 
       const teamScore = team.roster.reduce((total, rp) => {
         const stats = rp.player.stats[0];
-        return total + (stats?.fantasyPoints?.toNumber() || 0);
+        return total + (stats?.fantasyPoints || 0);
       }, 0);
 
       const opponentTeam = currentMatchup ? 
@@ -100,7 +101,7 @@ export async function GET(request: NextRequest) {
         currentScore: teamScore,
         projectedScore: team.roster.reduce((total, rp) => {
           const projection = rp.player.projections[0];
-          return total + (projection?.projectedPoints?.toNumber() || 0);
+          return total + (projection?.projectedPoints || 0);
         }, 0),
         opponent: opponentTeam ? {
           name: opponentTeam.owner.name,
@@ -109,13 +110,13 @@ export async function GET(request: NextRequest) {
         weeklyPerformance: weeklyStats.map(matchup => ({
           week: matchup.week,
           points: matchup.homeTeamId === team.id ? 
-            matchup.homeScore?.toNumber() || 0 : 
-            matchup.awayScore?.toNumber() || 0
+            matchup.homeScore || 0 : 
+            matchup.awayScore || 0
         }))
       };
     }));
 
-    const recentTrades = await prisma.trade.findMany({
+    const recentTrades = await prisma.tradeProposal.findMany({
       where: {
         OR: [
           { proposingTeamId: { in: userTeams.map(t => t.id) } },
@@ -123,11 +124,7 @@ export async function GET(request: NextRequest) {
         ]
       },
       include: {
-        proposingTeam: { select: { name: true } },
-        receivingTeam: { select: { name: true } },
-        tradeItems: {
-          include: { player: { select: { name: true, position: true } } }
-        }
+        proposingTeam: { select: { name: true } }
       },
       orderBy: { createdAt: 'desc' },
       take: 5
@@ -136,7 +133,7 @@ export async function GET(request: NextRequest) {
     const recentActivity = recentTrades.map(trade => ({
       id: trade.id,
       type: 'trade',
-      description: `Trade ${trade.status.toLowerCase()} between ${trade.proposingTeam.name} and ${trade.receivingTeam.name}`,
+      description: `Trade ${trade.status.toLowerCase()} proposed by ${trade.proposingTeam.name}`,
       timestamp: trade.createdAt,
       status: trade.status
     }));

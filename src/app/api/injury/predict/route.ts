@@ -96,12 +96,12 @@ export async function POST(request: NextRequest) {
           include: {
             player: {
               include: {
-                playerStats: {
-                  where: { season: 2024 },
+                stats: {
+                  where: { season: "2025" },
                   orderBy: { week: 'desc' },
                   take: 10
                 },
-                injuryReports: {
+                news: {
                   orderBy: { createdAt: 'desc' },
                   take: 5
                 }
@@ -127,14 +127,14 @@ export async function POST(request: NextRequest) {
       return {
         player: {
           id: player.id,
-          name: `${player.firstName} ${player.lastName}`,
+          name: player.name,
           position: player.position,
           team: player.nflTeam || 'FA',
-          age: player.age || estimateAge(player.yearsExperience),
-          yearsInNFL: player.yearsExperience,
+          age: player.age || 25,
+          yearsInNFL: player.experience || 0,
           currentStatus: player.injuryStatus || 'Healthy',
-          injuryHistory: formatInjuryHistory(player.injuryReports),
-          workload: calculateWorkload(player.playerStats)
+          injuryHistory: formatInjuryHistory(player.news),
+          workload: calculateWorkload(player.stats)
         },
         ...analysis
       };

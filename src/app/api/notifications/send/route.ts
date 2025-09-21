@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { handleComponentError } from '@/lib/error-handling';
 import { Resend } from 'resend';
-import { NotificationLogType } from '@prisma/client';
+// NotificationLogType removed - using string values directly
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
       include: {
-        notificationPreferences: true
+        preferences: true
       }
     });
 
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
     }
 
-    const prefs = user.notificationPreferences || {};
+    const prefs = user.preferences || {};
     const shouldSend = checkNotificationPreferences(type, prefs);
 
     if (!shouldSend) {
@@ -63,14 +63,15 @@ export async function POST(request: NextRequest) {
         );
     }
 
-    // Log notification
-    await prisma.notificationLog.create({
+    // Log notification to notifications table
+    await prisma.notification.create({
       data: {
         userId,
-        type: NotificationLogType.EMAIL,
-        status: result.success ? 'SENT' : 'FAILED',
-        content: JSON.stringify(data),
-        error: result.error || null
+        type,
+        title: `${type} notification`,
+        message: `${type} notification ${result.success ? 'sent' : 'failed'}`,
+        data: data,
+        read: false
       }
     });
 

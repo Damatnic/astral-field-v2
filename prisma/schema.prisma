@@ -25,6 +25,7 @@ model User {
   leagues         League[]
   teams           Team[]
   notifications   Notification[]
+  messages        Message[] @relation("UserMessages")
   preferences     UserPreferences?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -311,10 +312,12 @@ model Message {
   leagueId        String
   league          League    @relation(fields: [leagueId], references: [id], onDelete: Cascade)
   userId          String
+  user            User      @relation("UserMessages", fields: [userId], references: [id], onDelete: Cascade)
   content         String
   createdAt       DateTime  @default(now())
   
   @@index([leagueId])
+  @@index([userId])
   @@map("messages")
 }
 

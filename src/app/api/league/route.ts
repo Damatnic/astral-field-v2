@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
               email: true
             }
           },
-          settings: true
+          // settings field removed - League model doesn't have settings relation
         }
       });
     } else {
@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
                   email: true
                 }
               },
-              settings: true
+              // settings field removed - League model doesn't have settings relation
             }
           }
         }

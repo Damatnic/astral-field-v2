@@ -93,10 +93,14 @@ export async function GET(request: NextRequest) {
   // Test external services (Sleeper API)
   try {
     const externalStart = Date.now();
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    
     const sleeper = await fetch('https://api.sleeper.app/v1/state/nfl', {
       method: 'GET',
-      timeout: 5000
+      signal: controller.signal
     });
+    clearTimeout(timeoutId);
     const externalTime = Date.now() - externalStart;
     
     if (sleeper.ok) {

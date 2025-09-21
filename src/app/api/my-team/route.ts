@@ -1,95 +1,63 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from '@/lib/auth/get-session';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/db';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession();
-    
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId');
+
+    if (!userId) {
+      return NextResponse.json({
+        success: false,
+        message: 'User ID is required'
+      }, { status: 400 });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+    // Get user's team
+    const team = await prisma.team.findFirst({
+      where: { ownerId: userId },
       include: {
-        teams: {
-          include: {
-            league: {
-              select: {
-                id: true,
-                name: true,
-                season: true,
-                leagueType: true,
-                scoringType: true
-              }
-            },
-            roster: {
-              include: {
-                player: {
-                  select: {
-                    id: true,
-                    name: true,
-                    position: true,
-                    team: true,
-                    projections: {
-                      where: {
-                        week: {
-                          gte: 1,
-                          lte: 18
-                        }
-                      },
-                      orderBy: { week: 'desc' },
-                      take: 1
-                    },
-                    stats: {
-                      where: {
-                        week: {
-                          gte: 1,
-                          lte: 18
-                        }
-                      },
-                      orderBy: { week: 'desc' },
-                      take: 5
-                    }
-                  }
-                }
-              }
-            }
+        league: {
+          select: {
+            id: true,
+            name: true,
+            season: true,
+            currentWeek: true
           }
         }
       }
     });
 
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    if (!team) {
+      return NextResponse.json({
+        success: false,
+        message: 'No team found for user'
+      }, { status: 404 });
     }
 
-    const teamsWithStats = user.teams.map(team => {
-      const totalProjectedPoints = team.roster.reduce((total, rosterPlayer) => {
-        const latestProjection = rosterPlayer.player.projections[0];
-        return total + (latestProjection?.projectedPoints?.toNumber() || 0);
-      }, 0);
-
-      const totalActualPoints = team.roster.reduce((total, rosterPlayer) => {
-        const latestStats = rosterPlayer.player.stats[0];
-        return total + (latestStats?.fantasyPoints?.toNumber() || 0);
-      }, 0);
-
-      return {
-        ...team,
-        stats: {
-          totalProjectedPoints,
-          totalActualPoints,
-          rosterCount: team.roster.length,
-          activePlayersCount: team.roster.filter(rp => rp.position !== 'BENCH').length
+    return NextResponse.json({
+      success: true,
+      data: {
+        team: {
+          id: team.id,
+          name: team.name,
+          wins: team.wins,
+          losses: team.losses,
+          ties: team.ties,
+          pointsFor: Number(team.pointsFor),
+          pointsAgainst: Number(team.pointsAgainst),
+          league: team.league
         }
-      };
+      }
     });
 
-    return NextResponse.json({ teams: teamsWithStats });
   } catch (error) {
-    console.error('Error fetching user teams:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('Error fetching my team:', error);
+    return NextResponse.json({
+      success: false,
+      message: 'Failed to fetch team data'
+    }, { status: 500 });
   }
 }

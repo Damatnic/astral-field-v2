@@ -11,7 +11,8 @@
  * - Injury status monitoring
  */
 
-import { PrismaClient, Position, PlayerStatus } from '@prisma/client';
+import { PrismaClient, Position } from '@prisma/client';
+import { PlayerStatus } from '@/types/fantasy';
 import { SleeperApiService } from './sleeperApiService';
 import { handleComponentError } from '@/utils/errorHandling';
 import { NFLStateService } from './nflStateService';

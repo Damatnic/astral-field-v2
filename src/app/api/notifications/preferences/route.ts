@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user's notification preferences
-    const preferences = await prisma.notificationPreferences.findFirst({
+    const preferences = await prisma.userPreferences.findFirst({
       where: { userId: user.id }
     });
 
@@ -57,7 +57,7 @@ export async function PUT(request: NextRequest) {
     const preferences = await request.json();
 
     // Upsert user notification preferences
-    const updated = await prisma.notificationPreferences.upsert({
+    const updated = await prisma.userPreferences.upsert({
       where: { userId: user.id },
       update: {
         ...preferences,

@@ -5,7 +5,8 @@
 
 import { handleComponentError } from '@/utils/errorHandling';
 
-import { PrismaClient, Position, PlayerStatus } from '@prisma/client';
+import { PrismaClient, Position } from '@prisma/client';
+import { PlayerStatus } from '@/types/fantasy';
 import axios from 'axios';
 import { z } from 'zod';
 

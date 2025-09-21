@@ -3,11 +3,12 @@
  * Secure authentication for the 10 league members
  */
 
-import { PrismaClient, UserRole } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { nanoid } from 'nanoid';
 import { NextRequest } from 'next/server';
+import { UserRole } from '@/types/fantasy';
 import { logError } from '@/lib/error-handling';
 
 const prisma = new PrismaClient();

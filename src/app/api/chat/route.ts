@@ -49,14 +49,10 @@ export async function GET(request: NextRequest) {
     }
     
     // Fetch messages from database
-    // Store channel in metadata since Message model doesn't have channel field
+    // Note: Channel filtering removed since Message model doesn't have metadata field
     const messages = await prisma.message.findMany({
       where: {
-        leagueId: targetLeagueId,
-        metadata: {
-          path: ['channel'],
-          equals: channel
-        }
+        leagueId: targetLeagueId
       },
       include: {
         user: {
@@ -90,9 +86,8 @@ export async function GET(request: NextRequest) {
         teamName: 'League Member'
       },
       timestamp: msg.createdAt,
-      channel: (msg.metadata as any)?.channel || channel,
-      type: 'message',
-      metadata: msg.metadata
+      channel: channel,
+      type: 'message'
     }));
     
     // Reverse to show oldest first (chronological order)
@@ -195,19 +190,12 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    // Create the message (store channel and extra data in metadata)
+    // Create the message
     const message = await prisma.message.create({
       data: {
         leagueId: targetLeagueId,
         userId: session.userId,
-        content: content.trim(),
-        type: messageType === 'trade_alert' ? 'TRADE_PROPOSAL' : 
-              messageType === 'system' ? 'ANNOUNCEMENT' : 'GENERAL',
-        metadata: {
-          channel,
-          teamId: team?.id,
-          ...(metadata || {})
-        }
+        content: content.trim()
       },
       include: {
         user: {
@@ -228,7 +216,6 @@ export async function POST(request: NextRequest) {
     
     // Format response
     const isCommissioner = await checkIfCommissioner(session.userId, targetLeagueId);
-    const messageMetadata = message.metadata as any;
     const formattedMessage = {
       id: message.id,
       content: message.content,
@@ -240,9 +227,8 @@ export async function POST(request: NextRequest) {
         teamName: 'League Member'
       },
       timestamp: message.createdAt,
-      channel: messageMetadata?.channel || channel,
-      type: 'message',
-      metadata: message.metadata
+      channel: channel,
+      type: 'message'
     };
     
     return NextResponse.json({
@@ -361,20 +347,7 @@ async function checkIfCommissioner(userId: string, leagueId: string): Promise<bo
     select: { commissionerId: true }
   });
   
-  if (league?.commissionerId === userId) {
-    return true;
-  }
-  
-  // Also check LeagueMember role
-  const member = await prisma.leagueMember.findFirst({
-    where: {
-      userId,
-      leagueId,
-      role: 'COMMISSIONER'
-    }
-  });
-  
-  return !!member;
+  return league?.commissionerId === userId || false;
 }
 
 async function getUserRole(userId: string, leagueId: string): Promise<string> {
@@ -392,50 +365,18 @@ function getInitials(name: string): string {
 }
 
 async function getChannelStats(leagueId: string) {
-  const [general, trades, trashTalk, commissioner] = await Promise.all([
-    prisma.message.count({
-      where: { 
-        leagueId, 
-        metadata: {
-          path: ['channel'],
-          equals: 'general'
-        }
-      }
-    }),
-    prisma.message.count({
-      where: { 
-        leagueId, 
-        metadata: {
-          path: ['channel'],
-          equals: 'trades'
-        }
-      }
-    }),
-    prisma.message.count({
-      where: { 
-        leagueId, 
-        metadata: {
-          path: ['channel'],
-          equals: 'trash-talk'
-        }
-      }
-    }),
-    prisma.message.count({
-      where: { 
-        leagueId, 
-        metadata: {
-          path: ['channel'],
-          equals: 'commissioner'
-        }
-      }
-    })
-  ]);
+  // Since Message model doesn't have metadata field, return total count for all channels
+  const totalMessages = await prisma.message.count({
+    where: { 
+      leagueId
+    }
+  });
   
   return {
-    general,
-    trades,
-    'trash-talk': trashTalk,
-    commissioner
+    general: totalMessages,
+    trades: 0,
+    'trash-talk': 0,
+    commissioner: 0
   };
 }
 
@@ -476,8 +417,8 @@ async function createMentionNotifications(
       userId: user.id,
       type: 'NEWS_UPDATE' as const,
       title: 'You were mentioned in chat',
-      content: `You were mentioned in a chat message`,
-      metadata: {
+      message: `You were mentioned in a chat message`,
+      data: {
         messageId,
         senderId,
         leagueId

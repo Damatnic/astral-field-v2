@@ -35,7 +35,7 @@ export async function GET(
                     id: true,
                     name: true,
                     position: true,
-                    team: true,
+                    nflTeam: true,
                     status: true,
                     byeWeek: true
                   }
@@ -83,8 +83,8 @@ export async function GET(
         },
         standings: {
           rank: index + 1,
-          pointsFor: team.pointsFor?.toNumber() || 0,
-          pointsAgainst: team.pointsAgainst?.toNumber() || 0,
+          pointsFor: Number(team.pointsFor) || 0,
+          pointsAgainst: Number(team.pointsAgainst) || 0,
           streak: calculateStreak(team)
         }
       }))

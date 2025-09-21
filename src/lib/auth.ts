@@ -5,10 +5,8 @@ import { handleComponentError } from '@/utils/errorHandling';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { prisma } from './db';
-import type { UserRole as PrismaUserRole } from '@prisma/client';
-
-// Helper function to convert Prisma UserRole to string role
-function convertUserRole(prismaRole: PrismaUserRole): 'ADMIN' | 'COMMISSIONER' | 'PLAYER' {
+// Helper function to convert user role string to our role type  
+function convertUserRole(prismaRole: string): 'ADMIN' | 'COMMISSIONER' | 'PLAYER' {
   switch (prismaRole) {
     case 'ADMIN':
       return 'ADMIN';

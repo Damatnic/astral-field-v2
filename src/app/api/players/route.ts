@@ -169,8 +169,8 @@ export async function GET(request: NextRequest) {
         // Fantasy relevance scoring
         fantasyScore: calculateFantasyScore(player, seasonStats, projection),
         // Matchup information
-        upcomingOpponent: getUpcomingOpponent(player.nflTeam, currentWeek),
-        restOfSeasonOutlook: calculateROSOutlook(seasonStats, player.byeWeek, currentWeek)
+        upcomingOpponent: getUpcomingOpponent(player.nflTeam, getCurrentWeek()),
+        restOfSeasonOutlook: calculateROSOutlook(seasonStats, player.byeWeek, getCurrentWeek())
       };
     });
 
@@ -181,11 +181,6 @@ export async function GET(request: NextRequest) {
         limit,
         total: totalCount,
         hasMore: (page - 1) * limit + limit < totalCount
-      },
-      meta: {
-        requestTime: Date.now() - startTime,
-        cached: !!cached,
-        timestamp: Date.now(),
       }
     };
 

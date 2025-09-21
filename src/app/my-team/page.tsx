@@ -131,10 +131,6 @@ export default function MyTeamPage() {
   const [activeTab, setActiveTab] = useState<'lineup' | 'bench' | 'stats'>('lineup');
   const router = useRouter();
 
-  useEffect(() => {
-    fetchUserTeam();
-  }, [fetchUserTeam]);
-
   const fetchUserTeam = async () => {
     try {
       setLoading(true);
@@ -161,6 +157,10 @@ export default function MyTeamPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchUserTeam();
+  }, []);
 
   const getTrendIcon = (trend: string) => {
     switch (trend) {

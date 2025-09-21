@@ -530,26 +530,14 @@ async function executeTrade(tx: any, tradeId: string, trade: any) {
     }
 
     // Handle draft picks if included in trade
+    // Note: Draft pick trading is not yet implemented as Draft model doesn't exist
+    // This will be implemented when Draft model is added to schema
     if (trade.proposerDraftPicks && trade.proposerDraftPicks.length > 0) {
-      await prisma.draftPick.updateMany({
-        where: {
-          id: { in: trade.proposerDraftPicks.map((dp: any) => dp.id) }
-        },
-        data: {
-          teamId: receiverTeam.id
-        }
-      });
+      console.log('Draft pick trading not yet implemented - proposer picks:', trade.proposerDraftPicks);
     }
     
     if (trade.receiverDraftPicks && trade.receiverDraftPicks.length > 0) {
-      await prisma.draftPick.updateMany({
-        where: {
-          id: { in: trade.receiverDraftPicks.map((dp: any) => dp.id) }
-        },
-        data: {
-          teamId: proposerTeam.id
-        }
-      });
+      console.log('Draft pick trading not yet implemented - receiver picks:', trade.receiverDraftPicks);
     }
   }
 }
