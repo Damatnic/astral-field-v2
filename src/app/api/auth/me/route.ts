@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
         // Update last activity
         await prisma.userSession.update({
           where: { id: dbSession.id },
-          data: { lastActivity: new Date() }
+          data: { updatedAt: new Date() }
         });
 
         // Return user data from database
