@@ -453,19 +453,281 @@ class AnalyticsAggregationService extends EventEmitter {
     timeRange?: { start: Date; end: Date }
   ): Promise<AggregatedData[]> {
     
-    // This would contain the actual aggregation logic
-    // For now, return sample data
+    try {
+      // Set default time range if not provided
+      const endTime = timeRange?.end || new Date();
+      const startTime = timeRange?.start || new Date(endTime.getTime() - 24 * 60 * 60 * 1000); // 24 hours ago
+      
+      const result: AggregatedData[] = [];
+      
+      // Execute different aggregation types based on config
+      switch (config.name) {
+        case 'player_performance_hourly':
+          return await this.aggregatePlayerPerformance(config, dimensions, startTime, endTime);
+          
+        case 'league_activity_summary':
+          return await this.aggregateLeagueActivity(config, dimensions, startTime, endTime);
+          
+        case 'scoring_trends':
+          return await this.aggregateScoringTrends(config, dimensions, startTime, endTime);
+          
+        case 'trade_analysis':
+          return await this.aggregateTradeMetrics(config, dimensions, startTime, endTime);
+          
+        case 'waiver_wire_activity':
+          return await this.aggregateWaiverActivity(config, dimensions, startTime, endTime);
+          
+        default:
+          return await this.executeGenericAggregation(config, dimensions, startTime, endTime);
+      }
+      
+    } catch (error) {
+      logger.error(`Error executing aggregation query for ${config.name}:`, error);
+      throw error;
+    }
+  }
+  
+  private async aggregatePlayerPerformance(
+    config: AggregationConfig,
+    dimensions: { [key: string]: string },
+    startTime: Date,
+    endTime: Date
+  ): Promise<AggregatedData[]> {
+    const stats = await prisma.playerStat.groupBy({
+      by: ['playerId', 'week'],
+      where: {
+        createdAt: {
+          gte: startTime,
+          lte: endTime
+        },
+        ...(dimensions.position && {
+          player: {
+            position: dimensions.position
+          }
+        })
+      },
+      _avg: {
+        fantasyPoints: true
+      },
+      _sum: {
+        fantasyPoints: true
+      },
+      _count: {
+        playerId: true
+      },
+      orderBy: {
+        week: 'desc'
+      }
+    });
+
+    return stats.map(stat => ({
+      id: `player_perf_${stat.playerId}_${stat.week}`,
+      dimensions: {
+        player: stat.playerId,
+        week: stat.week.toString(),
+        ...dimensions
+      },
+      metrics: {
+        avgFantasyPoints: stat._avg.fantasyPoints || 0,
+        totalFantasyPoints: stat._sum.fantasyPoints || 0,
+        gamesPlayed: stat._count.playerId
+      },
+      timestamp: new Date(),
+      granularity: config.timeGranularity,
+      freshness: new Date()
+    }));
+  }
+
+  private async aggregateLeagueActivity(
+    config: AggregationConfig,
+    dimensions: { [key: string]: string },
+    startTime: Date,
+    endTime: Date
+  ): Promise<AggregatedData[]> {
+    const transactions = await prisma.transaction.groupBy({
+      by: ['type', 'leagueId'],
+      where: {
+        createdAt: {
+          gte: startTime,
+          lte: endTime
+        },
+        ...(dimensions.leagueId && {
+          leagueId: dimensions.leagueId
+        })
+      },
+      _count: {
+        id: true
+      },
+      orderBy: {
+        _count: {
+          id: 'desc'
+        }
+      }
+    });
+
+    return transactions.map(transaction => ({
+      id: `league_activity_${transaction.leagueId}_${transaction.type}`,
+      dimensions: {
+        league: transaction.leagueId,
+        transactionType: transaction.type,
+        ...dimensions
+      },
+      metrics: {
+        transactionCount: transaction._count.id,
+        activityLevel: this.calculateActivityLevel(transaction._count.id)
+      },
+      timestamp: new Date(),
+      granularity: config.timeGranularity,
+      freshness: new Date()
+    }));
+  }
+
+  private async aggregateScoringTrends(
+    config: AggregationConfig,
+    dimensions: { [key: string]: string },
+    startTime: Date,
+    endTime: Date
+  ): Promise<AggregatedData[]> {
+    const matchups = await prisma.matchup.groupBy({
+      by: ['week', 'leagueId'],
+      where: {
+        createdAt: {
+          gte: startTime,
+          lte: endTime
+        },
+        ...(dimensions.leagueId && {
+          leagueId: dimensions.leagueId
+        })
+      },
+      _avg: {
+        homeScore: true,
+        awayScore: true
+      },
+      _max: {
+        homeScore: true,
+        awayScore: true
+      },
+      _min: {
+        homeScore: true,
+        awayScore: true
+      },
+      orderBy: {
+        week: 'desc'
+      }
+    });
+
+    return matchups.map(matchup => ({
+      id: `scoring_trend_${matchup.leagueId}_${matchup.week}`,
+      dimensions: {
+        league: matchup.leagueId,
+        week: matchup.week.toString(),
+        ...dimensions
+      },
+      metrics: {
+        avgHomeScore: matchup._avg.homeScore || 0,
+        avgAwayScore: matchup._avg.awayScore || 0,
+        maxScore: Math.max(matchup._max.homeScore || 0, matchup._max.awayScore || 0),
+        minScore: Math.min(matchup._min.homeScore || 0, matchup._min.awayScore || 0),
+        avgTotalScore: (matchup._avg.homeScore || 0) + (matchup._avg.awayScore || 0)
+      },
+      timestamp: new Date(),
+      granularity: config.timeGranularity,
+      freshness: new Date()
+    }));
+  }
+
+  private async aggregateTradeMetrics(
+    config: AggregationConfig,
+    dimensions: { [key: string]: string },
+    startTime: Date,
+    endTime: Date
+  ): Promise<AggregatedData[]> {
+    const trades = await prisma.tradeProposal.groupBy({
+      by: ['status'],
+      where: {
+        createdAt: {
+          gte: startTime,
+          lte: endTime
+        }
+      },
+      _count: {
+        id: true
+      }
+    });
+
+    return trades.map(trade => ({
+      id: `trade_metrics_${trade.status}`,
+      dimensions: {
+        status: trade.status,
+        ...dimensions
+      },
+      metrics: {
+        tradeCount: trade._count.id,
+        completionRate: trade.status === 'accepted' ? 100 : 0
+      },
+      timestamp: new Date(),
+      granularity: config.timeGranularity,
+      freshness: new Date()
+    }));
+  }
+
+  private async aggregateWaiverActivity(
+    config: AggregationConfig,
+    dimensions: { [key: string]: string },
+    startTime: Date,
+    endTime: Date
+  ): Promise<AggregatedData[]> {
+    const waivers = await prisma.transaction.groupBy({
+      by: ['leagueId'],
+      where: {
+        type: 'waiver',
+        createdAt: {
+          gte: startTime,
+          lte: endTime
+        }
+      },
+      _count: {
+        id: true
+      },
+      _avg: {
+        // Assuming there's a faab amount in relatedData
+      }
+    });
+
+    return waivers.map(waiver => ({
+      id: `waiver_activity_${waiver.leagueId}`,
+      dimensions: {
+        league: waiver.leagueId,
+        ...dimensions
+      },
+      metrics: {
+        waiverClaims: waiver._count.id,
+        avgFaabSpent: this.extractAvgFaabFromTransactions(waiver.leagueId, startTime, endTime)
+      },
+      timestamp: new Date(),
+      granularity: config.timeGranularity,
+      freshness: new Date()
+    }));
+  }
+
+  private async executeGenericAggregation(
+    config: AggregationConfig,
+    dimensions: { [key: string]: string },
+    startTime: Date,
+    endTime: Date
+  ): Promise<AggregatedData[]> {
+    // Fallback generic aggregation based on config
     const now = new Date();
     const result: AggregatedData[] = [];
 
-    // Generate sample aggregated data
-    for (let i = 0; i < 24; i++) {
-      const timestamp = new Date(now.getTime() - i * 60 * 60 * 1000);
-      
+    // Generate time-based data points based on granularity
+    const timeIntervals = this.generateTimeIntervals(startTime, endTime, config.timeGranularity);
+    
+    for (const timestamp of timeIntervals) {
       result.push({
         id: `${config.id}_${timestamp.getTime()}`,
         dimensions: {
-          hour: timestamp.getHours().toString(),
+          time: timestamp.toISOString(),
           ...dimensions
         },
         metrics: {
@@ -716,6 +978,77 @@ class AnalyticsAggregationService extends EventEmitter {
   private schedulePipeline(pipeline: DataPipeline): void {
     // This would use a proper cron scheduler in practice
     logger.info(`Scheduled pipeline: ${pipeline.name}`);
+  }
+
+  // Helper methods for the new aggregation functions
+  private calculateActivityLevel(transactionCount: number): number {
+    if (transactionCount >= 20) return 100; // Very active
+    if (transactionCount >= 10) return 75;  // Active
+    if (transactionCount >= 5) return 50;   // Moderate
+    if (transactionCount >= 1) return 25;   // Low
+    return 0; // Inactive
+  }
+
+  private async extractAvgFaabFromTransactions(leagueId: string, startTime: Date, endTime: Date): Promise<number> {
+    try {
+      // Get all waiver transactions for the league in the time range
+      const transactions = await prisma.transaction.findMany({
+        where: {
+          leagueId,
+          type: 'waiver',
+          createdAt: {
+            gte: startTime,
+            lte: endTime
+          }
+        }
+      });
+
+      // Extract FAAB amounts from relatedData
+      const faabAmounts = transactions
+        .map(t => {
+          const data = t.relatedData as any;
+          return data?.faabBid || data?.faabAmount || 0;
+        })
+        .filter(amount => amount > 0);
+
+      return faabAmounts.length > 0 
+        ? faabAmounts.reduce((sum, amount) => sum + amount, 0) / faabAmounts.length
+        : 0;
+    } catch (error) {
+      logger.error('Error extracting average FAAB:', error);
+      return 0;
+    }
+  }
+
+  private generateTimeIntervals(startTime: Date, endTime: Date, granularity: string): Date[] {
+    const intervals: Date[] = [];
+    const current = new Date(startTime);
+    
+    while (current <= endTime) {
+      intervals.push(new Date(current));
+      
+      switch (granularity) {
+        case 'minute':
+          current.setMinutes(current.getMinutes() + 1);
+          break;
+        case 'hour':
+          current.setHours(current.getHours() + 1);
+          break;
+        case 'day':
+          current.setDate(current.getDate() + 1);
+          break;
+        case 'week':
+          current.setDate(current.getDate() + 7);
+          break;
+        case 'month':
+          current.setMonth(current.getMonth() + 1);
+          break;
+        default:
+          current.setHours(current.getHours() + 1); // Default to hourly
+      }
+    }
+    
+    return intervals;
   }
 }
 

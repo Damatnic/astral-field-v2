@@ -272,23 +272,191 @@ export class GameStatusService {
    */
   private async buildWeekSchedule(week: number, season: number, seasonType: 'pre' | 'regular' | 'post'): Promise<WeekSchedule> {
     try {
-      // This would integrate with an external NFL API to get game schedules
-      // For now, we'll build a mock schedule based on typical NFL scheduling patterns
-      const weekSchedule = this.buildMockWeekSchedule(week, season, seasonType);
+      // Get real game schedules from external APIs
+      const weekSchedule = await this.fetchRealWeekSchedule(week, season, seasonType);
       
-      // Update game statuses with real data if available
+      // Update game statuses with real data
       await this.updateGameStatuses(weekSchedule);
       
       return weekSchedule;
 
     } catch (error) {
       handleComponentError(error as Error, 'gameStatusService');
+      
+      // Fallback to mock schedule if real data fails
+      console.warn('Real schedule fetch failed, using fallback schedule');
+      const fallbackSchedule = this.buildMockWeekSchedule(week, season, seasonType);
+      await this.updateGameStatuses(fallbackSchedule);
+      return fallbackSchedule;
+    }
+  }
+
+  /**
+   * Fetch real week schedule from ESPN or NFL API
+   */
+  private async fetchRealWeekSchedule(week: number, season: number, seasonType: 'pre' | 'regular' | 'post'): Promise<WeekSchedule> {
+    const cacheKey = `real_schedule:${season}:${seasonType}:${week}`;
+    
+    // Check cache first
+    const cached = await sleeperCache.get<WeekSchedule>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    // Fetch from ESPN's public API (no key required)
+    const espnUrl = `https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=${season}&seasontype=${seasonType === 'regular' ? '2' : seasonType === 'pre' ? '1' : '3'}&week=${week}`;
+    
+    try {
+      const response = await fetch(espnUrl);
+      const data = await response.json();
+      
+      const weekStart = this.getWeekStart(new Date());
+      const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+      
+      // Group games by day
+      const gamesByDay = new Map<string, GameInfo[]>();
+      
+      if (data.events && Array.isArray(data.events)) {
+        for (const event of data.events) {
+          if (!event.competitions || !event.competitions[0]) continue;
+          
+          const competition = event.competitions[0];
+          const gameDate = new Date(event.date);
+          const dayKey = gameDate.toDateString();
+          
+          const homeTeam = competition.competitors.find((c: any) => c.homeAway === 'home');
+          const awayTeam = competition.competitors.find((c: any) => c.homeAway === 'away');
+          
+          if (!homeTeam || !awayTeam) continue;
+          
+          const gameInfo: GameInfo = {
+            gameId: event.id,
+            homeTeam: homeTeam.team.abbreviation,
+            awayTeam: awayTeam.team.abbreviation,
+            startTime: gameDate,
+            estimatedEndTime: new Date(gameDate.getTime() + 3.5 * 60 * 60 * 1000),
+            status: this.parseEspnGameStatus(competition.status),
+            quarter: competition.status.period || null,
+            timeRemaining: competition.status.displayClock || null,
+            isRedZone: false, // Would need additional data
+            score: {
+              home: parseInt(homeTeam.score) || 0,
+              away: parseInt(awayTeam.score) || 0
+            }
+          };
+          
+          if (!gamesByDay.has(dayKey)) {
+            gamesByDay.set(dayKey, []);
+          }
+          gamesByDay.get(dayKey)!.push(gameInfo);
+        }
+      }
+      
+      // Create game days
+      const gameDays: GameDay[] = [];
+      for (const [dayKey, games] of gamesByDay) {
+        const gameDate = new Date(dayKey);
+        const dayType = this.determineDayType(gameDate);
+        gameDays.push(this.createGameDay(gameDate, dayType, games));
+      }
+      
+      const schedule: WeekSchedule = {
+        week,
+        season,
+        seasonType,
+        startDate: weekStart,
+        endDate: weekEnd,
+        gameDays: gameDays.sort((a, b) => a.date.getTime() - b.date.getTime()),
+        totalGames: gameDays.reduce((sum, day) => sum + day.totalGames, 0),
+        isActive: gameDays.some(day => day.isScoringActive),
+        completionPercentage: this.calculateCompletionPercentage(gameDays)
+      };
+      
+      // Cache for 15 minutes during game time, 1 hour otherwise
+      const cacheTime = schedule.isActive ? 900 : 3600;
+      await sleeperCache.set(cacheKey, schedule, cacheTime);
+      
+      return schedule;
+      
+    } catch (error) {
+      console.error('Failed to fetch real schedule from ESPN:', error);
       throw error;
     }
   }
 
   /**
-   * Build mock week schedule (to be replaced with real API integration)
+   * Parse ESPN game status to our format
+   */
+  private parseEspnGameStatus(espnStatus: any): GameStatus {
+    const type = espnStatus.type?.name?.toLowerCase() || 'unknown';
+    
+    let state: GameStatus['state'];
+    let isLive = false;
+    let isScoringTime = false;
+    
+    switch (type) {
+      case 'scheduled':
+      case 'pre':
+        state = 'not_started';
+        break;
+      case 'in':
+      case 'live':
+        state = 'in_progress';
+        isLive = true;
+        isScoringTime = true;
+        break;
+      case 'halftime':
+        state = 'halftime';
+        isLive = true;
+        break;
+      case 'final':
+      case 'end_period':
+        state = 'final';
+        break;
+      case 'postponed':
+        state = 'postponed';
+        break;
+      case 'cancelled':
+        state = 'cancelled';
+        break;
+      default:
+        state = 'not_started';
+    }
+    
+    return {
+      state,
+      isLive,
+      isScoringTime,
+      priority: isScoringTime ? 'high' : isLive ? 'medium' : 'low',
+      nextStatusCheck: new Date(Date.now() + (isScoringTime ? 30000 : 300000)) // 30s if live, 5min otherwise
+    };
+  }
+
+  /**
+   * Determine day type based on date
+   */
+  private determineDayType(date: Date): GameDay['dayType'] {
+    const dayOfWeek = date.getDay();
+    const hour = date.getHours();
+    
+    switch (dayOfWeek) {
+      case 4: // Thursday
+        return 'thursday';
+      case 0: // Sunday
+        if (hour < 16) return 'sunday_early';
+        if (hour < 20) return 'sunday_late';
+        return 'sunday_night';
+      case 1: // Monday
+        return 'monday';
+      case 2: // Tuesday
+        return 'tuesday';
+      default:
+        return 'other';
+    }
+  }
+
+  /**
+   * Build mock week schedule (fallback only)
    */
   private buildMockWeekSchedule(week: number, season: number, seasonType: 'pre' | 'regular' | 'post'): WeekSchedule {
     const now = new Date();

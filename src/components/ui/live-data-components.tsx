@@ -67,41 +67,34 @@ export function LiveScoresTicker() {
   useEffect(() => {
     const fetchLiveScores = async () => {
       try {
-        // Mock data - replace with real API
-        const mockScores: LiveScore[] = [
-          {
-            gameId: '1',
-            homeTeam: 'DAL',
-            awayTeam: 'NYG',
-            homeScore: 21,
-            awayScore: 14,
-            quarter: 3,
-            timeRemaining: '8:42',
-            gameStatus: 'live',
-            redZone: true
-          },
-          {
-            gameId: '2',
-            homeTeam: 'KC',
-            awayTeam: 'BUF',
-            homeScore: 28,
-            awayScore: 24,
-            quarter: 4,
-            timeRemaining: '2:15',
-            gameStatus: 'live'
-          },
-          {
-            gameId: '3',
-            homeTeam: 'SF',
-            awayTeam: 'LAR',
-            homeScore: 31,
-            awayScore: 17,
-            quarter: 4,
-            timeRemaining: 'FINAL',
-            gameStatus: 'final'
+        // Fetch real live scores from ESPN API
+        const response = await fetch('/api/live-scores');
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && Array.isArray(data.scores)) {
+            setScores(data.scores);
+          } else {
+            console.warn('Live scores API returned invalid data:', data);
+            setScores([]);
           }
-        ];
-        setScores(mockScores);
+        } else {
+          // Fallback to mock data if API fails
+          console.warn('Live scores API failed, using fallback data');
+          const fallbackScores: LiveScore[] = [
+            {
+              gameId: 'fallback-1',
+              homeTeam: 'TBD',
+              awayTeam: 'TBD',
+              homeScore: 0,
+              awayScore: 0,
+              quarter: 1,
+              timeRemaining: 'Scheduled',
+              gameStatus: 'pregame'
+            }
+          ];
+          setScores(fallbackScores);
+        }
         setLoading(false);
       } catch (error) {
         // Failed to fetch live scores
@@ -185,46 +178,22 @@ export function LivePlayerUpdates() {
   useEffect(() => {
     const fetchUpdates = async () => {
       try {
-        // Mock data - replace with real API
-        const mockUpdates: PlayerUpdate[] = [
-          {
-            id: '1',
-            playerId: 'player1',
-            playerName: 'Dak Prescott',
-            team: 'DAL',
-            position: 'QB',
-            updateType: 'touchdown',
-            description: '15-yard TD pass to CeeDee Lamb',
-            points: 6,
-            timestamp: new Date().toISOString(),
-            gameId: '1'
-          },
-          {
-            id: '2',
-            playerId: 'player2',
-            playerName: 'Josh Allen',
-            team: 'BUF',
-            position: 'QB',
-            updateType: 'carry',
-            description: '8-yard rushing attempt',
-            points: 0.8,
-            timestamp: new Date(Date.now() - 120000).toISOString(),
-            gameId: '2'
-          },
-          {
-            id: '3',
-            playerId: 'player3',
-            playerName: 'Christian McCaffrey',
-            team: 'SF',
-            position: 'RB',
-            updateType: 'touchdown',
-            description: '3-yard rushing TD',
-            points: 6,
-            timestamp: new Date(Date.now() - 300000).toISOString(),
-            gameId: '3'
+        // Fetch real player updates from API
+        const response = await fetch('/api/player-updates');
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && Array.isArray(data.updates)) {
+            setUpdates(data.updates);
+          } else {
+            console.warn('Player updates API returned invalid data:', data);
+            setUpdates([]);
           }
-        ];
-        setUpdates(mockUpdates);
+        } else {
+          // Fallback to empty array if API fails
+          console.warn('Player updates API failed');
+          setUpdates([]);
+        }
         setLoading(false);
       } catch (error) {
         // Failed to fetch player updates
@@ -344,44 +313,22 @@ export function InjuryReport() {
   useEffect(() => {
     const fetchInjuries = async () => {
       try {
-        // Mock data - replace with real API
-        const mockInjuries: InjuryReportItem[] = [
-          {
-            id: '1',
-            playerId: 'player1',
-            playerName: 'Patrick Mahomes',
-            team: 'KC',
-            position: 'QB',
-            injuryStatus: 'questionable',
-            injuryType: 'Ankle',
-            description: 'Twisted ankle in practice, expected to play',
-            updatedAt: new Date().toISOString(),
-            weeklyUpdate: 'Limited in practice Wed, Thu. Full Friday.'
-          },
-          {
-            id: '2',
-            playerId: 'player2',
-            playerName: 'Derrick Henry',
-            team: 'BAL',
-            position: 'RB',
-            injuryStatus: 'out',
-            injuryType: 'Hamstring',
-            description: 'Hamstring strain, will miss Week 3',
-            updatedAt: new Date(Date.now() - 3600000).toISOString()
-          },
-          {
-            id: '3',
-            playerId: 'player3',
-            playerName: 'Cooper Kupp',
-            team: 'LAR',
-            position: 'WR',
-            injuryStatus: 'doubtful',
-            injuryType: 'Knee',
-            description: 'Knee soreness, game-time decision',
-            updatedAt: new Date(Date.now() - 7200000).toISOString()
+        // Fetch real injury report from API
+        const response = await fetch('/api/injuries');
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && Array.isArray(data.injuries)) {
+            setInjuries(data.injuries);
+          } else {
+            console.warn('Injury report API returned invalid data:', data);
+            setInjuries([]);
           }
-        ];
-        setInjuries(mockInjuries);
+        } else {
+          // Fallback to empty array if API fails
+          console.warn('Injury report API failed');
+          setInjuries([]);
+        }
         setLoading(false);
       } catch (error) {
         // Failed to fetch injury report
@@ -484,39 +431,22 @@ export function NewsFeed() {
   useEffect(() => {
     const fetchNews = async () => {
       try {
-        // Mock data - replace with real API
-        const mockNews: NewsItem[] = [
-          {
-            id: '1',
-            headline: 'Cowboys WR CeeDee Lamb Expected to Play Despite Ankle Injury',
-            summary: 'Lamb practiced fully on Friday and is expected to suit up for Sunday\'s game against the Giants.',
-            source: 'ESPN',
-            category: 'injury',
-            playersInvolved: [{ id: '1', name: 'CeeDee Lamb', team: 'DAL', position: 'WR' }],
-            impact: 'medium',
-            publishedAt: new Date().toISOString()
-          },
-          {
-            id: '2',
-            headline: 'Bills Trade for Star WR Ahead of Playoff Push',
-            summary: 'Buffalo acquires elite wide receiver in blockbuster deal to strengthen offense for championship run.',
-            source: 'NFL Network',
-            category: 'trade',
-            impact: 'high',
-            publishedAt: new Date(Date.now() - 1800000).toISOString()
-          },
-          {
-            id: '3',
-            headline: 'Chiefs HC Andy Reid Updates Mahomes Status',
-            summary: 'Reid provided positive update on Mahomes\' ankle, expects him to be ready for Sunday\'s game.',
-            source: 'The Athletic',
-            category: 'lineup',
-            playersInvolved: [{ id: '2', name: 'Patrick Mahomes', team: 'KC', position: 'QB' }],
-            impact: 'high',
-            publishedAt: new Date(Date.now() - 3600000).toISOString()
+        // Fetch real news from API
+        const response = await fetch('/api/news/fantasy');
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && Array.isArray(data.news)) {
+            setNews(data.news);
+          } else {
+            console.warn('Fantasy news API returned invalid data:', data);
+            setNews([]);
           }
-        ];
-        setNews(mockNews);
+        } else {
+          // Fallback to empty array if API fails
+          console.warn('Fantasy news API failed');
+          setNews([]);
+        }
         setLoading(false);
       } catch (error) {
         // Failed to fetch news

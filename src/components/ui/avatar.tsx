@@ -23,10 +23,11 @@ export function Avatar({ className, children, ...props }: AvatarProps) {
 
 interface AvatarImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {}
 
-export function AvatarImage({ className, ...props }: AvatarImageProps) {
+export function AvatarImage({ className, alt = '', ...props }: AvatarImageProps) {
   return (
     <img
       className={cn('aspect-square h-full w-full', className)}
+      alt={alt}
       {...props}
     />
   );

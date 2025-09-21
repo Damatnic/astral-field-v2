@@ -6,8 +6,7 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, memo, useRef, useEffect } from 'react';
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 import { FixedSizeList as List } from 'react-window';
 import { debounce } from 'lodash';
 import { Card } from '@/components/ui/card';

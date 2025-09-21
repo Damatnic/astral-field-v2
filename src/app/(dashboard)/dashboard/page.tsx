@@ -24,78 +24,51 @@ import { cn } from '@/lib/utils';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format, formatDistanceToNow, startOfWeek, endOfWeek } from 'date-fns';
 
-// Mock data for demonstration
-const teamStats = {
-  record: { wins: 8, losses: 2, ties: 0 },
-  standing: 2,
-  playoffChance: 92,
-  pointsFor: 1234.5,
-  pointsAgainst: 1089.2,
-  projectedTotal: 145.8,
-  weeklyRank: 3,
-  powerRanking: 4,
-  transactions: 23,
-};
+// Types for dashboard data
+interface TeamStats {
+  record: { wins: number; losses: number; ties: number };
+  standing: number;
+  playoffChance: number;
+  pointsFor: number;
+  pointsAgainst: number;
+  projectedTotal: number;
+  weeklyRank: number;
+  powerRanking: number;
+  transactions: number;
+}
 
-const upcomingMatchup = {
+interface UpcomingMatchup {
   opponent: {
-    name: "Hartley's Heroes",
-    avatar: '🦅',
-    record: '7-3',
-    rank: 5,
-  },
-  projectedScore: { user: 132.5, opponent: 128.3 },
-  winProbability: 58,
-};
+    name: string;
+    avatar: string;
+    record: string;
+    rank: number;
+  };
+  projectedScore: { user: number; opponent: number };
+  winProbability: number;
+}
 
-const recentActivity = [
-  { 
-    id: 1, 
-    type: 'trade', 
-    message: 'Trade completed with McCaigue Mayhem',
-    time: '2 hours ago',
-    impact: 'positive' 
-  },
-  { 
-    id: 2, 
-    type: 'injury', 
-    message: 'Christian McCaffrey questionable for Week 11',
-    time: '5 hours ago',
-    impact: 'negative' 
-  },
-  { 
-    id: 3, 
-    type: 'waiver', 
-    message: 'Successfully claimed Rachaad White',
-    time: '1 day ago',
-    impact: 'positive' 
-  },
-];
+// Additional data interfaces
+interface ActivityItem {
+  id: string | number;
+  type: string;
+  message: string;
+  time: string;
+  impact: 'positive' | 'negative' | 'neutral';
+}
 
-const playerPerformance = [
-  { name: 'QB', actual: 28.5, projected: 22.3 },
-  { name: 'RB1', actual: 18.2, projected: 16.5 },
-  { name: 'RB2', actual: 12.1, projected: 14.2 },
-  { name: 'WR1', actual: 21.3, projected: 18.7 },
-  { name: 'WR2', actual: 15.8, projected: 16.2 },
-  { name: 'TE', actual: 8.9, projected: 10.1 },
-  { name: 'FLEX', actual: 13.4, projected: 12.8 },
-  { name: 'K', actual: 9.0, projected: 7.5 },
-  { name: 'DST', actual: 12.0, projected: 8.0 },
-];
+interface PlayerPerformance {
+  name: string;
+  actual: number;
+  projected: number;
+}
 
-const seasonTrend = [
-  { week: 1, points: 112.3, projected: 108.5, average: 115 },
-  { week: 2, points: 98.7, projected: 115.2, average: 115 },
-  { week: 3, points: 142.1, projected: 125.3, average: 115 },
-  { week: 4, points: 128.5, projected: 122.8, average: 115 },
-  { week: 5, points: 135.2, projected: 118.9, average: 115 },
-  { week: 6, points: 108.9, projected: 120.5, average: 115 },
-  { week: 7, points: 145.6, projected: 130.2, average: 115 },
-  { week: 8, points: 122.3, projected: 125.7, average: 115 },
-  { week: 9, points: 138.8, projected: 128.3, average: 115 },
-  { week: 10, points: 151.2, projected: 135.8, average: 115 },
-];
+interface SeasonTrend {
+  week: number;
+  points: number;
+  projected: number;
+  average: number;
+}
 
 export default function DashboardPage() {
   const [selectedView, setSelectedView] = useState<'overview' | 'analytics' | 'players'>('overview');
@@ -122,6 +95,36 @@ export default function DashboardPage() {
     refetchInterval: 10000, // Refetch every 10 seconds during games
   });
 
+  // Fetch recent activity
+  const { data: activityData } = useQuery({
+    queryKey: ['activity', 'recent'],
+    queryFn: async () => {
+      const response = await fetch('/api/activity?limit=5');
+      return response.json();
+    },
+    refetchInterval: 60000, // Refetch every minute
+  });
+
+  // Fetch player performance data
+  const { data: performanceData } = useQuery({
+    queryKey: ['performance', 'current-week'],
+    queryFn: async () => {
+      const response = await fetch('/api/lineup/performance');
+      return response.json();
+    },
+    refetchInterval: 30000, // Refetch every 30 seconds
+  });
+
+  // Fetch season trend data
+  const { data: trendData } = useQuery({
+    queryKey: ['trends', 'season'],
+    queryFn: async () => {
+      const response = await fetch('/api/analytics/season-trends');
+      return response.json();
+    },
+    refetchInterval: 300000, // Refetch every 5 minutes
+  });
+
   // Simulate live score updates
   useEffect(() => {
     const interval = setInterval(() => {
@@ -146,7 +149,109 @@ export default function DashboardPage() {
     };
   };
 
-  const pointsTrend = trendIndicator(teamStats.pointsFor, 1150);
+  // Extract data from API responses with fallbacks
+  const teamStats: TeamStats = useMemo(() => {
+    if (!teamData?.data) {
+      return {
+        record: { wins: 0, losses: 0, ties: 0 },
+        standing: 0,
+        playoffChance: 0,
+        pointsFor: 0,
+        pointsAgainst: 0,
+        projectedTotal: 0,
+        weeklyRank: 0,
+        powerRanking: 0,
+        transactions: 0,
+      };
+    }
+    
+    const data = teamData.data;
+    return {
+      record: data.record || { wins: 0, losses: 0, ties: 0 },
+      standing: data.standing || 0,
+      playoffChance: data.playoffChance || 0,
+      pointsFor: data.pointsFor || 0,
+      pointsAgainst: data.pointsAgainst || 0,
+      projectedTotal: data.projectedTotal || 0,
+      weeklyRank: data.weeklyRank || 0,
+      powerRanking: data.powerRanking || 0,
+      transactions: data.transactions || 0,
+    };
+  }, [teamData]);
+
+  const upcomingMatchup: UpcomingMatchup = useMemo(() => {
+    if (!matchupData?.data?.opponent) {
+      return {
+        opponent: {
+          name: "TBD",
+          avatar: "🏈",
+          record: "0-0",
+          rank: 0,
+        },
+        projectedScore: { user: 0, opponent: 0 },
+        winProbability: 50,
+      };
+    }
+    
+    const opponent = matchupData.data.opponent;
+    return {
+      opponent: {
+        name: opponent.name || "Unknown",
+        avatar: opponent.avatar || "🏈",
+        record: `${opponent.wins || 0}-${opponent.losses || 0}`,
+        rank: opponent.rank || 0,
+      },
+      projectedScore: {
+        user: matchupData.data.projectedScore?.user || 0,
+        opponent: matchupData.data.projectedScore?.opponent || 0,
+      },
+      winProbability: matchupData.data.winProbability || 50,
+    };
+  }, [matchupData]);
+
+  // Extract activity data with fallbacks
+  const recentActivity: ActivityItem[] = useMemo(() => {
+    if (!activityData?.data || !Array.isArray(activityData.data)) {
+      return [];
+    }
+    
+    return activityData.data.map((item: any) => ({
+      id: item.id,
+      type: item.type || 'activity',
+      message: item.description || item.message || 'Activity occurred',
+      time: item.timestamp ? formatDistanceToNow(new Date(item.timestamp), { addSuffix: true }) : 'Recently',
+      impact: item.impact || 'neutral'
+    }));
+  }, [activityData]);
+
+  // Extract player performance data with fallbacks
+  const playerPerformance: PlayerPerformance[] = useMemo(() => {
+    if (!performanceData?.data || !Array.isArray(performanceData.data)) {
+      return [];
+    }
+    
+    return performanceData.data.map((player: any) => ({
+      name: player.position || player.name || 'Player',
+      actual: player.actualPoints || 0,
+      projected: player.projectedPoints || 0
+    }));
+  }, [performanceData]);
+
+  // Extract season trend data with fallbacks
+  const seasonTrend: SeasonTrend[] = useMemo(() => {
+    if (!trendData?.data || !Array.isArray(trendData.data)) {
+      return [];
+    }
+    
+    return trendData.data.map((week: any) => ({
+      week: week.week || 0,
+      points: week.points || 0,
+      projected: week.projected || 0,
+      average: week.leagueAverage || 100
+    }));
+  }, [trendData]);
+
+  const pointsTrend = trendIndicator(teamStats.pointsFor, teamStats.pointsFor * 0.9);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-black">

@@ -55,19 +55,83 @@ export async function POST(
     // Execute action
     switch (action) {
       case 'accept':
-        await prisma.tradeProposal.update({
-          where: { id: tradeId },
-          data: {
-            status: 'accepted',
-            respondedAt: new Date()
-          }
-        });
+        // Execute the trade in a transaction
+        await prisma.$transaction(async (tx) => {
+          // Update trade status
+          await tx.tradeProposal.update({
+            where: { id: tradeId },
+            data: {
+              status: 'accepted',
+              respondedAt: new Date()
+            }
+          });
 
-        // In a real implementation, you would:
-        // 1. Transfer players between teams
-        // 2. Update rosters
-        // 3. Create transaction logs
-        // 4. Send notifications
+          // Transfer players from proposing team to receiving team
+          if (trade.givingPlayerIds.length > 0) {
+            await tx.roster.updateMany({
+              where: {
+                playerId: { in: trade.givingPlayerIds },
+                teamId: trade.proposingTeamId
+              },
+              data: {
+                teamId: trade.receivingTeamId,
+                acquisitionType: 'TRADE',
+                acquisitionDate: new Date()
+              }
+            });
+          }
+
+          // Transfer players from receiving team to proposing team
+          if (trade.receivingPlayerIds.length > 0) {
+            await tx.roster.updateMany({
+              where: {
+                playerId: { in: trade.receivingPlayerIds },
+                teamId: trade.receivingTeamId
+              },
+              data: {
+                teamId: trade.proposingTeamId,
+                acquisitionType: 'TRADE',
+                acquisitionDate: new Date()
+              }
+            });
+          }
+
+          // Create transaction log for proposing team
+          await tx.transaction.create({
+            data: {
+              leagueId: trade.proposingTeam.league.id,
+              teamId: trade.proposingTeamId,
+              type: 'trade',
+              status: 'completed',
+              playerIds: [...trade.givingPlayerIds, ...trade.receivingPlayerIds],
+              relatedData: {
+                tradeId: tradeId,
+                action: 'accepted',
+                partnerId: trade.receivingTeamId,
+                playersGiven: trade.givingPlayerIds,
+                playersReceived: trade.receivingPlayerIds
+              }
+            }
+          });
+
+          // Create transaction log for receiving team
+          await tx.transaction.create({
+            data: {
+              leagueId: trade.proposingTeam.league.id,
+              teamId: trade.receivingTeamId,
+              type: 'trade',
+              status: 'completed',
+              playerIds: [...trade.givingPlayerIds, ...trade.receivingPlayerIds],
+              relatedData: {
+                tradeId: tradeId,
+                action: 'accepted',
+                partnerId: trade.proposingTeamId,
+                playersGiven: trade.receivingPlayerIds,
+                playersReceived: trade.givingPlayerIds
+              }
+            }
+          });
+        });
 
         return NextResponse.json({
           success: true,
@@ -115,14 +179,36 @@ export async function POST(
         });
 
       case 'counter':
-        // In a real implementation, this would create a new trade proposal
-        // For now, just return a mock response
+        // Mark the original trade as countered
+        await prisma.tradeProposal.update({
+          where: { id: tradeId },
+          data: {
+            status: 'countered',
+            respondedAt: new Date()
+          }
+        });
+
+        // Create a new trade proposal with swapped teams
+        const counterTrade = await prisma.tradeProposal.create({
+          data: {
+            proposingTeamId: trade.receivingTeamId,
+            receivingTeamId: trade.proposingTeamId,
+            givingPlayerIds: trade.receivingPlayerIds,
+            receivingPlayerIds: trade.givingPlayerIds,
+            status: 'pending',
+            message: `Counter offer to original trade ${tradeId}${reason ? ': ' + reason : ''}`,
+            proposedAt: new Date(),
+            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days from now
+          }
+        });
+
         return NextResponse.json({
           success: true,
-          message: 'Counter offer functionality not yet implemented',
+          message: 'Counter offer created successfully',
           trade: {
             id: tradeId,
-            status: 'pending'
+            status: 'countered',
+            counterTradeId: counterTrade.id
           }
         });
 
