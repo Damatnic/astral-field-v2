@@ -761,7 +761,7 @@ class AnalyticsAggregationService extends EventEmitter {
     try {
       const cached = await redisCache.get(cacheKey);
       if (cached) {
-        return JSON.parse(cached);
+        return JSON.parse(cached as string);
       }
       return null;
     } catch (error) {
