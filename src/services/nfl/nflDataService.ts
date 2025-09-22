@@ -45,11 +45,17 @@ const POSITION_MAP: Record<string, Position> = {
   'PK': Position.K,
   'DST': Position.DST,
   'DEF': Position.DST,
-  'LB': Position.LB,
-  'DB': Position.DB,
-  'DL': Position.DL,
-  'CB': Position.CB,
-  'S': Position.S
+  // TODO: These defensive positions don't exist in Position enum
+  // 'LB': Position.LB,
+  // 'DB': Position.DB,
+  // 'DL': Position.DL,
+  // 'CB': Position.CB,
+  // 'S': Position.S
+  'LB': Position.DEF,
+  'DB': Position.DEF,
+  'DL': Position.DEF,
+  'CB': Position.DEF,
+  'S': Position.DEF
 };
 
 // Map injury statuses
@@ -160,7 +166,7 @@ export class NFLDataService {
     try {
       await prisma.player.upsert({
         where: {
-          nflId: `nfl_${playerData.PlayerID}`
+          espnId: `nfl_${playerData.PlayerID}`
         },
         update: {
           name: playerData.Name,
@@ -168,18 +174,19 @@ export class NFLDataService {
           nflTeam: playerData.Team || 'FA',
           byeWeek: playerData.ByeWeek,
           status,
-          yearsExperience: playerData.Experience || 0,
+          experience: playerData.Experience || 0,
           updatedAt: new Date()
         },
         create: {
-          nflId: `nfl_${playerData.PlayerID}`,
+          espnId: `nfl_${playerData.PlayerID}`,
           name: playerData.Name,
           position,
           nflTeam: playerData.Team || 'FA',
           byeWeek: playerData.ByeWeek,
           status,
-          isRookie: playerData.Experience === 0,
-          yearsExperience: playerData.Experience || 0
+          // TODO: isRookie field doesn't exist in Player model
+          // isRookie: playerData.Experience === 0,
+          experience: playerData.Experience || 0
         }
       });
     } catch (error) {
@@ -278,7 +285,7 @@ export class NFLDataService {
     for (const [index, player] of TOP_PLAYERS_2024.entries()) {
       await prisma.player.upsert({
         where: {
-          nflId: `static_${index + 1}`
+          espnId: `static_${index + 1}`
         },
         update: {
           name: player.name,
@@ -289,14 +296,15 @@ export class NFLDataService {
           updatedAt: new Date()
         },
         create: {
-          nflId: `static_${index + 1}`,
+          espnId: `static_${index + 1}`,
           name: player.name,
           position: player.position,
           nflTeam: player.team,
           byeWeek: player.bye,
           status: PlayerStatus.ACTIVE,
-          isRookie: false,
-          yearsExperience: 3 // Default value
+          // TODO: isRookie field doesn't exist in Player model
+          // isRookie: false,
+          experience: 3 // Default value
         }
       });
     }}
@@ -339,10 +347,10 @@ export class NFLDataService {
     // Calculate fantasy points based on scoring system
     const fantasyPoints = this.calculateFantasyPoints(stat);
     
-    await prisma.stats.upsert({
+    await prisma.playerStats.upsert({
       where: {
         playerId_week_season: {
-          playerId,
+          playerId: playerId.toString(),
           week,
           season: 2024
         }
@@ -350,10 +358,11 @@ export class NFLDataService {
       update: {
         stats: stat,
         fantasyPoints,
-        updatedAt: new Date()
+        // TODO: updatedAt field doesn't exist in PlayerStats model
+        // updatedAt: new Date()
       },
       create: {
-        playerId,
+        playerId: playerId.toString(),
         week,
         season: 2024,
         gameId: stat.GameKey,
@@ -398,7 +407,7 @@ export class NFLDataService {
    */
   private async getPlayerIdByNflId(nflId: string): Promise<string | null> {
     const player = await prisma.player.findUnique({
-      where: { nflId },
+      where: { espnId: nflId },
       select: { id: true }
     });
     return player?.id || null;
@@ -436,7 +445,7 @@ export class NFLDataService {
           break;
       }
       
-      await prisma.stats.upsert({
+      await prisma.playerStats.upsert({
         where: {
           playerId_week_season: {
             playerId: player.id,
@@ -446,7 +455,8 @@ export class NFLDataService {
         },
         update: {
           fantasyPoints: Math.round(fantasyPoints * 100) / 100,
-          updatedAt: new Date()
+          // TODO: updatedAt field doesn't exist in PlayerStats model
+          // updatedAt: new Date()
         },
         create: {
           playerId: player.id,

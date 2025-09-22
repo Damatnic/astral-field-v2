@@ -422,29 +422,14 @@ class RealTimeAnalyticsService extends EventEmitter {
     const now = new Date();
     const lastHour = new Date(now.getTime() - 60 * 60 * 1000);
     
-    const lineupChanges = await prisma.lineupHistory.count({
-      where: {
-        submittedAt: {
-          gte: lastHour
-        }
-      }
-    });
+    // TODO: lineupHistory model doesn't exist in current schema
+    const lineupChanges = 0;
 
-    const tradeProposals = await prisma.trade.count({
-      where: {
-        createdAt: {
-          gte: lastHour
-        }
-      }
-    });
+    // TODO: trade model doesn't exist in current schema
+    const tradeProposals = 0;
 
-    const waiverClaims = await prisma.waiverClaim.count({
-      where: {
-        createdAt: {
-          gte: lastHour
-        }
-      }
-    });
+    // TODO: waiverClaim model doesn't exist in current schema
+    const waiverClaims = 0;
 
     return {
       lineupChanges,
@@ -549,7 +534,7 @@ class RealTimeAnalyticsService extends EventEmitter {
       await this.sendWebhookNotification(alert);
     }
 
-    logger.warn(`Alert triggered: ${rule.name}`, alert);
+    logger.warn(`Alert triggered: ${rule.name} - Alert ID: ${alert.id}`);
   }
 
   private async sendWebhookNotification(alert: any) {
@@ -577,9 +562,9 @@ class RealTimeAnalyticsService extends EventEmitter {
     // Note: EnhancedRedisCache doesn't have hincrby/expire methods
     // Using simple counter storage as workaround
     const currentCount = await redisCache.get(`${key}:events`) || '0';
-    await redisCache.set(`${key}:events`, (parseInt(currentCount) + 1).toString(), 3600);
+    await redisCache.set(`${key}:events`, (parseInt(currentCount as string) + 1).toString(), 3600);
     const eventCount = await redisCache.get(`${key}:events:${eventData.event}`) || '0';
-    await redisCache.set(`${key}:events:${eventData.event}`, (parseInt(eventCount) + 1).toString(), 3600);
+    await redisCache.set(`${key}:events:${eventData.event}`, (parseInt(eventCount as string) + 1).toString(), 3600);
   }
 
   private async loadAlertRules() {
