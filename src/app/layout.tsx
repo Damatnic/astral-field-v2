@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import AuthProvider from '@/components/AuthProvider';
+import QueryProvider from '@/components/QueryProvider';
 import { ResponsiveNavigation, SafeAreaProvider } from '@/components/mobile/ResponsiveUtils';
 import { ToastProvider } from '@/components/ui/Toast';
 
@@ -128,21 +129,23 @@ export default function RootLayout({
 
         {/* Auth Provider wraps everything to provide authentication context */}
         <AuthProvider>
-          <SafeAreaProvider>
-            <ToastProvider>
-            {/* Responsive Navigation component */}
-            <ResponsiveNavigation />
-            
-            {/* Main content area */}
-            <main 
-              id="main-content" 
-              className="min-h-screen"
-              role="main"
-            >
-              {children}
-            </main>
-            </ToastProvider>
-          </SafeAreaProvider>
+          <QueryProvider>
+            <SafeAreaProvider>
+              <ToastProvider>
+              {/* Responsive Navigation component */}
+              <ResponsiveNavigation />
+              
+              {/* Main content area */}
+              <main 
+                id="main-content" 
+                className="min-h-screen"
+                role="main"
+              >
+                {children}
+              </main>
+              </ToastProvider>
+            </SafeAreaProvider>
+          </QueryProvider>
 
           {/* Mobile-Responsive Footer */}
           <footer className="bg-white border-t border-gray-200 mt-auto">

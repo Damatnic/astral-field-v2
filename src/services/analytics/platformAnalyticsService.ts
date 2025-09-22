@@ -698,7 +698,7 @@ class PlatformAnalyticsService {
   }
 
   private async calculatePerformanceMetrics() {
-    // Get database performance statistics
+    // Get database performance statistics - force cache clear
     const dbStats = await getPerformanceStats();
     
     return {
