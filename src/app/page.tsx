@@ -391,8 +391,33 @@ const SelectedTeamPreview = ({ team, onConfirm, isAuthenticating }: any) => {
   );
 };
 
+// Test users for demo fallback
+const TEST_USERS = [
+  { name: "Nicholas D'Amato", email: "nicholas.damato@test.com" },
+  { name: "Nick Hartley", email: "nick.hartley@test.com" },
+  { name: "Jack McCaigue", email: "jack.mccaigue@test.com" },
+  { name: "Larry McCaigue", email: "larry.mccaigue@test.com" },
+  { name: "Renee McCaigue", email: "renee.mccaigue@test.com" },
+  { name: "Jon Kornbeck", email: "jon.kornbeck@test.com" },
+  { name: "David Jarvey", email: "david.jarvey@test.com" },
+  { name: "Kaity Lorbecki", email: "kaity.lorbecki@test.com" },
+  { name: "Cason Minor", email: "cason.minor@test.com" },
+  { name: "Brittany Bergum", email: "brittany.bergum@test.com" }
+];
+
 // Team color schemes for visual consistency
-const TEAM_COLORS = {
+const TEAM_COLORS: Record<string, { primary: string; secondary: string }> = {
+  "nicholas.damato@test.com": { primary: "#C41E3A", secondary: "#FFD700" },
+  "nick.hartley@test.com": { primary: "#00CED1", secondary: "#4682B4" },
+  "jack.mccaigue@test.com": { primary: "#FF4500", secondary: "#DC143C" },
+  "larry.mccaigue@test.com": { primary: "#32CD32", secondary: "#228B22" },
+  "renee.mccaigue@test.com": { primary: "#9370DB", secondary: "#8A2BE2" },
+  "jon.kornbeck@test.com": { primary: "#1E90FF", secondary: "#000080" },
+  "david.jarvey@test.com": { primary: "#FFA500", secondary: "#FF8C00" },
+  "kaity.lorbecki@test.com": { primary: "#FFB6C1", secondary: "#FF69B4" },
+  "cason.minor@test.com": { primary: "#40E0D0", secondary: "#48D1CC" },
+  "brittany.bergum@test.com": { primary: "#DA70D6", secondary: "#BA55D3" },
+  // Legacy mapping for old emails
   "nicholas@damato-dynasty.com": { primary: "#C41E3A", secondary: "#FFD700" },
   "nick@damato-dynasty.com": { primary: "#00CED1", secondary: "#4682B4" },
   "jack@damato-dynasty.com": { primary: "#FF4500", secondary: "#DC143C" },
@@ -405,7 +430,18 @@ const TEAM_COLORS = {
   "brittany@damato-dynasty.com": { primary: "#DA70D6", secondary: "#BA55D3" }
 };
 
-const TEAM_MOTTOS = {
+const TEAM_MOTTOS: Record<string, string> = {
+  "nicholas.damato@test.com": "Dynasty Starts Here",
+  "nick.hartley@test.com": "Heroes Always Win", 
+  "jack.mccaigue@test.com": "Mayhem on the Field",
+  "larry.mccaigue@test.com": "Legends Never Die",
+  "renee.mccaigue@test.com": "Reigning Supreme",
+  "jon.kornbeck@test.com": "Crushing Dreams Since Day One",
+  "david.jarvey@test.com": "Unstoppable Force",
+  "kaity.lorbecki@test.com": "Hear Us Roar",
+  "cason.minor@test.com": "Miracles Happen Every Sunday",
+  "brittany.bergum@test.com": "Blitz to Victory",
+  // Legacy mapping
   "nicholas@damato-dynasty.com": "Dynasty Starts Here",
   "nick@damato-dynasty.com": "Heroes Always Win", 
   "jack@damato-dynasty.com": "Mayhem on the Field",
@@ -446,6 +482,29 @@ const TeamSelectionLogin = () => {
         
         if (response.ok) {
           const data = await response.json();
+          
+          // If no teams found in database, use fallback data for demo
+          if (!data.teams || data.teams.length === 0) {
+            console.log('No teams found, using demo data');
+            // Use hardcoded demo data when database is empty
+            const demoTeams = TEST_USERS.map((user, index) => ({
+              id: `demo-${index}`,
+              owner: user.name,
+              teamName: TEAM_MOTTOS[user.email] ? user.name.split(' ')[0] + "'s Team" : user.name,
+              avatar: `/api/avatars/${user.name.split(' ')[0].toLowerCase()}`,
+              primaryColor: TEAM_COLORS[user.email]?.primary || "#1E90FF",
+              secondaryColor: TEAM_COLORS[user.email]?.secondary || "#000080",
+              record: '0-0',
+              ranking: index + 1,
+              trophies: 0,
+              points: '0',
+              motto: TEAM_MOTTOS[user.email] || "Ready to Play",
+              email: user.email
+            }));
+            setTeams(demoTeams);
+            return;
+          }
+          
           // Transform API data to match our component structure
           const transformedTeams = data.teams.map((team: any, index: number) => ({
             id: team.id,
