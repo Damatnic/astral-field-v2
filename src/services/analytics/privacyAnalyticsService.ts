@@ -142,7 +142,9 @@ class PrivacyAnalyticsService {
     } catch (error) {
       logger.error('Error recording consent:', error);
       throw new Error('Failed to record consent');
-    
+    }
+  }
+
   /**
    * Get user consent settings
    */
@@ -152,14 +154,16 @@ class PrivacyAnalyticsService {
       if (cached) {
         const encrypted = JSON.parse(cached);
         return this.decryptData(encrypted);
-     
+      }
+      
       // Could also check database for consent records
       return null;
 
     } catch (error) {
       logger.error('Error getting user consent:', error);
       return null;
-    
+    }
+  }
   /**
    * Withdraw consent
    */
@@ -168,12 +172,14 @@ class PrivacyAnalyticsService {
       const currentConsent = await this.getUserConsent(userId);
       if (!currentConsent) {
         throw new Error('No consent record found');
-     
+      }
+      
       // Update consent settings
       categories.forEach(category => {
         if (category in currentConsent) {
           (currentConsent as any)[category] = false;
-             });
+        }
+      });
 
       currentConsent.lastUpdated = new Date();
 
@@ -182,7 +188,8 @@ class PrivacyAnalyticsService {
       await redisCache.set(
         `consent:${userId}`,
         JSON.stringify(encryptedConsent),
-        86400 * 365      );
+        86400 * 365
+      );
 
       // Log withdrawal
       await this.logPrivacyAction({
@@ -196,13 +203,15 @@ class PrivacyAnalyticsService {
       // Trigger data cleanup if necessary
       if (categories.includes('analytics')) {
         await this.scheduleDataCleanup(userId, ['analytics']);
-     
+      }
+      
       logger.info(`Consent withdrawn for user ${userId}, categories: ${categories.join(', ')}`);
 
     } catch (error) {
       logger.error('Error withdrawing consent:', error);
       throw new Error('Failed to withdraw consent');
-    
+    }
+  }
   /**
    * Collect analytics data with privacy compliance
    */
@@ -218,13 +227,15 @@ class PrivacyAnalyticsService {
         // Collect anonymized data only
         await this.collectAnonymizedData(eventData);
         return;
-     
+      }
+      
       // Check retention policy
       const policy = this.retentionPolicies.get(category);
       if (!policy) {
         logger.warn(`No retention policy found for category: ${category}`);
         return;
-     
+      }
+      
       // Store data with metadata
       const dataRecord = {
         userId,
@@ -242,7 +253,7 @@ class PrivacyAnalyticsService {
       await redisCache.set(
         key,
         JSON.stringify(dataRecord),
-        policy.retentionPeriod * 24 * 60 * 60 } // Convert days to seconds
+        policy.retentionPeriod * 24 * 60 * 60 // Convert days to seconds
       );
 
       // Also store anonymized version for aggregate analytics
@@ -250,7 +261,8 @@ class PrivacyAnalyticsService {
 
     } catch (error) {
       logger.error('Error collecting analytics data:', error);
-    
+    }
+  }
   /**
    * Collect anonymized analytics data
    */
@@ -274,12 +286,13 @@ class PrivacyAnalyticsService {
       await redisCache.set(
         key,
         JSON.stringify(anonymizedData),
-        86400 * 90 } // 90 days for anonymized data
+        86400 * 90 // 90 days for anonymized data
       );
 
     } catch (error) {
       logger.error('Error collecting anonymized data:', error);
-    
+    }
+  }
   /**
    * Process data export request (GDPR Article 15)
    */
@@ -300,11 +313,14 @@ class PrivacyAnalyticsService {
           userSessions: {
             orderBy: { createdAt: 'desc' },
             take: 100 // Limit session history
-                      });
+          }
+        }
+      });
 
       if (!user) {
         throw new Error('User not found');
-     
+      }
+      
       // Add user profile data
       exportData.profile = {
         id: user.id,
@@ -318,7 +334,8 @@ class PrivacyAnalyticsService {
       const consent = await this.getUserConsent(request.userId);
       if (consent?.analytics) {
         exportData.analyticsData = await this.getUserAnalyticsData(request.userId);
-     
+      }
+      
       // Add session data
       exportData.sessions = user.userSessions.map(session => ({
         id: session.id,
@@ -336,7 +353,7 @@ class PrivacyAnalyticsService {
       await redisCache.set(
         `export:${exportId}`,
         exportContent,
-        86400 * 7 } // 7 days
+        86400 * 7 // 7 days
       );
 
       // Log export action
@@ -357,7 +374,8 @@ class PrivacyAnalyticsService {
     } catch (error) {
       logger.error('Error processing data export:', error);
       throw new Error('Failed to process data export request');
-    
+    }
+  }
   /**
    * Process data deletion request (GDPR Article 17)
    */
@@ -369,7 +387,8 @@ class PrivacyAnalyticsService {
       } else {
         // Delete specific categories
         await this.deleteUserDataByCategory(request.userId, request.categories || []);
-     
+      }
+      
       // Log deletion action
       await this.logPrivacyAction({
         userId: request.userId,
@@ -388,7 +407,8 @@ class PrivacyAnalyticsService {
     } catch (error) {
       logger.error('Error processing data deletion:', error);
       throw new Error('Failed to process data deletion request');
-    
+    }
+  }
   /**
    * Get anonymized aggregate metrics
    */
@@ -402,7 +422,8 @@ class PrivacyAnalyticsService {
         if (data) {
           metrics.push(JSON.parse(data));
         }
-      }    
+      }
+      
       // Filter by time range
       const cutoff = this.getTimeRangeCutoff(timeRange);
       const filteredMetrics = metrics.filter(m => new Date(m.timestamp) >= cutoff);
@@ -413,7 +434,8 @@ class PrivacyAnalyticsService {
     } catch (error) {
       logger.error('Error getting anonymized metrics:', error);
       throw new Error('Failed to get anonymized metrics');
-    
+    }
+  }
   // Private helper methods
 
   private initializeRetentionPolicies() {
@@ -449,18 +471,19 @@ class PrivacyAnalyticsService {
         anonymizeAfter: 180, // 6 months
         description: 'Marketing campaigns and user preferences',
         legalBasis: 'consent'
-         ];
+      }
+    ];
 
     policies.forEach(policy => {
       this.retentionPolicies.set(policy.category, policy);
     });
- 
+  }
   private startCleanupSchedule() {
     // Run cleanup every 24 hours
     setInterval(async () => {
       await this.runDataCleanup();
     }, 24 * 60 * 60 * 1000);
- 
+  }
   private async runDataCleanup() {
     try {
       logger.info('Starting scheduled data cleanup');
@@ -472,7 +495,9 @@ class PrivacyAnalyticsService {
         const ttl = await redisCache.ttl(key);
         if (ttl <= 0) {
           await redisCache.del(key);
-            
+        }
+      }
+      
       // Clean up old anonymized data
       const anonymizedKeys = await redisCache.keys('anonymized_analytics:*');
       for (const key of anonymizedKeys) {
@@ -484,30 +509,34 @@ class PrivacyAnalyticsService {
           
           if (age > maxAge) {
             await redisCache.del(key);
-                     
+          }
+        }
+      }
+      
       logger.info('Data cleanup completed');
 
     } catch (error) {
       logger.error('Error in data cleanup:', error);
-    
+    }
+  }
   private encryptData(data: any): string {
     const cipher = crypto.createCipher('aes-256-gcm', this.hashSalt);
     let encrypted = cipher.update(JSON.stringify(data), 'utf8', 'hex');
     encrypted += cipher.final('hex');
     return encrypted;
- 
+  }
   private decryptData(encryptedData: string): any {
     const decipher = crypto.createDecipher('aes-256-gcm', this.hashSalt);
     let decrypted = decipher.update(encryptedData, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
     return JSON.parse(decrypted);
- 
+  }
   private hashUserId(userId: string): string {
     return crypto.createHash('sha256').update(userId + this.hashSalt).digest('hex').substr(0, 16);
- 
+  }
   private hashData(data: string): string {
     return crypto.createHash('sha256').update(data + this.hashSalt).digest('hex');
- 
+  }
   private hasConsentForCategory(consent: ConsentSettings, category: string): boolean {
     switch (category) {
       case 'analytics': return consent.analytics;
@@ -515,22 +544,25 @@ class PrivacyAnalyticsService {
       case 'marketing': return consent.marketing;
       case 'personalization': return consent.personalization;
       default: return false;
-    
+    }
+  }
   private getUserSegment(eventData: any): string {
     // Segment users anonymously based on behavior
     if (eventData.premium) return 'premium';
     if (eventData.sessions > 10) return 'active';
     if (eventData.sessions < 3) return 'new';
     return 'regular';
- 
+  }
   private getDeviceType(userAgent: string = ''): 'mobile' | 'desktop' | 'tablet' {
     const ua = userAgent.toLowerCase();
     if (ua.includes('mobile') || ua.includes('android') || ua.includes('iphone')) {
       return 'mobile';
-       if (ua.includes('tablet') || ua.includes('ipad')) {
+    }
+    if (ua.includes('tablet') || ua.includes('ipad')) {
       return 'tablet';
-       return 'desktop';
- 
+    }
+    return 'desktop';
+  }
   private anonymizeLocation(location: any): { country: string; region?: string } {
     if (!location) return { country: 'unknown' };
     
@@ -539,7 +571,7 @@ class PrivacyAnalyticsService {
       country: location.country || 'unknown',
       region: location.population > 10000 ? location.region : undefined
     };
- 
+  }
   private anonymizeReferrer(referrer: string = ''): string {
     if (!referrer) return 'direct';
     
@@ -548,7 +580,8 @@ class PrivacyAnalyticsService {
       return url.hostname; // Only return domain, not full URL
     } catch {
       return 'unknown';
-    
+    }
+  }
   private async logPrivacyAction(log: Omit<PrivacyAuditLog, 'id'>): Promise<void> {
     const logEntry: PrivacyAuditLog = {
       id: crypto.randomUUID(),
@@ -559,9 +592,9 @@ class PrivacyAnalyticsService {
     await redisCache.set(
       `privacy_log:${logEntry.id}`,
       JSON.stringify(logEntry),
-      86400 * 2555 } // 7 years retention for audit logs
+      86400 * 2555 // 7 years retention for audit logs
     );
- 
+  }
   private async scheduleDataCleanup(userId: string, categories: string[]): Promise<void> {
     const cleanupJob = {
       userId,
@@ -573,9 +606,9 @@ class PrivacyAnalyticsService {
     await redisCache.set(
       `cleanup_job:${userId}:${Date.now()}`,
       JSON.stringify(cleanupJob),
-      86400 } // 24 hours
+      86400 // 24 hours
     );
- 
+  }
   private async getUserAnalyticsData(userId: string): Promise<any[]> {
     const keys = await redisCache.keys(`analytics_data:${userId}:*`);
     const data = [];
@@ -584,9 +617,11 @@ class PrivacyAnalyticsService {
       const record = await redisCache.get(key);
       if (record) {
         data.push(JSON.parse(record));
-        
+      }
+    }
+    
     return data;
- 
+  }
   private formatExportData(data: any, format: string): string {
     switch (format) {
       case 'json':
@@ -597,7 +632,8 @@ class PrivacyAnalyticsService {
         return this.convertToXML(data);
       default:
         return JSON.stringify(data, null, 2);
-    
+    }
+  }
   private convertToCSV(data: any): string {
     // Simple CSV conversion - would be more sophisticated in practice
     const headers = Object.keys(data.profile || {});
@@ -605,9 +641,10 @@ class PrivacyAnalyticsService {
     
     if (data.profile) {
       rows.push(Object.values(data.profile).join(','));
+    }
        
     return rows.join('\n');
- 
+  }
   private convertToXML(data: any): string {
     // Simple XML conversion - would use proper XML library in practice
     let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<export>\n';
@@ -619,13 +656,16 @@ class PrivacyAnalyticsService {
           result += `${indent}<${key}>\n${objectToXML(value, indent + '  ')}${indent}</${key}>\n`;
         } else {
           result += `${indent}<${key}>${value}</${key}>\n`;
-                  return result;
-       
+        }
+      }
+      return result;
+    }
+    
     xml += objectToXML(data);
     xml += '</export>';
     
     return xml;
- 
+  }
   private async deleteAllUserData(userId: string): Promise<void> {
     // Delete from database tables
     await prisma.userSession.deleteMany({ where: { userId } });
@@ -636,21 +676,24 @@ class PrivacyAnalyticsService {
     const keys = await redisCache.keys(`analytics_data:${userId}:*`);
     for (const key of keys) {
       await redisCache.del(key);
+    }
        
     // Delete consent data
     await redisCache.del(`consent:${userId}`);
- 
+  }
   private async deleteUserDataByCategory(userId: string, categories: string[]): Promise<void> {
     for (const category of categories) {
       const keys = await redisCache.keys(`analytics_data:${userId}:${category}:*`);
       for (const key of keys) {
         await redisCache.del(key);
-         
+      }
+    }
+  }
   private getTimeRangeCutoff(timeRange: string): Date {
     const now = new Date();
     const days = parseInt(timeRange.replace('d', '')) || 30;
     return new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
- 
+  }
   private aggregateAnonymizedMetrics(metrics: AnonymizedMetrics[]): any {
     return {
       totalSessions: metrics.length,
@@ -663,7 +706,7 @@ class PrivacyAnalyticsService {
       topCountries: this.getTopCountries(metrics),
       featureUsage: this.aggregateFeatureUsage(metrics)
     };
- 
+  }
   private getTopCountries(metrics: AnonymizedMetrics[]): Array<{ country: string; count: number }> {
     const countryCount: { [country: string]: number } = {};
     
@@ -675,7 +718,7 @@ class PrivacyAnalyticsService {
       .sort(([,a], [,b]) => b - a)
       .slice(0, 10)
       .map(([country, count]) => ({ country, count }));
- 
+  }
   private aggregateFeatureUsage(metrics: AnonymizedMetrics[]): { [feature: string]: number } {
     const featureCount: { [feature: string]: number } = {};
     
@@ -686,6 +729,7 @@ class PrivacyAnalyticsService {
     });
     
     return featureCount;
- }
+  }
+}
 
 export const privacyAnalyticsService = new PrivacyAnalyticsService();
