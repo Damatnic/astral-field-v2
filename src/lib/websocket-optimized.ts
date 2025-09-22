@@ -351,7 +351,7 @@ class OptimizedWebSocketManager {
     if (this.socket?.connected) {
       try {
         if (room) {
-          this.socket.to(room).emit(type, data);
+          (this.socket as any).to(room).emit(type, data);
         } else {
           this.socket.emit(type, data);
         }
