@@ -549,7 +549,7 @@ class PlatformAnalyticsService {
     });
 
     // Active users based on session activity
-    const activeUsersToday = await prisma.userSession.groupBy({
+    const activeUsersToday = await (prisma.userSession.groupBy as any)({
       by: ['userId'],
       where: {
         lastActivity: {
@@ -558,7 +558,7 @@ class PlatformAnalyticsService {
       }
     });
 
-    const activeUsersThisWeek = await prisma.userSession.groupBy({
+    const activeUsersThisWeek = await (prisma.userSession.groupBy as any)({
       by: ['userId'],
       where: {
         lastActivity: {
@@ -567,7 +567,7 @@ class PlatformAnalyticsService {
       }
     });
 
-    const activeUsersThisMonth = await prisma.userSession.groupBy({
+    const activeUsersThisMonth = await (prisma.userSession.groupBy as any)({
       by: ['userId'],
       where: {
         lastActivity: {

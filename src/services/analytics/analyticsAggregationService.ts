@@ -487,7 +487,7 @@ class AnalyticsAggregationService extends EventEmitter {
     startTime: Date,
     endTime: Date
   ): Promise<AggregatedData[]> {
-    const stats = await prisma.playerStats.groupBy({
+    const stats = await (prisma.playerStats.groupBy as any)({
       by: ['playerId', 'week'],
       where: {
         createdAt: {
@@ -538,7 +538,7 @@ class AnalyticsAggregationService extends EventEmitter {
     startTime: Date,
     endTime: Date
   ): Promise<AggregatedData[]> {
-    const transactions = await prisma.transaction.groupBy({
+    const transactions = await (prisma.transaction.groupBy as any)({
       by: ['type', 'leagueId'],
       where: {
         createdAt: {
@@ -582,7 +582,7 @@ class AnalyticsAggregationService extends EventEmitter {
     startTime: Date,
     endTime: Date
   ): Promise<AggregatedData[]> {
-    const matchups = await prisma.matchup.groupBy({
+    const matchups = await (prisma.matchup.groupBy as any)({
       by: ['week', 'leagueId'],
       where: {
         createdAt: {
@@ -636,7 +636,7 @@ class AnalyticsAggregationService extends EventEmitter {
     startTime: Date,
     endTime: Date
   ): Promise<AggregatedData[]> {
-    const trades = await prisma.tradeProposal.groupBy({
+    const trades = await (prisma.tradeProposal.groupBy as any)({
       by: ['status'],
       where: {
         createdAt: {
@@ -671,7 +671,7 @@ class AnalyticsAggregationService extends EventEmitter {
     startTime: Date,
     endTime: Date
   ): Promise<AggregatedData[]> {
-    const waivers = await prisma.transaction.groupBy({
+    const waivers = await (prisma.transaction.groupBy as any)({
       by: ['leagueId'],
       where: {
         type: 'waiver',

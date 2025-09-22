@@ -346,7 +346,7 @@ class UserAnalyticsService {
   }
 
   private async calculateActiveUsers(startDate: Date, endDate: Date) {
-    const dailyActive = await prisma.userSession.groupBy({
+    const dailyActive = await (prisma.userSession.groupBy as any)({
       by: ['userId'],
       where: {
         lastActivity: {
@@ -355,7 +355,7 @@ class UserAnalyticsService {
       }
     });
 
-    const weeklyActive = await prisma.userSession.groupBy({
+    const weeklyActive = await (prisma.userSession.groupBy as any)({
       by: ['userId'],
       where: {
         lastActivity: {
@@ -364,7 +364,7 @@ class UserAnalyticsService {
       }
     });
 
-    const monthlyActive = await prisma.userSession.groupBy({
+    const monthlyActive = await (prisma.userSession.groupBy as any)({
       by: ['userId'],
       where: {
         lastActivity: {
