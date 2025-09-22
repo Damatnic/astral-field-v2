@@ -165,7 +165,7 @@ export class SleeperRealTimeScoringService {
       const isLive = await this.isCurrentlyLive();
 
       // Calculate matchup scores
-      const matchupScores = await this.calculateMatchupScores(league, currentWeek, season);
+      const matchupScores = await this.calculateMatchupScores(league, currentWeek, parseInt(season));
 
       // Update database with new scores
       await this.updateMatchupScoresInDatabase(leagueId, currentWeek, matchupScores);
@@ -173,7 +173,7 @@ export class SleeperRealTimeScoringService {
       const liveUpdate: LiveScoreUpdate = {
         leagueId,
         week: currentWeek,
-        season,
+        season: parseInt(season),
         matchups: matchupScores,
         lastUpdated: new Date().toISOString(),
         isLive,
@@ -207,7 +207,7 @@ export class SleeperRealTimeScoringService {
       where: {
         leagueId: league.id,
         week,
-        season,
+        season: season.toString(),
       },
       include: {
         homeTeam: true,
@@ -340,7 +340,7 @@ export class SleeperRealTimeScoringService {
       where: {
         playerId: player.id,
         week,
-        season,
+        season: season.toString(),
       },
     });
 
@@ -361,7 +361,7 @@ export class SleeperRealTimeScoringService {
       where: {
         playerId: player.id,
         week,
-        season,
+        season: season.toString(),
       },
     });
 

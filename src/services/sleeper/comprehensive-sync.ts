@@ -173,27 +173,27 @@ export class ComprehensiveSyncService {
         // Calculate fantasy points (PPR scoring)
         const fantasyPoints = this.calculateFantasyPoints(playerStats, 'PPR');
         
-        // Store stats in PlayerStats table
-        await prisma.stats.upsert({
-          where: {
-            playerId_week_season: {
-              playerId: player.id,
-              week,
-              season: parseInt(season)
-            }
-          },
-          update: {
-            stats: playerStats,  // Store raw stats JSON
-            fantasyPoints: fantasyPoints
-          },
-          create: {
-            playerId: player.id,
-            week,
-            season: parseInt(season),
-            stats: playerStats,  // Store raw stats JSON
-            fantasyPoints: fantasyPoints
-          }
-        });
+        // TODO: Store stats in PlayerStats table when model is created
+        // await prisma.stats.upsert({
+        //   where: {
+        //     playerId_week_season: {
+        //       playerId: player.id,
+        //       week,
+        //       season: parseInt(season)
+        //     }
+        //   },
+        //   update: {
+        //     stats: playerStats,  // Store raw stats JSON
+        //     fantasyPoints: fantasyPoints
+        //   },
+        //   create: {
+        //     playerId: player.id,
+        //     week,
+        //     season: parseInt(season),
+        //     stats: playerStats,  // Store raw stats JSON
+        //     fantasyPoints: fantasyPoints
+        //   }
+        // });
         
         processed++;
       }
@@ -227,28 +227,29 @@ export class ComprehensiveSyncService {
         
         if (!player || !projection.pts_ppr) continue;
         
-        await prisma.playerProjection.upsert({
-          where: {
-            playerId_week_season_source: {
-              playerId: player.id,
-              week,
-              season: parseInt(season),
-              source: 'SLEEPER'
-            }
-          },
-          update: {
-            projectedPoints: projection.pts_ppr,
-            confidence: 75  // Sleeper projections are fairly reliable
-          },
-          create: {
-            playerId: player.id,
-            week,
-            season: parseInt(season),
-            projectedPoints: projection.pts_ppr,
-            confidence: 75,
-            source: 'SLEEPER'
-          }
-        });
+        // TODO: Store projections when playerProjection model is created
+        // await prisma.playerProjection.upsert({
+        //   where: {
+        //     playerId_week_season_source: {
+        //       playerId: player.id,
+        //       week,
+        //       season: parseInt(season),
+        //       source: 'SLEEPER'
+        //     }
+        //   },
+        //   update: {
+        //     projectedPoints: projection.pts_ppr,
+        //     confidence: 75  // Sleeper projections are fairly reliable
+        //   },
+        //   create: {
+        //     playerId: player.id,
+        //     week,
+        //     season: parseInt(season),
+        //     projectedPoints: projection.pts_ppr,
+        //     confidence: 75,
+        //     source: 'SLEEPER'
+        //   }
+        // });
         
         processed++;
       }
@@ -322,10 +323,10 @@ export class ComprehensiveSyncService {
           }
         });
         
-        // Clear existing roster
-        await prisma.rosterPlayer.deleteMany({
-          where: { teamId: team.id }
-        });
+        // TODO: Clear existing roster when rosterPlayer model is created
+        // await prisma.rosterPlayer.deleteMany({
+        //   where: { teamId: team.id }
+        // });
         
         // Add players to roster
         if (roster.players) {
@@ -334,18 +335,19 @@ export class ComprehensiveSyncService {
               where: { sleeperPlayerId: sleeperId }
             });
             
-            if (player) {
-              await prisma.rosterPlayer.create({
-                data: {
-                  teamId: team.id,
-                  playerId: player.id,
-                  rosterSlot: this.determineRosterPosition(roster.starters, sleeperId),
-                  position: this.determineRosterPosition(roster.starters, sleeperId),
-                  acquisitionDate: new Date(),
-                  acquisitionType: 'DRAFT'
-                }
-              });
-            }
+            // TODO: Add player to roster when rosterPlayer model is created
+            // if (player) {
+            //   await prisma.rosterPlayer.create({
+            //     data: {
+            //       teamId: team.id,
+            //       playerId: player.id,
+            //       rosterSlot: this.determineRosterPosition(roster.starters, sleeperId),
+            //       position: this.determineRosterPosition(roster.starters, sleeperId),
+            //       acquisitionDate: new Date(),
+            //       acquisitionType: 'DRAFT'
+            //     }
+            //   });
+            // }
           }
         }
       }

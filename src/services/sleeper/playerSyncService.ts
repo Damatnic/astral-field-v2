@@ -609,8 +609,8 @@ export class PlayerSyncService {
         where: {
           playerId_week_season: {
             playerId: player.id,
-            week,
-            season
+            week: week,
+            season: season.toString()
           }
         },
         update: {
@@ -619,8 +619,8 @@ export class PlayerSyncService {
         },
         create: {
           playerId: player.id,
-          week,
-          season,
+          week: week,
+          season: season.toString(),
           stats: playerStats as any,
           fantasyPoints,
           isProjection: false

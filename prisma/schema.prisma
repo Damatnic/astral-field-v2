@@ -138,6 +138,7 @@ model Team {
   awayMatchups    Matchup[] @relation("AwayTeam")
   transactions    Transaction[]
   tradeProposals  TradeProposal[]
+  rosterPlayers   RosterPlayer[]
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   
@@ -173,6 +174,7 @@ model Player {
   stats           PlayerStats[]
   projections     Projection[]
   roster          Roster[]
+  rosterPlayers   RosterPlayer[]
   news            PlayerNews[]
   byeWeek         Int?
   adp             Float?    // Average Draft Position
@@ -213,6 +215,7 @@ model PlayerStats {
   player          Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
   week            Int
   season          String
+  gameId          String?   // Added gameId field
   gameDate        DateTime?
   opponent        String?
   stats           Json      // All stats in JSON format
@@ -370,6 +373,28 @@ model UserPreferences {
   @@map("user_preferences")
 }
 
+// ==================== ROSTER PLAYER ====================
+
+model RosterPlayer {
+  id              String    @id @default(cuid())
+  teamId          String
+  team            Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  playerId        String
+  player          Player    @relation(fields: [playerId], references: [id])
+  position        Position
+  isStarter       Boolean   @default(true)
+  isLocked        Boolean   @default(false)
+  acquisitionDate DateTime  @default(now())
+  acquisitionType String    @default("draft")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@unique([teamId, playerId])
+  @@index([teamId])
+  @@index([playerId])
+  @@map("roster_players")
+}
+
 // ==================== ENUMS ====================
 
 enum Position {
@@ -384,6 +409,11 @@ enum Position {
   SUPER_FLEX
   BENCH
   IR
+  LB
+  DB
+  DL
+  CB
+  S
 }
 
 enum RosterSlot {

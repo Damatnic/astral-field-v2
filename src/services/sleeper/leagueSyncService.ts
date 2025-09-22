@@ -6,6 +6,7 @@ import { nflStateService } from './nflStateService';
 import { prisma as db } from '@/lib/db';
 import { handleComponentError } from '@/lib/error-handling';
 import { Position, PlayerStatus } from '@/types/fantasy';
+import { Position as PrismaPosition } from '@prisma/client';
 
 export interface LeagueSyncResult {
   leagueId: string;
@@ -245,22 +246,15 @@ export class SleeperLeagueSyncService {
           name: sleeperPlayer.name,
           firstName: sleeperPlayer.firstName,
           lastName: sleeperPlayer.lastName,
-          position: sleeperPlayer.position as Position,
+          position: this.mapPlayerPosition(sleeperPlayer.position),
           nflTeam: sleeperPlayer.nflTeam,
           age: sleeperPlayer.age,
           status: this.mapPlayerStatus(sleeperPlayer.status),
           injuryStatus: sleeperPlayer.injuryStatus,
-          yearsExperience: sleeperPlayer.yearsExperience || 0,
+          experience: sleeperPlayer.yearsExperience || 0,
           height: sleeperPlayer.height,
           weight: sleeperPlayer.weight,
           college: sleeperPlayer.college,
-          searchRank: sleeperPlayer.searchRank,
-          isFantasyRelevant: sleeperPlayer.isFantasyRelevant,
-          isActive: sleeperPlayer.isActive,
-          fantasyPositions: sleeperPlayer.fantasyPositions || [],
-          depthChartPosition: sleeperPlayer.depthChartPosition,
-          depthChartOrder: sleeperPlayer.depthChartOrder,
-          lastUpdated: new Date(),
         },
       });} catch (error) {
       handleComponentError(error as Error, 'leagueSyncService');
@@ -283,6 +277,28 @@ export class SleeperLeagueSyncService {
     };
 
     return statusMap[sleeperStatus] || PlayerStatus.ACTIVE;
+  }
+
+  /**
+   * Map Sleeper position to database Position enum
+   */
+  private mapPlayerPosition(sleeperPosition: string): PrismaPosition {
+    const positionMap: { [key: string]: PrismaPosition } = {
+      'QB': PrismaPosition.QB,
+      'RB': PrismaPosition.RB,
+      'WR': PrismaPosition.WR,
+      'TE': PrismaPosition.TE,
+      'K': PrismaPosition.K,
+      'DEF': PrismaPosition.DEF,
+      'DST': PrismaPosition.DST,
+      'LB': PrismaPosition.LB,
+      'DB': PrismaPosition.DB,
+      'DL': PrismaPosition.DL,
+      'CB': PrismaPosition.CB,
+      'S': PrismaPosition.S,
+    };
+    
+    return positionMap[sleeperPosition] || PrismaPosition.BENCH;
   }
 
   /**

@@ -352,7 +352,7 @@ export class NFLDataService {
         playerId_week_season: {
           playerId: playerId.toString(),
           week,
-          season: 2024
+          season: "2024"
         }
       },
       update: {
@@ -364,9 +364,8 @@ export class NFLDataService {
       create: {
         playerId: playerId.toString(),
         week,
-        season: 2024,
+        season: "2024",
         gameId: stat.GameKey,
-        team: stat.Team,
         opponent: stat.Opponent,
         stats: stat,
         fantasyPoints,
@@ -450,7 +449,7 @@ export class NFLDataService {
           playerId_week_season: {
             playerId: player.id,
             week,
-            season: 2024
+            season: "2024"
           }
         },
         update: {
@@ -461,7 +460,7 @@ export class NFLDataService {
         create: {
           playerId: player.id,
           week,
-          season: 2024,
+          season: "2024",
           stats: {},
           fantasyPoints: Math.round(fantasyPoints * 100) / 100,
           isProjection: false

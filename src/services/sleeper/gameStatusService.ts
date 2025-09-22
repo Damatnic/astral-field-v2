@@ -654,6 +654,22 @@ export class GameStatusService {
   }
 
   /**
+   * Calculate week completion percentage based on completed games
+   */
+  private calculateCompletionPercentage(gameDays: GameDay[]): number {
+    if (!gameDays || gameDays.length === 0) return 0;
+    
+    const totalGames = gameDays.reduce((sum, day) => sum + day.totalGames, 0);
+    if (totalGames === 0) return 0;
+    
+    const completedGames = gameDays.reduce((sum, day) => 
+      sum + day.games.filter(g => g.status.state === 'final').length, 0
+    );
+    
+    return Math.round((completedGames / totalGames) * 100);
+  }
+
+  /**
    * Get service health status
    */
   getHealthStatus(): {

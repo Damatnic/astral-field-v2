@@ -107,16 +107,16 @@ export class TradeAnalyzer {
       include: {
         projections: {
           where: {
-            season: this.season,
+            season: this.season.toString(),
             week: {
               gte: this.currentWeek,
               lte: this.currentWeek + 4
             } // Next 4 weeks
           }
         },
-        playerStats: {
+        stats: {
           where: {
-            season: this.season,
+            season: this.season.toString(),
             week: {
               gte: Math.max(1, this.currentWeek - 4),
               lt: this.currentWeek
@@ -267,7 +267,7 @@ export class TradeAnalyzer {
               include: {
                 projections: {
                   where: {
-                    season: this.season,
+                    season: this.season.toString(),
                     week: { gte: this.currentWeek }
                   }
                 }
