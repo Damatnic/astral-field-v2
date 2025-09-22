@@ -378,13 +378,8 @@ class RealTimeAnalyticsService extends EventEmitter {
     const lastHour = new Date(now.getTime() - 60 * 60 * 1000);
     
     // Get audit logs for activity tracking
-    const auditLogs = await prisma.auditLog.findMany({
-      where: {
-        createdAt: {
-          gte: lastHour
-        }
-      }
-    });
+    // TODO: auditLog model doesn't exist in current schema
+    const auditLogs: any[] = [];
 
     // Count different types of activity
     const pageViews = auditLogs.filter(log => log.action.includes('VIEW')).length;
