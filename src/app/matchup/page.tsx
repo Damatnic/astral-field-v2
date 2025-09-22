@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Trophy, Users, Calendar, TrendingUp, Shield, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -41,9 +41,9 @@ export default function MatchupsPage() {
 
   useEffect(() => {
     fetchMatchups();
-  }, [selectedWeek]);
+  }, [fetchMatchups]);
 
-  const fetchMatchups = async () => {
+  const fetchMatchups = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch(`/api/matchups?week=${selectedWeek}`);
@@ -59,7 +59,7 @@ export default function MatchupsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedWeek]);
 
   const getMatchupStatus = (matchup: Matchup) => {
     if (matchup.status === 'completed') {

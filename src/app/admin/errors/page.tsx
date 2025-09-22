@@ -5,7 +5,7 @@
  * Comprehensive error monitoring and analytics dashboard for administrators
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { 
   AlertTriangle, 
@@ -92,7 +92,7 @@ export default function ErrorDashboard() {
   const [refreshing, setRefreshing] = useState(false);
 
   // Fetch dashboard data
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
       setRefreshing(true);
       const params = new URLSearchParams({
@@ -117,17 +117,17 @@ export default function ErrorDashboard() {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [timeRange, filters]);
 
   useEffect(() => {
     fetchDashboardData();
-  }, [timeRange, filters]);
+  }, [fetchDashboardData]);
 
   // Auto-refresh every 30 seconds
   useEffect(() => {
     const interval = setInterval(fetchDashboardData, 30000);
     return () => clearInterval(interval);
-  }, [timeRange, filters]);
+  }, [fetchDashboardData]);
 
   const getSeverityColor = (severity: ErrorSeverity) => {
     switch (severity) {

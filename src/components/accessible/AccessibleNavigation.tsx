@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useAccessibility, AccessibleButton, FocusManager } from '@/utils/accessibility';
 import {
@@ -41,7 +41,7 @@ export function AccessibleNavigation() {
   const menuButtonRef = useRef<HTMLButtonElement>(null);
 
   // Navigation structure
-  const navigationItems: NavigationItem[] = [
+  const navigationItems: NavigationItem[] = useMemo(() => [
     {
       id: 'dashboard',
       label: 'Dashboard',
@@ -106,7 +106,7 @@ export function AccessibleNavigation() {
       shortcut: 'S',
       description: 'Customize your fantasy football experience'
     }
-  ];
+  ], []);
 
   // Flatten navigation for keyboard navigation
   const flattenedItems = React.useMemo(() => {
@@ -120,7 +120,7 @@ export function AccessibleNavigation() {
       }, [] as (NavigationItem & { depth: number })[]);
     };
     return flatten(navigationItems);
-  }, [expandedItems]);
+  }, [expandedItems, navigationItems]);
 
   // Handle keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -247,7 +247,7 @@ export function AccessibleNavigation() {
       document.addEventListener('keydown', handleGlobalKeyDown);
       return () => document.removeEventListener('keydown', handleGlobalKeyDown);
     }
-  }, [isOpen, settings.keyboardNavigation]);
+  }, [isOpen, settings.keyboardNavigation, navigationItems, announceToScreenReader]);
 
   return (
     <>

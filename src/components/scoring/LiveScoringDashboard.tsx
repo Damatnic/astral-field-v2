@@ -2,7 +2,7 @@
 
 
 import { handleComponentError } from '@/lib/error-handling';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Activity,
@@ -121,9 +121,9 @@ export function LiveScoringDashboard({
         socketRef.current.disconnect();
       }
     };
-  }, [leagueId, week]);
+  }, [leagueId, week, fetchInitialData, handleMatchupUpdate]);
 
-  const fetchInitialData = async () => {
+  const fetchInitialData = useCallback(async () => {
     try {
       const response = await fetch(`/api/scoring/live?leagueId=${leagueId}&week=${week}`);
       if (response.ok) {
@@ -138,7 +138,7 @@ export function LiveScoringDashboard({
     } catch (error) {
       handleComponentError(error as Error, 'LiveScoringDashboard');
     }
-  };
+  }, [leagueId, week]);
 
   const handleScoreUpdate = (data: any) => {
     setMatchups(prev => prev.map(m => 
@@ -155,7 +155,7 @@ export function LiveScoringDashboard({
     }
   };
 
-  const handleMatchupUpdate = (matchup: Matchup) => {
+  const handleMatchupUpdate = useCallback((matchup: Matchup) => {
     setMatchups(prev => prev.map(m => 
       m.matchupId === matchup.matchupId ? matchup : m
     ));
@@ -163,7 +163,7 @@ export function LiveScoringDashboard({
     if (selectedMatchup?.matchupId === matchup.matchupId) {
       setSelectedMatchup(matchup);
     }
-  };
+  }, [selectedMatchup]);
 
   const getScoreDifferenceColor = (diff: number) => {
     if (Math.abs(diff) < 5) return 'text-yellow-500';

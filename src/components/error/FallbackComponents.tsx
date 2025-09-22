@@ -5,7 +5,7 @@
  * Provides graceful error states and recovery mechanisms for better UX
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   AlertTriangle, 
@@ -149,6 +149,17 @@ export function DatabaseErrorFallback({
   const [autoRetry, setAutoRetry] = useState(true);
   const [countdown, setCountdown] = useState(10);
 
+  const handleRetry = useCallback(async () => {
+    if (onRetry) {
+      setIsRetrying(true);
+      try {
+        await onRetry();
+      } finally {
+        setIsRetrying(false);
+      }
+    }
+  }, [onRetry]);
+
   useEffect(() => {
     if (!autoRetry || !onRetry) return;
 
@@ -163,18 +174,7 @@ export function DatabaseErrorFallback({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [autoRetry, onRetry]);
-
-  const handleRetry = async () => {
-    if (onRetry) {
-      setIsRetrying(true);
-      try {
-        await onRetry();
-      } finally {
-        setIsRetrying(false);
-      }
-    }
-  };
+  }, [autoRetry, onRetry, handleRetry]);
 
   return (
     <motion.div

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -58,7 +58,7 @@ export default function AnalyticsPage() {
   const [leagueStats, setLeagueStats] = useState<LeagueStats | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch('/api/analytics');
@@ -82,12 +82,12 @@ export default function AnalyticsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [mockTeamStats, mockLeagueStats]);
 
   // Fetch real data on mount
   useEffect(() => {
     fetchAnalytics();
-  }, []);
+  }, [fetchAnalytics]);
 
   // Mock data for D'Amato Dynasty League (fallback)
   const mockTeamStats: TeamStats[] = [

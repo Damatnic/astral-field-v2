@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import LineupManager from '@/components/team/LineupManager';
 import { ArrowLeft, Trophy, TrendingUp, Clock, Loader2 } from 'lucide-react';
@@ -17,9 +17,9 @@ export default function LineupPage() {
 
   useEffect(() => {
     fetchTeamData();
-  }, [teamId]);
+  }, [fetchTeamData]);
 
-  const fetchTeamData = async () => {
+  const fetchTeamData = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch(`/api/teams/${teamId}`);
@@ -35,7 +35,7 @@ export default function LineupPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [teamId]);
 
   if (loading) {
     return (

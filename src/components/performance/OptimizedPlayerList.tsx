@@ -119,7 +119,7 @@ const OptimizedPlayerList: React.FC<PlayerListProps> = ({
     debounce(async (term: string) => {
       await fetchPlayers(term, 1, true);
     }, 300),
-    [leagueId, filters]
+    [fetchPlayers]
   );
 
   // Optimized fetch function with caching
@@ -245,7 +245,7 @@ const OptimizedPlayerList: React.FC<PlayerListProps> = ({
   // Initial load
   useEffect(() => {
     fetchPlayers('', 1, true);
-  }, [leagueId, filters]);
+  }, [fetchPlayers]);
 
   // Cleanup on unmount
   useEffect(() => {

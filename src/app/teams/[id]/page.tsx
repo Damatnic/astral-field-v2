@@ -2,7 +2,7 @@
 
 
 import { handleComponentError } from '@/lib/error-handling';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { Team, RosterSlot } from '@/types/fantasy';
 import RosterView from '@/components/team/RosterView';
@@ -20,9 +20,9 @@ export default function TeamPage() {
 
   useEffect(() => {
     fetchTeam();
-  }, [teamId]);
+  }, [fetchTeam]);
 
-  const fetchTeam = async () => {
+  const fetchTeam = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch(`/api/teams/${teamId}`);
@@ -39,7 +39,7 @@ export default function TeamPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [teamId]);
 
   const handleLineupChange = async (changes: any[]) => {
     try {

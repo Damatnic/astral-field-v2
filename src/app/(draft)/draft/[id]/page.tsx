@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -69,24 +69,7 @@ export default function DraftRoomPage() {
   const [myTeam, setMyTeam] = useState<DraftTeam | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  useEffect(() => {
-    if (params.id) {
-      loadDraftData();
-    }
-  }, [params.id]);
-
-  useEffect(() => {
-    if (draftState?.currentPick && draftStarted) {
-      startPickTimer();
-    }
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-    };
-  }, [draftState?.currentPick, draftStarted]);
-
-  const loadDraftData = async () => {
+  const loadDraftData = useCallback(async () => {
     try {
       setIsLoading(true);
       
@@ -152,41 +135,15 @@ export default function DraftRoomPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [params.id]);
 
-  const startPickTimer = () => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
+  useEffect(() => {
+    if (params.id) {
+      loadDraftData();
     }
+  }, [params.id, loadDraftData]);
 
-    timerRef.current = setInterval(() => {
-      setDraftState(prev => {
-        if (!prev || !prev.currentPick) return prev;
-        
-        const newTimeRemaining = Math.max(0, prev.timeRemaining - 1);
-        
-        if (newTimeRemaining === 0) {
-          autoPick();
-        }
-        
-        return {
-          ...prev,
-          timeRemaining: newTimeRemaining
-        };
-      });
-    }, 1000);
-  };
-
-  const autoPick = () => {
-    if (!availablePlayers.length) return;
-    
-    const bestAvailable = availablePlayers
-      .sort((a, b) => a.adp - b.adp)[0];
-    
-    makePick(bestAvailable);
-  };
-
-  const makePick = (player: Player) => {
+  const makePick = useCallback((player: Player) => {
     if (!draftState?.currentPick) return;
 
     setDraftState(prev => {
@@ -236,7 +193,50 @@ export default function DraftRoomPage() {
 
     setAvailablePlayers(prev => prev.filter(p => p.id !== player.id));
     setSelectedPlayer(null);
-  };
+  }, [draftState]);
+
+  const autoPick = useCallback(() => {
+    if (!availablePlayers.length) return;
+    
+    const bestAvailable = availablePlayers
+      .sort((a, b) => a.adp - b.adp)[0];
+    
+    makePick(bestAvailable);
+  }, [availablePlayers, makePick]);
+
+  const startPickTimer = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+
+    timerRef.current = setInterval(() => {
+      setDraftState(prev => {
+        if (!prev || !prev.currentPick) return prev;
+        
+        const newTimeRemaining = Math.max(0, prev.timeRemaining - 1);
+        
+        if (newTimeRemaining === 0) {
+          autoPick();
+        }
+        
+        return {
+          ...prev,
+          timeRemaining: newTimeRemaining
+        };
+      });
+    }, 1000);
+  }, [autoPick]);
+
+  useEffect(() => {
+    if (draftState?.currentPick && draftStarted) {
+      startPickTimer();
+    }
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [draftState?.currentPick, draftStarted, startPickTimer]);
 
   const getNextTeamIndex = (pickNumber: number, teamCount: number): number => {
     const round = Math.ceil(pickNumber / teamCount);

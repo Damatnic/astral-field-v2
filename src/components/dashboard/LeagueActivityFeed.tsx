@@ -135,7 +135,7 @@ export default function LeagueActivityFeed({ leagueId, className = '' }: LeagueA
     }, 2 * 60 * 1000);
     
     return () => clearInterval(interval);
-  }, [fetchActivities]);
+  }, [leagueId, fetchActivities]);
 
   const getActivityIcon = (type: ActivityType) => {
     switch (type) {

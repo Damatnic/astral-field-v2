@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   Users, 
@@ -131,7 +131,7 @@ export default function MyTeamPage() {
   const [activeTab, setActiveTab] = useState<'lineup' | 'bench' | 'stats'>('lineup');
   const router = useRouter();
 
-  const fetchUserTeam = async () => {
+  const fetchUserTeam = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch('/api/my-team', {
@@ -156,11 +156,11 @@ export default function MyTeamPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
 
   useEffect(() => {
     fetchUserTeam();
-  }, []);
+  }, [fetchUserTeam]);
 
   const getTrendIcon = (trend: string) => {
     switch (trend) {

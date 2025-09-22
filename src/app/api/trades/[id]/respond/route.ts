@@ -197,8 +197,7 @@ export async function POST(
             receivingPlayerIds: trade.givingPlayerIds,
             status: 'pending',
             message: `Counter offer to original trade ${tradeId}${reason ? ': ' + reason : ''}`,
-            proposedAt: new Date(),
-            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days from now
+            // createdAt will be set automatically by Prisma
           }
         });
 
