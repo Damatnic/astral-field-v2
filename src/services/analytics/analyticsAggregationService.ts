@@ -760,8 +760,8 @@ class AnalyticsAggregationService extends EventEmitter {
   private async getCachedData(cacheKey: string): Promise<AggregatedData[] | null> {
     try {
       const cached = await redisCache.get(cacheKey);
-      if (cached) {
-        return JSON.parse(cached as string);
+      if (cached && typeof cached === 'string') {
+        return JSON.parse(cached);
       }
       return null;
     } catch (error) {
