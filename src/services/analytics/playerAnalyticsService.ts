@@ -207,17 +207,17 @@ class PlayerAnalyticsService {
       const player = await prisma.player.findUnique({
         where: { id: playerId },
         include: {
-          playerStats: {
-            where: { season },
+          stats: {
+            where: { season: season.toString() },
             orderBy: { week: 'asc' }
           },
           projections: {
-            where: { season },
+            where: { season: season.toString() },
             orderBy: { week: 'asc' }
           },
-          injuryReports: {
-            where: { season },
-            orderBy: { createdAt: 'desc' }
+          news: {
+            where: { publishedAt: { gte: new Date(new Date().getFullYear(), 0, 1) } },
+            orderBy: { publishedAt: 'desc' }
           }
         }
       });
@@ -260,7 +260,7 @@ class PlayerAnalyticsService {
         advanced
       };
 
-      await redisCache.setex(cacheKey, this.cacheTime, JSON.stringify(metrics));
+      await redisCache.set(cacheKey, JSON.stringify(metrics), this.cacheTime);
       
       return metrics;
 
@@ -286,16 +286,16 @@ class PlayerAnalyticsService {
       const players = await prisma.player.findMany({
         where: { 
           position: position as any,
-          playerStats: {
-            some: { season }
+          stats: {
+            some: { season: season.toString() }
           }
         },
         include: {
-          playerStats: {
-            where: { season },
+          stats: {
+            where: { season: season.toString() },
             orderBy: { week: 'asc' }
           },
-          rosterPlayers: true
+          roster: true
         }
       });
 
@@ -320,7 +320,7 @@ class PlayerAnalyticsService {
         sleepers
       };
 
-      await redisCache.setex(cacheKey, this.cacheTime, JSON.stringify(analysis));
+      await redisCache.set(cacheKey, JSON.stringify(analysis), this.cacheTime);
       
       return analysis;
 
@@ -345,9 +345,9 @@ class PlayerAnalyticsService {
       const weekFilter = weeks ? { week: { in: weeks } } : {};
 
       // Get all projections and actual stats
-      const data = await prisma.stats.findMany({
+      const data = await prisma.playerStats.findMany({
         where: {
-          season,
+          season: season.toString(),
           ...weekFilter
         },
         include: {
@@ -355,7 +355,7 @@ class PlayerAnalyticsService {
             include: {
               projections: {
                 where: {
-                  season,
+                  season: season.toString(),
                   ...weekFilter
                 }
               }
@@ -387,7 +387,7 @@ class PlayerAnalyticsService {
         improvements
       };
 
-      await redisCache.setex(cacheKey, 1800, JSON.stringify(report)); // 30 minutes
+      await redisCache.set(cacheKey, JSON.stringify(report), 1800); // 30 minutes
       
       return report;
 
@@ -413,12 +413,13 @@ class PlayerAnalyticsService {
       const player = await prisma.player.findUnique({
         where: { id: playerId },
         include: {
-          injuryReports: {
-            orderBy: { createdAt: 'desc' },
+          news: {
+            where: { publishedAt: { gte: new Date(2024, 0, 1) } },
+            orderBy: { publishedAt: 'desc' },
             take: 1
           },
-          playerStats: {
-            where: { season: 2024 },
+          stats: {
+            where: { season: '2024' },
             orderBy: { week: 'asc' }
           }
         }
@@ -428,15 +429,15 @@ class PlayerAnalyticsService {
         throw new Error('Player not found');
       }
 
-      const currentInjury = player.injuryReports[0];
-      if (!currentInjury && !injuryType) {
+      const currentNews = player.news[0];
+      if (!currentNews && !injuryType) {
         throw new Error('No current injury found');
       }
 
-      const injury = injuryType || this.categorizeInjury(currentInjury?.description || '');
+      const injury = injuryType || this.categorizeInjury(currentNews?.body || '');
       
       // Calculate injury timeline
-      const timeline = this.calculateInjuryTimeline(injury, currentInjury);
+      const timeline = this.calculateInjuryTimeline(injury, currentNews);
       
       // Calculate fantasy impact
       const fantasyImpact = this.calculateFantasyImpact(player.stats, timeline);
@@ -461,7 +462,7 @@ class PlayerAnalyticsService {
         historicalComparison
       };
 
-      await redisCache.setex(cacheKey, 3600, JSON.stringify(analysis)); // 1 hour
+      await redisCache.set(cacheKey, JSON.stringify(analysis), 3600); // 1 hour
       
       return analysis;
 
@@ -489,19 +490,20 @@ class PlayerAnalyticsService {
       const players = await prisma.player.findMany({
         where: {
           ...positionFilter,
-          isActive: true,
-          playerStats: {
-            some: { season: 2024 }
+          status: 'active',
+          stats: {
+            some: { season: '2024' }
           }
         },
         include: {
-          playerStats: {
-            where: { season: 2024 },
+          stats: {
+            where: { season: '2024' },
             orderBy: { week: 'asc' }
           },
-          rosterPlayers: true,
-          injuryReports: {
-            orderBy: { createdAt: 'desc' },
+          roster: true,
+          news: {
+            where: { publishedAt: { gte: new Date(2024, 0, 1) } },
+            orderBy: { publishedAt: 'desc' },
             take: 1
           }
         }
@@ -522,7 +524,7 @@ class PlayerAnalyticsService {
         waiverwireTreasures
       };
 
-      await redisCache.setex(cacheKey, 1800, JSON.stringify(analysis)); // 30 minutes
+      await redisCache.set(cacheKey, JSON.stringify(analysis), 1800); // 30 minutes
       
       return analysis;
 
@@ -825,11 +827,11 @@ class PlayerAnalyticsService {
 
   private findPositionSleepers(players: any[]) {
     return players
-      .filter(p => p.rosterPlayers.length < 5) // Low rostered
+      .filter(p => p.roster.length < 5) // Low rostered
       .slice(0, 5)
       .map(p => ({
         name: p.name,
-        rostered: p.rosterPlayers.length * 10, // Estimate percentage
+        rostered: p.roster.length * 10, // Estimate percentage
         upside: Math.random() * 20 + 10,
         confidence: Math.random() * 40 + 40
       }));
@@ -976,7 +978,7 @@ class PlayerAnalyticsService {
   // Sleeper analysis methods
   private identifyEmergingTalent(players: any[]) {
     return players
-      .filter(p => p.yearsExperience <= 2)
+      .filter(p => (p.experience || 0) <= 2)
       .slice(0, 5)
       .map(p => ({
         playerId: p.id,
@@ -1008,13 +1010,13 @@ class PlayerAnalyticsService {
 
   private findWaiverWireTreasures(players: any[], threshold: number) {
     return players
-      .filter(p => p.rosterPlayers.length / 10 < threshold / 100)
+      .filter(p => p.roster.length / 10 < threshold / 100)
       .slice(0, 10)
       .map(p => ({
         playerId: p.id,
         playerName: p.name,
         position: p.position,
-        rosteredPercent: (p.rosterPlayers.length / 10) * 100,
+        rosteredPercent: (p.roster.length / 10) * 100,
         expectedValue: Math.random() * 20 + 10,
         urgency: ['immediate', 'speculative', 'dynasty'][Math.floor(Math.random() * 3)] as any,
         reasoning: 'Emerging opportunity with upside potential'

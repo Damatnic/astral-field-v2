@@ -6,252 +6,254 @@
 import { PrismaClient } from '@prisma/client';
 import { createServerCache, CACHE_DURATIONS, CACHE_TAGS } from './cache';
 
-// Enhanced Prisma client with performance monitoring
-class OptimizedPrismaClient extends PrismaClient {
-  private queryCount = 0;
-  private totalQueryTime = 0;
+// Create base Prisma client
+const basePrismaClient = new PrismaClient({
+  // Connection pooling optimization
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL,
+    },
+  },
+  // Enable query logging in development
+  log: process.env.NODE_ENV === 'development' ? ['query', 'info', 'warn', 'error'] : ['error'],
+});
 
-  constructor() {
-    super({
-      // Connection pooling optimization
-      datasources: {
-        db: {
-          url: process.env.DATABASE_URL,
-        },
-      },
-      // Enable query logging in development
-      log: process.env.NODE_ENV === 'development' ? ['query', 'info', 'warn', 'error'] : ['error'],
-    });
+// Performance monitoring state
+let queryCount = 0;
+let totalQueryTime = 0;
 
-    // Performance monitoring middleware
-    this.$use(async (params, next) => {
-      const start = Date.now();
-      const result = await next(params);
-      const duration = Date.now() - start;
-      
-      this.queryCount++;
-      this.totalQueryTime += duration;
-      
-      // Log slow queries (>1000ms)
-      if (duration > 1000) {
-        console.warn(`🐌 Slow query detected: ${params.model}.${params.action} (${duration}ms)`);
+// Enhanced Prisma client with performance monitoring using Prisma v6 extensions
+const prismaWithMonitoring = basePrismaClient.$extends({
+  name: 'PerformanceMonitoring',
+  query: {
+    $allModels: {
+      async $allOperations({ args, query }) {
+        const start = Date.now();
+        const result = await query(args);
+        const duration = Date.now() - start;
+        
+        queryCount++;
+        totalQueryTime += duration;
+        
+        // Log slow queries (>1000ms)
+        if (duration > 1000) {
+          console.warn(`🐌 Slow query detected (${duration}ms)`);
+        }
+        
+        return result;
       }
-      
-      return result;
-    });
+    }
   }
+});
 
-  getPerformanceStats() {
-    return {
-      queryCount: this.queryCount,
-      totalQueryTime: this.totalQueryTime,
-      averageQueryTime: this.queryCount > 0 ? this.totalQueryTime / this.queryCount : 0,
-    };
-  }
-
-  resetStats() {
-    this.queryCount = 0;
-    this.totalQueryTime = 0;
-  }
+// Export performance stats function
+export function getPerformanceStats() {
+  return {
+    queryCount,
+    totalQueryTime,
+    averageQueryTime: queryCount > 0 ? totalQueryTime / queryCount : 0,
+  };
 }
 
-// Singleton instance
-let prisma: OptimizedPrismaClient;
+// Export the optimized client as prisma
+export const prisma = prismaWithMonitoring;
 
-declare global {
-  var __prisma: OptimizedPrismaClient | undefined;
+// Get the current week number for NFL season
+export function getCurrentWeek(): number {
+  const seasonStart = new Date('2024-09-05'); // NFL 2024 season start
+  const now = new Date();
+  const diffTime = Math.abs(now.getTime() - seasonStart.getTime());
+  const diffWeeks = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 7));
+  return Math.min(18, Math.max(1, diffWeeks)); // NFL regular season is 18 weeks
 }
-
-if (process.env.NODE_ENV === 'production') {
-  prisma = new OptimizedPrismaClient();
-} else {
-  if (!global.__prisma) {
-    global.__prisma = new OptimizedPrismaClient();
-  }
-  prisma = global.__prisma;
-}
-
-// Optimized query functions with built-in caching
 
 /**
- * Get players with optimized queries and caching
+ * Cached database queries for optimal performance
  */
+
+// Get players with advanced filtering and caching
 export const getPlayersOptimized = createServerCache(
-  async (filters: {
+  async (options?: {
+    position?: string;
+    team?: string;
     search?: string;
-    positions?: string[];
-    teams?: string[];
-    availability?: string;
+    availability?: 'all' | 'available' | 'rostered';
     leagueId?: string;
     limit?: number;
     offset?: number;
+    orderBy?: 'name' | 'position' | 'team' | 'fantasyScore';
   }) => {
     const {
-      search = '',
-      positions = [],
-      teams = [],
+      position,
+      team,
+      search,
       availability = 'all',
       leagueId,
-      limit = 20,
+      limit = 50,
       offset = 0,
-    } = filters;
+      orderBy = 'name',
+    } = options || {};
 
-    // Build optimized where clause
+    // Build where clause
     const whereClause: any = {
-      AND: [
-        // Full-text search optimization
-        search ? {
-          OR: [
-            { name: { contains: search, mode: 'insensitive' } },
-            { firstName: { contains: search, mode: 'insensitive' } },
-            { lastName: { contains: search, mode: 'insensitive' } },
-          ],
-        } : {},
-        // Position filter
-        positions.length > 0 ? { position: { in: positions } } : {},
-        // Team filter
-        teams.length > 0 ? { nflTeam: { in: teams } } : {},
-        // Always include active status check
-        { status: { in: ['ACTIVE', 'QUESTIONABLE', 'DOUBTFUL'] } },
-      ].filter(clause => Object.keys(clause).length > 0),
+      AND: [],
     };
 
-    // Availability filter with optimized subquery
-    if (availability !== 'all' && leagueId) {
-      if (availability === 'available') {
-        whereClause.AND.push({
-          NOT: {
-            roster: {
-              some: {
-                team: { leagueId },
-              },
-            },
-          },
-        });
-      } else if (availability === 'rostered') {
-        whereClause.AND.push({
-          rosterPlayers: {
+    // Position filter
+    if (position) {
+      whereClause.AND.push({ position });
+    }
+
+    // Team filter  
+    if (team) {
+      whereClause.AND.push({ nflTeam: team });
+    }
+
+    // Search filter
+    if (search) {
+      whereClause.AND.push({
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          { nflTeam: { contains: search, mode: 'insensitive' } },
+        ],
+      });
+    }
+
+    // Availability filter
+    if (availability === 'available') {
+      whereClause.AND.push({
+        NOT: {
+          roster: {
             some: {
               team: { leagueId },
             },
           },
-        });
-      }
+        },
+      });
+    } else if (availability === 'rostered' && leagueId) {
+      whereClause.AND.push({
+        roster: {
+          some: {
+            team: { leagueId },
+          },
+        },
+      });
     }
 
-    // Use Promise.all for parallel queries
-    const [players, totalCount] = await Promise.all([
-      prisma.player.findMany({
-        where: whereClause,
-        select: {
-          id: true,
-          name: true,
-          firstName: true,
-          lastName: true,
-          position: true,
-          nflTeam: true,
-          byeWeek: true,
-          status: true,
-          injuryStatus: true,
-          age: true,
-          adp: true,
-          // Limit related data to avoid over-fetching
-          stats: {
-            where: {
-              season: new Date().getFullYear().toString(),
-              week: { lte: getCurrentWeek() },
-            },
-            select: {
-              week: true,
-              fantasyPoints: true,
-            },
-            orderBy: { week: 'desc' },
-            take: 5,
-          },
-          projections: {
-            where: {
-              season: new Date().getFullYear().toString(),
-              week: getCurrentWeek(),
-            },
-            select: {
-              projectedPoints: true,
-              confidence: true,
-              source: true,
-            },
-            orderBy: { confidence: 'desc' },
-            take: 1,
-          },
-          news: {
-            select: {
-              id: true,
-              headline: true,
-              publishedAt: true,
-              source: true,
-            },
-            orderBy: { publishedAt: 'desc' },
-            take: 3,
-          },
-          // Only include roster info if needed
-          ...(leagueId ? {
-            roster: {
+    try {
+      const [players, total] = await Promise.all([
+        prisma.player.findMany({
+          where: whereClause.AND.length > 0 ? whereClause : undefined,
+          skip: offset,
+          take: limit,
+          select: {
+            id: true,
+            name: true,
+            position: true,
+            nflTeam: true,
+            byeWeek: true,
+            status: true,
+            injuryStatus: true,
+            age: true,
+            adp: true,
+            // Limit related data to avoid over-fetching
+            stats: {
               where: {
-                team: { leagueId },
+                season: new Date().getFullYear().toString(),
+                week: { lte: getCurrentWeek() },
               },
               select: {
-                position: true,
-                team: {
-                  select: {
-                    id: true,
-                    name: true,
-                    owner: {
-                      select: {
-                        id: true,
-                        name: true,
-                      },
+                week: true,
+                fantasyPoints: true,
+              },
+              orderBy: { week: 'desc' },
+              take: 5,
+            },
+            projections: {
+              where: {
+                week: getCurrentWeek(),
+                season: new Date().getFullYear().toString(),
+              },
+              select: {
+                projectedPoints: true,
+                confidence: true,
+              },
+              orderBy: { confidence: 'desc' },
+              take: 1,
+            },
+            news: {
+              select: {
+                id: true,
+                headline: true,
+                publishedAt: true,
+                source: true,
+              },
+              orderBy: { publishedAt: 'desc' },
+              take: 3,
+            },
+            // Only include roster info if needed
+            ...(leagueId ? {
+              roster: {
+                where: {
+                  team: { leagueId },
+                },
+                select: {
+                  position: true,
+                  team: {
+                    select: {
+                      id: true,
+                      name: true,
                     },
                   },
                 },
+                take: 1,
               },
-              take: 1,
-            },
-          } : {}),
-        },
-        orderBy: [
-          { position: 'asc' },
-          { name: 'asc' },
-        ],
-        skip: offset,
-        take: limit,
-      }),
-      prisma.player.count({ where: whereClause }),
-    ]);
+            } : {}),
+          },
+          orderBy: [
+            { position: 'asc' },
+            { name: 'asc' },
+          ],
+        }),
+        prisma.player.count({
+          where: whereClause.AND.length > 0 ? whereClause : undefined,
+        }),
+      ]);
 
-    return { players, totalCount };
+      return {
+        players,
+        total,
+        hasMore: total > offset + limit,
+      };
+    } catch (error) {
+      console.error('Error fetching players:', error);
+      throw error;
+    }
   },
   'players-optimized',
   {
     tags: [CACHE_TAGS.PLAYERS],
-    revalidate: CACHE_DURATIONS.DYNAMIC,
+    revalidate: CACHE_DURATIONS.DYNAMIC
   }
 );
 
-/**
- * Get matchups with optimized queries and caching
- */
+// Get matchups with optimized queries
 export const getMatchupsOptimized = createServerCache(
-  async (leagueId: string, week: number, season: number = new Date().getFullYear()) => {
-    // Single optimized query with proper joins
+  async (leagueId: string, week?: number, season?: number) => {
+    const currentWeek = week || getCurrentWeek();
+    const currentSeason = season || new Date().getFullYear();
+
     const matchups = await prisma.matchup.findMany({
       where: {
         leagueId,
-        week,
-        season: season.toString(),
+        week: currentWeek,
+        season: currentSeason.toString(),
       },
       select: {
         id: true,
         week: true,
-        homeScore: true,
-        awayScore: true,
+        season: true,
+        isPlayoff: true,
         isComplete: true,
         homeTeam: {
           select: {
@@ -260,19 +262,12 @@ export const getMatchupsOptimized = createServerCache(
             owner: {
               select: {
                 id: true,
-                name: true,
+                email: true,
               },
             },
-            // Only get starting lineup for score calculation
             roster: {
-              where: {
-                position: {
-                  not: 'BENCH',
-                },
-              },
               select: {
                 position: true,
-                playerId: true,
                 player: {
                   select: {
                     id: true,
@@ -280,7 +275,22 @@ export const getMatchupsOptimized = createServerCache(
                     position: true,
                     nflTeam: true,
                     status: true,
+                    projections: {
+                      where: {
+                        week: currentWeek,
+                        season: currentSeason.toString(),
+                      },
+                      select: {
+                        projectedPoints: true,
+                      },
+                      take: 1,
+                    },
                   },
+                },
+              },
+              where: {
+                position: {
+                  notIn: ['BENCH', 'IR'],
                 },
               },
             },
@@ -293,18 +303,12 @@ export const getMatchupsOptimized = createServerCache(
             owner: {
               select: {
                 id: true,
-                name: true,
+                email: true,
               },
             },
             roster: {
-              where: {
-                position: {
-                  not: 'BENCH',
-                },
-              },
               select: {
                 position: true,
-                playerId: true,
                 player: {
                   select: {
                     id: true,
@@ -312,15 +316,29 @@ export const getMatchupsOptimized = createServerCache(
                     position: true,
                     nflTeam: true,
                     status: true,
+                    projections: {
+                      where: {
+                        week: currentWeek,
+                        season: currentSeason.toString(),
+                      },
+                      select: {
+                        projectedPoints: true,
+                      },
+                      take: 1,
+                    },
                   },
+                },
+              },
+              where: {
+                position: {
+                  notIn: ['BENCH', 'IR'],
                 },
               },
             },
           },
         },
-      },
-      orderBy: {
-        id: 'asc',
+        homeScore: true,
+        awayScore: true,
       },
     });
 
@@ -329,12 +347,12 @@ export const getMatchupsOptimized = createServerCache(
   'matchups-optimized',
   {
     tags: [CACHE_TAGS.MATCHUPS],
-    revalidate: CACHE_DURATIONS.REAL_TIME,
+    revalidate: CACHE_DURATIONS.REAL_TIME
   }
 );
 
 /**
- * Get roster with optimized queries and caching
+ * Get roster with optimized queries
  */
 export const getRosterOptimized = createServerCache(
   async (teamId: string) => {
@@ -348,11 +366,10 @@ export const getRosterOptimized = createServerCache(
           select: {
             id: true,
             name: true,
-            firstName: true,
-            lastName: true,
             position: true,
             nflTeam: true,
             byeWeek: true,
+            adp: true,
             status: true,
             injuryStatus: true,
             // Get latest stats efficiently
@@ -363,16 +380,36 @@ export const getRosterOptimized = createServerCache(
               select: {
                 week: true,
                 fantasyPoints: true,
+                stats: true,
               },
               orderBy: { week: 'desc' },
+              take: 5,
+            },
+            // Get current week projection
+            projections: {
+              where: {
+                week: getCurrentWeek(),
+                season: new Date().getFullYear().toString(),
+              },
+              select: {
+                projectedPoints: true,
+                confidence: true,
+              },
+              orderBy: { confidence: 'desc' },
               take: 1,
             },
           },
         },
       },
       orderBy: [
-        { position: 'asc' },
-        { player: { name: 'asc' } },
+        {
+          position: 'asc',
+        },
+        {
+          player: {
+            name: 'asc',
+          },
+        },
       ],
     });
 
@@ -381,45 +418,7 @@ export const getRosterOptimized = createServerCache(
   'roster-optimized',
   {
     tags: [CACHE_TAGS.ROSTER],
-    revalidate: CACHE_DURATIONS.DYNAMIC,
-  }
-);
-
-/**
- * Get league standings with optimized queries
- */
-export const getLeagueStandingsOptimized = createServerCache(
-  async (leagueId: string) => {
-    const teams = await prisma.team.findMany({
-      where: { leagueId },
-      select: {
-        id: true,
-        name: true,
-        wins: true,
-        losses: true,
-        ties: true,
-        pointsFor: true,
-        pointsAgainst: true,
-        owner: {
-          select: {
-            id: true,
-            name: true,
-            avatar: true,
-          },
-        },
-      },
-      orderBy: [
-        { wins: 'desc' },
-        { pointsFor: 'desc' },
-      ],
-    });
-
-    return teams;
-  },
-  'league-standings',
-  {
-    tags: [CACHE_TAGS.LEAGUE],
-    revalidate: CACHE_DURATIONS.DYNAMIC,
+    revalidate: CACHE_DURATIONS.REAL_TIME
   }
 );
 
@@ -427,9 +426,15 @@ export const getLeagueStandingsOptimized = createServerCache(
  * Batch operations for better performance
  */
 export const batchOperations = {
-  /**
-   * Update multiple player stats in a single transaction
-   */
+  // Batch create players
+  async createPlayers(players: any[]) {
+    return prisma.player.createMany({
+      data: players,
+      skipDuplicates: true,
+    });
+  },
+
+  // Batch update player stats
   async updatePlayerStats(updates: Array<{
     playerId: string;
     week: number;
@@ -463,58 +468,79 @@ export const batchOperations = {
     );
   },
 
-  /**
-   * Update multiple matchup scores in a single transaction
-   */
-  async updateMatchupScores(updates: Array<{
-    matchupId: string;
-    homeScore: number;
-    awayScore: number;
+  // Batch update rosters
+  async updateRosters(teamId: string, changes: Array<{
+    playerId: string;
+    position: string;
+    action: 'add' | 'remove' | 'move';
   }>) {
-    return prisma.$transaction(
-      updates.map(update =>
-        prisma.matchup.update({
-          where: { id: update.matchupId },
-          data: {
-            homeScore: update.homeScore,
-            awayScore: update.awayScore,
-            updatedAt: new Date(),
+    const operations = changes.map(change => {
+      if (change.action === 'remove') {
+        return prisma.roster.deleteMany({
+          where: {
+            teamId,
+            playerId: change.playerId,
           },
-        })
-      )
-    );
+        });
+      } else if (change.action === 'add') {
+        return prisma.roster.create({
+          data: {
+            teamId,
+            playerId: change.playerId,
+            position: change.position as any,
+            acquisitionDate: new Date(),
+          },
+        });
+      } else {
+        return prisma.roster.updateMany({
+          where: {
+            teamId,
+            playerId: change.playerId,
+          },
+          data: {
+            position: change.position as any,
+          },
+        });
+      }
+    });
+
+    return prisma.$transaction(operations);
   },
 };
 
-// Helper functions
-function getCurrentWeek(): number {
-  const now = new Date();
-  const seasonStart = new Date(now.getFullYear(), 8, 1); // September 1st
-  const weeksSinceStart = Math.floor((now.getTime() - seasonStart.getTime()) / (7 * 24 * 60 * 60 * 1000));
-  return Math.max(1, Math.min(18, weeksSinceStart + 1));
-}
-
-// Export optimized prisma instance
-export { prisma };
-
 // Connection health check
-export async function checkDatabaseConnection(): Promise<boolean> {
+export async function checkDatabaseHealth(): Promise<{
+  healthy: boolean;
+  latency: number;
+  message?: string;
+}> {
+  const start = Date.now();
+  
   try {
     await prisma.$queryRaw`SELECT 1`;
-    return true;
+    const latency = Date.now() - start;
+    
+    return {
+      healthy: true,
+      latency,
+    };
   } catch (error) {
-    console.error('Database connection failed:', error);
-    return false;
+    const latency = Date.now() - start;
+    
+    return {
+      healthy: false,
+      latency,
+      message: (error as Error).message,
+    };
   }
 }
 
-// Performance monitoring
-export function getDatabasePerformanceStats() {
-  return (prisma as OptimizedPrismaClient).getPerformanceStats();
-}
+// Export types
+export type { PrismaClient };
 
-export function resetDatabaseStats() {
-  (prisma as OptimizedPrismaClient).resetStats();
+// Close connection on app shutdown
+if (process.env.NODE_ENV !== 'production') {
+  process.on('beforeExit', async () => {
+    await prisma.$disconnect();
+  });
 }
-
-export default prisma;

@@ -1,6 +1,6 @@
 /**
- * Database connection with Prisma Client
- * Optimized for production with connection pooling
+ * Optimized Database Client with Connection Pooling
+ * Features: Neon serverless compatibility, soft deletes, connection pooling
  */
 
 import { PrismaClient } from '@prisma/client';
@@ -20,7 +20,7 @@ try {
 }
 
 const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
+  prisma: ReturnType<typeof createPrismaClient> | undefined;
 };
 
 // Create Neon connection pool for edge runtime compatibility (if available)
@@ -36,10 +36,9 @@ if (Pool && PrismaNeon && process.env.DATABASE_URL) {
   }
 }
 
-// Configure Prisma Client with optimizations
-export const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
+// Create Prisma client with soft delete middleware using Prisma v6 extensions
+function createPrismaClient() {
+  const baseClient = new PrismaClient({
     log:
       process.env.NODE_ENV === 'development'
         ? ['query', 'error', 'warn']
@@ -47,42 +46,56 @@ export const prisma =
     errorFormat: 'pretty',
   } as any);
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
-
-// Middleware for soft deletes
-prisma.$use(async (params, next) => {
-  // Soft delete handling
-  if (params.model && params.action === 'delete') {
-    params.action = 'update';
-    params.args['data'] = { deletedAt: new Date() };
-  }
-  
-  if (params.model && params.action === 'deleteMany') {
-    params.action = 'updateMany';
-    if (params.args.data !== undefined) {
-      params.args.data['deletedAt'] = new Date();
-    } else {
-      params.args['data'] = { deletedAt: new Date() };
-    }
-  }
-  
-  // Exclude soft deleted records from queries
-  if (params.model && (params.action === 'findUnique' || params.action === 'findFirst')) {
-    params.args.where = { ...params.args.where, deletedAt: null };
-  }
-  
-  if (params.model && (params.action === 'findMany')) {
-    if (params.args.where !== undefined) {
-      if (params.args.where.deletedAt === undefined) {
-        params.args.where = { ...params.args.where, deletedAt: null };
+  // Use Prisma v6 extensions for soft delete middleware
+  return baseClient.$extends({
+    name: 'SoftDeleteMiddleware',
+    query: {
+      $allModels: {
+        async delete({ model, args, query }: any) {
+          // Convert delete to update with soft delete
+          return (baseClient as any)[model].update({
+            ...args,
+            data: { deletedAt: new Date() }
+          });
+        },
+        async deleteMany({ model, args, query }: any) {
+          // Convert deleteMany to updateMany with soft delete
+          return (baseClient as any)[model].updateMany({
+            ...args,
+            data: { deletedAt: new Date() }
+          });
+        },
+        async findUnique({ args, query }: any) {
+          // Exclude soft deleted records
+          args.where = { ...args.where, deletedAt: null };
+          return query(args);
+        },
+        async findFirst({ args, query }: any) {
+          // Exclude soft deleted records
+          args.where = { ...args.where, deletedAt: null };
+          return query(args);
+        },
+        async findMany({ args, query }: any) {
+          // Exclude soft deleted records
+          if (args.where !== undefined) {
+            if (args.where.deletedAt === undefined) {
+              args.where = { ...args.where, deletedAt: null };
+            }
+          } else {
+            args.where = { deletedAt: null };
+          }
+          return query(args);
+        }
       }
-    } else {
-      params.args['where'] = { deletedAt: null };
     }
-  }
-  
-  return next(params);
-});
+  });
+}
+
+// Configure Prisma Client with optimizations
+export const prisma =
+  globalForPrisma.prisma ?? createPrismaClient();
+
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
 // Connection health check
 export async function checkDatabaseConnection(): Promise<boolean> {
@@ -97,16 +110,93 @@ export async function checkDatabaseConnection(): Promise<boolean> {
 
 // Transaction helper
 export async function withTransaction<T>(
-  fn: (tx: PrismaClient) => Promise<T>
+  fn: (tx: any) => Promise<T>
 ): Promise<T> {
-  return prisma.$transaction(async (tx) => {
-    return fn(tx as PrismaClient);
+  return prisma.$transaction(fn, {
+    maxWait: 5000,
+    timeout: 10000,
   });
 }
 
-// Cleanup function for serverless
-export async function disconnect(): Promise<void> {
-  await prisma.$disconnect();
-}
+// Batch operations for better performance
+export const batchOperations = {
+  async createMany<T>(model: string, data: any[]): Promise<number> {
+    const result = await (prisma as any)[model].createMany({
+      data,
+      skipDuplicates: true,
+    });
+    return result.count;
+  },
 
-export default prisma;
+  async updateMany<T>(model: string, where: any, data: any): Promise<number> {
+    const result = await (prisma as any)[model].updateMany({
+      where,
+      data,
+    });
+    return result.count;
+  },
+
+  async deleteMany(model: string, where: any): Promise<number> {
+    const result = await (prisma as any)[model].updateMany({
+      where,
+      data: { deletedAt: new Date() },
+    });
+    return result.count;
+  },
+};
+
+// Optimized query patterns
+export const optimizedQueries = {
+  // Paginated query with cursor
+  async paginate(
+    model: string,
+    {
+      cursor,
+      take = 20,
+      where = {},
+      orderBy = { id: 'asc' },
+      include = {},
+    }: any
+  ) {
+    const items = await (prisma as any)[model].findMany({
+      take: take + 1,
+      ...(cursor && { cursor: { id: cursor }, skip: 1 }),
+      where,
+      orderBy,
+      include,
+    });
+
+    const hasMore = items.length > take;
+    const edges = hasMore ? items.slice(0, -1) : items;
+    const endCursor = edges.length > 0 ? edges[edges.length - 1].id : null;
+
+    return {
+      edges,
+      pageInfo: {
+        hasNextPage: hasMore,
+        endCursor,
+      },
+    };
+  },
+
+  // Bulk upsert operation
+  async bulkUpsert(model: string, data: any[], uniqueKeys: string[]) {
+    const operations = data.map((item) => {
+      const where = uniqueKeys.reduce((acc, key) => {
+        acc[key] = item[key];
+        return acc;
+      }, {} as any);
+
+      return (prisma as any)[model].upsert({
+        where,
+        update: item,
+        create: item,
+      });
+    });
+
+    return prisma.$transaction(operations);
+  },
+};
+
+// Export Prisma types
+export * from '@prisma/client';

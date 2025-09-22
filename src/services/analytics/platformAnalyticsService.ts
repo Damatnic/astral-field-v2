@@ -325,7 +325,7 @@ class PlatformAnalyticsService {
         growthMetrics
       };
 
-      await redisCache.setex(cacheKey, this.cacheTime, JSON.stringify(kpis));
+      await redisCache.set(cacheKey, JSON.stringify(kpis), this.cacheTime);
       
       return kpis;
 
@@ -366,7 +366,7 @@ class PlatformAnalyticsService {
         riskAssessment
       };
 
-      await redisCache.setex(cacheKey, 3600, JSON.stringify(intelligence)); // 1 hour cache
+      await redisCache.set(cacheKey, JSON.stringify(intelligence), 3600); // 1 hour cache
       
       return intelligence;
 
@@ -407,7 +407,7 @@ class PlatformAnalyticsService {
         dataQuality
       };
 
-      await redisCache.setex(cacheKey, 60, JSON.stringify(insights)); // 1 minute cache for real-time data
+      await redisCache.set(cacheKey, JSON.stringify(insights), 60); // 1 minute cache for real-time data
       
       return insights;
 
@@ -444,7 +444,7 @@ class PlatformAnalyticsService {
         marketTrends
       };
 
-      await redisCache.setex(cacheKey, 1800, JSON.stringify(analysis)); // 30 minutes
+      await redisCache.set(cacheKey, JSON.stringify(analysis), 1800); // 30 minutes
       
       return analysis;
 
@@ -485,7 +485,7 @@ class PlatformAnalyticsService {
         businessOpportunities
       };
 
-      await redisCache.setex(cacheKey, 7200, JSON.stringify(analytics)); // 2 hours
+      await redisCache.set(cacheKey, JSON.stringify(analytics), 7200); // 2 hours
       
       return analytics;
 

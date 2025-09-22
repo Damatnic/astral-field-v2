@@ -174,14 +174,16 @@ class LeagueAnalyticsService {
             include: {
               homeMatchups: true,
               awayMatchups: true,
-              trades: true,
-              waiverClaims: true,
-              lineupHistory: true
+              transactions: {
+                where: { type: 'trade' }
+              }
+              // Note: waiverClaims and lineupHistory tables don't exist in schema
             }
           },
-          trades: true,
+          transactions: {
+            where: { type: 'trade' }
+          },
           messages: true,
-          waiverClaims: true,
           matchups: true
         }
       });
@@ -209,7 +211,7 @@ class LeagueAnalyticsService {
         economicHealth
       };
 
-      await redisCache.setex(cacheKey, this.cacheTime, JSON.stringify(metrics));
+      await redisCache.set(cacheKey, JSON.stringify(metrics), this.cacheTime);
       
       return metrics;
 
@@ -268,7 +270,7 @@ class LeagueAnalyticsService {
         historicalContext
       };
 
-      await redisCache.setex(cacheKey, this.cacheTime, JSON.stringify(analysis));
+      await redisCache.set(cacheKey, JSON.stringify(analysis), this.cacheTime);
       
       return analysis;
 
@@ -292,16 +294,17 @@ class LeagueAnalyticsService {
 
       const [startDate] = this.getSeasonDateRange(timeRange);
 
-      const trades = await prisma.trade.findMany({
+      const trades = await prisma.tradeProposal.findMany({
         where: {
           leagueId,
           createdAt: { gte: startDate },
-          status: 'ACCEPTED'
+          status: 'accepted'
         },
         include: {
-          items: { include: { player: true } },
-          proposer: true,
-          team: true
+          proposingTeam: {
+            include: { owner: true }
+          }
+          // Note: items and team fields don't exist in TradeProposal model
         }
       });
 
@@ -324,7 +327,7 @@ class LeagueAnalyticsService {
         impactAnalysis
       };
 
-      await redisCache.setex(cacheKey, this.cacheTime, JSON.stringify(analysis));
+      await redisCache.set(cacheKey, JSON.stringify(analysis), this.cacheTime);
       
       return analysis;
 
@@ -348,15 +351,14 @@ class LeagueAnalyticsService {
 
       const [startDate] = this.getSeasonDateRange(timeRange);
 
-      const waivers = await prisma.waiverClaim.findMany({
+      const waivers = await prisma.transaction.findMany({
         where: {
           leagueId,
+          type: 'waiver',
           createdAt: { gte: startDate }
         },
         include: {
-          player: true,
-          team: true,
-          user: true
+          team: true
         }
       });
 
@@ -375,7 +377,7 @@ class LeagueAnalyticsService {
         effectiveness
       };
 
-      await redisCache.setex(cacheKey, this.cacheTime, JSON.stringify(analysis));
+      await redisCache.set(cacheKey, JSON.stringify(analysis), this.cacheTime);
       
       return analysis;
 
@@ -402,7 +404,7 @@ class LeagueAnalyticsService {
         where: { id: leagueId },
         include: {
           messages: { take: 1000, orderBy: { createdAt: 'desc' } },
-          members: { include: { user: true } }
+          teams: { include: { owner: true } }
         }
       });
 
@@ -414,7 +416,7 @@ class LeagueAnalyticsService {
       const communication = this.analyzeCommunication(league.messages);
       
       // Calculate engagement metrics
-      const engagement = await this.calculateEngagement(leagueId, league.members);
+      const engagement = await this.calculateEngagement(leagueId, league.teams);
       
       // Identify traditions and culture
       const traditions = this.analyzeLeagueTraditions(league);
@@ -425,7 +427,7 @@ class LeagueAnalyticsService {
         traditions
       };
 
-      await redisCache.setex(cacheKey, this.cacheTime, JSON.stringify(culture));
+      await redisCache.set(cacheKey, JSON.stringify(culture), this.cacheTime);
       
       return culture;
 
@@ -469,8 +471,8 @@ class LeagueAnalyticsService {
 
   private calculateActivityLevel(league: any) {
     const teams = league.teams;
-    const totalTrades = league.trades?.length || 0;
-    const totalWaivers = league.waiverClaims?.length || 0;
+    const totalTrades = league.transactions?.filter((t: any) => t.type === 'trade').length || 0;
+    const totalWaivers = league.transactions?.filter((t: any) => t.type === 'waiver').length || 0;
     const totalMessages = league.messages?.length || 0;
     
     // Calculate activity scores (0-10 scale)
@@ -505,7 +507,7 @@ class LeagueAnalyticsService {
 
   private calculateEconomicHealth(league: any) {
     const teams = league.teams;
-    const trades = league.trades?.filter((t: any) => t.status === 'ACCEPTED') || [];
+    const trades = league.transactions?.filter((t: any) => t.type === 'trade' && t.status === 'completed') || [];
     
     // Calculate FAAB distribution equality
     const faabSpent = teams.map((t: any) => t.faabSpent || 0);
@@ -626,9 +628,9 @@ class LeagueAnalyticsService {
     const traderCounts: { [key: string]: number } = {};
     
     trades.forEach(trade => {
-      traderCounts[trade.proposerId] = (traderCounts[trade.proposerId] || 0) + 1;
-      if (trade.teamId) {
-        traderCounts[trade.teamId] = (traderCounts[trade.teamId] || 0) + 1;
+      traderCounts[trade.proposingTeamId] = (traderCounts[trade.proposingTeamId] || 0) + 1;
+      if (trade.receivingTeamId) {
+        traderCounts[trade.receivingTeamId] = (traderCounts[trade.receivingTeamId] || 0) + 1;
       }
     });
 
@@ -657,19 +659,23 @@ class LeagueAnalyticsService {
     // Calculate how trades have affected league standings
     return {
       leagueShakeup: 6.5, // Out of 10
-      winnerIdentification: trades.slice(0, 3).map(t => t.proposer?.name || 'Unknown'),
+      winnerIdentification: trades.slice(0, 3).map(t => t.proposingTeam?.name || 'Unknown'),
       networkEffects: 7.2 // How trades affected other teams
     };
   }
 
   private calculateWaiverActivity(waivers: any[]) {
     const teams = new Set(waivers.map(w => w.teamId)).size || 10;
-    const successful = waivers.filter(w => w.status === 'SUCCESSFUL').length;
+    const successful = waivers.filter(w => w.status === 'completed').length;
     
     // Calculate competitiveness (how many bids per popular player)
     const playerBids: { [key: string]: number } = {};
     waivers.forEach(w => {
-      playerBids[w.playerId] = (playerBids[w.playerId] || 0) + 1;
+      // Extract player ID from relatedData or playerIds array
+      const playerIds = w.playerIds || [];
+      playerIds.forEach((playerId: string) => {
+        playerBids[playerId] = (playerBids[playerId] || 0) + 1;
+      });
     });
     const competitiveness = Object.values(playerBids).reduce((a, b) => a + b, 0) / Object.keys(playerBids).length;
 
@@ -682,7 +688,10 @@ class LeagueAnalyticsService {
   }
 
   private analyzeWaiverStrategy(waivers: any[]) {
-    const faabBids = waivers.map(w => w.faabBid || 0).filter(b => b > 0);
+    const faabBids = waivers.map(w => {
+      const data = w.relatedData as any;
+      return data?.faabBid || data?.faabAmount || 0;
+    }).filter(b => b > 0);
     const totalBudget = 100; // Standard FAAB budget
     
     let conservative = 0, moderate = 0, aggressive = 0;

@@ -62,9 +62,9 @@ export async function GET(request: NextRequest) {
       // Fetch from optimized database function
       const filters = {
         search: searchQuery,
-        positions,
-        teams,
-        availability,
+        position: positions?.[0], // Single position for now
+        team: teams?.[0], // Single team for now
+        availability: availability as 'all' | 'available' | 'rostered',
         leagueId,
         limit,
         offset: (page - 1) * limit,
@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
 
       const result = await getPlayersOptimized(filters);
       players = result.players;
-      totalCount = result.totalCount;
+      totalCount = result.total;
 
       // Cache the result (shorter TTL for search results)
       const ttl = searchQuery ? 300 : 900; // 5 min for search, 15 min for browsing

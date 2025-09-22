@@ -187,6 +187,10 @@ export class SleeperDraftService extends EventEmitter {
   }
 
   private async processDraftData(draftData: SleeperDraftData): Promise<void> {
+    // TODO: Implement draft storage when Sleeper tables are added to schema
+    console.warn('Sleeper draft tables not yet implemented in schema');
+    return;
+    /*
     await prisma.sleeperDraft.upsert({
       where: { id: draftData.draft_id },
       update: {
@@ -221,6 +225,7 @@ export class SleeperDraftService extends EventEmitter {
         metadata: draftData.metadata
       }
     });
+    */
   }
 
   async syncDraftPicks(draftId: string): Promise<number> {
@@ -241,6 +246,10 @@ export class SleeperDraftService extends EventEmitter {
   }
 
   private async processDraftPick(pick: SleeperDraftPick): Promise<void> {
+    // TODO: Implement draft pick storage when Sleeper tables are added to schema
+    console.warn('Sleeper draft pick tables not yet implemented in schema');
+    return;
+    /*
     await prisma.sleeperDraftPick.upsert({
       where: {
         draftId_pickNo: {
@@ -270,6 +279,7 @@ export class SleeperDraftService extends EventEmitter {
         isKeeper: pick.is_keeper
       }
     });
+    */
   }
 
   async syncTradingBlock(draftId: string): Promise<number> {
@@ -277,6 +287,10 @@ export class SleeperDraftService extends EventEmitter {
       const tradingBlock = await sleeperClient.getDraftTradingBlock(draftId);
       let tradingBlockCount = 0;
 
+      // TODO: Implement trading block storage when Sleeper tables are added to schema
+      console.warn('Sleeper trading block tables not yet implemented in schema');
+      return 0;
+      /*
       for (const item of tradingBlock) {
         await prisma.sleeperTradingBlock.upsert({
           where: {
@@ -303,6 +317,7 @@ export class SleeperDraftService extends EventEmitter {
       }
 
       return tradingBlockCount;
+      */
     } catch (error) {
       console.error(`Error syncing trading block for draft ${draftId}:`, error);
       return 0;
@@ -359,6 +374,25 @@ export class SleeperDraftService extends EventEmitter {
   }
 
   private async createDraftBoard(draftId: string): Promise<DraftBoard> {
+    // TODO: Implement when Sleeper tables are added to schema
+    console.warn('Sleeper draft tables not yet implemented');
+    
+    // Return mock draft board for now
+    return {
+      draftId,
+      currentPick: {
+        round: 1,
+        pickNumber: 1,
+        rosterId: 1,
+        timeRemaining: 90
+      },
+      picks: [],
+      availablePlayers: [],
+      draftOrder: {} as Record<string, number>,
+      rosterComposition: {}
+    };
+    
+    /*
     const draft = await prisma.sleeperDraft.findUnique({
       where: { id: draftId },
       include: {
@@ -444,6 +478,7 @@ export class SleeperDraftService extends EventEmitter {
       availablePlayers,
       rosterComposition
     };
+    */
   }
 
   private calculateNeeds(positionCounts: Record<string, number>, settings: any): string[] {
@@ -475,6 +510,11 @@ export class SleeperDraftService extends EventEmitter {
       return;
     }
 
+    // TODO: Implement when Sleeper tables are added to schema
+    console.warn('Sleeper draft pick tables not yet implemented');
+    return;
+    
+    /*
     // Get latest picks
     const latestPicks = await prisma.sleeperDraftPick.findMany({
       where: { draftId },
@@ -487,6 +527,7 @@ export class SleeperDraftService extends EventEmitter {
 
     // Emit update event
     this.emit('draftBoardUpdate', { draftId, draftBoard: updatedBoard });
+    */
   }
 
   async getDraftBoard(draftId: string): Promise<DraftBoard | null> {
@@ -507,6 +548,11 @@ export class SleeperDraftService extends EventEmitter {
     const key = `${strategy.draftId}:${strategy.rosterId}`;
     this.draftStrategies.set(key, strategy);
 
+    // TODO: Implement when Sleeper tables are added to schema
+    console.warn('Sleeper draft strategy tables not yet implemented');
+    return;
+    
+    /*
     // Save to database
     await prisma.sleeperDraftStrategy.upsert({
       where: {
@@ -535,6 +581,7 @@ export class SleeperDraftService extends EventEmitter {
         notes: strategy.notes
       }
     });
+    */
   }
 
   async getDraftStrategy(draftId: string, rosterId: number): Promise<DraftStrategy | null> {
@@ -545,6 +592,10 @@ export class SleeperDraftService extends EventEmitter {
       return cached;
     }
 
+    // TODO: Implement when Sleeper tables are added to schema
+    return null;
+    
+    /*
     try {
       const strategy = await prisma.sleeperDraftStrategy.findUnique({
         where: {
@@ -576,6 +627,7 @@ export class SleeperDraftService extends EventEmitter {
       console.error(`Error getting draft strategy for ${draftId}:${rosterId}:`, error);
       return null;
     }
+    */
   }
 
   async getPlayerRecommendations(draftId: string, rosterId: number, count = 10): Promise<any[]> {
@@ -650,6 +702,10 @@ export class SleeperDraftService extends EventEmitter {
   }
 
   async getDraftHistory(leagueId: string): Promise<any[]> {
+    // TODO: Implement when Sleeper tables are added to schema
+    console.warn('Sleeper draft tables not yet implemented');
+    return [];
+    /*
     return prisma.sleeperDraft.findMany({
       where: { leagueId },
       include: {
@@ -659,9 +715,14 @@ export class SleeperDraftService extends EventEmitter {
       },
       orderBy: { created: 'desc' }
     });
+    */
   }
 
   async getDraftAnalytics(draftId: string): Promise<any> {
+    // TODO: Implement when Sleeper tables are added to schema
+    console.warn('Sleeper draft tables not yet implemented');
+    return null;
+    /*
     const draft = await prisma.sleeperDraft.findUnique({
       where: { id: draftId },
       include: {
@@ -714,6 +775,7 @@ export class SleeperDraftService extends EventEmitter {
     analytics.teamAnalysis = teamAnalysis;
 
     return analytics;
+    */
   }
 }
 

@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getDatabasePerformanceStats } from '@/lib/db-optimized';
+import { getPerformanceStats } from '@/lib/db-optimized';
 import { redisCache } from '@/lib/redis-cache';
 import { getWebSocketManager } from '@/lib/websocket-optimized';
 import { getCacheHeaders } from '@/lib/cache';
@@ -76,7 +76,7 @@ async function collectPerformanceMetrics(includeDetails: boolean, timeRange: str
 
 async function getDatabaseMetrics() {
   try {
-    const dbStats = getDatabasePerformanceStats();
+    const dbStats = getPerformanceStats();
     
     return {
       queryCount: dbStats.queryCount,

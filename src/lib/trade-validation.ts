@@ -1,5 +1,22 @@
 import { prisma } from '@/lib/db';
-import { Position, RosterSlot } from '@prisma/client';
+import { Position } from '@prisma/client';
+
+// RosterSlot enum defined locally since it's not used in Prisma models
+enum RosterSlot {
+  QB = 'QB',
+  RB1 = 'RB1',
+  RB2 = 'RB2',
+  WR1 = 'WR1',
+  WR2 = 'WR2',
+  WR3 = 'WR3',
+  TE = 'TE',
+  FLEX = 'FLEX',
+  SUPER_FLEX = 'SUPER_FLEX',
+  K = 'K',
+  DEF = 'DEF',
+  BENCH = 'BENCH',
+  IR = 'IR'
+}
 
 export interface TradeValidationResult {
   isValid: boolean;
@@ -38,10 +55,7 @@ export async function validateCompleteTrade(
   try {
     // 1. Validate league exists and is active
     const league = await prisma.league.findUnique({
-      where: { id: leagueId },
-      include: {
-        settings: true
-      }
+      where: { id: leagueId }
     });
 
     if (!league || !league.isActive) {
@@ -49,7 +63,8 @@ export async function validateCompleteTrade(
     }
 
     // 2. Check trade deadline
-    if (league.settings?.tradeDeadline && new Date() > league.settings.tradeDeadline) {
+    const settings = league.settings as any;
+    if (settings?.tradeDeadline && new Date() > new Date(settings.tradeDeadline)) {
       return { isValid: false, error: 'Trade deadline has passed' };
     }
 
@@ -110,7 +125,7 @@ export async function validatePlayerOwnership(tradeItems: any[]): Promise<TradeV
     const playerItems = tradeItems.filter(item => item.itemType === 'PLAYER' && item.playerId);
     
     for (const item of playerItems) {
-      const rosterPlayer = await prisma.rosterPlayer.findFirst({
+      const rosterPlayer = await prisma.roster.findFirst({
         where: {
           teamId: item.fromTeamId,
           playerId: item.playerId
@@ -154,17 +169,18 @@ export async function validatePlayerOwnership(tradeItems: any[]): Promise<TradeV
  */
 export async function validateRosterLimits(tradeItems: any[], leagueId: string): Promise<TradeValidationResult> {
   try {
-    const settings = await prisma.settings.findUnique({
-      where: { leagueId },
-      select: { rosterSlots: true }
+    // Get roster settings from league
+    const league = await prisma.league.findUnique({
+      where: { id: leagueId },
+      select: { rosterSettings: true }
     });
 
-    if (!settings) {
+    if (!league) {
       return { isValid: false, error: 'League settings not found' };
     }
 
-    const rosterSlots = settings.rosterSlots as any;
-    const maxRosterSize = Object.values(rosterSlots).reduce((sum: number, count: any) => sum + count, 0);
+    const rosterSlots = (league?.rosterSettings as any)?.rosterSlots || {};
+    const maxRosterSize = Object.values(rosterSlots).reduce((sum: number, count: any) => sum + (Number(count) || 0), 0) as number;
     const minStarterSlots = (rosterSlots.QB || 0) + (rosterSlots.RB || 0) + 
                            (rosterSlots.WR || 0) + (rosterSlots.TE || 0) + 
                            (rosterSlots.FLEX || 0) + (rosterSlots.K || 0) + 
@@ -189,7 +205,7 @@ export async function validateRosterLimits(tradeItems: any[], leagueId: string):
 
     // Validate each team's roster size after trade
     for (const [teamId, changes] of teamChanges) {
-      const currentRosterCount = await prisma.rosterPlayer.count({
+      const currentRosterCount = await prisma.roster.count({
         where: { teamId }
       });
 
@@ -230,16 +246,17 @@ export async function validateRosterLimits(tradeItems: any[], leagueId: string):
  */
 export async function validatePositionRequirements(tradeItems: any[], leagueId: string): Promise<TradeValidationResult> {
   try {
-    const settings = await prisma.settings.findUnique({
-      where: { leagueId },
-      select: { rosterSlots: true }
+    // Get roster settings from league
+    const league = await prisma.league.findUnique({
+      where: { id: leagueId },
+      select: { rosterSettings: true }
     });
 
-    if (!settings) {
+    if (!league) {
       return { isValid: false, error: 'League settings not found' };
     }
 
-    const rosterSlots = settings.rosterSlots as any;
+    const rosterSlots = (league?.rosterSettings as any)?.rosterSlots || {};
     const warnings: string[] = [];
 
     // Group items by team and analyze position impacts
@@ -280,7 +297,7 @@ export async function validatePositionRequirements(tradeItems: any[], leagueId: 
       });
 
       // Get current roster positions
-      const currentRoster = await prisma.rosterPlayer.findMany({
+      const currentRoster = await prisma.roster.findMany({
         where: { teamId },
         include: {
           player: {
@@ -561,9 +578,9 @@ export async function calculateTradeFairness(tradeItems: any[]): Promise<{
     const players = await prisma.player.findMany({
       where: { id: { in: playerIds } },
       include: {
-        playerStats: {
+        stats: {
           where: {
-            season: new Date().getFullYear()
+            season: new Date().getFullYear().toString()
           },
           orderBy: {
             week: 'desc'
@@ -582,7 +599,7 @@ export async function calculateTradeFairness(tradeItems: any[]): Promise<{
           // Simple value calculation based on recent performance
           const recentStats = player.stats.slice(0, 3);
           const avgPoints = recentStats.length > 0 
-            ? recentStats.reduce((sum, stat) => sum + (stat.fantasyPoints?.toNumber() || 0), 0) / recentStats.length
+            ? recentStats.reduce((sum, stat) => sum + (stat.fantasyPoints || 0), 0) / recentStats.length
             : 10; // Default value
 
           // Position scarcity multipliers

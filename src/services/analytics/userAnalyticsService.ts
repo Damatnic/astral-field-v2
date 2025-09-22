@@ -132,7 +132,7 @@ class UserAnalyticsService {
       };
 
       // Cache for 5 minutes
-      await redisCache.setex(cacheKey, this.cacheTime, JSON.stringify(metrics));
+      await redisCache.set(cacheKey, JSON.stringify(metrics), this.cacheTime);
       
       return metrics;
 
@@ -178,7 +178,7 @@ class UserAnalyticsService {
         researchActivity
       };
 
-      await redisCache.setex(cacheKey, this.cacheTime, JSON.stringify(metrics));
+      await redisCache.set(cacheKey, JSON.stringify(metrics), this.cacheTime);
       
       return metrics;
 
@@ -262,7 +262,7 @@ class UserAnalyticsService {
       };
 
       // Cache for 1 hour
-      await redisCache.setex(cacheKey, 3600, JSON.stringify(pattern));
+      await redisCache.set(cacheKey, JSON.stringify(pattern), 3600);
       
       return pattern;
 
@@ -309,7 +309,7 @@ class UserAnalyticsService {
         }
       };
 
-      await redisCache.setex(cacheKey, 1800, JSON.stringify(cohortData)); // 30 minutes
+      await redisCache.set(cacheKey, JSON.stringify(cohortData), 1800); // 30 minutes
       
       return cohortData;
 
