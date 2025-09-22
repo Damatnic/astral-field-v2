@@ -489,12 +489,12 @@ const TeamSelectionLogin = () => {
     setIsAuthenticating(true);
     
     try {
-      // Store team selection
-      localStorage.setItem('selected_team', JSON.stringify(team));
+      // For now, redirect to login page with team info
+      localStorage.setItem('selected_team_email', team.email);
       
-      // Smooth transition to dashboard  
+      // Smooth transition to login page
       await new Promise(resolve => setTimeout(resolve, 1500)); // Show loading animation
-      router.push('/dashboard');
+      router.push('/login');
     } catch (error) {
       console.error('Login failed:', error);
     } finally {
