@@ -95,7 +95,7 @@ class UserAnalyticsService {
       // Try cache first
       const cached = await redisCache.get(cacheKey);
       if (cached) {
-        return JSON.parse(cached);
+        return JSON.parse(cached as string);
       }
 
       const [startDate, endDate] = this.getDateRange(timeRange);
@@ -151,7 +151,7 @@ class UserAnalyticsService {
     try {
       const cached = await redisCache.get(cacheKey);
       if (cached) {
-        return JSON.parse(cached);
+        return JSON.parse(cached as string);
       }
 
       const [startDate, endDate] = this.getDateRange(timeRange);
@@ -197,7 +197,7 @@ class UserAnalyticsService {
     try {
       const cached = await redisCache.get(cacheKey);
       if (cached) {
-        return JSON.parse(cached);
+        return JSON.parse(cached as string);
       }
 
       // Get user's session data
@@ -281,7 +281,7 @@ class UserAnalyticsService {
     try {
       const cached = await redisCache.get(cacheKey);
       if (cached) {
-        return JSON.parse(cached);
+        return JSON.parse(cached as string);
       }
 
       // This would implement cohort analysis

@@ -195,7 +195,7 @@ class RealTimeAnalyticsService extends EventEmitter {
     try {
       const cached = await redisCache.get(cacheKey);
       if (cached) {
-        return JSON.parse(cached);
+        return JSON.parse(cached as string);
       }
 
       const overview = await this.getOverviewMetrics();

@@ -200,7 +200,7 @@ class PlayerAnalyticsService {
     try {
       const cached = await redisCache.get(cacheKey);
       if (cached) {
-        return JSON.parse(cached);
+        return JSON.parse(cached as string);
       }
 
       // Get player data
@@ -279,7 +279,7 @@ class PlayerAnalyticsService {
     try {
       const cached = await redisCache.get(cacheKey);
       if (cached) {
-        return JSON.parse(cached);
+        return JSON.parse(cached as string);
       }
 
       // Get all players at position with stats
@@ -339,7 +339,7 @@ class PlayerAnalyticsService {
     try {
       const cached = await redisCache.get(cacheKey);
       if (cached) {
-        return JSON.parse(cached);
+        return JSON.parse(cached as string);
       }
 
       const weekFilter = weeks ? { week: { in: weeks } } : {};
@@ -406,7 +406,7 @@ class PlayerAnalyticsService {
     try {
       const cached = await redisCache.get(cacheKey);
       if (cached) {
-        return JSON.parse(cached);
+        return JSON.parse(cached as string);
       }
 
       // Get player and injury data
@@ -481,7 +481,7 @@ class PlayerAnalyticsService {
     try {
       const cached = await redisCache.get(cacheKey);
       if (cached) {
-        return JSON.parse(cached);
+        return JSON.parse(cached as string);
       }
 
       const positionFilter = position ? { position: position as any } : {};

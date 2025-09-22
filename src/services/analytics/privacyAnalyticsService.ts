@@ -152,7 +152,7 @@ class PrivacyAnalyticsService {
     try {
       const cached = await redisCache.get(`consent:${userId}`);
       if (cached) {
-        const encrypted = JSON.parse(cached);
+        const encrypted = JSON.parse(cached as string);
         return this.decryptData(encrypted);
       }
       

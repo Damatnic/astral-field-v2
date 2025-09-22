@@ -163,7 +163,7 @@ class LeagueAnalyticsService {
     try {
       const cached = await redisCache.get(cacheKey);
       if (cached) {
-        return JSON.parse(cached);
+        return JSON.parse(cached as string);
       }
 
       // Get league with all related data
@@ -230,7 +230,7 @@ class LeagueAnalyticsService {
     try {
       const cached = await redisCache.get(cacheKey);
       if (cached) {
-        return JSON.parse(cached);
+        return JSON.parse(cached as string);
       }
 
       // Get league data
@@ -289,7 +289,7 @@ class LeagueAnalyticsService {
     try {
       const cached = await redisCache.get(cacheKey);
       if (cached) {
-        return JSON.parse(cached);
+        return JSON.parse(cached as string);
       }
 
       const [startDate] = this.getSeasonDateRange(timeRange);
@@ -346,7 +346,7 @@ class LeagueAnalyticsService {
     try {
       const cached = await redisCache.get(cacheKey);
       if (cached) {
-        return JSON.parse(cached);
+        return JSON.parse(cached as string);
       }
 
       const [startDate] = this.getSeasonDateRange(timeRange);
@@ -396,7 +396,7 @@ class LeagueAnalyticsService {
     try {
       const cached = await redisCache.get(cacheKey);
       if (cached) {
-        return JSON.parse(cached);
+        return JSON.parse(cached as string);
       }
 
       // Get league and communication data

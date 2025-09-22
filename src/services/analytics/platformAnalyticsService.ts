@@ -297,7 +297,7 @@ class PlatformAnalyticsService {
     try {
       const cached = await redisCache.get(cacheKey);
       if (cached) {
-        return JSON.parse(cached);
+        return JSON.parse(cached as string);
       }
 
       const [startDate, endDate] = this.getDateRange(timeRange);
@@ -344,7 +344,7 @@ class PlatformAnalyticsService {
     try {
       const cached = await redisCache.get(cacheKey);
       if (cached) {
-        return JSON.parse(cached);
+        return JSON.parse(cached as string);
       }
 
       // Analyze user segmentation
@@ -385,7 +385,7 @@ class PlatformAnalyticsService {
     try {
       const cached = await redisCache.get(cacheKey);
       if (cached) {
-        return JSON.parse(cached);
+        return JSON.parse(cached as string);
       }
 
       // Check system health
@@ -426,7 +426,7 @@ class PlatformAnalyticsService {
     try {
       const cached = await redisCache.get(cacheKey);
       if (cached) {
-        return JSON.parse(cached);
+        return JSON.parse(cached as string);
       }
 
       // Analyze user behavior trends
@@ -463,7 +463,7 @@ class PlatformAnalyticsService {
     try {
       const cached = await redisCache.get(cacheKey);
       if (cached) {
-        return JSON.parse(cached);
+        return JSON.parse(cached as string);
       }
 
       // Predict user churn
