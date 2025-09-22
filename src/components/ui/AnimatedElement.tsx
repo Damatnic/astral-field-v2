@@ -36,7 +36,7 @@ interface AnimatedElementProps extends Omit<HTMLMotionProps<'div'>, 'variants'> 
   customVariants?: Variants;
   hover?: boolean;
   stagger?: boolean;
-  viewport?: boolean; // Whether to animate when in viewport
+  viewport?: any; // Whether to animate when in viewport
   once?: boolean; // Whether to animate only once
 }
 
@@ -84,9 +84,9 @@ const AnimatedElement: React.FC<AnimatedElementProps> = ({
   const customizedVariants: Variants = {
     ...variants,
     animate: {
-      ...variants.animate,
+      ...(typeof variants.animate === 'object' ? variants.animate : {}),
       transition: {
-        ...variants.animate?.transition,
+        ...(typeof variants.animate === 'object' && variants.animate.transition ? variants.animate.transition : {}),
         ...(duration && { duration }),
         ...(delay && { delay })
       }
@@ -106,19 +106,17 @@ const AnimatedElement: React.FC<AnimatedElementProps> = ({
   const containerVariants = stagger ? staggerContainerVariants : customizedVariants;
 
   return (
-    <MotionComponent
+    <motion.div
       className={className}
       variants={containerVariants}
       initial="initial"
       animate="animate"
       exit="exit"
       whileHover={hover ? "hover" : undefined}
-      viewport={viewport ? { once, amount: 0.3 } : undefined}
-      {...(viewport && { whileInView: "animate" })}
       {...props}
     >
       {children}
-    </MotionComponent>
+    </motion.div>
   );
 };
 

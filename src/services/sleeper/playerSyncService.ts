@@ -29,11 +29,11 @@ const SLEEPER_POSITION_MAP: Record<string, Position> = {
   'TE': Position.TE,
   'K': Position.K,
   'DEF': Position.DST,
-  'DL': Position.DL,
-  'LB': Position.LB,
-  'DB': Position.DB,
-  'CB': Position.CB,
-  'S': Position.S
+  'DL': Position.DEF,  // Defensive players mapped to DEF
+  'LB': Position.DEF,
+  'DB': Position.DEF,
+  'CB': Position.DEF,
+  'S': Position.DEF
 };
 
 // Status mapping from Sleeper to our schema
@@ -402,7 +402,7 @@ export class PlayerSyncService {
     season: number
   ): Promise<void> {
     const player = await prisma.player.findUnique({
-      where: { nflId: `sleeper_${sleeperPlayerId}` },
+      where: { sleeperPlayerId: sleeperPlayerId },
       select: { id: true }
     });
 
@@ -431,7 +431,7 @@ export class PlayerSyncService {
     week: number
   ): Promise<void> {
     const player = await prisma.player.findUnique({
-      where: { nflId: `sleeper_${sleeperPlayerId}` },
+      where: { sleeperPlayerId: sleeperPlayerId },
       select: { id: true }
     });
 
@@ -595,7 +595,7 @@ export class PlayerSyncService {
     week: number
   ): Promise<boolean> {
     const player = await prisma.player.findUnique({
-      where: { nflId: `sleeper_${sleeperPlayerId}` },
+      where: { sleeperPlayerId: sleeperPlayerId },
       select: { id: true }
     });
 
@@ -605,7 +605,7 @@ export class PlayerSyncService {
     const fantasyPoints = this.calculateFantasyPoints(playerStats);
 
     try {
-      await prisma.stats.upsert({
+      await prisma.playerStats.upsert({
         where: {
           playerId_week_season: {
             playerId: player.id,

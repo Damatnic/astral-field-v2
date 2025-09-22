@@ -336,7 +336,7 @@ export class SleeperRealTimeScoringService {
     season: number
   ): Promise<PlayerScore> {
     // Get player stats from database
-    const playerStats = await db.stats.findFirst({
+    const playerStats = await db.playerStats.findFirst({
       where: {
         playerId: player.id,
         week,
@@ -357,7 +357,7 @@ export class SleeperRealTimeScoringService {
     }
 
     // Get projection if available
-    const projection = await db.playerProjection.findFirst({
+    const projection = await db.projection.findFirst({
       where: {
         playerId: player.id,
         week,

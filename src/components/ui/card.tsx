@@ -77,15 +77,11 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(({
     xl: 'p-10'
   }[padding] : '';
   
-  const MotionComponent = motion[onClick ? 'button' : 'div'];
-  
   return (
-    <MotionComponent 
+    <div 
       ref={ref}
       className={`${baseClasses} ${variantClasses[variant]} ${paddingClasses} ${className}`}
       onClick={onClick}
-      whileHover={hover || interactive ? { y: -2, scale: 1.01 } : {}}
-      transition={{ type: "spring", stiffness: 300, damping: 20 }}
       {...props}
     >
       {/* Glow effect for cinematic cards */}
@@ -96,7 +92,7 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(({
       <div className="relative z-10">
         {children}
       </div>
-    </MotionComponent>
+    </div>
   );
 });
 

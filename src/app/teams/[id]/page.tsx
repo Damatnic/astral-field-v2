@@ -18,10 +18,6 @@ export default function TeamPage() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'roster' | 'lineup' | 'stats'>('roster');
 
-  useEffect(() => {
-    fetchTeam();
-  }, [fetchTeam]);
-
   const fetchTeam = useCallback(async () => {
     try {
       setLoading(true);
@@ -40,6 +36,10 @@ export default function TeamPage() {
       setLoading(false);
     }
   }, [teamId]);
+
+  useEffect(() => {
+    fetchTeam();
+  }, [fetchTeam]);
 
   const handleLineupChange = async (changes: any[]) => {
     try {

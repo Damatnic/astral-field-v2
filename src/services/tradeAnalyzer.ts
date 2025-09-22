@@ -184,7 +184,7 @@ export class TradeAnalyzer {
           where: {
             position,
             status: 'ACTIVE',
-            rosterPlayers: {
+            roster: {
               none: {} // Not on any roster
             }
           }

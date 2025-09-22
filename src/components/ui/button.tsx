@@ -85,14 +85,11 @@ export function Button({
   }[size];
   
   return (
-    <motion.button
+    <button
       type={type}
       className={`${baseClasses} ${positionClasses || variantClasses[variant]} ${sizeClasses[size]} ${className}`}
       onClick={onClick}
       disabled={disabled || loading}
-      whileHover={{ scale: disabled || loading ? 1 : 1.02 }}
-      whileTap={{ scale: disabled || loading ? 1 : 0.98 }}
-      transition={{ type: "spring", stiffness: 400, damping: 17 }}
       {...props}
     >
       {/* Glow effect overlay */}
@@ -110,6 +107,6 @@ export function Button({
       {!loading && rightIcon && (
         <span className={iconSize}>{rightIcon}</span>
       )}
-    </motion.button>
+    </button>
   );
 }

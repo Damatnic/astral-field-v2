@@ -39,10 +39,6 @@ export default function MatchupsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchMatchups();
-  }, [fetchMatchups]);
-
   const fetchMatchups = useCallback(async () => {
     try {
       setLoading(true);
@@ -60,6 +56,10 @@ export default function MatchupsPage() {
       setLoading(false);
     }
   }, [selectedWeek]);
+
+  useEffect(() => {
+    fetchMatchups();
+  }, [fetchMatchups]);
 
   const getMatchupStatus = (matchup: Matchup) => {
     if (matchup.status === 'completed') {

@@ -89,40 +89,6 @@ export function LiveScoringDashboard({
   const [autoRefresh, setAutoRefresh] = useState(true);
   const socketRef = useRef<Socket | null>(null);
 
-  useEffect(() => {
-    // Initialize WebSocket connection
-    socketRef.current = io('/api/scoring/live', {
-      query: { leagueId, week }
-    });
-
-    socketRef.current.on('connect', () => {
-      setIsConnected(true);});
-
-    socketRef.current.on('disconnect', () => {
-      setIsConnected(false);});
-
-    socketRef.current.on('scoreUpdate', (data: any) => {
-      handleScoreUpdate(data);
-    });
-
-    socketRef.current.on('playUpdate', (play: GameUpdate) => {
-      handlePlayUpdate(play);
-    });
-
-    socketRef.current.on('matchupUpdate', (matchup: Matchup) => {
-      handleMatchupUpdate(matchup);
-    });
-
-    // Initial data fetch
-    fetchInitialData();
-
-    return () => {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-      }
-    };
-  }, [leagueId, week, fetchInitialData, handleMatchupUpdate]);
-
   const fetchInitialData = useCallback(async () => {
     try {
       const response = await fetch(`/api/scoring/live?leagueId=${leagueId}&week=${week}`);
@@ -164,6 +130,40 @@ export function LiveScoringDashboard({
       setSelectedMatchup(matchup);
     }
   }, [selectedMatchup]);
+
+  useEffect(() => {
+    // Initialize WebSocket connection
+    socketRef.current = io('/api/scoring/live', {
+      query: { leagueId, week }
+    });
+
+    socketRef.current.on('connect', () => {
+      setIsConnected(true);});
+
+    socketRef.current.on('disconnect', () => {
+      setIsConnected(false);});
+
+    socketRef.current.on('scoreUpdate', (data: any) => {
+      handleScoreUpdate(data);
+    });
+
+    socketRef.current.on('playUpdate', (play: GameUpdate) => {
+      handlePlayUpdate(play);
+    });
+
+    socketRef.current.on('matchupUpdate', (matchup: Matchup) => {
+      handleMatchupUpdate(matchup);
+    });
+
+    // Initial data fetch
+    fetchInitialData();
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+    };
+  }, [leagueId, week, fetchInitialData, handleMatchupUpdate]);
 
   const getScoreDifferenceColor = (diff: number) => {
     if (Math.abs(diff) < 5) return 'text-yellow-500';

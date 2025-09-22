@@ -114,14 +114,6 @@ const OptimizedPlayerList: React.FC<PlayerListProps> = ({
   const listRef = useRef<List>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Debounced search function
-  const debouncedSearch = useCallback(
-    debounce(async (term: string) => {
-      await fetchPlayers(term, 1, true);
-    }, 300),
-    [fetchPlayers]
-  );
-
   // Optimized fetch function with caching
   const fetchPlayers = useCallback(async (
     search: string = '', 
@@ -212,6 +204,14 @@ const OptimizedPlayerList: React.FC<PlayerListProps> = ({
       setLoading(false);
     }
   }, [leagueId, filters, loading]);
+
+  // Debounced search function
+  const debouncedSearch = useCallback(
+    debounce(async (term: string) => {
+      await fetchPlayers(term, 1, true);
+    }, 300),
+    [fetchPlayers]
+  );
 
   // Load more function for infinite scroll
   const loadMore = useCallback(() => {

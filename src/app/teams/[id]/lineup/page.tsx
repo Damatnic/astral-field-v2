@@ -15,10 +15,6 @@ export default function LineupPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchTeamData();
-  }, [fetchTeamData]);
-
   const fetchTeamData = useCallback(async () => {
     try {
       setLoading(true);
@@ -36,6 +32,10 @@ export default function LineupPage() {
       setLoading(false);
     }
   }, [teamId]);
+
+  useEffect(() => {
+    fetchTeamData();
+  }, [fetchTeamData]);
 
   if (loading) {
     return (

@@ -364,7 +364,7 @@ interface EnhancedInputProps {
   placeholder?: string;
   type?: string;
   value?: string;
-  onChange?: () => void;
+  onChange?: (value: string) => void;
   error?: string;
   icon?: LucideIcon;
   size?: 'sm' | 'md' | 'lg';

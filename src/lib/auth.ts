@@ -147,7 +147,7 @@ export async function login(credentials: LoginCredentials): Promise<AuthResult> 
         avatar: true,
         createdAt: true,
         updatedAt: true,
-        password: true
+        hashedPassword: true
       }
     });
     
@@ -159,7 +159,7 @@ export async function login(credentials: LoginCredentials): Promise<AuthResult> 
     }
     
     // Verify password using bcrypt
-    if (!dbUser.password) {
+    if (!dbUser.hashedPassword) {
       return { 
         success: false, 
         error: 'Password not set for this account. Please contact your administrator.' 
@@ -167,7 +167,7 @@ export async function login(credentials: LoginCredentials): Promise<AuthResult> 
     }
     
     // Use bcrypt to verify hashed password
-    const isValidPassword = await bcrypt.compare(password, dbUser.password);
+    const isValidPassword = await bcrypt.compare(password, dbUser.hashedPassword);
     if (!isValidPassword) {
       return { 
         success: false, 
