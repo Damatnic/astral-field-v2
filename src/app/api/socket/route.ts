@@ -6,6 +6,8 @@ import { gameStatusService } from '@/services/sleeper/gameStatusService';
 import { scoringOrchestrator } from '@/services/scoring/scoringOrchestrator';
 import { prisma } from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+
 // This is a workaround for Next.js API routes not supporting WebSockets directly
 // In a production environment, you might want to use a separate WebSocket server
 

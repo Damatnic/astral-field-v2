@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { handleComponentError } from '@/lib/error-handling';
 import { Resend } from 'resend';
+
+export const dynamic = 'force-dynamic';
 // NotificationLogType removed - using string values directly
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;

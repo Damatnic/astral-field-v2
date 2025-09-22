@@ -1,3 +1,5 @@
+
+export const dynamic = 'force-dynamic';
 // Force deployment test
 import { NextResponse } from 'next/server';
 

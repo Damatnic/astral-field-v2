@@ -27,7 +27,27 @@ async function seedDamatoUsers() {
   console.log('🏈 Seeding D\'Amato Dynasty League Users...\n');
   
   try {
-    // First, create or get the league
+    // First, create the commissioner user
+    const commissioner = DAMATO_DYNASTY_MEMBERS[0]; // Nicholas D'Amato
+    let commissionerUser = await prisma.user.findUnique({
+      where: { email: commissioner.email }
+    });
+    
+    if (!commissionerUser) {
+      const hashedPassword = await bcrypt.hash('Dynasty2025!', 10);
+      commissionerUser = await prisma.user.create({
+        data: {
+          email: commissioner.email,
+          hashedPassword,
+          name: commissioner.name,
+          role: commissioner.role,
+          teamName: commissioner.teamName
+        }
+      });
+      console.log(`✅ Commissioner created: ${commissioner.email}`);
+    }
+    
+    // Now create or get the league with the commissioner
     let league = await prisma.league.findFirst({
       where: { name: "D'Amato Dynasty League" }
     });
@@ -37,8 +57,9 @@ async function seedDamatoUsers() {
       league = await prisma.league.create({
         data: {
           name: "D'Amato Dynasty League",
-          sleeperLeagueId: "damato-dynasty-2025",
-          season: 2025,
+          commissionerId: commissionerUser.id,
+          season: "2025",
+          currentWeek: 1,
           settings: {
             maxTeams: 10,
             scoringType: "PPR",
@@ -46,7 +67,10 @@ async function seedDamatoUsers() {
             tradeDeadline: 10,
             waiverType: "FAAB",
             waiverBudget: 100
-          }
+          },
+          scoringSettings: {},
+          rosterSettings: {},
+          draftSettings: {}
         }
       });
       console.log('✅ League created');
@@ -69,7 +93,7 @@ async function seedDamatoUsers() {
         user = await prisma.user.create({
           data: {
             email: member.email,
-            password: hashedPassword,
+            hashedPassword,
             name: member.name,
             role: member.role,
             teamName: member.teamName
@@ -110,40 +134,14 @@ async function seedDamatoUsers() {
         });
         console.log(`  ✅ Team created: ${member.teamName}`);
       }
-      
-      // Check if league membership exists
-      const membership = await prisma.leagueMember.findUnique({
-        where: {
-          userId_leagueId: {
-            userId: user.id,
-            leagueId: league.id
-          }
-        }
-      });
-      
-      if (!membership) {
-        // Create league membership
-        await prisma.leagueMember.create({
-          data: {
-            userId: user.id,
-            leagueId: league.id,
-            role: member.role === UserRole.COMMISSIONER ? 'COMMISSIONER' : 'OWNER'
-          }
-        });
-        console.log(`  ✅ League membership created`);
-      }
     }
     
-    // Set the commissioner
-    const commissioner = await prisma.user.findUnique({
-      where: { email: "nicholas@damato-dynasty.com" }
-    });
-    
-    if (commissioner) {
+    // Update league with current commissioner ID (in case it was already created)
+    if (commissionerUser) {
       await prisma.league.update({
         where: { id: league.id },
         data: {
-          commissionerId: commissioner.id
+          commissionerId: commissionerUser.id
         }
       });
       console.log('\n✅ Commissioner set: Nicholas D\'Amato');

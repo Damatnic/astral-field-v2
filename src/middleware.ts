@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getToken } from 'next-auth/jwt';
+import { validateSessionFromRequest } from '@/lib/auth';
 
 // Rate limiting configuration
 const RATE_LIMIT_MAX = parseInt(process.env.RATE_LIMIT_MAX || '100');
@@ -96,22 +96,22 @@ export async function middleware(request: NextRequest) {
   // Add CORS headers
   response = handleCORS(request, response);
   
-  // Protected routes check (for admin and sensitive areas)
-  if (pathname.startsWith('/admin') || pathname.startsWith('/monitoring')) {
+  // Protected routes check
+  if (pathname.startsWith('/dashboard') || pathname.startsWith('/admin') || pathname.startsWith('/monitoring')) {
     try {
-      const token = await getToken({ 
-        req: request, 
-        secret: process.env.NEXTAUTH_SECRET,
-        secureCookie: isProduction,
-        salt: 'nextauth.session-token'
-      });
+      const user = await validateSessionFromRequest(request);
       
-      if (!token || !token.isAdmin) {
-        return NextResponse.redirect(new URL('/auth/signin', request.url));
+      if (!user) {
+        return NextResponse.redirect(new URL('/login', request.url));
+      }
+      
+      // Additional admin check for admin/monitoring routes
+      if ((pathname.startsWith('/admin') || pathname.startsWith('/monitoring')) && user.role !== 'ADMIN') {
+        return NextResponse.redirect(new URL('/dashboard', request.url));
       }
     } catch (error) {
       console.error('Auth middleware error:', error);
-      return NextResponse.redirect(new URL('/auth/signin', request.url));
+      return NextResponse.redirect(new URL('/login', request.url));
     }
   }
   

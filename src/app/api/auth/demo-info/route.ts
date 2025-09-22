@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getDemoCredentials } from '@/lib/auth-simple';
 
 import { handleComponentError } from '@/lib/error-handling';
+
+export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const demoInfo = getDemoCredentials();

@@ -4,6 +4,7 @@ import { UserRole } from '@/types/fantasy';
 import { handleComponentError } from '@/utils/errorHandling';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import { prisma } from './db';
 // Helper function to convert user role string to our role type  
 function convertUserRole(prismaRole: string): 'ADMIN' | 'COMMISSIONER' | 'PLAYER' {
@@ -55,7 +56,7 @@ export interface AuthResult {
 // Database-based session storage for production
 
 // Constants
-const SESSION_COOKIE_NAME = 'astralfield-session';
+const SESSION_COOKIE_NAME = 'auth-token';
 const SESSION_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 // Session Management
@@ -63,7 +64,7 @@ function generateSessionId(): string {
   return crypto.randomBytes(32).toString('hex');
 }
 
-async function createSession(userId: string): Promise<AuthSession> {
+export async function createSession(userId: string): Promise<AuthSession> {
   const sessionId = generateSessionId();
   const expiresAt = new Date(Date.now() + SESSION_DURATION);
   
@@ -299,12 +300,39 @@ export async function getCurrentUser(): Promise<User | null> {
 
 export async function authenticateFromRequest(request: NextRequest): Promise<User | null> {
   try {
-    // Try to get session from main auth cookie or simple-login cookie
-    const sessionId = request.cookies.get(SESSION_COOKIE_NAME)?.value || 
-                     request.cookies.get('session')?.value;
+    // Try to get session from auth token cookie (prioritize auth-token)
+    const sessionCookie = request.cookies.get(SESSION_COOKIE_NAME)?.value ||
+                          request.cookies.get('session')?.value ||
+                          request.cookies.get('astralfield-session')?.value;
     
-    if (sessionId) {
-      const session = await getSession(sessionId);
+    if (sessionCookie) {
+      // First, try to verify as JWT token (from test-login API)
+      try {
+        const decoded = jwt.verify(sessionCookie, process.env.NEXTAUTH_SECRET || 'test-secret') as any;
+        if (decoded && decoded.userId) {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: decoded.userId }
+          });
+          
+          if (dbUser) {
+            const user: User = {
+              id: dbUser.id,
+              email: dbUser.email,
+              name: dbUser.name || dbUser.email,
+              role: convertUserRole(dbUser.role),
+              avatar: dbUser.avatar || undefined,
+              createdAt: dbUser.createdAt,
+              updatedAt: dbUser.updatedAt
+            };
+            return user;
+          }
+        }
+      } catch (jwtError) {
+        // Not a valid JWT token, continue to other auth methods
+      }
+      
+      // Try as database session ID
+      const session = await getSession(sessionCookie);
       if (session) {
         const dbUser = await prisma.user.findUnique({
           where: { id: session.userId }

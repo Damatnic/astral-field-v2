@@ -3,6 +3,8 @@ import { handleComponentError } from '@/utils/errorHandling';
 import { errorTracker, ErrorCategory, captureError } from '@/lib/error-tracking';
 import { logger } from '@/lib/logger';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const errorData = await request.json();

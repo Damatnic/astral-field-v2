@@ -80,7 +80,16 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, season = "2024" } = body;
+    const { 
+      name, 
+      season = "2025", 
+      commissionerId,
+      maxTeams = 10,
+      draftDate,
+      settings = {},
+      scoringSettings = {},
+      rosterSettings = {}
+    } = body;
 
     if (!name) {
       return NextResponse.json(
@@ -89,11 +98,129 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // For now, return not implemented
-    return NextResponse.json(
-      { success: false, message: 'League creation not implemented yet' },
-      { status: 501 }
-    );
+    if (!commissionerId) {
+      return NextResponse.json(
+        { success: false, message: 'Commissioner ID is required' },
+        { status: 400 }
+      );
+    }
+
+    // Verify commissioner exists
+    const commissioner = await prisma.user.findUnique({
+      where: { id: commissionerId }
+    });
+
+    if (!commissioner) {
+      return NextResponse.json(
+        { success: false, message: 'Commissioner not found' },
+        { status: 404 }
+      );
+    }
+
+    // Default league settings
+    const defaultSettings = {
+      maxTeams,
+      playoffTeams: Math.floor(maxTeams / 2),
+      playoffWeeks: 3,
+      regularSeasonWeeks: 14,
+      tradeDeadline: 12,
+      waiverPeriod: 1,
+      faabBudget: 1000,
+      ...settings
+    };
+
+    // Default scoring settings (PPR)
+    const defaultScoringSettings = {
+      passingYards: 0.04,
+      passingTouchdowns: 4,
+      interceptions: -2,
+      rushingYards: 0.1,
+      rushingTouchdowns: 6,
+      receivingYards: 0.1,
+      receivingTouchdowns: 6,
+      receptions: 1, // PPR
+      fumbles: -2,
+      kickingXP: 1,
+      kickingFG: 3,
+      kickingMissedFG: -1,
+      defensePointsAllowed: 10,
+      defenseTouchdowns: 6,
+      defenseSacks: 1,
+      defenseInterceptions: 2,
+      defenseFumbles: 2,
+      defenseBlocks: 2,
+      defenseSafeties: 2,
+      ...scoringSettings
+    };
+
+    // Default roster settings
+    const defaultRosterSettings = {
+      qb: 1,
+      rb: 2,
+      wr: 2,
+      te: 1,
+      flex: 1,
+      k: 1,
+      def: 1,
+      bench: 6,
+      ir: 1,
+      ...rosterSettings
+    };
+
+    // Create the league
+    const league = await prisma.league.create({
+      data: {
+        name,
+        season,
+        commissionerId,
+        draftDate: draftDate ? new Date(draftDate) : null,
+        settings: defaultSettings,
+        scoringSettings: defaultScoringSettings,
+        rosterSettings: defaultRosterSettings,
+        currentWeek: 1,
+        isActive: true,
+        playoffs: false
+      },
+      include: {
+        commissioner: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true
+          }
+        }
+      }
+    });
+
+    // Create commissioner's team
+    await prisma.team.create({
+      data: {
+        name: `${commissioner.name}'s Team`,
+        ownerId: commissionerId,
+        leagueId: league.id,
+        standing: 1,
+        waiverPriority: 1
+      }
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        id: league.id,
+        name: league.name,
+        season: league.season,
+        commissioner: league.commissioner,
+        settings: league.settings,
+        scoringSettings: league.scoringSettings,
+        rosterSettings: league.rosterSettings,
+        currentWeek: league.currentWeek,
+        isActive: league.isActive,
+        draftDate: league.draftDate,
+        createdAt: league.createdAt
+      },
+      message: 'League created successfully'
+    });
 
   } catch (error) {
     console.error('Error creating league:', error);

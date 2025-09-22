@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { DataSyncService } from '@/lib/services/data-sync';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST() {
   try {
     const syncService = new DataSyncService();

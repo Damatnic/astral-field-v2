@@ -1,3 +1,5 @@
+
+export const dynamic = 'force-dynamic';
 /**
  * Error Analytics API Endpoint
  * Provides detailed error analytics, trends, and insights for monitoring

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { handleComponentError, logError } from '@/lib/error-handling';
 import { login as loginFull } from '@/lib/auth';
+import { createSession } from '@/lib/auth';
+
+export const dynamic = 'force-dynamic';
 
 // Always use full auth system since we have real users in production database
 const useSimpleAuth = false; // Disabled - we have real users in production
@@ -51,8 +54,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Return success response
-    return NextResponse.json({
+    // Create session for the authenticated user
+    const session = await createSession(authResult.user.id);
+    
+    // Create response with success data
+    const response = NextResponse.json({
       success: true,
       user: {
         id: authResult.user.id,
@@ -63,6 +69,16 @@ export async function POST(request: NextRequest) {
         createdAt: authResult.user.createdAt
       }
     });
+
+    // Set session cookie
+    response.cookies.set('astralfield-session', session.sessionId, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 // 7 days in seconds
+    });
+
+    return response;
 
   } catch (error) {
     handleComponentError(error as Error, 'route');

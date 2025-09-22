@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 
 import { handleComponentError } from '@/lib/error-handling';
+
+export const dynamic = 'force-dynamic';
 // Injury risk factors and weights
 const RISK_FACTORS = {
   age: 0.15,

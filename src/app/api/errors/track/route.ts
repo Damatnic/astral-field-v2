@@ -1,3 +1,5 @@
+
+export const dynamic = 'force-dynamic';
 /**
  * Enhanced Error Tracking API Endpoint
  * Handles error ingestion, processing, and storage with rate limiting and validation

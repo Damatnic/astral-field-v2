@@ -1,16 +1,49 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import jwt from 'jsonwebtoken';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
-    // Check for session cookie from simple-login
-    const sessionCookie = request.cookies.get('session')?.value;
+    // Check for session cookies from various auth methods
+    const sessionCookie = request.cookies.get('session')?.value ||
+                         request.cookies.get('auth-token')?.value ||
+                         request.cookies.get('astralfield-session')?.value;
     
     if (!sessionCookie) {
       return NextResponse.json(
         { success: false, error: 'Not authenticated' },
         { status: 401 }
       );
+    }
+
+    // First, try to verify as JWT token (from test-login API)
+    try {
+      const decoded = jwt.verify(sessionCookie, process.env.NEXTAUTH_SECRET || 'test-secret') as any;
+      
+      if (decoded && decoded.userId) {
+        // Look up user in database by ID from JWT
+        const user = await prisma.user.findUnique({
+          where: { id: decoded.userId }
+        });
+
+        if (user) {
+          return NextResponse.json({
+            success: true,
+            user: {
+              id: user.id,
+              email: user.email,
+              name: user.name || user.email.split('@')[0],
+              avatar: `/api/avatars/${encodeURIComponent(user.name || user.email.split('@')[0])}`,
+              createdAt: user.createdAt.toISOString(),
+              updatedAt: user.updatedAt.toISOString()
+            }
+          });
+        }
+      }
+    } catch (jwtError) {
+      // Not a valid JWT token, continue to other auth methods
     }
 
     // Check if it's a database session ID (from simple-login API)

@@ -60,15 +60,56 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  return NextResponse.json({
-    success: false,
-    message: 'Lineup updates not implemented yet'
-  }, { status: 501 });
+  try {
+    const body = await request.json();
+    const { teamId, lineup, week } = body;
+
+    if (!teamId || !lineup) {
+      return NextResponse.json({
+        success: false,
+        message: 'Team ID and lineup are required'
+      }, { status: 400 });
+    }
+
+    // Validate lineup format
+    if (!Array.isArray(lineup)) {
+      return NextResponse.json({
+        success: false,
+        message: 'Lineup must be an array'
+      }, { status: 400 });
+    }
+
+    // Update roster positions in transaction
+    await prisma.$transaction(async (tx) => {
+      for (const player of lineup) {
+        await tx.roster.updateMany({
+          where: {
+            teamId,
+            playerId: player.playerId
+          },
+          data: {
+            isStarter: player.isStarter,
+            position: player.position
+          }
+        });
+      }
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: 'Lineup updated successfully'
+    });
+
+  } catch (error) {
+    console.error('Error updating lineup:', error);
+    return NextResponse.json({
+      success: false,
+      message: 'Failed to update lineup'
+    }, { status: 500 });
+  }
 }
 
 export async function PUT(request: NextRequest) {
-  return NextResponse.json({
-    success: false,
-    message: 'Lineup updates not implemented yet'
-  }, { status: 501 });
+  // Use the same logic as POST for lineup updates
+  return POST(request);
 }

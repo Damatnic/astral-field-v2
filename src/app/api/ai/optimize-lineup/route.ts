@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { handleComponentError } from '@/lib/error-handling';
 
+export const dynamic = 'force-dynamic';
+
 // Machine Learning weights for player scoring predictions
 const ML_WEIGHTS = {
   recentForm: 0.35,

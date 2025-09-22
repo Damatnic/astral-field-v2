@@ -1,7 +1,7 @@
 'use client';
 
-import React, { createContext, useContext } from 'react';
-import { SessionProvider, useSession, signIn, signOut } from 'next-auth/react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 // Types
 interface User {
@@ -38,27 +38,62 @@ export function useAuth(): AuthContextType {
   return context;
 }
 
-// Internal component that uses NextAuth session
+// Internal component that uses custom JWT authentication
 function AuthContextProvider({ children }: { children: React.ReactNode }) {
-  const { data: session, status } = useSession();
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
   
-  const user: User | null = session?.user ? {
-    id: session.user.id || '',
-    name: session.user.name || '',
-    email: session.user.email || '',
-    image: session.user.image || undefined,
-    role: (session.user as any).role || 'PLAYER'
-  } : null;
+  // Check authentication status on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const response = await fetch('/api/auth/me', {
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.user) {
+            setUser({
+              id: data.user.id,
+              name: data.user.name,
+              email: data.user.email,
+              image: data.user.avatar,
+              role: data.user.role || 'PLAYER'
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    checkAuth();
+  }, []);
 
-  const isLoading = status === 'loading';
   const isAuthenticated = !!user;
 
   const login = async () => {
-    await signIn('auth0');
+    router.push('/login');
   };
 
   const logout = async () => {
-    await signOut({ callbackUrl: '/' });
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+      setUser(null);
+      router.push('/');
+    } catch (error) {
+      console.error('Logout failed:', error);
+      // Clear user state anyway
+      setUser(null);
+      router.push('/');
+    }
   };
 
   const hasRole = (role: User['role']): boolean => {
@@ -90,11 +125,9 @@ function AuthContextProvider({ children }: { children: React.ReactNode }) {
 // Main Auth Provider Component
 export function AuthProvider({ children }: AuthProviderProps) {
   return (
-    <SessionProvider>
-      <AuthContextProvider>
-        {children}
-      </AuthContextProvider>
-    </SessionProvider>
+    <AuthContextProvider>
+      {children}
+    </AuthContextProvider>
   );
 }
 

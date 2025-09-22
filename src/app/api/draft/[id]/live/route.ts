@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 // Enhanced Server-Sent Events for real-time draft updates
 // This provides WebSocket-like functionality using SSE
 export async function GET(
