@@ -320,7 +320,7 @@ class RealTimeAnalyticsService extends EventEmitter {
     // Count active sessions
     const activeSessions = await prisma.userSession.count({
       where: {
-        lastActivity: {
+        updatedAt: {
           gte: new Date(now.getTime() - 15 * 60 * 1000) // Last 15 minutes
         },
         isActive: true
@@ -335,7 +335,7 @@ class RealTimeAnalyticsService extends EventEmitter {
       
       const count = await prisma.userSession.count({
         where: {
-          lastActivity: {
+          updatedAt: {
             gte: hourStart,
             lt: hourEnd
           }
@@ -582,7 +582,7 @@ class RealTimeAnalyticsService extends EventEmitter {
     const totalUsers = await prisma.user.count();
     const activeNow = await prisma.userSession.count({
       where: {
-        lastActivity: {
+        updatedAt: {
           gte: new Date(Date.now() - 15 * 60 * 1000) // Last 15 minutes
         },
         isActive: true

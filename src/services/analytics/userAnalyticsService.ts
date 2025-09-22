@@ -343,7 +343,7 @@ class UserAnalyticsService {
     const dailyActive = await (prisma.userSession.groupBy as any)({
       by: ['userId'],
       where: {
-        lastActivity: {
+        updatedAt: {
           gte: new Date(endDate.getTime() - 24 * 60 * 60 * 1000)
         }
       }
@@ -352,7 +352,7 @@ class UserAnalyticsService {
     const weeklyActive = await (prisma.userSession.groupBy as any)({
       by: ['userId'],
       where: {
-        lastActivity: {
+        updatedAt: {
           gte: new Date(endDate.getTime() - 7 * 24 * 60 * 60 * 1000)
         }
       }
@@ -361,7 +361,7 @@ class UserAnalyticsService {
     const monthlyActive = await (prisma.userSession.groupBy as any)({
       by: ['userId'],
       where: {
-        lastActivity: {
+        updatedAt: {
           gte: startDate
         }
       }
@@ -568,8 +568,8 @@ class UserAnalyticsService {
     if (sessions.length === 0) return 0;
     
     const durations = sessions
-      .filter(s => s.lastActivity > s.createdAt)
-      .map(s => new Date(s.lastActivity).getTime() - new Date(s.createdAt).getTime());
+      .filter(s => s.updatedAt > s.createdAt)
+      .map(s => new Date(s.updatedAt).getTime() - new Date(s.createdAt).getTime());
     
     return durations.length > 0 ? durations.reduce((a, b) => a + b, 0) / durations.length / 1000 : 0;
   }

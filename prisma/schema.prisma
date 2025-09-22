@@ -77,7 +77,7 @@ model UserSession {
   userId       String
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   isActive     Boolean  @default(true)
-  lastActivity DateTime @default(now())
+  // lastActivity DateTime @default(now()) // Temporarily disabled - column doesn't exist in current DB
   expiresAt    DateTime
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt

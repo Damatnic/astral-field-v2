@@ -552,7 +552,7 @@ class PlatformAnalyticsService {
     const activeUsersToday = await (prisma.userSession.groupBy as any)({
       by: ['userId'],
       where: {
-        lastActivity: {
+        updatedAt: {
           gte: new Date(endDate.getTime() - 24 * 60 * 60 * 1000)
         }
       }
@@ -561,7 +561,7 @@ class PlatformAnalyticsService {
     const activeUsersThisWeek = await (prisma.userSession.groupBy as any)({
       by: ['userId'],
       where: {
-        lastActivity: {
+        updatedAt: {
           gte: new Date(endDate.getTime() - 7 * 24 * 60 * 60 * 1000)
         }
       }
@@ -570,7 +570,7 @@ class PlatformAnalyticsService {
     const activeUsersThisMonth = await (prisma.userSession.groupBy as any)({
       by: ['userId'],
       where: {
-        lastActivity: {
+        updatedAt: {
           gte: startDate
         }
       }
@@ -587,7 +587,7 @@ class PlatformAnalyticsService {
     });
 
     const totalSessionDuration = sessions.reduce((sum, session) => {
-      const duration = new Date(session.lastActivity).getTime() - new Date(session.createdAt).getTime();
+      const duration = new Date(session.updatedAt).getTime() - new Date(session.createdAt).getTime();
       return sum + duration;
     }, 0);
 

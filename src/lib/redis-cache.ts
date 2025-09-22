@@ -64,6 +64,13 @@ class EnhancedRedisCache {
 
   private async initRedis() {
     try {
+      // Skip Redis initialization during build time
+      if (process.env.NODE_ENV === 'production' && !process.env.REDIS_URL && !process.env.REDIS_PASSWORD) {
+        console.log('⚠️ Redis not configured for build environment, using fallback cache only');
+        this.isConnected = false;
+        return;
+      }
+
       const { retryDelayOnFailover, ...redisConfig } = this.config.redis;
       this.redis = new Redis({
         ...redisConfig,

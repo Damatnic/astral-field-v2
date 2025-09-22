@@ -336,7 +336,7 @@ class PrivacyAnalyticsService {
       exportData.sessions = user.userSessions.map(session => ({
         id: session.id,
         createdAt: session.createdAt,
-        lastActivity: session.lastActivity,
+        updatedAt: session.updatedAt,
         // Note: ipAddress field not available in UserSession model
         // Note: userAgent field not available in UserSession model
       }));

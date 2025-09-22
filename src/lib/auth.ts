@@ -102,10 +102,11 @@ async function getSession(sessionId: string): Promise<AuthSession | null> {
     if (!dbSession) return null;
     
     // Update last activity
-    await prisma.userSession.update({
-      where: { id: dbSession.id },
-      data: { lastActivity: new Date() }
-    });
+    // TODO: Uncomment when lastActivity field is added to database
+    // await prisma.userSession.update({
+    //   where: { id: dbSession.id },
+    //   data: { lastActivity: new Date() }
+    // });
     
     return {
       userId: dbSession.userId,
