@@ -44,7 +44,7 @@ const AnimatedBackground = () => {
       
       <motion.div
         className="absolute top-0 left-0 w-full h-full"
-        initial={{ opacity: 0 }}
+        initial={{ opacity: 1 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 2 }}
       >
@@ -242,7 +242,7 @@ export default function ModernLoginPage() {
       <AnimatedBackground />
       
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
+        initial={{ opacity: 1, scale: 1 }}
         animate={{ opacity: 1, scale: 1 }}
         className="relative w-full max-w-5xl"
       >
@@ -252,7 +252,7 @@ export default function ModernLoginPage() {
             <div className="relative p-12 lg:p-16 bg-gradient-to-br from-purple-600/20 to-blue-600/20 flex flex-col justify-between">
               <div>
                 <motion.div
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 1, y: 0 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 }}
                   className="flex items-center gap-3 mb-12"
@@ -267,7 +267,7 @@ export default function ModernLoginPage() {
                 </motion.div>
 
                 <motion.div
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 1, y: 0 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
                 >
@@ -284,7 +284,7 @@ export default function ModernLoginPage() {
               </div>
 
               <motion.div
-                initial={{ opacity: 0 }}
+                initial={{ opacity: 1 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.4 }}
                 className="space-y-4 mt-8"
@@ -310,9 +310,9 @@ export default function ModernLoginPage() {
                 {mode === 'team-select' ? (
                   <motion.div
                     key="team-select"
-                    initial={{ opacity: 0, x: 20 }}
+                    initial={{ opacity: 1, x: 0 }}
                     animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
+                    exit={{ opacity: 1, x: 0 }}
                     className="space-y-6"
                   >
                     <div>
@@ -333,7 +333,7 @@ export default function ModernLoginPage() {
 
                     {selectedTeam && (
                       <motion.div
-                        initial={{ opacity: 0, y: 10 }}
+                        initial={{ opacity: 1, y: 0 }}
                         animate={{ opacity: 1, y: 0 }}
                         className="space-y-4"
                       >
@@ -372,9 +372,9 @@ export default function ModernLoginPage() {
                 ) : (
                   <motion.div
                     key="signin"
-                    initial={{ opacity: 0, x: 20 }}
+                    initial={{ opacity: 1, x: 0 }}
                     animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
+                    exit={{ opacity: 1, x: 0 }}
                   >
                     <button
                       onClick={() => setMode('team-select')}
@@ -462,7 +462,7 @@ export default function ModernLoginPage() {
 
                       {error && (
                         <motion.div
-                          initial={{ opacity: 0, y: -10 }}
+                          initial={{ opacity: 1, y: 0 }}
                           animate={{ opacity: 1, y: 0 }}
                           className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center gap-2"
                         >
@@ -507,7 +507,7 @@ export default function ModernLoginPage() {
 
         {/* Footer */}
         <motion.div
-          initial={{ opacity: 0 }}
+          initial={{ opacity: 1 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
           className="text-center mt-8"
