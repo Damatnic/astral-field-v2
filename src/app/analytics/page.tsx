@@ -51,6 +51,171 @@ interface LeagueStats {
   waiversClaimed: number;
 }
 
+// Mock data for D'Amato Dynasty League (fallback)
+const mockTeamStats: TeamStats[] = [
+  {
+    id: '1',
+    name: "D'Amato Dynasty",
+    owner: 'Nicholas D\'Amato',
+    wins: 7,
+    losses: 6,
+    pointsFor: 1365.2,
+    pointsAgainst: 1298.7,
+    avgScore: 104.9,
+    powerRanking: 4,
+    playoffChance: 85,
+    championshipOdds: 15,
+    trend: 'up',
+    color: 'bg-purple-600'
+  },
+  {
+    id: '2',
+    name: 'McCaigue Mayhem',
+    owner: 'Jack McCaigue',
+    wins: 3,
+    losses: 10,
+    pointsFor: 1462.1,
+    pointsAgainst: 1589.3,
+    avgScore: 112.5,
+    powerRanking: 8,
+    playoffChance: 12,
+    championshipOdds: 2,
+    trend: 'down',
+    color: 'bg-green-500'
+  },
+  {
+    id: '3',
+    name: "Larry's Legends",
+    owner: 'Larry McCaigue',
+    wins: 11,
+    losses: 3,
+    pointsFor: 1627.8,
+    pointsAgainst: 1234.9,
+    avgScore: 125.2,
+    powerRanking: 1,
+    playoffChance: 99,
+    championshipOdds: 35,
+    trend: 'up',
+    color: 'bg-red-500'
+  },
+  {
+    id: '4',
+    name: "Renee's Reign",
+    owner: 'Renee McCaigue',
+    wins: 12,
+    losses: 5,
+    pointsFor: 1298.4,
+    pointsAgainst: 1156.2,
+    avgScore: 99.9,
+    powerRanking: 2,
+    playoffChance: 98,
+    championshipOdds: 28,
+    trend: 'stable',
+    color: 'bg-pink-500'
+  },
+  {
+    id: '5',
+    name: 'Hartley Heroes',
+    owner: 'Nick Hartley',
+    wins: 3,
+    losses: 4,
+    pointsFor: 1223.6,
+    pointsAgainst: 1187.9,
+    avgScore: 94.1,
+    powerRanking: 9,
+    playoffChance: 8,
+    championshipOdds: 1,
+    trend: 'down',
+    color: 'bg-blue-500'
+  },
+  {
+    id: '6',
+    name: 'Kornbeck Crushers',
+    owner: 'Jon Kornbeck',
+    wins: 6,
+    losses: 6,
+    pointsFor: 1401.7,
+    pointsAgainst: 1356.4,
+    avgScore: 107.8,
+    powerRanking: 5,
+    playoffChance: 72,
+    championshipOdds: 12,
+    trend: 'up',
+    color: 'bg-indigo-500'
+  },
+  {
+    id: '7',
+    name: "Jarvey's Juggernauts",
+    owner: 'David Jarvey',
+    wins: 3,
+    losses: 4,
+    pointsFor: 1358.2,
+    pointsAgainst: 1445.1,
+    avgScore: 104.5,
+    powerRanking: 7,
+    playoffChance: 15,
+    championshipOdds: 3,
+    trend: 'stable',
+    color: 'bg-yellow-500'
+  },
+  {
+    id: '8',
+    name: 'Lorbecki Lions',
+    owner: 'Kaity Lorbecki',
+    wins: 9,
+    losses: 6,
+    pointsFor: 1213.8,
+    pointsAgainst: 1289.6,
+    avgScore: 93.4,
+    powerRanking: 6,
+    playoffChance: 68,
+    championshipOdds: 8,
+    trend: 'stable',
+    color: 'bg-orange-500'
+  },
+  {
+    id: '9',
+    name: 'Minor Miracles',
+    owner: 'Cason Minor',
+    wins: 12,
+    losses: 5,
+    pointsFor: 1621.3,
+    pointsAgainst: 1398.7,
+    avgScore: 124.7,
+    powerRanking: 3,
+    playoffChance: 96,
+    championshipOdds: 22,
+    trend: 'up',
+    color: 'bg-teal-500'
+  },
+  {
+    id: '10',
+    name: 'Bergum Blitz',
+    owner: 'Brittany Bergum',
+    wins: 8,
+    losses: 9,
+    pointsFor: 1613.2,
+    pointsAgainst: 1587.4,
+    avgScore: 124.1,
+    powerRanking: 10,
+    playoffChance: 25,
+    championshipOdds: 4,
+    trend: 'down',
+    color: 'bg-cyan-500'
+  }
+];
+
+const mockLeagueStats: LeagueStats = {
+  totalPoints: 14585.3,
+  avgWeeklyScore: 109.7,
+  highestWeeklyScore: { score: 167.3, team: "Larry's Legends", week: 14 },
+  lowestWeeklyScore: { score: 67.2, team: 'Hartley Heroes', week: 8 },
+  mostConsistent: "Renee's Reign",
+  mostVolatile: 'McCaigue Mayhem',
+  tradeCount: 24,
+  waiversClaimed: 186
+};
+
 export default function AnalyticsPage() {
   const [selectedView, setSelectedView] = useState<'overview' | 'power' | 'trends' | 'trades'>('overview');
   const [loading, setLoading] = useState(true);
@@ -82,177 +247,12 @@ export default function AnalyticsPage() {
     } finally {
       setLoading(false);
     }
-  }, [mockTeamStats, mockLeagueStats]);
+  }, []);
 
   // Fetch real data on mount
   useEffect(() => {
     fetchAnalytics();
   }, [fetchAnalytics]);
-
-  // Mock data for D'Amato Dynasty League (fallback)
-  const mockTeamStats: TeamStats[] = [
-    {
-      id: '1',
-      name: "D'Amato Dynasty",
-      owner: 'Nicholas D\'Amato',
-      wins: 7,
-      losses: 6,
-      pointsFor: 1365.2,
-      pointsAgainst: 1298.7,
-      avgScore: 104.9,
-      powerRanking: 4,
-      playoffChance: 85,
-      championshipOdds: 15,
-      trend: 'up',
-      color: 'bg-purple-600'
-    },
-    {
-      id: '2',
-      name: 'McCaigue Mayhem',
-      owner: 'Jack McCaigue',
-      wins: 3,
-      losses: 10,
-      pointsFor: 1462.1,
-      pointsAgainst: 1589.3,
-      avgScore: 112.5,
-      powerRanking: 8,
-      playoffChance: 12,
-      championshipOdds: 2,
-      trend: 'down',
-      color: 'bg-green-500'
-    },
-    {
-      id: '3',
-      name: "Larry's Legends",
-      owner: 'Larry McCaigue',
-      wins: 11,
-      losses: 3,
-      pointsFor: 1627.8,
-      pointsAgainst: 1234.9,
-      avgScore: 125.2,
-      powerRanking: 1,
-      playoffChance: 99,
-      championshipOdds: 35,
-      trend: 'up',
-      color: 'bg-red-500'
-    },
-    {
-      id: '4',
-      name: "Renee's Reign",
-      owner: 'Renee McCaigue',
-      wins: 12,
-      losses: 5,
-      pointsFor: 1298.4,
-      pointsAgainst: 1156.2,
-      avgScore: 99.9,
-      powerRanking: 2,
-      playoffChance: 98,
-      championshipOdds: 28,
-      trend: 'stable',
-      color: 'bg-pink-500'
-    },
-    {
-      id: '5',
-      name: 'Hartley Heroes',
-      owner: 'Nick Hartley',
-      wins: 3,
-      losses: 4,
-      pointsFor: 1223.6,
-      pointsAgainst: 1187.9,
-      avgScore: 94.1,
-      powerRanking: 9,
-      playoffChance: 8,
-      championshipOdds: 1,
-      trend: 'down',
-      color: 'bg-blue-500'
-    },
-    {
-      id: '6',
-      name: 'Kornbeck Crushers',
-      owner: 'Jon Kornbeck',
-      wins: 6,
-      losses: 6,
-      pointsFor: 1401.7,
-      pointsAgainst: 1356.4,
-      avgScore: 107.8,
-      powerRanking: 5,
-      playoffChance: 72,
-      championshipOdds: 12,
-      trend: 'up',
-      color: 'bg-indigo-500'
-    },
-    {
-      id: '7',
-      name: "Jarvey's Juggernauts",
-      owner: 'David Jarvey',
-      wins: 3,
-      losses: 4,
-      pointsFor: 1358.2,
-      pointsAgainst: 1445.1,
-      avgScore: 104.5,
-      powerRanking: 7,
-      playoffChance: 15,
-      championshipOdds: 3,
-      trend: 'stable',
-      color: 'bg-yellow-500'
-    },
-    {
-      id: '8',
-      name: 'Lorbecki Lions',
-      owner: 'Kaity Lorbecki',
-      wins: 9,
-      losses: 6,
-      pointsFor: 1213.8,
-      pointsAgainst: 1289.6,
-      avgScore: 93.4,
-      powerRanking: 6,
-      playoffChance: 68,
-      championshipOdds: 8,
-      trend: 'stable',
-      color: 'bg-orange-500'
-    },
-    {
-      id: '9',
-      name: 'Minor Miracles',
-      owner: 'Cason Minor',
-      wins: 12,
-      losses: 5,
-      pointsFor: 1621.3,
-      pointsAgainst: 1398.7,
-      avgScore: 124.7,
-      powerRanking: 3,
-      playoffChance: 96,
-      championshipOdds: 22,
-      trend: 'up',
-      color: 'bg-teal-500'
-    },
-    {
-      id: '10',
-      name: 'Bergum Blitz',
-      owner: 'Brittany Bergum',
-      wins: 8,
-      losses: 9,
-      pointsFor: 1613.2,
-      pointsAgainst: 1587.4,
-      avgScore: 124.1,
-      powerRanking: 10,
-      playoffChance: 25,
-      championshipOdds: 4,
-      trend: 'down',
-      color: 'bg-cyan-500'
-    }
-  ];
-
-  const mockLeagueStats: LeagueStats = {
-    totalPoints: 14585.3,
-    avgWeeklyScore: 109.7,
-    highestWeeklyScore: { score: 167.3, team: "Larry's Legends", week: 14 },
-    lowestWeeklyScore: { score: 67.2, team: 'Hartley Heroes', week: 8 },
-    mostConsistent: "Renee's Reign",
-    mostVolatile: 'McCaigue Mayhem',
-    tradeCount: 24,
-    waiversClaimed: 186
-  };
 
   // Use real data or fallback to mock
   const displayTeamStats = teamStats.length > 0 ? teamStats : mockTeamStats;
