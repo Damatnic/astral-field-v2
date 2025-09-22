@@ -48,7 +48,9 @@ export interface AuthSession {
 const getProductionUsers = () => {
   const users = process.env.PRODUCTION_USERS;
   if (!users) {
-    throw new Error('PRODUCTION_USERS environment variable not set');
+    // Return empty array for build-time compatibility
+    console.warn('PRODUCTION_USERS environment variable not set - using empty array for build');
+    return [];
   }
   
   try {

@@ -698,6 +698,7 @@ class PlatformAnalyticsService {
   }
 
   private async calculatePerformanceMetrics() {
+    // Get database performance statistics
     const dbStats = await getPerformanceStats();
     
     return {
