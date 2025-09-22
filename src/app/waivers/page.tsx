@@ -205,7 +205,7 @@ export default function WaiversPage() {
                 <option value="WR">Wide Receiver</option>
                 <option value="TE">Tight End</option>
                 <option value="K">Kicker</option>
-                <option value="DST">Defense</option>
+                <option value="DEF">Defense</option>
               </select>
             </div>
           </div>

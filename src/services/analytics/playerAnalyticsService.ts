@@ -602,7 +602,7 @@ class PlayerAnalyticsService {
     const secondHalfAvg = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
     
     const trendChange = secondHalfAvg - firstHalfAvg;
-    const trend = trendChange > 2 ? 'improving' : trendChange < -2 ? 'declining' : 'stable';
+    const trend = trendChange > 2 ? 'improving' as const : trendChange < -2 ? 'declining' as const : 'stable' as const;
     
     // Calculate momentum (-10 to +10)
     const momentum = Math.max(-10, Math.min(10, trendChange));
@@ -786,7 +786,7 @@ class PlayerAnalyticsService {
         median: 0,
         standardDeviation: 0,
         topPerformer: { name: 'N/A', points: 0 },
-        biggest_disappointment: { name: 'N/A', underperformance: 0 }
+        biggestDisappointment: { name: 'N/A', underperformance: 0 }
       };
     }
 
@@ -809,7 +809,7 @@ class PlayerAnalyticsService {
       median: Math.round(median * 10) / 10,
       standardDeviation: Math.round(standardDeviation * 10) / 10,
       topPerformer: topPlayer || { name: 'N/A', points: 0 },
-      'biggest disappointment': { name: 'Sample Player', underperformance: 45.2 } // Would calculate actual disappointments
+      biggestDisappointment: { name: 'Sample Player', underperformance: 45.2 } // Would calculate actual disappointments
     };
   }
 
@@ -946,20 +946,22 @@ class PlayerAnalyticsService {
   }
 
   private async getHistoricalInjuryComparisons(injury: string, position: string) {
-    return [
-      {
-        playerName: 'Similar Player 1',
-        season: 2023,
-        returnTimeline: 3,
-        performanceImpact: -15.2
-      },
-      {
-        playerName: 'Similar Player 2',
-        season: 2022,
-        returnTimeline: 4,
-        performanceImpact: -8.7
-      }
-    ];
+    return {
+      similarInjuries: [
+        {
+          playerName: 'Similar Player 1',
+          season: 2023,
+          returnTimeline: 3,
+          performanceImpact: -15.2
+        },
+        {
+          playerName: 'Similar Player 2',
+          season: 2022,
+          returnTimeline: 4,
+          performanceImpact: -8.7
+        }
+      ]
+    };
   }
 
   private assessInjurySeverity(injury: string): 'minor' | 'moderate' | 'major' {

@@ -296,7 +296,9 @@ class LeagueAnalyticsService {
 
       const trades = await prisma.tradeProposal.findMany({
         where: {
-          leagueId,
+          proposingTeam: {
+            leagueId: leagueId
+          },
           createdAt: { gte: startDate },
           status: 'accepted'
         },
@@ -304,7 +306,6 @@ class LeagueAnalyticsService {
           proposingTeam: {
             include: { owner: true }
           }
-          // Note: items and team fields don't exist in TradeProposal model
         }
       });
 

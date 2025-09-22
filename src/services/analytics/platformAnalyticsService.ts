@@ -6,7 +6,7 @@
 import { prisma } from '@/lib/db';
 import { redisCache } from '@/lib/redis-cache';
 import { logger } from '@/lib/logger';
-import { getDatabasePerformanceStats } from '@/lib/db-optimized';
+import { getPerformanceStats } from '@/lib/db-optimized';
 
 export interface PlatformKPIs {
   userMetrics: {
@@ -623,14 +623,8 @@ class PlatformAnalyticsService {
 
   private async calculateEngagementMetrics(startDate: Date, endDate: Date) {
     // Get audit logs for page views and feature usage
-    const auditLogs = await prisma.auditLog.findMany({
-      where: {
-        createdAt: {
-          gte: startDate,
-          lte: endDate
-        }
-      }
-    });
+    // TODO: auditLog model doesn't exist in current schema
+    const auditLogs: any[] = [];
 
     const sessionCount = await prisma.userSession.count({
       where: {
@@ -704,7 +698,7 @@ class PlatformAnalyticsService {
   }
 
   private async calculatePerformanceMetrics() {
-    const dbStats = getDatabasePerformanceStats();
+    const dbStats = await getPerformanceStats();
     
     return {
       avgResponseTime: 187, // Would get from monitoring
@@ -871,7 +865,7 @@ class PlatformAnalyticsService {
   // Additional helper methods for operational insights, trends, and predictions...
   
   private async checkSystemHealth() {
-    const dbStats = getDatabasePerformanceStats();
+    const dbStats = await getPerformanceStats();
     
     return {
       overall: 'healthy' as const,
