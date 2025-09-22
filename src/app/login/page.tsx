@@ -162,7 +162,7 @@ export default function ModernLoginPage() {
 
     try {
       // Authenticate with credentials
-      const response = await fetch('/api/auth/test-login', {
+      const response = await fetch('/api/auth/simple-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include', // Important for cookies
@@ -203,7 +203,7 @@ export default function ModernLoginPage() {
     setError('');
     
     try {
-      const response = await fetch('/api/auth/test-login', {
+      const response = await fetch('/api/auth/simple-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include', // Important for cookies
