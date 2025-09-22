@@ -97,6 +97,7 @@ class PrivacyAnalyticsService {
   constructor() {
     this.initializeRetentionPolicies();
     this.startCleanupSchedule();
+  }
  
   /**
    * Record user consent
@@ -109,7 +110,8 @@ class PrivacyAnalyticsService {
         data: {
           // This would be stored in a separate consent table in practice
           updatedAt: new Date()
-             });
+        }
+      });
 
       // Store detailed consent in Redis with encryption
       const encryptedConsent = this.encryptData(consent);
