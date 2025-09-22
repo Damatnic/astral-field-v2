@@ -295,41 +295,41 @@ export class SleeperJobManager {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
-    // Clean up old scoring updates
-    const deletedScoringUpdates = await prisma.sleeperScoringUpdate.deleteMany({
-      where: {
-        processed: true,
-        createdAt: { lt: oneWeekAgo }
-      }
-    });
+    // Clean up old scoring updates (disabled - table doesn't exist)
+    // const deletedScoringUpdates = await prisma.sleeperScoringUpdate.deleteMany({
+    //   where: {
+    //     processed: true,
+    //     createdAt: { lt: oneWeekAgo }
+    //   }
+    // });
 
-    // Clean up old sync logs
-    const deletedSyncLogs = await prisma.sleeperSyncLog.deleteMany({
-      where: {
-        startedAt: { lt: thirtyDaysAgo }
-      }
-    });
+    // Clean up old sync logs (disabled - table doesn't exist)
+    // const deletedSyncLogs = await prisma.sleeperSyncLog.deleteMany({
+    //   where: {
+    //     startedAt: { lt: thirtyDaysAgo }
+    //   }
+    // });
 
-    // Clean up old webhook events
-    const deletedWebhookEvents = await prisma.sleeperWebhookEvent.deleteMany({
-      where: {
-        processed: true,
-        createdAt: { lt: oneWeekAgo }
-      }
-    });
+    // Clean up old webhook events (disabled - table doesn't exist)
+    // const deletedWebhookEvents = await prisma.sleeperWebhookEvent.deleteMany({
+    //   where: {
+    //     processed: true,
+    //     createdAt: { lt: oneWeekAgo }
+    //   }
+    // });
 
-    // Clean up expired pending trades
-    const deletedPendingTrades = await prisma.sleeperPendingTrade.deleteMany({
-      where: {
-        expiresAt: { lt: new Date() }
-      }
-    });
+    // Clean up expired pending trades (disabled - table doesn't exist)
+    // const deletedPendingTrades = await prisma.sleeperPendingTrade.deleteMany({
+    //   where: {
+    //     expiresAt: { lt: new Date() }
+    //   }
+    // });
 
     return {
-      deletedScoringUpdates: deletedScoringUpdates.count,
-      deletedSyncLogs: deletedSyncLogs.count,
-      deletedWebhookEvents: deletedWebhookEvents.count,
-      deletedPendingTrades: deletedPendingTrades.count
+      deletedScoringUpdates: 0, // deletedScoringUpdates.count,
+      deletedSyncLogs: 0, // deletedSyncLogs.count,
+      deletedWebhookEvents: 0, // deletedWebhookEvents.count,
+      deletedPendingTrades: 0 // deletedPendingTrades.count
     };
   }
 
@@ -379,17 +379,17 @@ export class SleeperJobManager {
   }
 
   private async backupCriticalData(): Promise<any> {
-    // Export critical data for backup
-    const leagues = await prisma.sleeperLeague.count();
-    const users = await prisma.sleeperUser.count();
-    const players = await prisma.sleeperPlayer.count();
-    const transactions = await prisma.sleeperTransaction.count({
-      where: {
-        created: {
-          gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24 hours
-        }
-      }
-    });
+    // Export critical data for backup (disabled - tables don't exist)
+    const leagues = 0; // await prisma.sleeperLeague.count();
+    const users = await prisma.user.count();
+    const players = await prisma.player.count();
+    const transactions = 0; // await prisma.sleeperTransaction.count({
+    //   where: {
+    //     created: {
+    //       gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24 hours
+    //     }
+    //   }
+    // });
 
     return {
       totalLeagues: leagues,
@@ -494,17 +494,17 @@ export class SleeperJobManager {
 
   private async logJobExecution(result: JobResult): Promise<void> {
     try {
-      await prisma.sleeperJobLog.create({
-        data: {
-          jobName: result.jobName,
-          startTime: result.startTime,
-          endTime: result.endTime,
-          duration: result.duration,
-          success: result.success,
-          error: result.error,
-          data: result.data || {}
-        }
-      });
+      // await prisma.sleeperJobLog.create({
+      //   data: {
+      //     jobName: result.jobName,
+      //     startTime: result.startTime,
+      //     endTime: result.endTime,
+      //     duration: result.duration,
+      //     success: result.success,
+      //     error: result.error,
+      //     data: result.data || {}
+      //   }
+      // });
     } catch (error) {
       console.error('Failed to log job execution:', error);
     }
