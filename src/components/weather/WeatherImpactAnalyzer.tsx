@@ -2,7 +2,7 @@
 
 
 import { handleComponentError } from '@/lib/error-handling';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   CloudRain,
@@ -91,11 +91,7 @@ export function WeatherImpactAnalyzer({
   const [isLoading, setIsLoading] = useState(false);
   const [viewMode, setViewMode] = useState<'overview' | 'detailed' | 'recommendations'>('overview');
 
-  useEffect(() => {
-    fetchWeatherData();
-  }, [week]);
-
-  const fetchWeatherData = async () => {
+  const fetchWeatherData = useCallback(async () => {
     setIsLoading(true);
     try {
       const response = await fetch('/api/weather/impact', {
@@ -113,7 +109,11 @@ export function WeatherImpactAnalyzer({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [teamId, week, leagueId]);
+
+  useEffect(() => {
+    fetchWeatherData();
+  }, [week, fetchWeatherData]);
 
   const getWeatherIcon = (condition: string) => {
     switch (condition.toLowerCase()) {

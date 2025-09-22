@@ -63,48 +63,6 @@ const VoiceLineupManager: React.FC<VoiceLineupManagerProps> = ({
   const recognitionRef = useRef<any>(null);
   const synthesisRef = useRef<SpeechSynthesisUtterance | null>(null);
 
-  // Initialize speech recognition
-  useEffect(() => {
-    if (typeof window !== 'undefined' && 'webkitSpeechRecognition' in window) {
-      const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
-      
-      recognitionRef.current.continuous = true;
-      recognitionRef.current.interimResults = true;
-      recognitionRef.current.lang = 'en-US';
-      
-      recognitionRef.current.onresult = (event: any) => {
-        let finalTranscript = '';
-        let interimTranscript = '';
-        
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript;
-          if (event.results[i].isFinal) {
-            finalTranscript += transcript;
-            setConfidence(event.results[i][0].confidence);
-          } else {
-            interimTranscript += transcript;
-          }
-        }
-        
-        setTranscript(finalTranscript || interimTranscript);
-        
-        if (finalTranscript) {
-          processVoiceCommand(finalTranscript, event.results[event.results.length - 1][0].confidence);
-        }
-      };
-      
-      recognitionRef.current.onerror = (event: any) => {
-        handleComponentError(event.error as Error, 'VoiceLineupManager');
-        setIsListening(false);
-      };
-      
-      recognitionRef.current.onend = () => {
-        setIsListening(false);
-      };
-    }
-  }, []);
-
   const speak = useCallback((text: string) => {
     if (!voiceEnabled || !('speechSynthesis' in window)) return;
     
@@ -124,7 +82,7 @@ const VoiceLineupManager: React.FC<VoiceLineupManagerProps> = ({
     speechSynthesis.speak(utterance);
   }, [voiceEnabled]);
 
-  const processVoiceCommand = async (command: string, confidence: number) => {
+  const processVoiceCommand = useCallback(async (command: string, confidence: number) => {
     setIsProcessing(true);
     
     const commandId = `cmd_${Date.now()}`;
@@ -191,7 +149,49 @@ const VoiceLineupManager: React.FC<VoiceLineupManagerProps> = ({
     } finally {
       setIsProcessing(false);
     }
-  };
+  }, [roster, currentLineup, leagueId, userId, onLineupChange, speak]);
+
+  // Initialize speech recognition
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'webkitSpeechRecognition' in window) {
+      const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+      recognitionRef.current = new SpeechRecognition();
+      
+      recognitionRef.current.continuous = true;
+      recognitionRef.current.interimResults = true;
+      recognitionRef.current.lang = 'en-US';
+      
+      recognitionRef.current.onresult = (event: any) => {
+        let finalTranscript = '';
+        let interimTranscript = '';
+        
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += transcript;
+            setConfidence(event.results[i][0].confidence);
+          } else {
+            interimTranscript += transcript;
+          }
+        }
+        
+        setTranscript(finalTranscript || interimTranscript);
+        
+        if (finalTranscript) {
+          processVoiceCommand(finalTranscript, event.results[event.results.length - 1][0].confidence);
+        }
+      };
+      
+      recognitionRef.current.onerror = (event: any) => {
+        handleComponentError(event.error as Error, 'VoiceLineupManager');
+        setIsListening(false);
+      };
+      
+      recognitionRef.current.onend = () => {
+        setIsListening(false);
+      };
+    }
+  }, [processVoiceCommand]);
 
   const toggleListening = () => {
     if (isListening) {

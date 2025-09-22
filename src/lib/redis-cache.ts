@@ -64,14 +64,14 @@ class EnhancedRedisCache {
 
   private async initRedis() {
     try {
+      const { retryDelayOnFailover, ...redisConfig } = this.config.redis;
       this.redis = new Redis({
-        ...this.config.redis,
+        ...redisConfig,
         lazyConnect: true,
         reconnectOnError: (err) => {
           const targetError = 'READONLY';
           return err.message.includes(targetError);
         },
-        retryDelayOnFailover: this.config.redis.retryDelayOnFailover || 100,
         maxRetriesPerRequest: this.config.redis.maxRetriesPerRequest || 3,
       });
 

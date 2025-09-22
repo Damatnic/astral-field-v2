@@ -1,4 +1,4 @@
-import { Redis } from '@vercel/kv';
+// import { Redis } from '@vercel/kv';
 
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
@@ -336,14 +336,7 @@ export class SleeperAPIClient {
     return this.request(endpoint);
   }
 
-  // Draft-related methods
-  async getDraft(draftId: string): Promise<any> {
-    return this.request(`/draft/${draftId}`);
-  }
-
-  async getDraftPicks(draftId: string): Promise<any[]> {
-    return this.request(`/draft/${draftId}/picks`);
-  }
+  // Draft-related methods (duplicate removed)
 
   async getDraftTradingBlock(draftId: string): Promise<any[]> {
     return this.request(`/draft/${draftId}/traded_picks`);

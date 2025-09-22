@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 
 interface UseAnimationOptions {
   duration?: number;
@@ -28,13 +28,13 @@ export function useAnimation({
   const animationRef = useRef<number>();
   const startTimeRef = useRef<number>();
 
-  const easingFunctions = {
+  const easingFunctions = useMemo(() => ({
     linear: (t: number) => t,
     ease: (t: number) => t * t * (3 - 2 * t),
     'ease-in': (t: number) => t * t,
     'ease-out': (t: number) => t * (2 - t),
     'ease-in-out': (t: number) => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t
-  };
+  }), []);
 
   const animate = useCallback((timestamp: number) => {
     if (!startTimeRef.current) {
@@ -54,10 +54,15 @@ export function useAnimation({
       startTimeRef.current = undefined;
       
       if (loop) {
-        setTimeout(() => start(), 0);
+        setTimeout(() => {
+          setIsAnimating(true);
+          setProgress(0);
+          startTimeRef.current = undefined;
+          animationRef.current = requestAnimationFrame(animate);
+        }, 0);
       }
     }
-  }, [duration, delay, easing, loop]);
+  }, [duration, delay, easing, loop, easingFunctions]);
 
   const start = useCallback(() => {
     if (isAnimating) return;

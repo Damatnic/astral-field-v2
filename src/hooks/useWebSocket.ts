@@ -71,6 +71,21 @@ export function useWebSocket(autoConnect = true): UseWebSocketReturn {
   const socketRef = useRef<Socket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const subscribedLeaguesRef = useRef<Set<string>>(new Set());
+  const connectRef = useRef<() => void>();
+
+  // Schedule reconnection
+  const scheduleReconnect = useCallback(() => {
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+    }
+
+    reconnectTimeoutRef.current = setTimeout(() => {
+      if (!socketRef.current?.connected && connectRef.current) {
+        console.log('🔄 Attempting to reconnect...');
+        connectRef.current();
+      }
+    }, 5000); // 5 second delay
+  }, []);
 
   // Connect to WebSocket
   const connect = useCallback(() => {
@@ -178,7 +193,10 @@ export function useWebSocket(autoConnect = true): UseWebSocketReturn {
         error: `Initialization error: ${(error as Error).message}`
       }));
     }
-  }, []);
+  }, [scheduleReconnect]);
+
+  // Store connect function in ref to avoid circular dependency
+  connectRef.current = connect;
 
   // Disconnect from WebSocket
   const disconnect = useCallback(() => {
@@ -218,20 +236,6 @@ export function useWebSocket(autoConnect = true): UseWebSocketReturn {
     }
     subscribedLeaguesRef.current.delete(leagueId);
   }, []);
-
-  // Schedule reconnection
-  const scheduleReconnect = useCallback(() => {
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current);
-    }
-
-    reconnectTimeoutRef.current = setTimeout(() => {
-      if (!socketRef.current?.connected) {
-        console.log('🔄 Attempting to reconnect...');
-        connect();
-      }
-    }, 5000); // 5 second delay
-  }, [connect]);
 
   // Auto-connect on mount
   useEffect(() => {

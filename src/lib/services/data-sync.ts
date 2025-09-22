@@ -31,17 +31,17 @@ export class DataSyncService {
           await prisma.player.upsert({
             where: { espnId: player.id },
             update: {
-              name: player.fullName || player.displayName,
+              name: player.fullName || (player as any).displayName,
               firstName: player.firstName,
               lastName: player.lastName,
-              position: player.position?.abbreviation || player.position?.name || 'Unknown',
+              position: player.position?.abbreviation || (player.position as any)?.name || 'Unknown',
               nflTeam: (player as any).nflTeam,
               jerseyNumber: player.jersey ? parseInt(player.jersey) : null,
-              height: player.displayHeight,
-              weight: player.displayWeight,
+              height: (player as any).displayHeight,
+              weight: (player as any).displayWeight,
               age: player.age,
               experience: player.experience?.years,
-              college: player.college?.name || player.college,
+              college: typeof player.college === 'string' ? player.college : player.college?.name,
               imageUrl: player.headshot?.href,
               status: player.injuries?.length ? 'injured' : 'active',
               injuryStatus: player.injuries?.[0]?.status,
@@ -50,17 +50,17 @@ export class DataSyncService {
             },
             create: {
               espnId: player.id,
-              name: player.fullName || player.displayName,
+              name: player.fullName || (player as any).displayName,
               firstName: player.firstName,
               lastName: player.lastName,
-              position: player.position?.abbreviation || player.position?.name || 'Unknown',
+              position: player.position?.abbreviation || (player.position as any)?.name || 'Unknown',
               nflTeam: (player as any).nflTeam,
               jerseyNumber: player.jersey ? parseInt(player.jersey) : null,
-              height: player.displayHeight,
-              weight: player.displayWeight,
+              height: (player as any).displayHeight,
+              weight: (player as any).displayWeight,
               age: player.age,
               experience: player.experience?.years,
-              college: player.college?.name || player.college,
+              college: typeof player.college === 'string' ? player.college : player.college?.name,
               imageUrl: player.headshot?.href,
               status: player.injuries?.length ? 'injured' : 'active',
               injuryStatus: player.injuries?.[0]?.status,
@@ -145,7 +145,7 @@ export class DataSyncService {
           if (stats?.athlete?.stats) {
             const fantasyPoints = this.espn.calculateFantasyPoints(stats.athlete.stats);
             
-            await prisma.stats.upsert({
+            await prisma.playerStats.upsert({
               where: {
                 playerId_week_season: {
                   playerId: player.id,
@@ -155,8 +155,7 @@ export class DataSyncService {
               },
               update: {
                 stats: stats.athlete.stats,
-                fantasyPoints,
-                updatedAt: new Date()
+                fantasyPoints
               },
               create: {
                 playerId: player.id,
@@ -211,8 +210,7 @@ export class DataSyncService {
                 body: article.description,
                 source: 'ESPN',
                 url: article.links?.web?.href,
-                publishedAt: new Date(article.published),
-                updatedAt: new Date()
+                publishedAt: new Date(article.published)
               },
               create: {
                 playerId: player.id,

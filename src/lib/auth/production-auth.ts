@@ -8,7 +8,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { nanoid } from 'nanoid';
 import { NextRequest } from 'next/server';
-import { UserRole } from '@/types/fantasy';
+import { UserRole } from '@prisma/client';
 import { logError } from '@/lib/error-handling';
 
 const prisma = new PrismaClient();
@@ -100,7 +100,6 @@ export class ProductionAuthService {
     }
     
     // Verify password using bcrypt for security
-    const bcrypt = require('bcryptjs');
     let isValid = false;
     
     if (user.hashedPassword) {

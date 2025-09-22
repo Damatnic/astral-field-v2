@@ -121,7 +121,7 @@ export const getPlayersOptimized = createServerCache(
       if (availability === 'available') {
         whereClause.AND.push({
           NOT: {
-            rosterPlayers: {
+            roster: {
               some: {
                 team: { leagueId },
               },
@@ -153,12 +153,10 @@ export const getPlayersOptimized = createServerCache(
           byeWeek: true,
           status: true,
           injuryStatus: true,
-          isRookie: true,
           age: true,
-          searchRank: true,
           adp: true,
           // Limit related data to avoid over-fetching
-          playerStats: {
+          stats: {
             where: {
               season: new Date().getFullYear().toString(),
               week: { lte: getCurrentWeek() },
@@ -166,7 +164,6 @@ export const getPlayersOptimized = createServerCache(
             select: {
               week: true,
               fantasyPoints: true,
-              projectedPoints: true,
             },
             orderBy: { week: 'desc' },
             take: 5,
@@ -184,25 +181,24 @@ export const getPlayersOptimized = createServerCache(
             orderBy: { confidence: 'desc' },
             take: 1,
           },
-          playerNews: {
+          news: {
             select: {
               id: true,
               headline: true,
-              timestamp: true,
-              impact: true,
-              category: true,
+              publishedAt: true,
+              source: true,
             },
-            orderBy: { timestamp: 'desc' },
+            orderBy: { publishedAt: 'desc' },
             take: 3,
           },
           // Only include roster info if needed
           ...(leagueId ? {
-            rosterPlayers: {
+            roster: {
               where: {
                 team: { leagueId },
               },
               select: {
-                rosterSlot: true,
+                position: true,
                 team: {
                   select: {
                     id: true,
@@ -221,7 +217,6 @@ export const getPlayersOptimized = createServerCache(
           } : {}),
         },
         orderBy: [
-          { searchRank: 'asc' },
           { position: 'asc' },
           { name: 'asc' },
         ],
@@ -250,7 +245,7 @@ export const getMatchupsOptimized = createServerCache(
       where: {
         leagueId,
         week,
-        season,
+        season: season.toString(),
       },
       select: {
         id: true,
@@ -343,14 +338,12 @@ export const getMatchupsOptimized = createServerCache(
  */
 export const getRosterOptimized = createServerCache(
   async (teamId: string) => {
-    const roster = await prisma.rosterPlayer.findMany({
+    const roster = await prisma.roster.findMany({
       where: { teamId },
       select: {
         id: true,
         position: true,
-        acquisitionType: true,
         acquisitionDate: true,
-        isLocked: true,
         player: {
           select: {
             id: true,
@@ -363,7 +356,7 @@ export const getRosterOptimized = createServerCache(
             status: true,
             injuryStatus: true,
             // Get latest stats efficiently
-            playerStats: {
+            stats: {
               where: {
                 season: new Date().getFullYear().toString(),
               },
@@ -440,13 +433,13 @@ export const batchOperations = {
   async updatePlayerStats(updates: Array<{
     playerId: string;
     week: number;
-    season: number;
+    season: string;
     fantasyPoints: number;
     stats: any;
   }>) {
     return prisma.$transaction(
       updates.map(update =>
-        prisma.stats.upsert({
+        prisma.playerStats.upsert({
           where: {
             playerId_week_season: {
               playerId: update.playerId,
@@ -457,7 +450,6 @@ export const batchOperations = {
           update: {
             fantasyPoints: update.fantasyPoints,
             stats: update.stats,
-            updatedAt: new Date(),
           },
           create: {
             playerId: update.playerId,

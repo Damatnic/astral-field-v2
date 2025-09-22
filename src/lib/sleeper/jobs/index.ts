@@ -27,7 +27,7 @@ interface JobResult {
 }
 
 export class SleeperJobManager {
-  private jobs: Map<string, cron.ScheduledTask> = new Map();
+  private jobs: Map<string, any> = new Map();
   private jobConfigs: Map<string, JobConfig> = new Map();
   private jobHistory: JobResult[] = [];
   private maxHistorySize = 1000;
@@ -122,7 +122,6 @@ export class SleeperJobManager {
     const task = cron.schedule(config.schedule, async () => {
       await this.executeJob(config.name);
     }, {
-      scheduled: true,
       timezone: "America/New_York" // Adjust based on your needs
     });
 
@@ -259,15 +258,15 @@ export class SleeperJobManager {
   private async syncTrendingPlayers(): Promise<any> {
     const result = await sleeperPlayerService.syncTrendingPlayers();
     return {
-      trendingPlayers: result.length,
-      positions: [...new Set(result.map(p => p.position))]
+      trendingPlayers: typeof result === 'object' && 'add' in result ? result.add + result.drop : 0,
+      stats: result
     };
   }
 
   private async processWaiverClaims(): Promise<any> {
     // Get all active leagues
-    const leagues = await prisma.sleeperLeague.findMany({
-      where: { status: 'in_season' },
+    const leagues = await prisma.league.findMany({
+      where: { isActive: true },
       select: { id: true }
     });
 
@@ -344,8 +343,8 @@ export class SleeperJobManager {
     }
 
     // Get all active leagues
-    const leagues = await prisma.sleeperLeague.findMany({
-      where: { status: 'in_season' },
+    const leagues = await prisma.league.findMany({
+      where: { isActive: true },
       select: { id: true }
     });
 

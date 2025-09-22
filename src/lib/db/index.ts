@@ -4,29 +4,48 @@
  */
 
 import { PrismaClient } from '@prisma/client';
-import { Pool } from '@neondatabase/serverless';
-import { PrismaNeon } from '@prisma/adapter-neon';
+// Optional Neon dependencies for production
+let Pool: any;
+let PrismaNeon: any;
+
+try {
+  const neonServerless = require('@neondatabase/serverless');
+  const prismaAdapterNeon = require('@prisma/adapter-neon');
+  Pool = neonServerless.Pool;
+  PrismaNeon = prismaAdapterNeon.PrismaNeon;
+} catch (error) {
+  // Neon dependencies not available
+  Pool = null;
+  PrismaNeon = null;
+}
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-// Create Neon connection pool for edge runtime compatibility
-const connectionString = process.env.DATABASE_URL!;
-const pool = new Pool({ connectionString });
-const adapter = new PrismaNeon(pool);
+// Create Neon connection pool for edge runtime compatibility (if available)
+let adapter: any = undefined;
+if (Pool && PrismaNeon && process.env.DATABASE_URL) {
+  try {
+    const connectionString = process.env.DATABASE_URL;
+    const pool = new Pool({ connectionString });
+    adapter = new PrismaNeon(pool);
+  } catch (error) {
+    console.warn('Failed to create Neon adapter:', error);
+    adapter = undefined;
+  }
+}
 
 // Configure Prisma Client with optimizations
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
-    adapter: process.env.NODE_ENV === 'production' ? adapter : undefined,
     log:
       process.env.NODE_ENV === 'development'
         ? ['query', 'error', 'warn']
         : ['error'],
     errorFormat: 'pretty',
-  });
+  } as any);
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 

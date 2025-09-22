@@ -448,7 +448,7 @@ class ErrorTracker {
         scope.setTag('severity', error.severity);
         scope.setTag('category', error.category);
         scope.setTag('component', error.context.component);
-        scope.setContext('errorContext', error.context);
+        scope.setContext('errorContext', error.context as Record<string, any>);
         
         if (error.context.userId) {
           scope.setUser({ id: error.context.userId });

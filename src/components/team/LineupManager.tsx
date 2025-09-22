@@ -166,7 +166,7 @@ export default function LineupManager({ teamId, week, isOwner = true }: LineupMa
     } finally {
       setIsLoading(false);
     }
-  }, [teamId, currentWeek, error]);
+  }, [teamId, currentWeek, error, lineup]);
   
   useEffect(() => {
     fetchLineup();

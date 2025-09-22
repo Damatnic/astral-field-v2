@@ -56,11 +56,11 @@ export interface StartSitRecommendation {
 export async function analyzeRoster(
   teamId: string, 
   week: number = 15, 
-  season: number = 2024
+  season: string = '2024'
 ): Promise<RosterAnalysis> {
   try {
     // Get team roster with projections
-    const roster = await prisma.rosterPlayer.findMany({
+    const roster = await prisma.roster.findMany({
       where: { teamId },
       include: {
         player: {
@@ -162,8 +162,7 @@ export async function analyzeRoster(
     // Calculate total metrics
     const starters = roster.filter(rp => 
       rp.position !== 'BENCH' && 
-      rp.position !== 'IR' && 
-      rp.position !== 'TAXI'
+      rp.position !== 'IR'
     );
     
     const bench = roster.filter(rp => rp.position === 'BENCH');
@@ -208,10 +207,10 @@ export async function analyzeRoster(
 export async function generateStartSitRecommendations(
   teamId: string,
   week: number = 15,
-  season: number = 2024
+  season: string = '2024'
 ): Promise<StartSitRecommendation[]> {
   try {
-    const roster = await prisma.rosterPlayer.findMany({
+    const roster = await prisma.roster.findMany({
       where: { teamId },
       include: {
         player: {
@@ -221,7 +220,7 @@ export async function generateStartSitRecommendations(
               orderBy: { confidence: 'desc' },
               take: 1
             },
-            playerStats: {
+            stats: {
               where: { season, week: { lte: week } },
               orderBy: { week: 'desc' },
               take: 3 // Last 3 games for trend analysis
@@ -341,7 +340,7 @@ export async function analyzeTradeImpact(
       where: { id: { in: givingUpPlayerIds } },
       include: {
         projections: {
-          where: { week, season: 2024 },
+          where: { week, season: '2024' },
           take: 1,
           orderBy: { confidence: 'desc' }
         }
@@ -353,7 +352,7 @@ export async function analyzeTradeImpact(
       where: { id: { in: receivingPlayerIds } },
       include: {
         projections: {
-          where: { week, season: 2024 },
+          where: { week, season: '2024' },
           take: 1,
           orderBy: { confidence: 'desc' }
         }
@@ -467,7 +466,7 @@ export async function getFlexOptions(
   excludeStarters: string[] = []
 ): Promise<any[]> {
   try {
-    const flexEligible = await prisma.rosterPlayer.findMany({
+    const flexEligible = await prisma.roster.findMany({
       where: {
         teamId,
         playerId: { notIn: excludeStarters },
@@ -479,7 +478,7 @@ export async function getFlexOptions(
         player: {
           include: {
             projections: {
-              where: { week, season: 2024 },
+              where: { week, season: '2024' },
               take: 1,
               orderBy: { confidence: 'desc' }
             }

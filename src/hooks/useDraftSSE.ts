@@ -71,6 +71,9 @@ export function useDraftSSE({
   useEffect(() => {
     if (!draftId) return;
 
+    // Store the current ref value to avoid stale closure
+    const currentEventSource = eventSourceRef.current;
+
     // Initialize mock draft state
     setDraftState({
       id: draftId,
@@ -105,8 +108,9 @@ export function useDraftSSE({
     setIsConnected(true);
 
     return () => {
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
+      // Use the captured value instead of accessing the ref
+      if (currentEventSource) {
+        currentEventSource.close();
       }
     };
   }, [draftId, userId, onPickMade, onChatMessage, onDraftStateUpdate, onTimerUpdate, onError]);
@@ -154,7 +158,7 @@ export function useDraftSSE({
     } catch (error) {
       onError?.('Failed to make pick');
     }
-  }, [draftId, userId, username, onChatMessage, onError]);
+  }, [username, onChatMessage, onError]);
 
   const sendChatMessage = useCallback(async (message: string) => {
     try {

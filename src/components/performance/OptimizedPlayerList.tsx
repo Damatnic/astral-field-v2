@@ -206,8 +206,8 @@ const OptimizedPlayerList: React.FC<PlayerListProps> = ({
   }, [leagueId, filters, loading]);
 
   // Debounced search function
-  const debouncedSearch = useCallback(
-    debounce(async (term: string) => {
+  const debouncedSearch = useMemo(
+    () => debounce(async (term: string) => {
       await fetchPlayers(term, 1, true);
     }, 300),
     [fetchPlayers]

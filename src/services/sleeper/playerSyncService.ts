@@ -615,8 +615,7 @@ export class PlayerSyncService {
         },
         update: {
           stats: playerStats as any,
-          fantasyPoints,
-          updatedAt: new Date()
+          fantasyPoints
         },
         create: {
           playerId: player.id,

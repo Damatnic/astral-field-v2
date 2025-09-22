@@ -124,7 +124,7 @@ export default function LeagueActivityFeed({ leagueId, className = '' }: LeagueA
     if (leagueId) {
       fetchActivities();
     }
-  }, [fetchActivities]);
+  }, [fetchActivities, leagueId]);
   
   // Auto-refresh every 2 minutes
   useEffect(() => {

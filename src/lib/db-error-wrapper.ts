@@ -51,81 +51,71 @@ class TrackedPrismaClient extends PrismaClient {
   }
 
   private setupEventListeners() {
-    // Query logging and performance monitoring
-    this.$on('query', (e) => {
-      const duration = Number(e.duration);
+    // Temporarily disable event listeners to fix TypeScript issues
+    // TODO: Implement proper Prisma event type handling
+    
+    // Performance monitoring middleware
+    this.$use(async (params, next) => {
+      const start = Date.now();
+      const operationName = `${params.model}.${params.action}`;
       
-      logDatabaseQuery(e.query, duration, Number(e.params) || undefined);
+      try {
+        const result = await next(params);
+        const duration = Date.now() - start;
+        
+        // Track slow queries
+        if (duration > this.slowQueryThreshold) {
+          const severity = duration > this.criticalQueryThreshold 
+            ? ErrorSeverity.HIGH 
+            : ErrorSeverity.MEDIUM;
 
-      // Track slow queries
-      if (duration > this.slowQueryThreshold) {
-        const severity = duration > this.criticalQueryThreshold 
-          ? ErrorSeverity.HIGH 
-          : ErrorSeverity.MEDIUM;
+          captureError(
+            new Error(`Slow database query detected`),
+            ErrorCategory.PERFORMANCE_ERROR,
+            {
+              component: 'database',
+              metadata: {
+                operation: operationName,
+                duration,
+                model: params.model,
+                action: params.action
+              }
+            }
+          );
+
+          this.updateSlowQueryMetrics(operationName, duration);
+        }
+
+        // Update performance metrics
+        this.updateOperationMetrics(operationName, duration, false);
+        
+        return result;
+      } catch (error) {
+        const duration = Date.now() - start;
+        
+        logError(error as Error, {
+          context: 'prisma_operation',
+          operation: operationName,
+          duration
+        });
 
         captureError(
-          new Error(`Slow database query detected`),
-          ErrorCategory.PERFORMANCE_ERROR,
+          error as Error,
+          ErrorCategory.DATABASE_ERROR,
           {
-            component: 'database',
+            component: 'prisma',
             metadata: {
-              query: e.query.substring(0, 500), // Truncate long queries
+              operation: operationName,
               duration,
-              params: e.params,
-              target: e.target,
-              timestamp: e.timestamp
+              model: params.model,
+              action: params.action
             }
           }
         );
 
-        // Update metrics
-        this.updateSlowQueryMetrics(e.target, duration);
+        this.updateOperationMetrics(operationName, duration, true);
+        throw error;
       }
-
-      // Update performance metrics
-      this.updateOperationMetrics(e.target, duration, false);
-    });
-
-    // Error logging
-    this.$on('error', (e) => {
-      logError(new Error(e.message), {
-        context: 'prisma_error',
-        target: e.target,
-        timestamp: e.timestamp
-      });
-
-      captureError(
-        new Error(e.message),
-        ErrorCategory.DATABASE_ERROR,
-        {
-          component: 'prisma',
-          metadata: {
-            target: e.target,
-            timestamp: e.timestamp
-          }
-        }
-      );
-    });
-
-    // Info and warning logging
-    this.$on('info', (e) => {
-      logger.info({
-        prisma: {
-          message: e.message,
-          target: e.target,
-          timestamp: e.timestamp
-        }
-      }, 'Prisma Info');
-    });
-
-    this.$on('warn', (e) => {
-      logger.warn({
-        prisma: {
-          message: e.message,
-          target: e.target,
-          timestamp: e.timestamp
-        }
-      }, 'Prisma Warning');
     });
   }
 

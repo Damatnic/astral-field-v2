@@ -347,7 +347,7 @@ export class SleeperAuth {
     await prisma.user.update({
       where: { id: userId },
       data: {
-        sleeperTokens: encrypted
+        // sleeperTokens: encrypted // Field removed from schema
       }
     });
   }
@@ -355,17 +355,8 @@ export class SleeperAuth {
   private async getStoredTokens(userId: string): Promise<(SleeperTokens & { issued_at: number }) | null> {
     try {
       const { prisma } = await import('@/lib/prisma');
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { sleeperTokens: true }
-      });
-
-      if (!user?.sleeperTokens) {
-        return null;
-      }
-
-      const decrypted = this.decrypt(user.sleeperTokens);
-      return JSON.parse(decrypted);
+      // Field removed from schema
+      return null;
     } catch (error) {
       console.error('Failed to retrieve tokens:', error);
       return null;
@@ -374,12 +365,13 @@ export class SleeperAuth {
 
   private async removeTokens(userId: string): Promise<void> {
     const { prisma } = await import('@/lib/prisma');
-    await prisma.user.update({
-      where: { id: userId },
-      data: {
-        sleeperTokens: null
-      }
-    });
+    // Field removed from schema
+    // await prisma.user.update({
+    //   where: { id: userId },
+    //   data: {
+    //     sleeperTokens: null
+    //   }
+    // });
   }
 }
 
@@ -403,9 +395,10 @@ export async function handleSleeperCallback(
     await prisma.user.update({
       where: { id: result.oauthState.userId },
       data: {
-        sleeperUserId: result.user.user_id,
-        sleeperUsername: result.user.username,
-        sleeperConnectedAt: new Date()
+        // Fields removed from schema
+        // sleeperUserId: result.user.user_id,
+        // sleeperUsername: result.user.username,
+        // sleeperConnectedAt: new Date()
       }
     });
 
@@ -426,13 +419,14 @@ export async function disconnectSleeper(userId: string): Promise<void> {
   await sleeperAuth.revokeTokens(userId);
   
   const { prisma } = await import('@/lib/prisma');
-  await prisma.user.update({
-    where: { id: userId },
-    data: {
-      sleeperUserId: null,
-      sleeperUsername: null,
-      sleeperTokens: null,
-      sleeperConnectedAt: null
-    }
-  });
+  // Fields removed from schema
+  // await prisma.user.update({
+  //   where: { id: userId },
+  //   data: {
+  //     sleeperUserId: null,
+  //     sleeperUsername: null,
+  //     sleeperTokens: null,
+  //     sleeperConnectedAt: null
+  //   }
+  // });
 }

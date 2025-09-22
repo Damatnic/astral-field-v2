@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -75,8 +75,8 @@ export function SleeperPlayerSearch({
   );
 
   // Debounced search function
-  const debouncedSearch = useCallback(
-    debounce((query: string) => {
+  const debouncedSearch = useMemo(
+    () => debounce((query: string) => {
       search(query, {
         position: selectedPosition || undefined,
         team: selectedTeam || undefined,

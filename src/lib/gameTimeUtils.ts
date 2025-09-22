@@ -165,7 +165,7 @@ export async function getLockedPlayersForWeek(week: number, season: number = 202
     // Get all active players with NFL teams
     const players = await prisma.player.findMany({
       where: {
-        isActive: true,
+        status: 'active',
         nflTeam: { not: null }
       },
       select: {
