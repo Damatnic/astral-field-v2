@@ -4,7 +4,7 @@ import { UserRole } from '@/types/fantasy';
 import { handleComponentError } from '@/utils/errorHandling';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import { jwtVerify, SignJWT } from 'jose';
 import { prisma } from './db';
 // Helper function to convert user role string to our role type  
 function convertUserRole(prismaRole: string): 'ADMIN' | 'COMMISSIONER' | 'PLAYER' {
@@ -58,6 +58,22 @@ export interface AuthResult {
 // Constants
 const SESSION_COOKIE_NAME = 'auth-token';
 const SESSION_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+// JWT Helper Functions
+export async function createJWTToken(user: { id: string; email: string; name?: string | null; role: string }): Promise<string> {
+  const secret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET || '4wen9bBXoPU6icaBh274VW3JJf84gkbfcR5D/Mo3jis=');
+  
+  return await new SignJWT({
+    userId: user.id,
+    email: user.email,
+    name: user.name || user.email,
+    role: user.role
+  })
+  .setProtectedHeader({ alg: 'HS256' })
+  .setIssuedAt()
+  .setExpirationTime('30d')
+  .sign(secret);
+}
 
 // Session Management
 function generateSessionId(): string {
@@ -306,26 +322,22 @@ export async function authenticateFromRequest(request: NextRequest): Promise<Use
                           request.cookies.get('astralfield-session')?.value;
     
     if (sessionCookie) {
-      // First, try to verify as JWT token (from test-login API)
+      // First, try to verify as JWT token using jose (Edge Runtime compatible)
       try {
-        const decoded = jwt.verify(sessionCookie, process.env.NEXTAUTH_SECRET || 'test-secret') as any;
-        if (decoded && decoded.userId) {
-          const dbUser = await prisma.user.findUnique({
-            where: { id: decoded.userId }
-          });
-          
-          if (dbUser) {
-            const user: User = {
-              id: dbUser.id,
-              email: dbUser.email,
-              name: dbUser.name || dbUser.email,
-              role: convertUserRole(dbUser.role),
-              avatar: dbUser.avatar || undefined,
-              createdAt: dbUser.createdAt,
-              updatedAt: dbUser.updatedAt
-            };
-            return user;
-          }
+        const jwtSecret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET || '4wen9bBXoPU6icaBh274VW3JJf84gkbfcR5D/Mo3jis=');
+        const { payload } = await jwtVerify(sessionCookie, jwtSecret);
+        if (payload && payload.userId) {
+          // For Edge Runtime compatibility, use JWT payload directly without database call
+          const user: User = {
+            id: payload.userId as string,
+            email: payload.email as string,
+            name: (payload.name as string) || (payload.email as string),
+            role: convertUserRole(payload.role as string),
+            avatar: (payload.avatar as string) || undefined,
+            createdAt: new Date((payload.iat as number) * 1000),
+            updatedAt: new Date((payload.iat as number) * 1000)
+          };
+          return user;
         }
       } catch (jwtError) {
         // Not a valid JWT token, continue to other auth methods

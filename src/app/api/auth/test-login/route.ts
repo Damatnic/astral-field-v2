@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import jwt from 'jsonwebtoken';
+import { createJWTToken } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,20 +30,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'User not found in test league' }, { status: 404 });
     }
     
-    // Check if user is commissioner
-    const isCommissioner = user.email === 'nicholas.damato@test.com';
-    
-    // Create session token
-    const token = jwt.sign(
-      { 
-        userId: user.id, 
-        email: user.email,
-        name: user.name,
-        isCommissioner
-      },
-      process.env.NEXTAUTH_SECRET || 'test-secret',
-      { expiresIn: '30d' }
-    );
+    // Create JWT token using standardized helper
+    const token = await createJWTToken(user);
     
     const response = NextResponse.json({ 
       success: true, 
@@ -51,7 +39,7 @@ export async function POST(req: NextRequest) {
         id: user.id,
         name: user.name,
         email: user.email,
-        isCommissioner,
+        role: user.role,
         teams: user.teams
       },
       token

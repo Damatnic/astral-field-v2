@@ -1,18 +1,19 @@
 /**
- * Roster Management - Complete drag & drop lineup management
- * Free platform with all features unlocked
+ * Dynasty Roster Command - Elite lineup management with futuristic design
+ * Complete drag & drop interface with premium Astral UI
  */
 
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { motion, AnimatePresence, Reorder } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { 
   Users, Lock, Unlock, TrendingUp, TrendingDown, AlertTriangle,
   Info, Save, RotateCcw, Settings, ChevronRight, Star,
   Activity, Calendar, Trophy, Target, Shield, Zap,
-  ArrowUp, ArrowDown, Minus, Clock, CheckCircle, XCircle
+  ArrowUp, ArrowDown, Minus, Clock, CheckCircle, XCircle,
+  Crown, Sparkles, Eye, Flame, Bolt, Brain, Cpu
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -21,71 +22,234 @@ import { format, addDays, isAfter, isBefore } from 'date-fns';
 
 // Position slots configuration
 const ROSTER_SLOTS = {
-  QB: { min: 1, max: 1, flex: false },
-  RB: { min: 2, max: 2, flex: false },
-  WR: { min: 2, max: 2, flex: false },
-  TE: { min: 1, max: 1, flex: false },
-  FLEX: { min: 1, max: 1, flex: true, allows: ['RB', 'WR', 'TE'] },
-  K: { min: 1, max: 1, flex: false },
-  DST: { min: 1, max: 1, flex: false },
-  BENCH: { min: 0, max: 7, flex: false },
-  IR: { min: 0, max: 2, flex: false },
+  QB: { min: 1, max: 1, flex: false, name: 'Quantum Back', icon: Crown },
+  RB: { min: 2, max: 2, flex: false, name: 'Cosmic Runners', icon: Bolt },
+  WR: { min: 2, max: 2, flex: false, name: 'Nebula Receivers', icon: Zap },
+  TE: { min: 1, max: 1, flex: false, name: 'Stellar Ends', icon: Target },
+  FLEX: { min: 1, max: 1, flex: true, allows: ['RB', 'WR', 'TE'], name: 'Flex Commander', icon: Sparkles },
+  K: { min: 1, max: 1, flex: false, name: 'Galaxy Kicker', icon: Star },
+  DST: { min: 1, max: 1, flex: false, name: 'Defense Matrix', icon: Shield },
+  BENCH: { min: 0, max: 7, flex: false, name: 'Reserve Forces', icon: Users },
+  IR: { min: 0, max: 2, flex: false, name: 'Medical Bay', icon: AlertTriangle },
 };
 
-// Mock roster data
+// Enhanced mock roster data with cosmic themes
 const mockRoster = {
   QB: [
-    { id: '1', name: 'Patrick Mahomes', team: 'KC', opponent: 'vs DEN', projection: 24.5, status: 'healthy', locked: false, position: 'QB', byeWeek: 10 }
+    { id: '1', name: 'Patrick Mahomes', team: 'KC', opponent: 'vs DEN', projection: 24.5, status: 'healthy', locked: false, position: 'QB', byeWeek: 10, tier: 'elite', confidence: 95 }
   ],
   RB: [
-    { id: '2', name: 'Christian McCaffrey', team: 'SF', opponent: '@ SEA', projection: 19.8, status: 'healthy', locked: false, position: 'RB', byeWeek: 9 },
-    { id: '3', name: 'Austin Ekeler', team: 'LAC', opponent: 'vs LV', projection: 16.2, status: 'questionable', locked: false, position: 'RB', byeWeek: 5 }
+    { id: '2', name: 'Christian McCaffrey', team: 'SF', opponent: '@ SEA', projection: 19.8, status: 'healthy', locked: false, position: 'RB', byeWeek: 9, tier: 'elite', confidence: 92 },
+    { id: '3', name: 'Austin Ekeler', team: 'LAC', opponent: 'vs LV', projection: 16.2, status: 'questionable', locked: false, position: 'RB', byeWeek: 5, tier: 'high', confidence: 78 }
   ],
   WR: [
-    { id: '4', name: 'Tyreek Hill', team: 'MIA', opponent: '@ BUF', projection: 18.3, status: 'healthy', locked: false, position: 'WR', byeWeek: 10 },
-    { id: '5', name: 'Stefon Diggs', team: 'BUF', opponent: 'vs MIA', projection: 17.1, status: 'healthy', locked: false, position: 'WR', byeWeek: 13 }
+    { id: '4', name: 'Tyreek Hill', team: 'MIA', opponent: '@ BUF', projection: 18.3, status: 'healthy', locked: false, position: 'WR', byeWeek: 10, tier: 'elite', confidence: 89 },
+    { id: '5', name: 'Stefon Diggs', team: 'BUF', opponent: 'vs MIA', projection: 17.1, status: 'healthy', locked: false, position: 'WR', byeWeek: 13, tier: 'elite', confidence: 87 }
   ],
   TE: [
-    { id: '6', name: 'Travis Kelce', team: 'KC', opponent: 'vs DEN', projection: 14.2, status: 'healthy', locked: false, position: 'TE', byeWeek: 10 }
+    { id: '6', name: 'Travis Kelce', team: 'KC', opponent: 'vs DEN', projection: 14.2, status: 'healthy', locked: false, position: 'TE', byeWeek: 10, tier: 'elite', confidence: 91 }
   ],
   FLEX: [
-    { id: '7', name: 'Calvin Ridley', team: 'JAX', opponent: '@ TEN', projection: 13.5, status: 'healthy', locked: false, position: 'WR', byeWeek: 9 }
+    { id: '7', name: 'Calvin Ridley', team: 'JAX', opponent: '@ TEN', projection: 13.5, status: 'healthy', locked: false, position: 'WR', byeWeek: 9, tier: 'medium', confidence: 72 }
   ],
   K: [
-    { id: '8', name: 'Justin Tucker', team: 'BAL', opponent: 'vs CLE', projection: 8.5, status: 'healthy', locked: false, position: 'K', byeWeek: 13 }
+    { id: '8', name: 'Justin Tucker', team: 'BAL', opponent: 'vs CLE', projection: 8.5, status: 'healthy', locked: false, position: 'K', byeWeek: 13, tier: 'high', confidence: 85 }
   ],
   DST: [
-    { id: '9', name: 'San Francisco 49ers', team: 'SF', opponent: '@ SEA', projection: 9.2, status: 'healthy', locked: false, position: 'DST', byeWeek: 9 }
+    { id: '9', name: 'San Francisco 49ers', team: 'SF', opponent: '@ SEA', projection: 9.2, status: 'healthy', locked: false, position: 'DST', byeWeek: 9, tier: 'high', confidence: 81 }
   ],
   BENCH: [
-    { id: '10', name: 'Jaylen Waddle', team: 'MIA', opponent: '@ BUF', projection: 14.8, status: 'healthy', locked: false, position: 'WR', byeWeek: 10 },
-    { id: '11', name: 'Rachaad White', team: 'TB', opponent: 'vs NO', projection: 12.3, status: 'healthy', locked: false, position: 'RB', byeWeek: 5 },
-    { id: '12', name: 'George Kittle', team: 'SF', opponent: '@ SEA', projection: 11.5, status: 'questionable', locked: false, position: 'TE', byeWeek: 9 },
-    { id: '13', name: 'Jahan Dotson', team: 'WAS', opponent: '@ DAL', projection: 8.9, status: 'healthy', locked: false, position: 'WR', byeWeek: 14 }
+    { id: '10', name: 'Jaylen Waddle', team: 'MIA', opponent: '@ BUF', projection: 14.8, status: 'healthy', locked: false, position: 'WR', byeWeek: 10, tier: 'medium', confidence: 74 },
+    { id: '11', name: 'Rachaad White', team: 'TB', opponent: 'vs NO', projection: 12.3, status: 'healthy', locked: false, position: 'RB', byeWeek: 5, tier: 'medium', confidence: 69 },
+    { id: '12', name: 'George Kittle', team: 'SF', opponent: '@ SEA', projection: 11.5, status: 'questionable', locked: false, position: 'TE', byeWeek: 9, tier: 'high', confidence: 76 },
+    { id: '13', name: 'Jahan Dotson', team: 'WAS', opponent: '@ DAL', projection: 8.9, status: 'healthy', locked: false, position: 'WR', byeWeek: 14, tier: 'low', confidence: 61 }
   ],
   IR: []
 };
 
-// Lineup requirements
+// Lineup requirements with cosmic theming
 const lineupRequirements = [
-  { id: 'starters', label: 'Starting Lineup', check: (roster: any) => {
+  { id: 'starters', label: 'Battle Formation Complete', check: (roster: any) => {
     const starters = Object.keys(ROSTER_SLOTS)
       .filter(pos => pos !== 'BENCH' && pos !== 'IR')
       .reduce((count, pos) => count + roster[pos].length, 0);
     return starters === 9;
   }},
-  { id: 'valid', label: 'Valid Positions', check: (roster: any) => {
+  { id: 'valid', label: 'Position Integrity', check: (roster: any) => {
     return Object.entries(ROSTER_SLOTS).every(([pos, config]) => {
       const players = roster[pos] || [];
       return players.length >= config.min && players.length <= config.max;
     });
   }},
-  { id: 'healthy', label: 'No Empty Slots', check: (roster: any) => {
+  { id: 'healthy', label: 'No Vacant Commands', check: (roster: any) => {
     return !Object.keys(ROSTER_SLOTS)
       .filter(pos => pos !== 'BENCH' && pos !== 'IR')
       .some(pos => roster[pos].length === 0);
   }}
 ];
+
+// Player tier colors
+const getTierGradient = (tier: string) => {
+  switch (tier) {
+    case 'elite': return 'from-astral-gold-500 to-astral-supernova-600';
+    case 'high': return 'from-astral-cosmic-500 to-astral-quantum-600';
+    case 'medium': return 'from-astral-nebula-500 to-astral-cosmic-600';
+    case 'low': return 'from-astral-quantum-500 to-astral-supernova-600';
+    default: return 'from-astral-cosmic-500 to-astral-quantum-600';
+  }
+};
+
+// Enhanced player card component
+const PlayerCard = ({ player, isDragging, position }: any) => {
+  const tierGradient = getTierGradient(player.tier);
+  
+  return (
+    <motion.div
+      layout
+      className={cn(
+        "astral-card-premium group relative overflow-hidden",
+        isDragging && "scale-105 rotate-2 shadow-2xl z-50"
+      )}
+      whileHover={{ y: -4, scale: 1.02 }}
+      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+    >
+      {/* Tier indicator background */}
+      <div className={`absolute inset-0 bg-gradient-to-r ${tierGradient} opacity-0 group-hover:opacity-10 transition-opacity duration-500`}></div>
+      
+      {/* Confidence level indicator */}
+      <div className="absolute top-2 right-2">
+        <div className={`w-2 h-2 rounded-full ${
+          player.confidence >= 90 ? 'bg-astral-gold-500' :
+          player.confidence >= 75 ? 'bg-astral-cosmic-500' :
+          player.confidence >= 60 ? 'bg-astral-nebula-500' :
+          'bg-astral-supernova-500'
+        } shadow-lg`} />
+      </div>
+
+      <div className="relative z-10 p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-3">
+            {player.locked && (
+              <Lock className="w-4 h-4 text-astral-gold-500" />
+            )}
+            <div className="flex-1">
+              <h4 className="font-bold text-white font-orbitron text-sm mb-1">
+                {player.name}
+              </h4>
+              <div className="flex items-center gap-2 text-xs">
+                <span className="text-astral-cosmic-400 font-medium">{player.team}</span>
+                <span className="text-astral-light-shadow">{player.opponent}</span>
+                <div className={`w-2 h-2 rounded-full ${
+                  player.status === 'healthy' ? 'bg-astral-status-healthy' :
+                  player.status === 'questionable' ? 'bg-astral-status-questionable' :
+                  player.status === 'doubtful' ? 'bg-astral-status-doubtful' :
+                  'bg-astral-status-out'
+                }`} />
+              </div>
+            </div>
+          </div>
+          
+          <div className="text-right">
+            <motion.div 
+              className="text-lg font-bold text-white font-orbitron"
+              animate={{ scale: [1, 1.05, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              {player.projection}
+            </motion.div>
+            <div className="text-xs text-astral-light-shadow">proj pts</div>
+          </div>
+        </div>
+
+        {/* Player tier badge */}
+        <div className="flex items-center justify-between">
+          <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gradient-to-r ${tierGradient} bg-opacity-20 border border-current border-opacity-30`}>
+            <div className={`w-1.5 h-1.5 rounded-full bg-gradient-to-r ${tierGradient}`} />
+            <span className="text-xs font-medium text-white capitalize">{player.tier}</span>
+          </div>
+          
+          <div className="text-xs text-astral-light-shadow">
+            {player.confidence}% confidence
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+// Position slot component
+const PositionSlot = ({ position, players, provided, snapshot }: any) => {
+  const config = ROSTER_SLOTS[position];
+  const Icon = config.icon;
+  
+  return (
+    <div
+      ref={provided.innerRef}
+      {...provided.droppableProps}
+      className={cn(
+        "relative rounded-xl border-2 border-dashed transition-all duration-300 min-h-[120px]",
+        snapshot.isDraggingOver
+          ? "border-astral-cosmic-500 bg-astral-cosmic-500/10 shadow-lg"
+          : "border-astral-cosmic-500/30 hover:border-astral-cosmic-500/50"
+      )}
+    >
+      {/* Position header */}
+      <div className="p-4 border-b border-astral-cosmic-500/20">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-astral-cosmic-600 flex items-center justify-center">
+            <Icon className="w-4 h-4 text-white" />
+          </div>
+          <div>
+            <h3 className="font-bold text-white font-orbitron text-sm">{config.name}</h3>
+            <p className="text-xs text-astral-light-shadow">
+              {position} {position === 'FLEX' && '(RB/WR/TE)'}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Players */}
+      <div className="p-4 space-y-3">
+        {players.map((player: any, index: number) => (
+          <Draggable 
+            key={player.id} 
+            draggableId={player.id} 
+            index={index}
+            isDragDisabled={player.locked}
+          >
+            {(provided, snapshot) => (
+              <div
+                ref={provided.innerRef}
+                {...provided.draggableProps}
+                {...provided.dragHandleProps}
+              >
+                <PlayerCard 
+                  player={player} 
+                  isDragging={snapshot.isDragging}
+                  position={position}
+                />
+              </div>
+            )}
+          </Draggable>
+        ))}
+        
+        {players.length === 0 && (
+          <motion.div
+            className="text-center py-6"
+            animate={{ opacity: [0.5, 1, 0.5] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            <div className="text-astral-light-shadow text-sm font-medium">
+              Deploy {config.name}
+            </div>
+          </motion.div>
+        )}
+      </div>
+      
+      {provided.placeholder}
+    </div>
+  );
+};
 
 export default function RosterPage() {
   const [roster, setRoster] = useState(mockRoster);
@@ -101,6 +265,16 @@ export default function RosterPage() {
       .reduce((total, pos) => {
         return total + roster[pos].reduce((sum: number, player: any) => sum + player.projection, 0);
       }, 0);
+  }, [roster]);
+
+  // Calculate confidence average
+  const avgConfidence = useMemo(() => {
+    const starters = Object.keys(roster)
+      .filter(pos => pos !== 'BENCH' && pos !== 'IR')
+      .flatMap(pos => roster[pos]);
+    
+    if (starters.length === 0) return 0;
+    return starters.reduce((sum, player) => sum + player.confidence, 0) / starters.length;
   }, [roster]);
 
   // Check lineup validity
@@ -123,7 +297,7 @@ export default function RosterPage() {
     const sourceList = roster[source.droppableId];
     const player = sourceList[source.index];
     if (player.locked) {
-      toast.error('This player is locked');
+      toast.error('Champion is locked for battle');
       return;
     }
 
@@ -134,13 +308,13 @@ export default function RosterPage() {
       // Check FLEX eligibility
       if (destination.droppableId === 'FLEX') {
         if (!destSlot.allows?.includes(player.position)) {
-          toast.error(`${player.position} cannot be placed in FLEX`);
+          toast.error(`${player.position} cannot command FLEX position`);
           return;
         }
       } else if (destination.droppableId !== player.position) {
         // For non-FLEX slots, position must match
         if (player.position !== 'DST' || destination.droppableId !== 'DST') {
-          toast.error(`${player.name} cannot be placed in ${destination.droppableId} slot`);
+          toast.error(`${player.name} cannot assume ${destination.droppableId} command`);
           return;
         }
       }
@@ -168,15 +342,15 @@ export default function RosterPage() {
     setIsDirty(true);
   };
 
-  // Optimize lineup
+  // Optimize lineup with cosmic AI
   const optimizeLineup = () => {
     const players = Object.values(roster).flat();
     const optimized: any = {
       QB: [], RB: [], WR: [], TE: [], FLEX: [], K: [], DST: [], BENCH: [], IR: []
     };
 
-    // Sort by projection
-    players.sort((a: any, b: any) => b.projection - a.projection);
+    // Sort by projection * confidence for smarter optimization
+    players.sort((a: any, b: any) => (b.projection * b.confidence / 100) - (a.projection * a.confidence / 100));
 
     // Fill required positions first
     players.forEach((player: any) => {
@@ -203,7 +377,7 @@ export default function RosterPage() {
 
     setRoster(optimized);
     setIsDirty(true);
-    toast.success('Lineup optimized for maximum points');
+    toast.success('Dynasty optimized by Quantum AI');
   };
 
   // Save lineup
@@ -218,226 +392,232 @@ export default function RosterPage() {
       return response.json();
     },
     onSuccess: () => {
-      toast.success('Lineup saved successfully');
+      toast.success('Dynasty formation locked and loaded');
       setIsDirty(false);
       queryClient.invalidateQueries({ queryKey: ['roster'] });
     },
     onError: () => {
-      toast.error('Failed to save lineup');
+      toast.error('Command transmission failed');
     }
   });
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'healthy': return 'text-green-600 dark:text-green-400';
-      case 'questionable': return 'text-yellow-600 dark:text-yellow-400';
-      case 'doubtful': return 'text-orange-600 dark:text-orange-400';
-      case 'out': return 'text-red-600 dark:text-red-400';
-      case 'ir': return 'text-red-800 dark:text-red-600';
-      default: return 'text-gray-600 dark:text-gray-400';
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'healthy': return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'questionable': return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
-      case 'doubtful': return <AlertTriangle className="h-4 w-4 text-orange-500" />;
-      case 'out': return <XCircle className="h-4 w-4 text-red-500" />;
-      case 'ir': return <XCircle className="h-4 w-4 text-red-700" />;
-      default: return null;
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+    <div className="min-h-screen bg-astral-dark-void relative overflow-hidden">
+      {/* Enhanced background */}
+      <div className="futuristic-background">
+        <div className="neural-network">
+          {Array.from({ length: 25 }, (_, i) => (
+            <motion.div
+              key={i}
+              className="neural-node"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+              }}
+              animate={{
+                scale: [1, 1.3, 1],
+                opacity: [0.2, 0.6, 0.2],
+              }}
+              transition={{
+                duration: 4 + Math.random() * 2,
+                repeat: Infinity,
+                delay: Math.random() * 3,
+              }}
+            />
+          ))}
+        </div>
+      </div>
+
       {/* Header */}
-      <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-30">
-        <div className="px-6 py-4">
+      <header className="nav-astral border-b border-astral-cosmic-500/20 sticky top-0 z-30">
+        <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Manage Roster
-              </h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Week 3 • Deadline: Sunday 1:00 PM ET
+              <motion.h1 
+                className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-astral-cosmic-400 via-astral-nebula-400 to-astral-quantum-400 font-orbitron mb-2"
+                animate={{ 
+                  backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] 
+                }}
+                transition={{ 
+                  duration: 5, 
+                  repeat: Infinity 
+                }}
+                style={{ backgroundSize: '200% 200%' }}
+              >
+                Roster Command
+              </motion.h1>
+              <p className="text-astral-light-shadow font-medium">
+                Week 3 Dynasty Formation • Deadline: Sunday 1:00 PM ET
               </p>
             </div>
             
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center gap-4">
               {/* Lineup Status */}
-              <div className="flex items-center space-x-2 px-3 py-1 rounded-lg bg-gray-100 dark:bg-gray-800">
+              <motion.div 
+                className={`flex items-center gap-3 px-4 py-2 rounded-full border ${
+                  isLineupValid 
+                    ? 'bg-astral-status-healthy/20 border-astral-status-healthy/30' 
+                    : 'bg-astral-status-questionable/20 border-astral-status-questionable/30'
+                }`}
+                whileHover={{ scale: 1.05 }}
+              >
                 {isLineupValid ? (
                   <>
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    <span className="text-sm font-medium text-green-600 dark:text-green-400">
-                      Lineup Valid
+                    <CheckCircle className="w-4 h-4 text-astral-status-healthy" />
+                    <span className="text-astral-status-healthy font-medium text-sm">
+                      Formation Ready
                     </span>
                   </>
                 ) : (
                   <>
-                    <AlertTriangle className="h-4 w-4 text-yellow-500" />
-                    <span className="text-sm font-medium text-yellow-600 dark:text-yellow-400">
-                      Lineup Incomplete
+                    <AlertTriangle className="w-4 h-4 text-astral-status-questionable" />
+                    <span className="text-astral-status-questionable font-medium text-sm">
+                      Formation Incomplete
                     </span>
                   </>
                 )}
-              </div>
+              </motion.div>
               
               {/* Save Button */}
-              <button
+              <motion.button
                 onClick={() => saveLineup.mutate()}
                 disabled={!isDirty || !isLineupValid || saveLineup.isPending}
                 className={cn(
-                  "px-4 py-2 rounded-lg font-medium transition flex items-center space-x-2",
-                  isDirty && isLineupValid
-                    ? "bg-blue-600 text-white hover:bg-blue-700"
-                    : "bg-gray-200 dark:bg-gray-800 text-gray-400 cursor-not-allowed"
+                  "btn-astral-primary flex items-center gap-2 px-6 py-3 font-medium transition-all",
+                  (!isDirty || !isLineupValid) && "opacity-50 cursor-not-allowed"
                 )}
+                whileHover={isDirty && isLineupValid ? { scale: 1.05 } : {}}
+                whileTap={isDirty && isLineupValid ? { scale: 0.95 } : {}}
               >
-                <Save className="h-4 w-4" />
-                <span>{saveLineup.isPending ? 'Saving...' : 'Save Lineup'}</span>
-              </button>
+                <Save className="w-4 h-4" />
+                <span>{saveLineup.isPending ? 'Transmitting...' : 'Lock Formation'}</span>
+              </motion.button>
             </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="p-6">
-        <div className="grid lg:grid-cols-3 gap-6">
+      <main className="relative z-10 max-w-7xl mx-auto p-6">
+        <div className="grid lg:grid-cols-4 gap-8">
           {/* Lineup Editor */}
-          <div className="lg:col-span-2 space-y-4">
-            {/* Total Projection */}
-            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <Trophy className="h-5 w-5 text-yellow-500" />
+          <div className="lg:col-span-3 space-y-8">
+            {/* Command Stats */}
+            <div className="grid md:grid-cols-3 gap-6">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="astral-card-premium p-6"
+              >
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-astral-gold-600 flex items-center justify-center">
+                    <Trophy className="w-5 h-5 text-white" />
+                  </div>
                   <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Total Projected Points</p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {totalProjection.toFixed(1)}
-                    </p>
+                    <p className="text-astral-light-shadow text-sm">Dynasty Power</p>
+                    <p className="text-2xl font-bold text-white font-orbitron">{totalProjection.toFixed(1)}</p>
                   </div>
                 </div>
-                
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={optimizeLineup}
-                    className="px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm font-medium flex items-center space-x-1"
-                  >
-                    <Zap className="h-4 w-4" />
-                    <span>Optimize</span>
-                  </button>
-                  <button
-                    onClick={() => setRoster(mockRoster)}
-                    className="px-3 py-1 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition text-sm font-medium flex items-center space-x-1"
-                  >
-                    <RotateCcw className="h-4 w-4" />
-                    <span>Reset</span>
-                  </button>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="astral-card-premium p-6"
+              >
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-astral-cosmic-600 flex items-center justify-center">
+                    <Brain className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-astral-light-shadow text-sm">AI Confidence</p>
+                    <p className="text-2xl font-bold text-white font-orbitron">{avgConfidence.toFixed(0)}%</p>
+                  </div>
                 </div>
-              </div>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="astral-card-premium p-6"
+              >
+                <div className="flex items-center gap-2 mb-4">
+                  <motion.button
+                    onClick={optimizeLineup}
+                    className="btn-astral-primary flex items-center gap-2 px-4 py-2 text-sm"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Cpu className="w-4 h-4" />
+                    <span>Quantum Optimize</span>
+                  </motion.button>
+                  <motion.button
+                    onClick={() => setRoster(mockRoster)}
+                    className="btn-astral-secondary flex items-center gap-2 px-4 py-2 text-sm"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    <span>Reset</span>
+                  </motion.button>
+                </div>
+              </motion.div>
             </div>
 
             {/* Drag and Drop Roster */}
             <DragDropContext onDragEnd={handleDragEnd}>
-              <div className="space-y-4">
-                {/* Starting Lineup */}
-                <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800">
-                  <div className="p-4 border-b border-gray-200 dark:border-gray-800">
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      Starting Lineup
-                    </h2>
+              <div className="space-y-8">
+                {/* Starting Formation */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="astral-card-premium"
+                >
+                  <div className="p-6 border-b border-astral-cosmic-500/20">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-astral-cosmic-600 flex items-center justify-center">
+                        <Flame className="w-5 h-5 text-white" />
+                      </div>
+                      <h2 className="text-xl font-bold text-white font-orbitron">
+                        Battle Formation
+                      </h2>
+                    </div>
                   </div>
-                  <div className="p-4 space-y-3">
+                  <div className="p-6 grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {['QB', 'RB', 'WR', 'TE', 'FLEX', 'K', 'DST'].map(position => (
                       <Droppable key={position} droppableId={position}>
                         {(provided, snapshot) => (
-                          <div
-                            ref={provided.innerRef}
-                            {...provided.droppableProps}
-                            className={cn(
-                              "min-h-[60px] rounded-lg border-2 border-dashed transition",
-                              snapshot.isDraggingOver
-                                ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                                : "border-gray-300 dark:border-gray-700"
-                            )}
-                          >
-                            <div className="p-2">
-                              <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">
-                                {position} {position === 'FLEX' && '(RB/WR/TE)'}
-                              </div>
-                              {roster[position].map((player: any, index: number) => (
-                                <Draggable 
-                                  key={player.id} 
-                                  draggableId={player.id} 
-                                  index={index}
-                                  isDragDisabled={player.locked}
-                                >
-                                  {(provided, snapshot) => (
-                                    <div
-                                      ref={provided.innerRef}
-                                      {...provided.draggableProps}
-                                      {...provided.dragHandleProps}
-                                      className={cn(
-                                        "bg-white dark:bg-gray-800 rounded-lg border p-3 mb-2 transition-transform hover:scale-[1.02]",
-                                        snapshot.isDragging
-                                          ? "shadow-lg border-blue-500"
-                                          : "border-gray-200 dark:border-gray-700"
-                                      )}
-                                    >
-                                      <div className="flex items-center justify-between">
-                                        <div className="flex items-center space-x-3">
-                                          {player.locked && (
-                                            <Lock className="h-4 w-4 text-gray-400" />
-                                          )}
-                                          <div>
-                                            <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                              {player.name}
-                                            </p>
-                                            <div className="flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-400">
-                                              <span>{player.team}</span>
-                                              <span>{player.opponent}</span>
-                                              {getStatusIcon(player.status)}
-                                            </div>
-                                          </div>
-                                        </div>
-                                        {showProjections && (
-                                          <div className="text-right">
-                                            <p className="text-sm font-bold text-gray-900 dark:text-white">
-                                              {player.projection}
-                                            </p>
-                                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                                              proj pts
-                                            </p>
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                  )}
-                                </Draggable>
-                              ))}
-                              {roster[position].length === 0 && (
-                                <div className="text-center py-3 text-sm text-gray-400">
-                                  Drop player here
-                                </div>
-                              )}
-                            </div>
-                            {provided.placeholder}
-                          </div>
+                          <PositionSlot
+                            position={position}
+                            players={roster[position]}
+                            provided={provided}
+                            snapshot={snapshot}
+                          />
                         )}
                       </Droppable>
                     ))}
                   </div>
-                </div>
+                </motion.div>
 
-                {/* Bench */}
-                <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800">
-                  <div className="p-4 border-b border-gray-200 dark:border-gray-800">
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      Bench
-                    </h2>
+                {/* Reserve Forces */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="astral-card-premium"
+                >
+                  <div className="p-6 border-b border-astral-cosmic-500/20">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-astral-nebula-600 flex items-center justify-center">
+                        <Users className="w-5 h-5 text-white" />
+                      </div>
+                      <h2 className="text-xl font-bold text-white font-orbitron">
+                        Reserve Forces
+                      </h2>
+                    </div>
                   </div>
                   <Droppable droppableId="BENCH">
                     {(provided, snapshot) => (
@@ -445,8 +625,8 @@ export default function RosterPage() {
                         ref={provided.innerRef}
                         {...provided.droppableProps}
                         className={cn(
-                          "p-4 min-h-[200px]",
-                          snapshot.isDraggingOver && "bg-blue-50 dark:bg-blue-900/20"
+                          "p-6 min-h-[200px] grid md:grid-cols-2 lg:grid-cols-3 gap-4",
+                          snapshot.isDraggingOver && "bg-astral-nebula-500/10"
                         )}
                       >
                         {roster.BENCH.map((player: any, index: number) => (
@@ -456,61 +636,43 @@ export default function RosterPage() {
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
                                 {...provided.dragHandleProps}
-                                className={cn(
-                                  "bg-white dark:bg-gray-800 rounded-lg border p-3 mb-2 transition-transform hover:scale-[1.02]",
-                                  snapshot.isDragging
-                                    ? "shadow-lg border-blue-500"
-                                    : "border-gray-200 dark:border-gray-700"
-                                )}
                               >
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center space-x-3">
-                                    <span className="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-900 px-2 py-1 rounded">
-                                      {player.position}
-                                    </span>
-                                    <div>
-                                      <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {player.name}
-                                      </p>
-                                      <div className="flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-400">
-                                        <span>{player.team}</span>
-                                        <span>{player.opponent}</span>
-                                        {getStatusIcon(player.status)}
-                                      </div>
-                                    </div>
-                                  </div>
-                                  {showProjections && (
-                                    <div className="text-right">
-                                      <p className="text-sm font-bold text-gray-900 dark:text-white">
-                                        {player.projection}
-                                      </p>
-                                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                                        proj pts
-                                      </p>
-                                    </div>
-                                  )}
-                                </div>
+                                <PlayerCard 
+                                  player={player} 
+                                  isDragging={snapshot.isDragging}
+                                  position="BENCH"
+                                />
                               </div>
                             )}
                           </Draggable>
                         ))}
                         {roster.BENCH.length === 0 && (
-                          <div className="text-center py-8 text-sm text-gray-400">
-                            Bench is empty
+                          <div className="col-span-full text-center py-8 text-astral-light-shadow">
+                            No reserves deployed
                           </div>
                         )}
                         {provided.placeholder}
                       </div>
                     )}
                   </Droppable>
-                </div>
+                </motion.div>
 
-                {/* IR */}
-                <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800">
-                  <div className="p-4 border-b border-gray-200 dark:border-gray-800">
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      Injured Reserve (IR)
-                    </h2>
+                {/* Medical Bay */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                  className="astral-card-premium"
+                >
+                  <div className="p-6 border-b border-astral-cosmic-500/20">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-astral-supernova-600 flex items-center justify-center">
+                        <AlertTriangle className="w-5 h-5 text-white" />
+                      </div>
+                      <h2 className="text-xl font-bold text-white font-orbitron">
+                        Medical Bay (IR)
+                      </h2>
+                    </div>
                   </div>
                   <Droppable droppableId="IR">
                     {(provided, snapshot) => (
@@ -518,124 +680,137 @@ export default function RosterPage() {
                         ref={provided.innerRef}
                         {...provided.droppableProps}
                         className={cn(
-                          "p-4 min-h-[100px]",
-                          snapshot.isDraggingOver && "bg-red-50 dark:bg-red-900/20"
+                          "p-6 min-h-[100px]",
+                          snapshot.isDraggingOver && "bg-astral-supernova-500/10"
                         )}
                       >
                         {roster.IR.length === 0 ? (
-                          <div className="text-center py-4 text-sm text-gray-400">
-                            No injured players
+                          <div className="text-center py-6 text-astral-light-shadow">
+                            Medical bay operational - no casualties
                           </div>
                         ) : (
-                          roster.IR.map((player: any, index: number) => (
-                            <Draggable key={player.id} draggableId={player.id} index={index}>
-                              {(provided) => (
-                                <div
-                                  ref={provided.innerRef}
-                                  {...provided.draggableProps}
-                                  {...provided.dragHandleProps}
-                                  className="bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800 p-3 mb-2"
-                                >
-                                  <div className="flex items-center justify-between">
-                                    <div>
-                                      <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {player.name}
-                                      </p>
-                                      <p className="text-xs text-red-600 dark:text-red-400">
-                                        {player.status.toUpperCase()}
-                                      </p>
-                                    </div>
+                          <div className="grid md:grid-cols-2 gap-4">
+                            {roster.IR.map((player: any, index: number) => (
+                              <Draggable key={player.id} draggableId={player.id} index={index}>
+                                {(provided) => (
+                                  <div
+                                    ref={provided.innerRef}
+                                    {...provided.draggableProps}
+                                    {...provided.dragHandleProps}
+                                  >
+                                    <PlayerCard 
+                                      player={player} 
+                                      isDragging={false}
+                                      position="IR"
+                                    />
                                   </div>
-                                </div>
-                              )}
-                            </Draggable>
-                          ))
+                                )}
+                              </Draggable>
+                            ))}
+                          </div>
                         )}
                         {provided.placeholder}
                       </div>
                     )}
                   </Droppable>
-                </div>
+                </motion.div>
               </div>
             </DragDropContext>
           </div>
 
-          {/* Side Panel */}
-          <div className="space-y-4">
-            {/* Lineup Requirements */}
-            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Lineup Requirements
+          {/* Command Panel */}
+          <div className="space-y-6">
+            {/* Formation Status */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="astral-card-premium p-6"
+            >
+              <h3 className="text-lg font-bold text-white font-orbitron mb-4 flex items-center gap-2">
+                <Shield className="w-5 h-5 text-astral-cosmic-500" />
+                Formation Status
               </h3>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {lineupStatus.map(status => (
                   <div key={status.id} className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                    <span className="text-sm text-astral-light-shadow">
                       {status.label}
                     </span>
                     {status.valid ? (
-                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <CheckCircle className="w-4 h-4 text-astral-status-healthy" />
                     ) : (
-                      <XCircle className="h-4 w-4 text-red-500" />
+                      <XCircle className="w-4 h-4 text-astral-status-out" />
                     )}
                   </div>
                 ))}
               </div>
-            </div>
+            </motion.div>
 
-            {/* Quick Stats */}
-            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Roster Analysis
+            {/* Dynasty Analytics */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1 }}
+              className="astral-card-premium p-6"
+            >
+              <h3 className="text-lg font-bold text-white font-orbitron mb-4 flex items-center gap-2">
+                <Activity className="w-5 h-5 text-astral-nebula-500" />
+                Dynasty Analytics
               </h3>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Active Players</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+                  <span className="text-sm text-astral-light-shadow">Active Champions</span>
+                  <span className="text-sm font-medium text-white">
                     {Object.keys(roster).filter(pos => pos !== 'BENCH' && pos !== 'IR')
                       .reduce((sum, pos) => sum + roster[pos].length, 0)} / 9
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Bench Players</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+                  <span className="text-sm text-astral-light-shadow">Reserve Forces</span>
+                  <span className="text-sm font-medium text-white">
                     {roster.BENCH.length} / 7
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Injured Players</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+                  <span className="text-sm text-astral-light-shadow">Medical Status</span>
+                  <span className="text-sm font-medium text-white">
                     {Object.values(roster).flat().filter((p: any) => 
                       p.status === 'questionable' || p.status === 'doubtful' || p.status === 'out'
-                    ).length}
+                    ).length} casualties
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Bye Week Players</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    {Object.values(roster).flat().filter((p: any) => p.byeWeek === 3).length}
+                  <span className="text-sm text-astral-light-shadow">Bye Week Impact</span>
+                  <span className="text-sm font-medium text-white">
+                    {Object.values(roster).flat().filter((p: any) => p.byeWeek === 3).length} affected
                   </span>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
-            {/* Tips */}
-            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800 p-4">
-              <div className="flex items-start space-x-3">
-                <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
+            {/* Command Instructions */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+              className="astral-card-premium p-6 bg-astral-cosmic-500/10 border border-astral-cosmic-500/30"
+            >
+              <div className="flex items-start gap-3">
+                <Info className="w-5 h-5 text-astral-cosmic-400 mt-0.5" />
                 <div>
-                  <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">
-                    Pro Tips
+                  <h4 className="text-sm font-bold text-astral-cosmic-300 mb-2 font-orbitron">
+                    Command Instructions
                   </h4>
-                  <ul className="text-xs text-blue-700 dark:text-blue-300 space-y-1">
-                    <li>• Drag players between positions</li>
-                    <li>• Click "Optimize" for best lineup</li>
-                    <li>• Check injury reports before lock</li>
-                    <li>• Save changes before deadline</li>
+                  <ul className="text-xs text-astral-light-shadow space-y-1">
+                    <li>• Drag champions between positions</li>
+                    <li>• Quantum optimize for maximum power</li>
+                    <li>• Monitor medical status reports</li>
+                    <li>• Lock formation before deadline</li>
+                    <li>• Elite tier champions perform best</li>
                   </ul>
                 </div>
               </div>
-            </div>
+            </motion.div>
           </div>
         </div>
       </main>

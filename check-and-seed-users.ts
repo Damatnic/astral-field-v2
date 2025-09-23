@@ -29,7 +29,7 @@ async function checkAndSeedUsers() {
         data: {
           id: 'test-league-2025',
           name: 'Test League 2025',
-          season: 2025,
+          season: '2025',
           isActive: true,
           settings: {},
           platform: 'espn',

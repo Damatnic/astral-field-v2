@@ -1,612 +1,660 @@
-/**
- * Main Dashboard - Complete production implementation
- * Features real-time updates, 3D visualizations, and comprehensive analytics
- */
-
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Trophy, TrendingUp, Users, Calendar, AlertCircle, 
-  ChevronRight, Play, BarChart3, Brain, Target,
-  Shield, Zap, Star, Award, Activity, Bell,
-  ArrowUpRight, ArrowDownRight, Minus
+  Trophy, Users, Calendar, TrendingUp, AlertCircle, 
+  Crown, Shield, Zap, Star, Award, Activity, 
+  ArrowUpRight, ArrowDownRight, Minus, BarChart3,
+  Play, Target, Clock, ChevronRight, Sparkles,
+  Flame, Eye, ArrowRight, Plus, Settings
 } from 'lucide-react';
-import {
-  LineChart, Line, AreaChart, Area, BarChart, Bar,
-  PieChart, Pie, Cell, RadarChart, Radar,
-  PolarGrid, PolarAngleAxis, PolarRadiusAxis,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  ResponsiveContainer, ReferenceLine
-} from 'recharts';
-import { cn } from '@/lib/utils';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { format, formatDistanceToNow, startOfWeek, endOfWeek } from 'date-fns';
+import { useAuth } from '@/components/AuthProvider';
+import { Button } from '@/components/ui/button';
 
-// Types for dashboard data
-interface TeamStats {
-  record: { wins: number; losses: number; ties: number };
-  standing: number;
-  playoffChance: number;
+// Real data interfaces
+interface TeamRecord {
+  wins: number;
+  losses: number;
+  ties: number;
+}
+
+interface UserTeam {
+  id: string;
+  name: string;
+  record: TeamRecord;
   pointsFor: number;
   pointsAgainst: number;
-  projectedTotal: number;
-  weeklyRank: number;
-  powerRanking: number;
-  transactions: number;
+  standing: number;
+  totalTeams: number;
 }
 
 interface UpcomingMatchup {
   opponent: {
     name: string;
-    avatar: string;
-    record: string;
-    rank: number;
+    record: TeamRecord;
   };
-  projectedScore: { user: number; opponent: number };
-  winProbability: number;
-}
-
-// Additional data interfaces
-interface ActivityItem {
-  id: string | number;
-  type: string;
-  message: string;
-  time: string;
-  impact: 'positive' | 'negative' | 'neutral';
-}
-
-interface PlayerPerformance {
-  name: string;
-  actual: number;
-  projected: number;
-}
-
-interface SeasonTrend {
   week: number;
-  points: number;
-  projected: number;
-  average: number;
 }
 
-export default function DashboardPage() {
-  const [selectedView, setSelectedView] = useState<'overview' | 'analytics' | 'players'>('overview');
-  const [liveScore, setLiveScore] = useState(0);
-  const queryClient = useQueryClient();
-
-  // Fetch team data
-  const { data: teamData, isLoading: teamLoading } = useQuery({
-    queryKey: ['team', 'current'],
-    queryFn: async () => {
-      const response = await fetch('/api/my-team');
-      return response.json();
-    },
-    refetchInterval: 30000, // Refetch every 30 seconds
-  });
-
-  // Fetch matchup data
-  const { data: matchupData, isLoading: matchupLoading } = useQuery({
-    queryKey: ['matchup', 'current'],
-    queryFn: async () => {
-      const response = await fetch('/api/my-matchup');
-      return response.json();
-    },
-    refetchInterval: 10000, // Refetch every 10 seconds during games
-  });
-
-  // Fetch recent activity
-  const { data: activityData } = useQuery({
-    queryKey: ['activity', 'recent'],
-    queryFn: async () => {
-      const response = await fetch('/api/activity?limit=5');
-      return response.json();
-    },
-    refetchInterval: 60000, // Refetch every minute
-  });
-
-  // Fetch player performance data
-  const { data: performanceData } = useQuery({
-    queryKey: ['performance', 'current-week'],
-    queryFn: async () => {
-      const response = await fetch('/api/lineup/performance');
-      return response.json();
-    },
-    refetchInterval: 30000, // Refetch every 30 seconds
-  });
-
-  // Fetch season trend data
-  const { data: trendData } = useQuery({
-    queryKey: ['trends', 'season'],
-    queryFn: async () => {
-      const response = await fetch('/api/analytics/season-trends');
-      return response.json();
-    },
-    refetchInterval: 300000, // Refetch every 5 minutes
-  });
-
-  // Simulate live score updates
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setLiveScore(prev => prev + Math.random() * 2);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Calculate trends
-  const trendIndicator = (current: number, previous: number) => {
-    const change = ((current - previous) / previous) * 100;
-    if (Math.abs(change) < 1) return { icon: Minus, color: 'text-gray-400', value: '0%' };
-    if (change > 0) return { 
-      icon: ArrowUpRight, 
-      color: 'text-green-500', 
-      value: `+${change.toFixed(1)}%` 
-    };
-    return { 
-      icon: ArrowDownRight, 
-      color: 'text-red-500', 
-      value: `${change.toFixed(1)}%` 
-    };
-  };
-
-  // Extract data from API responses with fallbacks
-  const teamStats: TeamStats = useMemo(() => {
-    if (!teamData?.data) {
-      return {
-        record: { wins: 0, losses: 0, ties: 0 },
-        standing: 0,
-        playoffChance: 0,
-        pointsFor: 0,
-        pointsAgainst: 0,
-        projectedTotal: 0,
-        weeklyRank: 0,
-        powerRanking: 0,
-        transactions: 0,
-      };
-    }
+// Premium stat card with 3D effects
+const PremiumStatCard = ({ 
+  title, 
+  value, 
+  subtitle,
+  change, 
+  icon: Icon, 
+  gradient = "cosmic",
+  delay = 0 
+}: any) => (
+  <motion.div
+    initial={{ opacity: 0, y: 40, rotateX: -15 }}
+    animate={{ opacity: 1, y: 0, rotateX: 0 }}
+    transition={{ 
+      delay, 
+      duration: 0.8,
+      type: "spring",
+      bounce: 0.3
+    }}
+    className="astral-card-premium group cursor-pointer overflow-hidden relative"
+    whileHover={{ y: -8, rotateX: 5 }}
+  >
+    {/* Background gradient animation */}
+    <div className={`absolute inset-0 bg-gradient-to-br ${
+      gradient === 'cosmic' ? 'from-astral-quantum-600/20 to-astral-cosmic-600/20' :
+      gradient === 'gold' ? 'from-astral-gold-600/20 to-astral-supernova-600/20' :
+      gradient === 'nebula' ? 'from-astral-nebula-600/20 to-astral-cosmic-600/20' :
+      'from-astral-supernova-600/20 to-astral-quantum-600/20'
+    } opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
     
-    const data = teamData.data;
-    return {
-      record: data.record || { wins: 0, losses: 0, ties: 0 },
-      standing: data.standing || 0,
-      playoffChance: data.playoffChance || 0,
-      pointsFor: data.pointsFor || 0,
-      pointsAgainst: data.pointsAgainst || 0,
-      projectedTotal: data.projectedTotal || 0,
-      weeklyRank: data.weeklyRank || 0,
-      powerRanking: data.powerRanking || 0,
-      transactions: data.transactions || 0,
-    };
-  }, [teamData]);
+    {/* Floating particles */}
+    <div className="absolute inset-0 overflow-hidden">
+      {Array.from({ length: 3 }, (_, i) => (
+        <motion.div
+          key={i}
+          className="absolute w-1 h-1 bg-white/20 rounded-full"
+          style={{
+            left: `${20 + i * 30}%`,
+            top: `${20 + i * 20}%`,
+          }}
+          animate={{
+            y: [-10, 10, -10],
+            opacity: [0.3, 0.8, 0.3],
+          }}
+          transition={{
+            duration: 3 + i,
+            repeat: Infinity,
+            delay: i * 0.5,
+          }}
+        />
+      ))}
+    </div>
 
-  const upcomingMatchup: UpcomingMatchup = useMemo(() => {
-    if (!matchupData?.data?.opponent) {
-      return {
-        opponent: {
-          name: "TBD",
-          avatar: "🏈",
-          record: "0-0",
-          rank: 0,
-        },
-        projectedScore: { user: 0, opponent: 0 },
-        winProbability: 50,
-      };
-    }
-    
-    const opponent = matchupData.data.opponent;
-    return {
-      opponent: {
-        name: opponent.name || "Unknown",
-        avatar: opponent.avatar || "🏈",
-        record: `${opponent.wins || 0}-${opponent.losses || 0}`,
-        rank: opponent.rank || 0,
-      },
-      projectedScore: {
-        user: matchupData.data.projectedScore?.user || 0,
-        opponent: matchupData.data.projectedScore?.opponent || 0,
-      },
-      winProbability: matchupData.data.winProbability || 50,
-    };
-  }, [matchupData]);
+    <div className="relative z-10 p-8">
+      <div className="flex items-start justify-between mb-6">
+        <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${
+          gradient === 'cosmic' ? 'from-astral-quantum-500 to-astral-cosmic-600' :
+          gradient === 'gold' ? 'from-astral-gold-500 to-astral-supernova-600' :
+          gradient === 'nebula' ? 'from-astral-nebula-500 to-astral-cosmic-600' :
+          'from-astral-supernova-500 to-astral-quantum-600'
+        } flex items-center justify-center shadow-xl transform-gpu group-hover:scale-110 transition-transform duration-300`}>
+          <Icon className="w-8 h-8 text-white drop-shadow-lg" />
+        </div>
+        
+        {change !== undefined && (
+          <motion.div 
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-medium ${
+              change > 0 ? 'text-astral-gold-400 bg-astral-gold-400/10' : 
+              change < 0 ? 'text-astral-supernova-400 bg-astral-supernova-400/10' : 
+              'text-astral-light-shadow bg-astral-dark-surface/50'
+            }`}
+            whileHover={{ scale: 1.05 }}
+          >
+            {change > 0 ? <ArrowUpRight className="w-4 h-4" /> : 
+             change < 0 ? <ArrowDownRight className="w-4 h-4" /> : 
+             <Minus className="w-4 h-4" />}
+            {Math.abs(change)}%
+          </motion.div>
+        )}
+      </div>
+      
+      <div className="space-y-2">
+        <motion.h3 
+          className="text-4xl font-bold text-white font-orbitron tracking-tight"
+          animate={{ scale: [1, 1.02, 1] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          {value}
+        </motion.h3>
+        <p className="text-astral-light-shadow font-medium">{title}</p>
+        {subtitle && (
+          <p className="text-astral-cosmic-400 text-sm font-medium">{subtitle}</p>
+        )}
+      </div>
+    </div>
+  </motion.div>
+);
 
-  // Extract activity data with fallbacks
-  const recentActivity: ActivityItem[] = useMemo(() => {
-    if (!activityData?.data || !Array.isArray(activityData.data)) {
-      return [];
-    }
-    
-    return activityData.data.map((item: any) => ({
-      id: item.id,
-      type: item.type || 'activity',
-      message: item.description || item.message || 'Activity occurred',
-      time: item.timestamp ? formatDistanceToNow(new Date(item.timestamp), { addSuffix: true }) : 'Recently',
-      impact: item.impact || 'neutral'
-    }));
-  }, [activityData]);
-
-  // Extract player performance data with fallbacks
-  const playerPerformance: PlayerPerformance[] = useMemo(() => {
-    if (!performanceData?.data || !Array.isArray(performanceData.data)) {
-      return [];
-    }
-    
-    return performanceData.data.map((player: any) => ({
-      name: player.position || player.name || 'Player',
-      actual: player.actualPoints || 0,
-      projected: player.projectedPoints || 0
-    }));
-  }, [performanceData]);
-
-  // Extract season trend data with fallbacks
-  const seasonTrend: SeasonTrend[] = useMemo(() => {
-    if (!trendData?.data || !Array.isArray(trendData.data)) {
-      return [];
-    }
-    
-    return trendData.data.map((week: any) => ({
-      week: week.week || 0,
-      points: week.points || 0,
-      projected: week.projected || 0,
-      average: week.leagueAverage || 100
-    }));
-  }, [trendData]);
-
-  const pointsTrend = trendIndicator(teamStats.pointsFor, teamStats.pointsFor * 0.9);
-
+// Enhanced matchup card component
+const MatchupShowcase = ({ matchup, userTeam }: any) => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-black">
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
-        <div className="px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Dashboard
-              </h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Week 11 • {format(new Date(), 'EEEE, MMMM d')}
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay: 0.6, duration: 0.8 }}
+      className="astral-card-premium overflow-hidden relative"
+    >
+      {/* Animated background */}
+      <div className="absolute inset-0 bg-gradient-to-r from-astral-quantum-600/10 via-astral-cosmic-600/10 to-astral-nebula-600/10"></div>
+      <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.03"%3E%3Ccircle cx="30" cy="30" r="2"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')]"></div>
+      
+      <div className="relative z-10 p-10">
+        {/* Week indicator */}
+        <div className="text-center mb-8">
+          <motion.div
+            className="inline-flex items-center gap-2 px-4 py-2 bg-astral-cosmic-500/20 rounded-full border border-astral-cosmic-500/30"
+            animate={{ glow: [0, 1, 0] }}
+            transition={{ duration: 3, repeat: Infinity }}
+          >
+            <Calendar className="w-4 h-4 text-astral-cosmic-400" />
+            <span className="text-white font-medium">Week {matchup.week} Matchup</span>
+          </motion.div>
+        </div>
+
+        {/* Teams display */}
+        <div className="flex items-center justify-between">
+          {/* User team */}
+          <motion.div 
+            className="text-center"
+            whileHover={{ scale: 1.05 }}
+          >
+            <div className="relative mb-6">
+              <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-astral-quantum-500 to-astral-cosmic-600 flex items-center justify-center mx-auto shadow-2xl">
+                <Crown className="w-10 h-10 text-white drop-shadow-lg" />
+              </div>
+              <div className="absolute -top-2 -right-2 w-8 h-8 bg-astral-gold-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-xs font-bold">{userTeam?.standing || 1}</span>
+              </div>
+            </div>
+            <h3 className="text-xl font-bold text-white font-orbitron mb-2">{userTeam?.name || 'Your Dynasty'}</h3>
+            <div className="space-y-1">
+              <p className="text-astral-cosmic-400 font-medium">
+                {userTeam ? `${userTeam.record.wins}-${userTeam.record.losses}` : '0-0'}
+              </p>
+              <p className="text-astral-light-shadow text-sm">
+                {userTeam?.pointsFor?.toFixed(1) || '0.0'} PF
               </p>
             </div>
-            
-            <div className="flex items-center space-x-4">
-              {/* Live indicator */}
-              <div className="flex items-center space-x-2 px-3 py-1 bg-red-100 dark:bg-red-900/30 rounded-full">
-                <div className="h-2 w-2 bg-red-500 rounded-full animate-pulse" />
-                <span className="text-sm font-medium text-red-700 dark:text-red-300">
-                  Games Live
-                </span>
+          </motion.div>
+          
+          {/* VS indicator with animation */}
+          <div className="text-center px-8">
+            <motion.div
+              className="relative"
+              animate={{ 
+                scale: [1, 1.1, 1],
+                rotate: [0, 5, -5, 0] 
+              }}
+              transition={{ 
+                duration: 4,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+            >
+              <div className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-astral-cosmic-400 to-astral-nebula-400 font-orbitron">
+                VS
               </div>
-              
-              {/* Notifications */}
-              <button className="relative p-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition">
-                <Bell className="h-5 w-5 text-gray-600 dark:text-gray-300" />
-                <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full" />
-              </button>
-            </div>
+              <div className="absolute inset-0 text-5xl font-bold text-astral-cosmic-400/20 font-orbitron blur-sm">
+                VS
+              </div>
+            </motion.div>
+            <p className="text-astral-light-shadow text-sm mt-2">Head to Head</p>
           </div>
           
-          {/* View tabs */}
-          <div className="flex space-x-1 mt-6">
-            {['overview', 'analytics', 'players'].map((view) => (
-              <button
-                key={view}
-                onClick={() => setSelectedView(view as any)}
-                className={cn(
-                  'px-4 py-2 rounded-lg font-medium capitalize transition',
-                  selectedView === view
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                )}
-              >
-                {view}
-              </button>
+          {/* Opponent */}
+          <motion.div 
+            className="text-center"
+            whileHover={{ scale: 1.05 }}
+          >
+            <div className="relative mb-6">
+              <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-astral-nebula-500 to-astral-supernova-600 flex items-center justify-center mx-auto shadow-2xl">
+                <span className="text-white font-bold text-lg font-orbitron">
+                  {matchup.opponent.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+                </span>
+              </div>
+              <div className="absolute -top-2 -right-2 w-8 h-8 bg-astral-nebula-500 rounded-full flex items-center justify-center">
+                <Eye className="w-4 h-4 text-white" />
+              </div>
+            </div>
+            <h3 className="text-xl font-bold text-white font-orbitron mb-2">{matchup.opponent.name}</h3>
+            <div className="space-y-1">
+              <p className="text-astral-nebula-400 font-medium">
+                {matchup.opponent.record.wins}-{matchup.opponent.record.losses}
+              </p>
+              <p className="text-astral-light-shadow text-sm">Rival Dynasty</p>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Battle preview */}
+        <motion.div
+          className="mt-8 pt-6 border-t border-astral-cosmic-500/20"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1 }}
+        >
+          <div className="flex items-center justify-center gap-4">
+            <Flame className="w-5 h-5 text-astral-supernova-400" />
+            <span className="text-astral-light-shadow font-medium">Battle for supremacy begins soon</span>
+            <Flame className="w-5 h-5 text-astral-supernova-400" />
+          </div>
+        </motion.div>
+      </div>
+    </motion.div>
+  );
+};
+
+// Enhanced action cards
+const ActionCard = ({ 
+  title, 
+  description, 
+  icon: Icon, 
+  action,
+  gradient = "cosmic",
+  delay = 0,
+  featured = false
+}: any) => (
+  <motion.div
+    initial={{ opacity: 0, y: 40 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ delay, duration: 0.6 }}
+    className={`astral-card-premium group cursor-pointer overflow-hidden relative ${
+      featured ? 'col-span-2' : ''
+    }`}
+    onClick={action}
+    whileHover={{ y: -8, scale: 1.02 }}
+    whileTap={{ scale: 0.98 }}
+  >
+    {/* Dynamic background */}
+    <div className={`absolute inset-0 bg-gradient-to-br ${
+      gradient === 'cosmic' ? 'from-astral-quantum-600/20 to-astral-cosmic-600/20' :
+      gradient === 'gold' ? 'from-astral-gold-600/20 to-astral-supernova-600/20' :
+      gradient === 'nebula' ? 'from-astral-nebula-600/20 to-astral-cosmic-600/20' :
+      'from-astral-supernova-600/20 to-astral-quantum-600/20'
+    } opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
+    
+    <div className="relative z-10 p-8">
+      <div className="flex items-start justify-between mb-6">
+        <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${
+          gradient === 'cosmic' ? 'from-astral-quantum-500 to-astral-cosmic-600' :
+          gradient === 'gold' ? 'from-astral-gold-500 to-astral-supernova-600' :
+          gradient === 'nebula' ? 'from-astral-nebula-500 to-astral-cosmic-600' :
+          'from-astral-supernova-500 to-astral-quantum-600'
+        } flex items-center justify-center shadow-xl transform-gpu group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300`}>
+          <Icon className="w-7 h-7 text-white drop-shadow-lg" />
+        </div>
+        
+        <motion.div
+          className="opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+          whileHover={{ x: 4 }}
+        >
+          <ArrowRight className="w-5 h-5 text-astral-cosmic-400" />
+        </motion.div>
+      </div>
+      
+      <div className="space-y-3">
+        <h3 className="text-xl font-bold text-white font-orbitron group-hover:text-astral-cosmic-300 transition-colors">
+          {title}
+        </h3>
+        <p className="text-astral-light-shadow leading-relaxed">{description}</p>
+        
+        {featured && (
+          <div className="flex items-center gap-2 pt-2">
+            <Sparkles className="w-4 h-4 text-astral-gold-400" />
+            <span className="text-astral-gold-400 text-sm font-medium">Featured Action</span>
+          </div>
+        )}
+      </div>
+    </div>
+  </motion.div>
+);
+
+// Main dashboard component
+export default function DashboardPage() {
+  const { user } = useAuth();
+  const [userTeam, setUserTeam] = useState<UserTeam | null>(null);
+  const [upcomingMatchup, setUpcomingMatchup] = useState<UpcomingMatchup | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch real user data
+  useEffect(() => {
+    async function fetchUserData() {
+      try {
+        // Fetch user's team data
+        const teamResponse = await fetch('/api/my-team');
+        if (teamResponse.ok) {
+          const teamApiData = await teamResponse.json();
+          if (teamApiData.success && teamApiData.data) {
+            const apiData = teamApiData.data;
+            setUserTeam({
+              id: apiData.team.id,
+              name: apiData.team.name,
+              record: apiData.record,
+              pointsFor: apiData.pointsFor,
+              pointsAgainst: apiData.pointsAgainst,
+              standing: apiData.standing,
+              totalTeams: 10 // Default for now, could be from league data
+            });
+          }
+        }
+
+        // Fetch upcoming matchup
+        const matchupResponse = await fetch('/api/my-matchup');
+        if (matchupResponse.ok) {
+          const matchupApiData = await matchupResponse.json();
+          if (matchupApiData.success && matchupApiData.data && matchupApiData.data.opponent) {
+            const apiData = matchupApiData.data;
+            setUpcomingMatchup({
+              opponent: {
+                name: apiData.opponent.name,
+                record: {
+                  wins: apiData.opponent.wins,
+                  losses: apiData.opponent.losses,
+                  ties: 0 // Default
+                }
+              },
+              week: apiData.matchup?.week || 3
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    if (user) {
+      fetchUserData();
+    }
+  }, [user]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-astral-dark-void relative overflow-hidden">
+        <div className="futuristic-background">
+          <div className="neural-network">
+            {Array.from({ length: 20 }, (_, i) => (
+              <motion.div
+                key={i}
+                className="neural-node"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                }}
+                animate={{
+                  scale: [1, 1.5, 1],
+                  opacity: [0.3, 0.8, 0.3],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  delay: Math.random() * 2,
+                }}
+              />
             ))}
           </div>
         </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="p-6">
-        <AnimatePresence mode="wait">
-          {selectedView === 'overview' && (
+        
+        <div className="relative z-10 flex items-center justify-center min-h-screen">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-center"
+          >
             <motion.div
-              key="overview"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="space-y-6"
+              animate={{ rotate: 360 }}
+              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+              className="w-20 h-20 mx-auto mb-6"
             >
-              {/* Stats Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* Record Card */}
-                <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6"
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <Trophy className="h-8 w-8 text-yellow-500" />
-                    <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {teamStats.record.wins}-{teamStats.record.losses}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Season Record</p>
-                  <div className="mt-2 flex items-center space-x-2">
-                    <span className="text-xs font-medium text-green-600 dark:text-green-400">
-                      #{teamStats.standing} in league
-                    </span>
-                  </div>
-                </motion.div>
-
-                {/* Points Card */}
-                <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6"
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <TrendingUp className="h-8 w-8 text-blue-500" />
-                    <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {teamStats.pointsFor.toFixed(1)}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Points For</p>
-                  <div className="mt-2 flex items-center space-x-2">
-                    <pointsTrend.icon className={cn("h-4 w-4", pointsTrend.color)} />
-                    <span className={cn("text-xs font-medium", pointsTrend.color)}>
-                      {pointsTrend.value}
-                    </span>
-                  </div>
-                </motion.div>
-
-                {/* Playoff Chance Card */}
-                <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6"
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <Target className="h-8 w-8 text-purple-500" />
-                    <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {teamStats.playoffChance}%
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Playoff Chance</p>
-                  <div className="mt-2">
-                    <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-gradient-to-r from-purple-500 to-purple-600 transition-all"
-                        style={{ width: `${teamStats.playoffChance}%` }}
-                      />
-                    </div>
-                  </div>
-                </motion.div>
-
-                {/* Power Ranking Card */}
-                <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6"
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <Zap className="h-8 w-8 text-orange-500" />
-                    <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                      #{teamStats.powerRanking}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Power Ranking</p>
-                  <div className="mt-2 flex items-center space-x-2">
-                    <ArrowUpRight className="h-4 w-4 text-green-500" />
-                    <span className="text-xs font-medium text-green-600 dark:text-green-400">
-                      +2 from last week
-                    </span>
-                  </div>
-                </motion.div>
-              </div>
-
-              <div className="grid lg:grid-cols-3 gap-6">
-                {/* Live Matchup */}
-                <div className="lg:col-span-2 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      Week 11 Matchup
-                    </h2>
-                    <div className="flex items-center space-x-2">
-                      <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse" />
-                      <span className="text-sm text-gray-500 dark:text-gray-400">Live</span>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-6">
-                    {/* Matchup header */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <div className="h-12 w-12 bg-blue-600 rounded-full flex items-center justify-center">
-                          <span className="text-white font-bold">You</span>
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900 dark:text-white">Your Team</p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">8-2</p>
-                        </div>
-                      </div>
-                      
-                      <div className="text-center">
-                        <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                          {(teamStats.projectedTotal + liveScore).toFixed(1)}
-                        </p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">vs</p>
-                        <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                          {upcomingMatchup.projectedScore.opponent.toFixed(1)}
-                        </p>
-                      </div>
-                      
-                      <div className="flex items-center space-x-4">
-                        <div className="text-right">
-                          <p className="font-medium text-gray-900 dark:text-white">
-                            {upcomingMatchup.opponent.name}
-                          </p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
-                            {upcomingMatchup.opponent.record}
-                          </p>
-                        </div>
-                        <div className="h-12 w-12 bg-red-600 rounded-full flex items-center justify-center">
-                          <span className="text-2xl">{upcomingMatchup.opponent.avatar}</span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Win probability bar */}
-                    <div>
-                      <div className="flex justify-between text-sm mb-2">
-                        <span className="text-gray-500 dark:text-gray-400">Win Probability</span>
-                        <span className="font-medium text-gray-900 dark:text-white">
-                          {upcomingMatchup.winProbability}%
-                        </span>
-                      </div>
-                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all"
-                          style={{ width: `${upcomingMatchup.winProbability}%` }}
-                        />
-                      </div>
-                    </div>
-                    
-                    {/* Player performances */}
-                    <div>
-                      <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
-                        Top Performers
-                      </h3>
-                      <div className="space-y-2">
-                        {playerPerformance.slice(0, 3).map((player, i) => (
-                          <div key={i} className="flex items-center justify-between">
-                            <span className="text-sm text-gray-600 dark:text-gray-400">
-                              {player.name}
-                            </span>
-                            <div className="flex items-center space-x-2">
-                              <span className="text-sm font-medium text-gray-900 dark:text-white">
-                                {player.actual} pts
-                              </span>
-                              {player.actual > player.projected && (
-                                <span className="text-xs text-green-600 dark:text-green-400">
-                                  +{(player.actual - player.projected).toFixed(1)}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Recent Activity */}
-                <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                    Recent Activity
-                  </h2>
-                  <div className="space-y-3">
-                    {recentActivity.map((activity) => (
-                      <motion.div
-                        key={activity.id}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="flex items-start space-x-3"
-                      >
-                        <div className={cn(
-                          "h-8 w-8 rounded-full flex items-center justify-center",
-                          activity.impact === 'positive' 
-                            ? "bg-green-100 dark:bg-green-900/30"
-                            : activity.impact === 'negative'
-                            ? "bg-red-100 dark:bg-red-900/30"
-                            : "bg-gray-100 dark:bg-gray-800"
-                        )}>
-                          {activity.type === 'trade' && <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />}
-                          {activity.type === 'injury' && <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />}
-                          {activity.type === 'waiver' && <Users className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm text-gray-900 dark:text-white">
-                            {activity.message}
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {activity.time}
-                          </p>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                  
-                  <button className="mt-4 w-full py-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition">
-                    View All Activity
-                  </button>
-                </div>
-              </div>
-
-              {/* Performance Chart */}
-              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
-                  Season Performance
-                </h2>
-                <ResponsiveContainer width="100%" height={300}>
-                  <AreaChart data={seasonTrend}>
-                    <defs>
-                      <linearGradient id="colorPoints" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.1}/>
-                      </linearGradient>
-                      <linearGradient id="colorProjected" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10B981" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="#10B981" stopOpacity={0.1}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.2} />
-                    <XAxis 
-                      dataKey="week" 
-                      stroke="#9CA3AF"
-                      tick={{ fill: '#9CA3AF' }}
-                      tickFormatter={(value) => `W${value}`}
-                    />
-                    <YAxis 
-                      stroke="#9CA3AF"
-                      tick={{ fill: '#9CA3AF' }}
-                      domain={[80, 160]}
-                    />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: '#1F2937',
-                        border: 'none',
-                        borderRadius: '8px',
-                        color: '#F3F4F6'
-                      }}
-                    />
-                    <Legend />
-                    <ReferenceLine y={115} stroke="#EF4444" strokeDasharray="3 3" />
-                    <Area 
-                      type="monotone" 
-                      dataKey="points" 
-                      stroke="#3B82F6" 
-                      strokeWidth={2}
-                      fillOpacity={1} 
-                      fill="url(#colorPoints)" 
-                    />
-                    <Area 
-                      type="monotone" 
-                      dataKey="projected" 
-                      stroke="#10B981" 
-                      strokeWidth={2}
-                      fillOpacity={1} 
-                      fill="url(#colorProjected)" 
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="average" 
-                      stroke="#EF4444" 
-                      strokeDasharray="3 3"
-                      dot={false}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
+              <Trophy className="w-20 h-20 text-astral-cosmic-500" />
             </motion.div>
+            <h2 className="text-3xl font-bold text-white font-orbitron mb-2">Initializing Dynasty</h2>
+            <p className="text-astral-light-shadow">Accessing your championship data...</p>
+          </motion.div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-astral-dark-void relative overflow-hidden">
+      {/* Enhanced background */}
+      <div className="futuristic-background">
+        <div className="neural-network">
+          {Array.from({ length: 30 }, (_, i) => (
+            <motion.div
+              key={i}
+              className="neural-node"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+              }}
+              animate={{
+                scale: [1, 1.2, 1],
+                opacity: [0.2, 0.6, 0.2],
+              }}
+              transition={{
+                duration: 4 + Math.random() * 2,
+                repeat: Infinity,
+                delay: Math.random() * 3,
+              }}
+            />
+          ))}
+        </div>
+        
+        {/* Floating particles */}
+        <div className="floating-particles">
+          {Array.from({ length: 40 }, (_, i) => (
+            <motion.div
+              key={i}
+              className="particle"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+              }}
+              animate={{
+                y: [-20, 20, -20],
+                x: [-10, 10, -10],
+                opacity: [0, 1, 0],
+              }}
+              transition={{
+                duration: 8 + Math.random() * 4,
+                repeat: Infinity,
+                delay: Math.random() * 5,
+              }}
+            />
+          ))}
+        </div>
+      </div>
+      
+      {/* Main content */}
+      <div className="relative z-10">
+        {/* Enhanced header */}
+        <header className="nav-astral border-b border-astral-cosmic-500/20 px-6 py-8">
+          <motion.div
+            initial={{ opacity: 0, y: -30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="max-w-7xl mx-auto"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <motion.h1 
+                  className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-astral-cosmic-400 via-astral-nebula-400 to-astral-quantum-400 font-orbitron mb-3"
+                  animate={{ 
+                    backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] 
+                  }}
+                  transition={{ 
+                    duration: 5, 
+                    repeat: Infinity 
+                  }}
+                  style={{ backgroundSize: '200% 200%' }}
+                >
+                  Command Center
+                </motion.h1>
+                <p className="text-astral-light-shadow text-lg font-medium">
+                  Welcome back, <span className="text-astral-cosmic-400 font-bold">{user?.name}</span> • 
+                  Week 3 2025 Season • {new Date().toLocaleDateString('en-US', { 
+                    weekday: 'long', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })}
+                </p>
+              </div>
+              
+              <motion.div 
+                className="flex items-center gap-4"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3 }}
+              >
+                <div className="flex items-center gap-3 px-4 py-2 bg-astral-dark-surface/50 rounded-full border border-astral-cosmic-500/30">
+                  <motion.div 
+                    className="w-3 h-3 bg-astral-gold-500 rounded-full"
+                    animate={{ 
+                      scale: [1, 1.2, 1],
+                      opacity: [0.8, 1, 0.8] 
+                    }}
+                    transition={{ 
+                      duration: 2, 
+                      repeat: Infinity 
+                    }}
+                  />
+                  <span className="text-astral-light-shadow text-sm font-medium">Dynasty Active</span>
+                </div>
+              </motion.div>
+            </div>
+          </motion.div>
+        </header>
+
+        {/* Main dashboard content */}
+        <main className="max-w-7xl mx-auto px-6 py-12">
+          {/* Performance metrics */}
+          <section className="mb-16">
+            <motion.h2
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="text-3xl font-bold text-white font-orbitron mb-8 flex items-center gap-3"
+            >
+              <Trophy className="w-8 h-8 text-astral-gold-500" />
+              Dynasty Performance
+            </motion.h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              <PremiumStatCard
+                title="Season Record"
+                value={userTeam ? `${userTeam.record.wins}-${userTeam.record.losses}${userTeam.record.ties > 0 ? `-${userTeam.record.ties}` : ''}` : '0-0'}
+                subtitle="Championship Path"
+                change={userTeam?.record.wins > userTeam?.record.losses ? 15 : userTeam?.record.wins < userTeam?.record.losses ? -10 : 0}
+                icon={Trophy}
+                gradient="cosmic"
+                delay={0}
+              />
+              <PremiumStatCard
+                title="League Ranking"
+                value={userTeam ? `#${userTeam.standing}` : '#1'}
+                subtitle={`of ${userTeam?.totalTeams || 10} dynasties`}
+                change={userTeam?.standing <= 3 ? 5 : userTeam?.standing > 6 ? -8 : 0}
+                icon={Crown}
+                gradient="gold"
+                delay={0.1}
+              />
+              <PremiumStatCard
+                title="Points Scored"
+                value={userTeam?.pointsFor?.toFixed(1) || '0.0'}
+                subtitle="Offensive Power"
+                change={12}
+                icon={Target}
+                gradient="nebula"
+                delay={0.2}
+              />
+              <PremiumStatCard
+                title="Points Allowed"
+                value={userTeam?.pointsAgainst?.toFixed(1) || '0.0'}
+                subtitle="Defensive Strength"
+                change={-5}
+                icon={Shield}
+                gradient="supernova"
+                delay={0.3}
+              />
+            </div>
+          </section>
+
+          {/* Current matchup showcase */}
+          {upcomingMatchup && (
+            <section className="mb-16">
+              <motion.h2
+                initial={{ opacity: 0, x: -30 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.4 }}
+                className="text-3xl font-bold text-white font-orbitron mb-8 flex items-center gap-3"
+              >
+                <Zap className="w-8 h-8 text-astral-nebula-500" />
+                Battle Arena
+              </motion.h2>
+              
+              <MatchupShowcase 
+                matchup={upcomingMatchup}
+                userTeam={userTeam}
+              />
+            </section>
           )}
-        </AnimatePresence>
-      </main>
+
+          {/* Dynasty management */}
+          <section>
+            <motion.h2
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.8 }}
+              className="text-3xl font-bold text-white font-orbitron mb-8 flex items-center gap-3"
+            >
+              <Settings className="w-8 h-8 text-astral-cosmic-500" />
+              Dynasty Operations
+            </motion.h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <ActionCard
+                title="Roster Command"
+                description="Manage your elite lineup and strategic formations for maximum championship potential"
+                icon={Users}
+                action={() => window.location.href = '/roster'}
+                gradient="cosmic"
+                delay={1}
+                featured={false}
+              />
+              <ActionCard
+                title="Player Intelligence"
+                description="Advanced scouting network to discover hidden gems and championship-caliber talent"
+                icon={Activity}
+                action={() => window.location.href = '/players'}
+                gradient="nebula"
+                delay={1.1}
+                featured={false}
+              />
+              <ActionCard
+                title="League Analytics"
+                description="Comprehensive dynasty rankings, statistical analysis, and competitive intelligence"
+                icon={BarChart3}
+                action={() => window.location.href = '/leagues'}
+                gradient="gold"
+                delay={1.2}
+                featured={false}
+              />
+            </div>
+          </section>
+        </main>
+      </div>
     </div>
   );
 }

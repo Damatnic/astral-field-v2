@@ -147,100 +147,126 @@ export default function DraftRoom({ draftId, userId }: DraftRoomProps) {
 
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // Mock data initialization
+  // Real data initialization
   useEffect(() => {
-    const mockPlayers: AvailablePlayer[] = [
-      {
-        id: 'p1',
-        name: 'Christian McCaffrey',
-        position: 'RB',
-        team: 'SF',
-        adp: 1.2,
-        projectedPoints: 320,
-        tier: 1,
-        bye: 9,
-        stats: { lastYear: 298, projection: 320, consistency: 0.92 }
-      },
-      {
-        id: 'p2',
-        name: 'Tyreek Hill',
-        position: 'WR',
-        team: 'MIA',
-        adp: 2.5,
-        projectedPoints: 285,
-        tier: 1,
-        bye: 10,
-        stats: { lastYear: 276, projection: 285, consistency: 0.88 }
-      },
-      {
-        id: 'p3',
-        name: 'Justin Jefferson',
-        position: 'WR',
-        team: 'MIN',
-        adp: 3.1,
-        projectedPoints: 290,
-        tier: 1,
-        bye: 13,
-        stats: { lastYear: 282, projection: 290, consistency: 0.90 }
-      },
-      {
-        id: 'p4',
-        name: 'Austin Ekeler',
-        position: 'RB',
-        team: 'LAC',
-        adp: 4.8,
-        projectedPoints: 265,
-        tier: 1,
-        bye: 5,
-        stats: { lastYear: 258, projection: 265, consistency: 0.85 }
-      },
-      {
-        id: 'p5',
-        name: 'Patrick Mahomes',
-        position: 'QB',
-        team: 'KC',
-        adp: 12.3,
-        projectedPoints: 380,
-        tier: 1,
-        bye: 10,
-        stats: { lastYear: 365, projection: 380, consistency: 0.94 }
-      },
-      {
-        id: 'p6',
-        name: 'Travis Kelce',
-        position: 'TE',
-        team: 'KC',
-        adp: 8.7,
-        projectedPoints: 220,
-        tier: 1,
-        bye: 10,
-        stats: { lastYear: 208, projection: 220, consistency: 0.91 }
+    const initializeDraftData = async () => {
+      try {
+        // Fetch available players for the draft
+        const playersResponse = await fetch('/api/players?limit=50&availability=available');
+        if (playersResponse.ok) {
+          const playersData = await playersResponse.json();
+          const players = playersData.data || [];
+          
+          const draftPlayers: AvailablePlayer[] = players.map((player: any) => ({
+            id: player.id,
+            name: player.name,
+            position: player.position,
+            team: player.nflTeam || 'FA',
+            adp: player.adp || Math.random() * 100,
+            projectedPoints: player.projection?.points || player.seasonStats?.totalPoints || 0,
+            tier: Math.ceil((player.searchRank || 50) / 10),
+            bye: player.byeWeek || Math.floor(Math.random() * 17) + 1,
+            stats: {
+              lastYear: player.seasonStats?.totalPoints || 0,
+              projection: player.projection?.points || 0,
+              consistency: player.seasonStats?.consistency / 100 || Math.random()
+            }
+          }));
+          
+          setAvailablePlayers(draftPlayers);
+        }
+
+        // Fetch draft teams data
+        const teamsResponse = await fetch('/api/teams');
+        if (teamsResponse.ok) {
+          const teamsData = await teamsResponse.json();
+          if (teamsData.success && teamsData.data) {
+            const draftTeams: DraftTeam[] = teamsData.data.map((team: any, index: number) => ({
+              id: team.id,
+              name: team.name,
+              owner: team.owner?.name || `Owner ${index + 1}`,
+              draftPosition: index + 1,
+              picks: [],
+              isCurrentPick: index === 0,
+              isUserTeam: team.ownerId === getCurrentUserId(), // Check if this is user's team
+              needsByPosition: {
+                QB: 2,
+                RB: 5,
+                WR: 5,
+                TE: 2,
+                K: 1,
+                DEF: 1
+              }
+            }));
+            
+            setTeams(draftTeams);
+          } else {
+            // Fallback to mock teams if no real data
+            setTeams(getMockTeams());
+          }
+        } else {
+          setTeams(getMockTeams());
+        }
+
+      } catch (error) {
+        console.error('Error initializing draft data:', error);
+        // Fallback to mock data
+        setAvailablePlayers(getMockPlayers());
+        setTeams(getMockTeams());
       }
-    ];
+    };
 
-    const mockTeams: DraftTeam[] = Array.from({ length: 10 }, (_, i) => ({
-      id: `team${i + 1}`,
-      name: `Team ${i + 1}`,
-      owner: `Owner ${i + 1}`,
-      draftPosition: i + 1,
-      picks: [],
-      isCurrentPick: i === 0,
-      isUserTeam: i === 2, // User is team 3
-      needsByPosition: {
-        QB: 2,
-        RB: 5,
-        WR: 5,
-        TE: 2,
-        K: 1,
-        DEF: 1
-      }
-    }));
-
-    setAvailablePlayers(mockPlayers);
-    setTeams(mockTeams);
-
-    // Chat messages will be managed by WebSocket
+    initializeDraftData();
   }, []);
+
+  // Helper function to get current user ID (would need to be implemented based on auth system)
+  const getCurrentUserId = (): string => {
+    // This would typically come from your auth context/session
+    return 'current-user-id'; // Placeholder
+  };
+
+  const getMockPlayers = (): AvailablePlayer[] => [
+    {
+      id: 'p1',
+      name: 'Christian McCaffrey',
+      position: 'RB',
+      team: 'SF',
+      adp: 1.2,
+      projectedPoints: 320,
+      tier: 1,
+      bye: 9,
+      stats: { lastYear: 298, projection: 320, consistency: 0.92 }
+    },
+    {
+      id: 'p2',
+      name: 'Josh Allen',
+      position: 'QB',
+      team: 'BUF',
+      adp: 12.3,
+      projectedPoints: 380,
+      tier: 1,
+      bye: 7,
+      stats: { lastYear: 365, projection: 380, consistency: 0.94 }
+    }
+  ];
+
+  const getMockTeams = (): DraftTeam[] => Array.from({ length: 10 }, (_, i) => ({
+    id: `team${i + 1}`,
+    name: `Dynasty Team ${i + 1}`,
+    owner: `Owner ${i + 1}`,
+    draftPosition: i + 1,
+    picks: [],
+    isCurrentPick: i === 0,
+    isUserTeam: i === 2, // User is team 3
+    needsByPosition: {
+      QB: 2,
+      RB: 5,
+      WR: 5,
+      TE: 2,
+      K: 1,
+      DEF: 1
+    }
+  }));
 
   // getNextPick is now handled by WebSocket server
 

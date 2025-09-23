@@ -560,9 +560,61 @@ export default function LandingPage() {
               className="relative w-full max-w-4xl aspect-video bg-black rounded-2xl overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Video player would go here */}
-              <div className="h-full flex items-center justify-center">
-                <p className="text-gray-400">Demo video coming soon</p>
+              {/* Interactive demo showcase */}
+              <div className="h-full relative bg-gradient-to-br from-blue-900 to-purple-900 flex items-center justify-center">
+                {/* Animated dashboard preview */}
+                <div className="absolute inset-4 bg-gray-900 rounded-lg overflow-hidden">
+                  <div className="h-full relative">
+                    {/* Header bar */}
+                    <div className="h-8 bg-gray-800 flex items-center px-4">
+                      <div className="flex space-x-2">
+                        <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                        <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                      </div>
+                      <div className="ml-4 text-gray-400 text-xs">AstralField - Dynasty League</div>
+                    </div>
+                    
+                    {/* Dashboard content */}
+                    <div className="p-4 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="text-white font-bold">Command Center</div>
+                        <div className="text-blue-400 text-sm">Week 3 • 2025 Season</div>
+                      </div>
+                      
+                      {/* Stats grid */}
+                      <div className="grid grid-cols-4 gap-3">
+                        {['5-0', '#1', '156.2', '98.7'].map((stat, i) => (
+                          <div key={i} className="bg-gray-800 rounded p-2">
+                            <div className="text-blue-400 text-lg font-bold">{stat}</div>
+                            <div className="text-gray-400 text-xs">
+                              {['Record', 'Rank', 'PF', 'PA'][i]}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      
+                      {/* Live updates */}
+                      <div className="bg-gray-800 rounded p-3">
+                        <div className="text-white text-sm mb-2">Live Updates</div>
+                        <div className="space-y-1">
+                          <div className="text-green-400 text-xs">Josh Allen: 2 TD passes</div>
+                          <div className="text-blue-400 text-xs">Travis Kelce: 67 yards receiving</div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Animated pulse effect */}
+                    <div className="absolute inset-0 bg-blue-500/10 animate-pulse"></div>
+                  </div>
+                </div>
+                
+                {/* Play button overlay */}
+                <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                  <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                    <div className="w-0 h-0 border-l-8 border-l-white border-y-6 border-y-transparent ml-2"></div>
+                  </div>
+                </div>
               </div>
             </motion.div>
           </motion.div>

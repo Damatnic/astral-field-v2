@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/db';
 import { nanoid } from 'nanoid';
 import { withRateLimit, RATE_LIMIT_CONFIGS } from '@/lib/rate-limiter';
+import { createJWTToken } from '@/lib/auth';
 
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic';
@@ -14,7 +15,6 @@ export async function POST(request: NextRequest) {
     let body;
     try {
       const text = await request.text();
-      console.log('Raw request body:', text);
       body = JSON.parse(text);
     } catch (parseError) {
       console.error('JSON parse error:', parseError);
@@ -71,32 +71,12 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Create or update session
-    const sessionId = nanoid();
-    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+    // Create JWT token using standardized helper
+    const token = await createJWTToken(user);
     
-    // Clean up old sessions for this user
-    await prisma.userSession.deleteMany({
-      where: {
-        userId: user.id,
-        expiresAt: {
-          lt: new Date()
-        }
-      }
-    });
-    
-    // Create new session
-    await prisma.userSession.create({
-      data: {
-        userId: user.id,
-        sessionId,
-        expiresAt
-      }
-    });
-    
-    // Set session cookie
+    // Set auth-token cookie (matches SESSION_COOKIE_NAME in auth.ts)
     const cookieStore = cookies();
-    cookieStore.set('session', sessionId, {
+    cookieStore.set('auth-token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
@@ -109,7 +89,7 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json({
       success: true,
-      sessionId, // Return session ID for testing
+      token, // Return token for testing (will be removed in production)
       user: {
         id: user.id,
         email: user.email,

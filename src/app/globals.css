@@ -1,43 +1,147 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&family=Orbitron:wght@100;200;300;400;500;600;700;800;900&family=JetBrains+Mono:wght@100;200;300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  /* Enhanced Color System */
-  --primary-50: #eff6ff;
-  --primary-100: #dbeafe;
-  --primary-200: #bfdbfe;
-  --primary-300: #93c5fd;
-  --primary-400: #60a5fa;
-  --primary-500: #3b82f6;
-  --primary-600: #2563eb;
-  --primary-700: #1d4ed8;
-  --primary-800: #1e40af;
-  --primary-900: #1e3a8a;
+  /* 🌌 ASTRAL DESIGN SYSTEM - COSMIC COLOR PALETTE */
   
-  /* Semantic Colors */
-  --success-500: #22c55e;
-  --warning-500: #f59e0b;
-  --danger-500: #ef4444;
+  /* Quantum Blue - Primary */
+  --astral-primary-50: #e6f3ff;
+  --astral-primary-100: #b3daff;
+  --astral-primary-200: #80c2ff;
+  --astral-primary-300: #4da9ff;
+  --astral-primary-400: #1a91ff;
+  --astral-primary-500: #0066cc;
+  --astral-primary-600: #0052a3;
+  --astral-primary-700: #003d7a;
+  --astral-primary-800: #002952;
+  --astral-primary-900: #001429;
   
-  /* Fantasy Football Position Colors */
-  --position-qb: #8b5cf6;
-  --position-rb: #22c55e;
-  --position-wr: #3b82f6;
-  --position-te: #f59e0b;
-  --position-k: #ec4899;
-  --position-dst: #6b7280;
+  /* Cosmic Purple - Secondary */
+  --astral-cosmic-50: #f3e6ff;
+  --astral-cosmic-100: #dab3ff;
+  --astral-cosmic-200: #c280ff;
+  --astral-cosmic-300: #a94dff;
+  --astral-cosmic-400: #911aff;
+  --astral-cosmic-500: #6600cc;
+  --astral-cosmic-600: #5200a3;
+  --astral-cosmic-700: #3d007a;
+  --astral-cosmic-800: #290052;
+  --astral-cosmic-900: #140029;
   
-  /* Light Mode Colors */
-  --background: #ffffff;
-  --surface: #f8fafc;
-  --surface-hover: #f1f5f9;
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #64748b;
-  --border: #e2e8f0;
-  --border-strong: #cbd5e1;
+  /* Nebula Pink - Accent */
+  --astral-nebula-50: #ffe6f7;
+  --astral-nebula-100: #ffb3e6;
+  --astral-nebula-200: #ff80d5;
+  --astral-nebula-300: #ff4dc4;
+  --astral-nebula-400: #ff1ab3;
+  --astral-nebula-500: #cc0088;
+  --astral-nebula-600: #a3006b;
+  --astral-nebula-700: #7a004e;
+  --astral-nebula-800: #520031;
+  --astral-nebula-900: #290014;
+  
+  /* Galaxy Gold - Success */
+  --astral-gold-50: #fff9e6;
+  --astral-gold-100: #ffecb3;
+  --astral-gold-200: #ffdf80;
+  --astral-gold-300: #ffd24d;
+  --astral-gold-400: #ffc51a;
+  --astral-gold-500: #cc9900;
+  --astral-gold-600: #a37a00;
+  --astral-gold-700: #7a5c00;
+  --astral-gold-800: #523d00;
+  --astral-gold-900: #291f00;
+  
+  /* Solar Orange - Warning */
+  --astral-solar-50: #fff2e6;
+  --astral-solar-100: #ffd9b3;
+  --astral-solar-200: #ffc080;
+  --astral-solar-300: #ffa74d;
+  --astral-solar-400: #ff8e1a;
+  --astral-solar-500: #cc5500;
+  --astral-solar-600: #a34400;
+  --astral-solar-700: #7a3300;
+  --astral-solar-800: #522200;
+  --astral-solar-900: #291100;
+  
+  /* Supernova Red - Danger */
+  --astral-supernova-50: #ffe6e6;
+  --astral-supernova-100: #ffb3b3;
+  --astral-supernova-200: #ff8080;
+  --astral-supernova-300: #ff4d4d;
+  --astral-supernova-400: #ff1a1a;
+  --astral-supernova-500: #cc0000;
+  --astral-supernova-600: #a30000;
+  --astral-supernova-700: #7a0000;
+  --astral-supernova-800: #520000;
+  --astral-supernova-900: #290000;
+  
+  /* Starfield Gradients */
+  --astral-gradient-cosmic: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #d946ef 100%);
+  --astral-gradient-nebula: linear-gradient(135deg, #3b82f6 0%, #6366f1 25%, #8b5cf6 50%, #d946ef 75%, #ec4899 100%);
+  --astral-gradient-aurora: linear-gradient(45deg, #06b6d4 0%, #3b82f6 25%, #6366f1 50%, #8b5cf6 75%, #d946ef 100%);
+  --astral-gradient-quantum: radial-gradient(circle at 30% 70%, #3b82f6 0%, #6366f1 40%, #8b5cf6 70%, #d946ef 100%);
+  
+  /* Dark Matter - Base Colors */
+  --astral-dark-void: #000000;
+  --astral-dark-space: #0a0a0a;
+  --astral-dark-matter: #1a1a1a;
+  --astral-dark-asteroid: #2a2a2a;
+  --astral-dark-moon: #3a3a3a;
+  --astral-dark-planet: #4a4a4a;
+  
+  /* Light Cosmos - Base Colors */
+  --astral-light-star: #ffffff;
+  --astral-light-comet: #f8fafc;
+  --astral-light-cloud: #f1f5f9;
+  --astral-light-mist: #e2e8f0;
+  --astral-light-dust: #cbd5e1;
+  --astral-light-shadow: #94a3b8;
+  
+  /* Legacy Color Mapping for Compatibility */
+  --primary-50: var(--astral-primary-50);
+  --primary-100: var(--astral-primary-100);
+  --primary-200: var(--astral-primary-200);
+  --primary-300: var(--astral-primary-300);
+  --primary-400: var(--astral-primary-400);
+  --primary-500: var(--astral-primary-500);
+  --primary-600: var(--astral-primary-600);
+  --primary-700: var(--astral-primary-700);
+  --primary-800: var(--astral-primary-800);
+  --primary-900: var(--astral-primary-900);
+  
+  /* 🎯 Semantic Colors - Astral Theme */
+  --success-500: var(--astral-gold-500);
+  --warning-500: var(--astral-solar-500);
+  --danger-500: var(--astral-supernova-500);
+  --info-500: var(--astral-primary-500);
+  --accent-500: var(--astral-cosmic-500);
+  --highlight-500: var(--astral-nebula-500);
+  
+  /* 🏈 Quantum Fantasy Position Colors */
+  --position-qb: var(--astral-cosmic-500);
+  --position-rb: var(--astral-gold-500);
+  --position-wr: var(--astral-primary-500);
+  --position-te: var(--astral-solar-500);
+  --position-k: var(--astral-nebula-500);
+  --position-dst: var(--astral-dark-planet);
+  --position-flex: var(--astral-gradient-aurora);
+  --position-bench: var(--astral-light-shadow);
+  
+  /* 🌟 Astral Light Mode */
+  --background: var(--astral-light-star);
+  --surface: var(--astral-light-comet);
+  --surface-hover: var(--astral-light-cloud);
+  --surface-elevated: var(--astral-light-star);
+  --text-primary: var(--astral-dark-void);
+  --text-secondary: var(--astral-dark-asteroid);
+  --text-muted: var(--astral-light-shadow);
+  --border: var(--astral-light-mist);
+  --border-strong: var(--astral-light-dust);
+  --glass-bg: rgba(255, 255, 255, 0.1);
+  --glass-border: rgba(255, 255, 255, 0.2);
   
   /* Layout Variables */
   --header-height: 4rem;
@@ -122,62 +226,134 @@
   --border-strong: #475569;
 }
 
-/* Base Styles */
+/* 🎨 ENHANCED BASE STYLES FOR ASTRAL DESIGN SYSTEM */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
+::before,
+::after {
+  box-sizing: border-box;
+}
+
 html {
   scroll-behavior: smooth;
   font-size: 16px;
+  overflow-x: hidden;
+  scroll-padding-top: 4rem;
 }
 
 body {
-  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  line-height: 1.5;
-  color: #1f2937;
-  background-color: #f9fafb;
+  font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-weight: 400;
+  line-height: 1.6;
+  color: var(--astral-light-star);
+  background: linear-gradient(135deg, var(--astral-dark-void) 0%, var(--astral-dark-space) 50%, var(--astral-dark-matter) 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "kern" 1, "liga" 1;
+  overflow-x: hidden;
+  position: relative;
 }
 
-/* Typography */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 30%, rgba(26, 145, 255, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(102, 0, 204, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 40% 80%, rgba(204, 0, 136, 0.06) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* 🎭 ENHANCED TYPOGRAPHY SYSTEM */
 h1, h2, h3, h4, h5, h6 {
-  font-weight: 600;
-  line-height: 1.25;
-  color: #111827;
+  font-family: 'Orbitron', ui-sans-serif, system-ui, sans-serif;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--astral-light-star);
+  letter-spacing: -0.025em;
+  text-rendering: optimizeLegibility;
+  background: linear-gradient(135deg, var(--astral-primary-400) 0%, var(--astral-cosmic-400) 50%, var(--astral-nebula-400) 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-size: 200% 200%;
+  animation: gradient-shift 8s ease-in-out infinite;
+}
+
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
 }
 
 h1 {
-  font-size: 2.25rem;
-  font-weight: 700;
+  font-size: clamp(2.5rem, 8vw, 4.5rem);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  text-shadow: 0 0 40px rgba(26, 145, 255, 0.3);
 }
 
 h2 {
-  font-size: 1.875rem;
+  font-size: clamp(2rem, 6vw, 3rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
 }
 
 h3 {
-  font-size: 1.5rem;
+  font-size: clamp(1.5rem, 4vw, 2.25rem);
+  font-weight: 700;
 }
 
 h4 {
-  font-size: 1.25rem;
+  font-size: clamp(1.25rem, 3vw, 1.875rem);
+  font-weight: 600;
 }
 
 h5 {
-  font-size: 1.125rem;
+  font-size: clamp(1.125rem, 2.5vw, 1.5rem);
+  font-weight: 600;
 }
 
 h6 {
-  font-size: 1rem;
+  font-size: clamp(1rem, 2vw, 1.25rem);
+  font-weight: 600;
 }
 
 p {
-  color: #6b7280;
-  line-height: 1.6;
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  color: var(--astral-light-shadow);
+  line-height: 1.7;
+  font-size: 1rem;
+  font-weight: 400;
+}
+
+.text-display {
+  font-family: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.text-heading {
+  font-family: 'Orbitron', ui-sans-serif, system-ui, sans-serif;
+}
+
+.text-body {
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
+
+.text-mono {
+  font-family: 'JetBrains Mono', ui-monospace, 'Menlo', 'Monaco', 'Cascadia Code', 'Courier New', monospace;
 }
 
 /* Link Styles */
@@ -555,4 +731,784 @@ input:focus, textarea:focus, select:focus {
 ::-moz-selection {
   background-color: var(--primary-100);
   color: var(--primary-900);
+}
+
+/* 🎨 Enhanced Fantasy Position Colors - Quantum Theme */
+.text-position-qb { color: var(--astral-cosmic-400); }
+.bg-position-qb { background: linear-gradient(135deg, var(--astral-cosmic-500), var(--astral-cosmic-600)); }
+.text-position-rb { color: var(--astral-gold-500); }
+.bg-position-rb { background: linear-gradient(135deg, var(--astral-gold-500), var(--astral-gold-600)); }
+.text-position-wr { color: var(--astral-primary-400); }
+.bg-position-wr { background: linear-gradient(135deg, var(--astral-primary-500), var(--astral-primary-600)); }
+.text-position-te { color: var(--astral-solar-400); }
+.bg-position-te { background: linear-gradient(135deg, var(--astral-solar-500), var(--astral-solar-600)); }
+.text-position-k { color: var(--astral-nebula-400); }
+.bg-position-k { background: linear-gradient(135deg, var(--astral-nebula-500), var(--astral-nebula-600)); }
+.text-position-dst { color: var(--astral-light-shadow); }
+.bg-position-dst { background: linear-gradient(135deg, var(--astral-dark-asteroid), var(--astral-dark-planet)); }
+
+/* ✨ QUANTUM EFFECTS & ANIMATIONS */
+
+/* Particle Background Animation */
+@keyframes particleFloat {
+  0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.7; }
+  25% { transform: translateY(-20px) rotate(90deg); opacity: 1; }
+  50% { transform: translateY(-40px) rotate(180deg); opacity: 0.8; }
+  75% { transform: translateY(-20px) rotate(270deg); opacity: 1; }
+}
+
+/* Cosmic Glow Animation */
+@keyframes cosmicGlow {
+  0%, 100% { box-shadow: 0 0 20px var(--astral-primary-500), 0 0 40px var(--astral-cosmic-500), 0 0 60px var(--astral-nebula-500); }
+  50% { box-shadow: 0 0 30px var(--astral-cosmic-500), 0 0 60px var(--astral-nebula-500), 0 0 90px var(--astral-primary-500); }
+}
+
+/* Nebula Pulse */
+@keyframes nebulaPulse {
+  0%, 100% { background-size: 100% 100%; opacity: 0.8; }
+  50% { background-size: 120% 120%; opacity: 1; }
+}
+
+/* Quantum Shimmer */
+@keyframes quantumShimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Starfield Rotation */
+@keyframes starfieldRotate {
+  0% { transform: rotate(0deg) scale(1); }
+  100% { transform: rotate(360deg) scale(1.1); }
+}
+
+/* Hologram Flicker */
+@keyframes hologramFlicker {
+  0%, 100% { opacity: 1; filter: hue-rotate(0deg); }
+  50% { opacity: 0.8; filter: hue-rotate(180deg); }
+}
+
+/* 🔮 GLASS MORPHISM UTILITIES */
+.glass-cosmic {
+  background: rgba(99, 102, 241, 0.1);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  box-shadow: 0 8px 32px rgba(99, 102, 241, 0.1);
+}
+
+.glass-nebula {
+  background: rgba(204, 0, 136, 0.1);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(204, 0, 136, 0.2);
+  box-shadow: 0 8px 32px rgba(204, 0, 136, 0.1);
+}
+
+.glass-quantum {
+  background: rgba(102, 0, 204, 0.1);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(102, 0, 204, 0.2);
+  box-shadow: 0 8px 32px rgba(102, 0, 204, 0.1);
+}
+
+.glass-starlight {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(25px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(255, 255, 255, 0.05);
+}
+
+/* 🌟 INTERACTIVE EFFECTS */
+.cosmic-hover {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.cosmic-hover::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--astral-gradient-cosmic);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+.cosmic-hover:hover::before {
+  opacity: 0.1;
+}
+
+.cosmic-hover:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 20px 40px rgba(99, 102, 241, 0.3);
+}
+
+/* Quantum Button Effects */
+.btn-quantum {
+  position: relative;
+  background: var(--astral-gradient-cosmic);
+  border: none;
+  border-radius: 12px;
+  padding: 12px 24px;
+  color: white;
+  font-weight: 600;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.btn-quantum::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.btn-quantum:hover::before {
+  left: 100%;
+}
+
+.btn-quantum:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(99, 102, 241, 0.4);
+}
+
+/* Holographic Border Effect */
+.holo-border {
+  position: relative;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  border-radius: 12px;
+}
+
+.holo-border::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: -1;
+  margin: -2px;
+  border-radius: inherit;
+  background: var(--astral-gradient-cosmic);
+  animation: hologramFlicker 3s ease-in-out infinite;
+}
+
+/* 🎯 COMPONENT UTILITIES */
+
+/* Astral Card */
+.astral-card {
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 16px;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.4s ease;
+}
+
+.astral-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--astral-gradient-nebula);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+.astral-card:hover::before {
+  opacity: 0.05;
+}
+
+.astral-card:hover {
+  transform: translateY(-8px);
+  border-color: var(--astral-cosmic-400);
+  box-shadow: 0 25px 50px rgba(99, 102, 241, 0.25);
+}
+
+/* Quantum Input */
+.quantum-input {
+  background: rgba(15, 23, 42, 0.6);
+  border: 2px solid rgba(99, 102, 241, 0.3);
+  border-radius: 12px;
+  padding: 12px 16px;
+  color: white;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.quantum-input:focus {
+  outline: none;
+  border-color: var(--astral-cosmic-500);
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+  background: rgba(15, 23, 42, 0.8);
+}
+
+.quantum-input::placeholder {
+  color: var(--astral-light-shadow);
+}
+
+/* Particle System */
+.particle-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: -1;
+  overflow: hidden;
+}
+
+.particle {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: var(--astral-primary-400);
+  border-radius: 50%;
+  animation: particleFloat 6s infinite ease-in-out;
+}
+
+.particle:nth-child(2n) {
+  background: var(--astral-cosmic-400);
+  animation-delay: -2s;
+  animation-duration: 8s;
+}
+
+.particle:nth-child(3n) {
+  background: var(--astral-nebula-400);
+  animation-delay: -4s;
+  animation-duration: 10s;
+}
+
+/* 🚀 LAYOUT ENHANCEMENTS */
+
+/* Cosmic Navigation */
+.cosmic-nav {
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.cosmic-nav-item {
+  position: relative;
+  padding: 8px 16px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  color: var(--astral-light-shadow);
+}
+
+.cosmic-nav-item::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 2px;
+  background: var(--astral-gradient-cosmic);
+  transition: width 0.3s ease;
+}
+
+.cosmic-nav-item:hover,
+.cosmic-nav-item.active {
+  color: white;
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.cosmic-nav-item:hover::before,
+.cosmic-nav-item.active::before {
+  width: 80%;
+}
+
+/* Quantum Grid */
+.quantum-grid {
+  display: grid;
+  gap: 24px;
+  position: relative;
+}
+
+.quantum-grid::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    linear-gradient(rgba(99, 102, 241, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99, 102, 241, 0.1) 1px, transparent 1px);
+  background-size: 50px 50px;
+  pointer-events: none;
+  opacity: 0.3;
+}
+
+/* Astral Typography Overrides */
+.astral-heading {
+  font-family: 'Orbitron', monospace;
+  font-weight: 700;
+  background: var(--astral-gradient-cosmic);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  line-height: 1.2;
+}
+
+.astral-body {
+  font-family: 'Inter', sans-serif;
+  color: var(--astral-light-shadow);
+}
+
+.astral-mono {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--astral-cosmic-400);
+}
+
+/* 💫 UTILITY CLASSES */
+.text-cosmic { color: var(--astral-cosmic-500); }
+.text-nebula { color: var(--astral-nebula-500); }
+.text-quantum { color: var(--astral-primary-500); }
+.text-starlight { color: var(--astral-light-star); }
+.text-shadow { color: var(--astral-light-shadow); }
+
+.bg-cosmic { background: var(--astral-cosmic-500); }
+.bg-nebula { background: var(--astral-nebula-500); }
+.bg-quantum { background: var(--astral-primary-500); }
+.bg-void { background: var(--astral-dark-void); }
+.bg-space { background: var(--astral-dark-space); }
+
+.gradient-cosmic { background: var(--astral-gradient-cosmic); }
+.gradient-nebula { background: var(--astral-gradient-nebula); }
+.gradient-aurora { background: var(--astral-gradient-aurora); }
+.gradient-quantum { background: var(--astral-gradient-quantum); }
+
+.animate-cosmic-glow { animation: cosmicGlow 3s ease-in-out infinite; }
+.animate-nebula-pulse { animation: nebulaPulse 2s ease-in-out infinite; }
+.animate-quantum-shimmer { animation: quantumShimmer 2s linear infinite; }
+.animate-starfield { animation: starfieldRotate 20s linear infinite; }
+.animate-hologram { animation: hologramFlicker 3s ease-in-out infinite; }
+
+.blur-cosmic { backdrop-filter: blur(20px); }
+.blur-quantum { backdrop-filter: blur(12px); }
+.blur-starlight { backdrop-filter: blur(25px); }
+
+/* 3D Transform Effects */
+.transform-3d {
+  transform-style: preserve-3d;
+  perspective: 1000px;
+}
+
+.rotate-x-12 { transform: rotateX(12deg); }
+.rotate-y-12 { transform: rotateY(12deg); }
+.rotate-z-12 { transform: rotateZ(12deg); }
+
+/* Quantum Shadows */
+.shadow-quantum { box-shadow: 0 25px 50px -12px rgba(99, 102, 241, 0.25); }
+.shadow-cosmic { box-shadow: 0 25px 50px -12px rgba(102, 0, 204, 0.25); }
+.shadow-nebula { box-shadow: 0 25px 50px -12px rgba(204, 0, 136, 0.25); }
+.shadow-void { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8); }
+
+/* 🎯 MISSING ASTRAL COLOR UTILITIES */
+/* Background Colors */
+.bg-astral-cosmic-600 { background-color: var(--astral-cosmic-600); }
+.bg-astral-cosmic-700 { background-color: var(--astral-cosmic-700); }
+.bg-astral-nebula-600 { background-color: var(--astral-nebula-600); }
+.bg-astral-nebula-700 { background-color: var(--astral-nebula-700); }
+.bg-astral-primary-500 { background-color: var(--astral-primary-500); }
+.bg-astral-primary-600 { background-color: var(--astral-primary-600); }
+.bg-astral-gold-500 { background-color: var(--astral-gold-500); }
+.bg-astral-gold-600 { background-color: var(--astral-gold-600); }
+.bg-astral-solar-500 { background-color: var(--astral-solar-500); }
+.bg-astral-solar-600 { background-color: var(--astral-solar-600); }
+.bg-astral-supernova-600 { background-color: var(--astral-supernova-600); }
+.bg-astral-supernova-700 { background-color: var(--astral-supernova-700); }
+.bg-astral-gold-700 { background-color: var(--astral-gold-700); }
+.bg-astral-solar-700 { background-color: var(--astral-solar-700); }
+
+/* Text Colors */
+.text-astral-cosmic-400 { color: var(--astral-cosmic-400); }
+.text-astral-cosmic-500 { color: var(--astral-cosmic-500); }
+.text-astral-nebula-400 { color: var(--astral-nebula-400); }
+.text-astral-nebula-500 { color: var(--astral-nebula-500); }
+.text-astral-primary-400 { color: var(--astral-primary-400); }
+.text-astral-primary-500 { color: var(--astral-primary-500); }
+.text-astral-gold-400 { color: var(--astral-gold-400); }
+.text-astral-gold-500 { color: var(--astral-gold-500); }
+.text-astral-solar-400 { color: var(--astral-solar-400); }
+.text-astral-solar-500 { color: var(--astral-solar-500); }
+.text-astral-light-star { color: var(--astral-light-star); }
+
+/* Border Colors */
+.border-astral-cosmic-500 { border-color: var(--astral-cosmic-500); }
+.border-astral-nebula-500 { border-color: var(--astral-nebula-500); }
+.border-astral-primary-500 { border-color: var(--astral-primary-500); }
+.border-astral-gold-500 { border-color: var(--astral-gold-500); }
+.border-astral-solar-500 { border-color: var(--astral-solar-500); }
+.border-astral-dark-asteroid { border-color: var(--astral-dark-asteroid); }
+
+/* Ring Colors for Focus */
+.ring-astral-cosmic-500 { --tw-ring-color: var(--astral-cosmic-500); }
+.ring-astral-nebula-500 { --tw-ring-color: var(--astral-nebula-500); }
+.ring-astral-primary-500 { --tw-ring-color: var(--astral-primary-500); }
+.ring-astral-gold-500 { --tw-ring-color: var(--astral-gold-500); }
+.ring-astral-solar-500 { --tw-ring-color: var(--astral-solar-500); }
+
+/* Focus Ring Utilities */
+.focus\:ring-astral-cosmic-500:focus { --tw-ring-color: var(--astral-cosmic-500); }
+.focus\:ring-astral-nebula-500:focus { --tw-ring-color: var(--astral-nebula-500); }
+.focus\:ring-astral-primary-500:focus { --tw-ring-color: var(--astral-primary-500); }
+.focus\:ring-astral-gold-500:focus { --tw-ring-color: var(--astral-gold-500); }
+.focus\:ring-astral-solar-500:focus { --tw-ring-color: var(--astral-solar-500); }
+.focus\:ring-astral-light-shadow:focus { --tw-ring-color: var(--astral-light-shadow); }
+.focus\:ring-astral-supernova-500:focus { --tw-ring-color: var(--astral-supernova-500); }
+
+/* Border Colors for New Variants */
+.border-astral-supernova-500 { border-color: var(--astral-supernova-500); }
+
+/* Hover Background Colors for New Variants */
+.hover\:bg-astral-supernova-700:hover { background-color: var(--astral-supernova-700); }
+.hover\:bg-astral-gold-700:hover { background-color: var(--astral-gold-700); }
+.hover\:bg-astral-solar-700:hover { background-color: var(--astral-solar-700); }
+
+/* Hover Background Colors */
+.hover\:bg-astral-cosmic-700:hover { background-color: var(--astral-cosmic-700); }
+.hover\:bg-astral-nebula-700:hover { background-color: var(--astral-nebula-700); }
+.hover\:bg-astral-dark-space:hover { background-color: var(--astral-dark-space); }
+
+/* Hover Glass Effects */
+.hover\:glass-cosmic:hover {
+  background: rgba(99, 102, 241, 0.1);
+  backdrop-filter: blur(20px);
+  border-color: rgba(99, 102, 241, 0.2);
+}
+
+.hover\:glass-quantum:hover {
+  background: rgba(102, 0, 204, 0.1);
+  backdrop-filter: blur(20px);
+  border-color: rgba(102, 0, 204, 0.2);
+}
+
+/* Hover Text Colors */
+.hover\:text-white:hover { color: white; }
+
+/* Hover Shadow Effects */
+.hover\:shadow-cosmic:hover { box-shadow: 0 25px 50px -12px rgba(102, 0, 204, 0.25); }
+.hover\:shadow-quantum:hover { box-shadow: 0 25px 50px -12px rgba(99, 102, 241, 0.25); }
+.hover\:shadow-nebula:hover { box-shadow: 0 25px 50px -12px rgba(204, 0, 136, 0.25); }
+.hover\:shadow-void:hover { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8); }
+
+/* 🚀 MODERN COMPONENT LIBRARY */
+
+/* Enhanced Cards */
+.astral-card-premium {
+  position: relative;
+  background: rgba(15, 23, 42, 0.9);
+  backdrop-filter: blur(20px);
+  border: 1px solid transparent;
+  border-radius: 24px;
+  padding: 32px;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateY(0);
+}
+
+.astral-card-premium::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(26, 145, 255, 0.1) 0%, rgba(102, 0, 204, 0.1) 50%, rgba(204, 0, 136, 0.1) 100%);
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+.astral-card-premium::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(135deg, var(--astral-primary-400), var(--astral-cosmic-400), var(--astral-nebula-400));
+  border-radius: inherit;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.astral-card-premium:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 
+    0 32px 64px rgba(0, 0, 0, 0.3),
+    0 0 80px rgba(26, 145, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.astral-card-premium:hover::before {
+  opacity: 1;
+}
+
+.astral-card-premium:hover::after {
+  opacity: 1;
+}
+
+/* Enhanced Buttons */
+.btn-astral-primary {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 32px;
+  font-family: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 1rem;
+  line-height: 1;
+  color: white;
+  background: linear-gradient(135deg, var(--astral-primary-500), var(--astral-cosmic-500));
+  border: none;
+  border-radius: 16px;
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-decoration: none;
+  user-select: none;
+  transform: translateY(0);
+}
+
+.btn-astral-primary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-astral-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 20px 40px rgba(26, 145, 255, 0.3),
+    0 0 60px rgba(102, 0, 204, 0.2);
+  background: linear-gradient(135deg, var(--astral-primary-400), var(--astral-cosmic-400));
+}
+
+.btn-astral-primary:hover::before {
+  left: 100%;
+}
+
+.btn-astral-primary:active {
+  transform: translateY(0);
+}
+
+.btn-astral-secondary {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 32px;
+  font-family: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--astral-light-star);
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(26, 145, 255, 0.3);
+  border-radius: 16px;
+  cursor: pointer;
+  backdrop-filter: blur(20px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-decoration: none;
+  user-select: none;
+  transform: translateY(0);
+}
+
+.btn-astral-secondary:hover {
+  transform: translateY(-2px);
+  background: rgba(26, 145, 255, 0.1);
+  border-color: var(--astral-primary-400);
+  box-shadow: 
+    0 20px 40px rgba(26, 145, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Enhanced Inputs */
+.input-astral {
+  width: 100%;
+  padding: 16px 20px;
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  font-size: 1rem;
+  font-weight: 400;
+  color: var(--astral-light-star);
+  background: rgba(15, 23, 42, 0.8);
+  border: 2px solid rgba(26, 145, 255, 0.2);
+  border-radius: 12px;
+  backdrop-filter: blur(20px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+}
+
+.input-astral::placeholder {
+  color: var(--astral-light-shadow);
+  opacity: 0.7;
+}
+
+.input-astral:focus {
+  border-color: var(--astral-primary-400);
+  box-shadow: 
+    0 0 0 4px rgba(26, 145, 255, 0.1),
+    0 8px 32px rgba(26, 145, 255, 0.2);
+  background: rgba(15, 23, 42, 0.95);
+}
+
+/* Enhanced Navigation */
+.nav-astral {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.95);
+  backdrop-filter: blur(32px);
+  border-bottom: 1px solid rgba(26, 145, 255, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nav-astral::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(26, 145, 255, 0.05), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.nav-astral:hover::before {
+  opacity: 1;
+}
+
+.nav-link-astral {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 12px 20px;
+  font-family: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  font-weight: 500;
+  font-size: 0.95rem;
+  color: var(--astral-light-shadow);
+  text-decoration: none;
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+.nav-link-astral::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--astral-primary-400), var(--astral-cosmic-400));
+  transform: translateX(-50%);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nav-link-astral:hover {
+  color: var(--astral-light-star);
+  background: rgba(26, 145, 255, 0.1);
+}
+
+.nav-link-astral:hover::before {
+  width: 80%;
+}
+
+.nav-link-astral.active {
+  color: var(--astral-light-star);
+  background: rgba(26, 145, 255, 0.15);
+}
+
+.nav-link-astral.active::before {
+  width: 80%;
+}
+
+/* Loading States */
+.loading-astral {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 40px;
+}
+
+.loading-astral::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 3px solid rgba(26, 145, 255, 0.2);
+  border-top: 3px solid var(--astral-primary-400);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Status Indicators */
+.status-healthy {
+  color: var(--astral-gold-400);
+  filter: drop-shadow(0 0 8px rgba(204, 153, 0, 0.5));
+}
+
+.status-questionable {
+  color: var(--astral-solar-400);
+  filter: drop-shadow(0 0 8px rgba(204, 85, 0, 0.5));
+}
+
+.status-out {
+  color: var(--astral-supernova-400);
+  filter: drop-shadow(0 0 8px rgba(204, 0, 0, 0.5));
+}
+
+/* Responsive Enhancements */
+@media (max-width: 768px) {
+  .astral-card-premium {
+    padding: 24px 20px;
+    border-radius: 20px;
+  }
+  
+  .btn-astral-primary,
+  .btn-astral-secondary {
+    padding: 14px 24px;
+    font-size: 0.95rem;
+  }
+  
+  .nav-link-astral {
+    padding: 10px 16px;
+    font-size: 0.9rem;
+  }
 }

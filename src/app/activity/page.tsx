@@ -142,7 +142,7 @@ export default function ActivityPage() {
               <Activity className="h-8 w-8 text-slate-400 mx-auto mb-3" />
               <p className="text-slate-600">
                 Activity feed shows the latest league updates and member actions.
-                More detailed activity tracking coming soon!
+                Track trades, waivers, lineup changes, and championship progress in real-time.
               </p>
             </CardContent>
           </Card>

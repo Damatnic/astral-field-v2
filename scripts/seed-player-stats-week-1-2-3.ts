@@ -1,9 +1,9 @@
 #!/usr/bin/env npx tsx
 
 /**
- * Seed Player Statistics for Weeks 1 & 2 of 2025 Season
+ * Seed Player Statistics for Weeks 1, 2, and 3 of 2025 Season
  * 
- * Since it's week 3, players should have fantasy stats from the first 2 weeks.
+ * Since Week 3 is ending tonight, players should have fantasy stats from the first 3 weeks.
  * This script populates realistic player statistics to support the league standings.
  */
 
@@ -98,9 +98,9 @@ function generatePlayerStats(playerId: string, position: string, team: string, w
   };
 }
 
-async function seedPlayerStatsWeek3() {
+async function seedPlayerStatsWeeks123() {
   try {
-    console.log('🏈 Seeding Player Statistics for 2025 Season (Weeks 1-2)\n');
+    console.log('🏈 Seeding Player Statistics for 2025 Season (Weeks 1-3)\n');
 
     // Get all players
     const players = await prisma.player.findMany({
@@ -120,8 +120,8 @@ async function seedPlayerStatsWeek3() {
 
     let statsCreated = 0;
 
-    // Generate stats for weeks 1 and 2
-    for (const week of [1, 2]) {
+    // Generate stats for weeks 1, 2, and 3
+    for (const week of [1, 2, 3]) {
       console.log(`\nGenerating Week ${week} statistics...`);
       
       for (const player of players) {
@@ -150,7 +150,7 @@ async function seedPlayerStatsWeek3() {
             });
             statsCreated++;
             
-            if (statsCreated % 50 === 0) {
+            if (statsCreated % 100 === 0) {
               console.log(`   Created ${statsCreated} player stats...`);
             }
           } catch (error) {
@@ -177,29 +177,35 @@ async function seedPlayerStatsWeek3() {
       _avg: { fantasyPoints: true }
     });
 
+    const avgPointsWeek3 = await prisma.playerStats.aggregate({
+      where: { week: 3, season: "2025" },
+      _avg: { fantasyPoints: true }
+    });
+
     const topScorers = await prisma.playerStats.findMany({
       where: { season: "2025" },
       include: { player: true },
       orderBy: { fantasyPoints: 'desc' },
-      take: 5
+      take: 10
     });
 
     console.log('\n📊 PLAYER STATISTICS SUMMARY:');
     console.log(`   Total Stats Entries: ${totalPlayerStats}`);
     console.log(`   Week 1 Average Score: ${avgPointsWeek1._avg.fantasyPoints?.toFixed(1) || 0} points`);
     console.log(`   Week 2 Average Score: ${avgPointsWeek2._avg.fantasyPoints?.toFixed(1) || 0} points`);
+    console.log(`   Week 3 Average Score: ${avgPointsWeek3._avg.fantasyPoints?.toFixed(1) || 0} points`);
     
-    console.log('\n🏆 TOP PERFORMERS (Both Weeks):');
+    console.log('\n🏆 TOP PERFORMERS (All 3 Weeks):');
     topScorers.forEach((stat, i) => {
       console.log(`   ${i + 1}. ${stat.player.name} (${stat.player.position}): ${stat.fantasyPoints} points (Week ${stat.week})`);
     });
 
     console.log('\n🎯 WHAT THIS PROVIDES:');
-    console.log('   ✅ Realistic player performance data for weeks 1-2');
+    console.log('   ✅ Realistic player performance data for weeks 1-3');
     console.log('   ✅ Position-appropriate scoring ranges');
     console.log('   ✅ Statistical variance that matches real NFL trends');
-    console.log('   ✅ Foundation for lineup decisions and waiver claims');
-    console.log('   ✅ Historical data for player projections');
+    console.log('   ✅ Complete season data through Week 3');
+    console.log('   ✅ Ready for Week 4 waiver wire and lineup decisions');
 
   } catch (error) {
     console.error('❌ Error seeding player statistics:', error);
@@ -210,7 +216,7 @@ async function seedPlayerStatsWeek3() {
 }
 
 if (require.main === module) {
-  seedPlayerStatsWeek3()
+  seedPlayerStatsWeeks123()
     .then(() => {
       console.log('\n✅ Player statistics seeding completed successfully!');
       process.exit(0);
@@ -221,4 +227,4 @@ if (require.main === module) {
     });
 }
 
-export { seedPlayerStatsWeek3 };
+export { seedPlayerStatsWeeks123 };

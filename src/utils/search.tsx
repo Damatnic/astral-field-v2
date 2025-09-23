@@ -108,67 +108,67 @@ interface SearchPlayer extends Omit<Player, 'stats'> {
   };
 }
 
-// Mock data for demonstration
-const mockPlayers: SearchPlayer[] = [
-  {
-    id: '1',
-    nflId: 'nfl1',
-    name: 'Josh Allen',
-    position: Position.QB,
-    nflTeam: 'BUF',
-    team: 'BUF',
-    status: 'Active' as any,
-    isRookie: false,
-    yearsExperience: 6,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    fantasyPoints: 285.4,
-    projectedPoints: 24.2,
-    averagePoints: 22.8,
-    isInjured: false,
-    injuryStatus: 'Healthy',
-    bye: 7,
-    tier: 1,
-    adp: 12.5,
-    ownership: 85.2,
-    stats: {
-      passingYards: 4300,
-      passingTouchdowns: 25,
-      interceptions: 8,
-      rushingYards: 450,
-      rushingTouchdowns: 8
+// Real players data fetched from API
+let cachedPlayers: SearchPlayer[] = [];
+let lastFetchTime = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+async function fetchPlayersFromAPI(): Promise<SearchPlayer[]> {
+  try {
+    const response = await fetch('/api/players?limit=50');
+    if (!response.ok) {
+      throw new Error('Failed to fetch players');
     }
-  },
-  {
-    id: '2',
-    nflId: 'nfl2',
-    name: 'Christian McCaffrey',
-    position: Position.RB,
-    nflTeam: 'SF',
-    team: 'SF',
-    status: 'Active' as any,
-    isRookie: false,
-    yearsExperience: 7,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    fantasyPoints: 298.7,
-    projectedPoints: 21.8,
-    averagePoints: 23.9,
-    isInjured: false,
-    injuryStatus: 'Healthy',
-    bye: 9,
-    tier: 1,
-    adp: 2.1,
-    ownership: 92.5,
-    stats: {
-      rushingYards: 1200,
-      rushingTouchdowns: 12,
-      receptions: 85,
-      receivingYards: 650,
-      receivingTouchdowns: 4
-    }
+    
+    const data = await response.json();
+    const players = data.data || [];
+    
+    // Transform API data to SearchPlayer format
+    return players.map((player: any) => ({
+      id: player.id,
+      nflId: player.id,
+      name: player.name,
+      position: player.position,
+      nflTeam: player.nflTeam || 'FA',
+      team: player.nflTeam || 'FA',
+      status: player.status || 'Active',
+      isRookie: player.isRookie || false,
+      yearsExperience: player.age ? player.age - 21 : 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      fantasyPoints: player.seasonStats?.totalPoints || 0,
+      projectedPoints: player.projection?.points || 0,
+      averagePoints: player.seasonStats?.averagePoints || 0,
+      isInjured: player.injuryStatus && player.injuryStatus !== 'Healthy',
+      injuryStatus: player.injuryStatus || 'Healthy',
+      bye: player.byeWeek || 0,
+      tier: player.searchRank ? Math.ceil(player.searchRank / 10) : 10,
+      adp: player.adp || 0,
+      ownership: 0, // Will be calculated from roster data
+      stats: player.recentGames?.[0]?.stats || {}
+    }));
+  } catch (error) {
+    console.error('Error fetching players:', error);
+    // Return empty array on error - components should handle gracefully
+    return [];
   }
-];
+}
+
+async function getRealPlayers(): Promise<SearchPlayer[]> {
+  const now = Date.now();
+  
+  // Use cached data if it's still fresh
+  if (cachedPlayers.length > 0 && (now - lastFetchTime) < CACHE_DURATION) {
+    return cachedPlayers;
+  }
+  
+  // Fetch fresh data
+  const players = await fetchPlayersFromAPI();
+  cachedPlayers = players;
+  lastFetchTime = now;
+  
+  return players;
+}
 
 // Default filters configuration
 const defaultFilters: SearchFilter[] = [
@@ -391,16 +391,20 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const performSearch = useCallback(async () => {
     setIsLoading(true);
     
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    const filtered = filterAndSort(mockPlayers, query, filters, sort);
-    setResults(filtered);
-    setIsLoading(false);
-    
-    // Record search analytics
-    if (query.trim()) {
-      recordSearch(query, filters);
+    try {
+      const players = await getRealPlayers();
+      const filtered = filterAndSort(players, query, filters, sort);
+      setResults(filtered);
+      
+      // Record search analytics
+      if (query.trim()) {
+        recordSearch(query, filters);
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+      setResults([]);
+    } finally {
+      setIsLoading(false);
     }
   }, [query, filters, sort, filterAndSort, recordSearch]);
 
@@ -411,32 +415,35 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const suggestions: SearchSuggestion[] = [];
     const inputLower = input.toLowerCase();
 
-    // Player name suggestions
-    mockPlayers.forEach(player => {
-      if (player.name.toLowerCase().includes(inputLower)) {
-        suggestions.push({
-          id: `player-${player.id}`,
-          text: player.name,
-          type: 'player',
-          category: `${player.position} - ${player.team}`,
-          icon: 'user'
-        });
-      }
-    });
+    try {
+      const players = await getRealPlayers();
+      
+      // Player name suggestions
+      players.forEach(player => {
+        if (player.name.toLowerCase().includes(inputLower)) {
+          suggestions.push({
+            id: `player-${player.id}`,
+            text: player.name,
+            type: 'player',
+            category: `${player.position} - ${player.team}`,
+            icon: 'user'
+          });
+        }
+      });
 
-    // Team suggestions
-    const teams = Array.from(new Set(mockPlayers.map(p => p.team)));
-    teams.forEach(team => {
-      if (team.toLowerCase().includes(inputLower)) {
-        suggestions.push({
-          id: `team-${team}`,
-          text: team,
-          type: 'team',
-          category: 'Team',
-          icon: 'shield'
-        });
-      }
-    });
+      // Team suggestions
+      const teams = Array.from(new Set(players.map(p => p.team)));
+      teams.forEach(team => {
+        if (team.toLowerCase().includes(inputLower)) {
+          suggestions.push({
+            id: `team-${team}`,
+            text: team,
+            type: 'team',
+            category: 'Team',
+            icon: 'shield'
+          });
+        }
+      });
 
     // Position suggestions
     const positions = ['QB', 'RB', 'WR', 'TE', 'K', 'DEF'];
@@ -466,6 +473,10 @@ export const SearchProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     });
 
     return suggestions.slice(0, 10);
+    } catch (error) {
+      console.error('Error getting suggestions:', error);
+      return [];
+    }
   }, [analytics.popularQueries]);
 
   // Filter management

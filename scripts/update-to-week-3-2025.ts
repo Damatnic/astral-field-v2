@@ -42,7 +42,7 @@ async function updateToWeek3Season2025() {
         isActive: true
       },
       data: {
-        season: 2025,
+        season: "2025",
         currentWeek: 3,
         updatedAt: new Date()
       }
@@ -76,7 +76,7 @@ async function updateToWeek3Season2025() {
       where: {
         league: {
           isActive: true,
-          season: 2025
+          season: "2025"
         }
       },
       include: {

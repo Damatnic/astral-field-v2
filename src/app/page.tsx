@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useScroll, useTransform, useSpring } from 'framer-motion';
 import { 
   Trophy,
   Star,
@@ -20,83 +20,197 @@ import {
   Globe,
   Gamepad2,
   Target,
-  Play
+  Play,
+  Rocket,
+  Brain,
+  Eye,
+  Layers,
+  Infinity,
+  Cpu,
+  Activity,
+  ArrowRight,
+  CheckCircle,
+  Database,
+  LineChart
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 
-// Modern gradient text component
+// Enhanced gradient text component
 const GradientText = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
-  <span className={`bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent ${className}`}>
+  <span className={`bg-gradient-cosmic bg-clip-text text-transparent text-glow ${className}`}>
     {children}
   </span>
 );
 
-// Animated background with gradient mesh
-const AnimatedBackground = () => {
+// Futuristic animated background
+const FuturisticBackground = () => {
   return (
     <div className="fixed inset-0 overflow-hidden">
-      {/* Base gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-purple-950/20 to-slate-950" />
-      
-      {/* Animated orbs */}
-      <div className="absolute inset-0">
-        <motion.div
-          className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-600/30 rounded-full filter blur-3xl"
-          animate={{
-            x: [0, 100, 0],
-            y: [0, -100, 0],
-          }}
-          transition={{
-            duration: 20,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-        <motion.div
-          className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-600/30 rounded-full filter blur-3xl"
-          animate={{
-            x: [0, -100, 0],
-            y: [0, 100, 0],
-          }}
-          transition={{
-            duration: 25,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-        <motion.div
-          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-pink-600/20 rounded-full filter blur-3xl"
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.5, 0.3],
-          }}
-          transition={{
-            duration: 15,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-      </div>
-      
-      {/* Mesh pattern overlay */}
-      <div 
-        className="absolute inset-0 opacity-30"
+      {/* Dynamic gradient base */}
+      <motion.div 
+        className="absolute inset-0"
         style={{
-          backgroundImage: `radial-gradient(circle at 25% 25%, transparent 0%, rgba(0,0,0,0.8) 50%),
-                           radial-gradient(circle at 75% 75%, transparent 0%, rgba(0,0,0,0.8) 50%)`,
+          background: 'radial-gradient(ellipse at center, rgba(26, 145, 255, 0.1) 0%, rgba(102, 0, 204, 0.05) 30%, rgba(0, 0, 0, 0.9) 70%)'
+        }}
+        animate={{
+          background: [
+            'radial-gradient(ellipse at center, rgba(26, 145, 255, 0.1) 0%, rgba(102, 0, 204, 0.05) 30%, rgba(0, 0, 0, 0.9) 70%)',
+            'radial-gradient(ellipse at center, rgba(102, 0, 204, 0.1) 0%, rgba(204, 0, 136, 0.05) 30%, rgba(0, 0, 0, 0.9) 70%)',
+            'radial-gradient(ellipse at center, rgba(204, 0, 136, 0.1) 0%, rgba(26, 145, 255, 0.05) 30%, rgba(0, 0, 0, 0.9) 70%)'
+          ]
+        }}
+        transition={{
+          duration: 10,
+          repeat: Infinity,
+          ease: "easeInOut"
         }}
       />
       
-      {/* Grain texture */}
-      <div className="absolute inset-0 opacity-20 mix-blend-overlay">
-        <svg width="100%" height="100%">
-          <filter id="noise">
-            <feTurbulence baseFrequency="0.9" />
-          </filter>
-          <rect width="100%" height="100%" filter="url(#noise)" opacity="0.2" />
+      {/* Floating geometric shapes */}
+      <div className="absolute inset-0">
+        {Array.from({ length: 12 }, (_, i) => (
+          <motion.div
+            key={i}
+            className="absolute w-2 h-2 bg-quantum-400/40 rounded-full"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+            }}
+            animate={{
+              y: [-20, -100, -20],
+              opacity: [0.2, 0.8, 0.2],
+              scale: [1, 1.5, 1],
+            }}
+            transition={{
+              duration: 8 + Math.random() * 4,
+              repeat: Infinity,
+              delay: Math.random() * 2,
+              ease: "easeInOut",
+            }}
+          />
+        ))}
+      </div>
+      
+      {/* Neural network pattern */}
+      <div className="absolute inset-0 opacity-10">
+        <svg width="100%" height="100%" viewBox="0 0 1000 1000">
+          <defs>
+            <pattern id="grid" width="100" height="100" patternUnits="userSpaceOnUse">
+              <path d="M 100 0 L 0 0 0 100" fill="none" stroke="currentColor" strokeWidth="1"/>
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#grid)" className="text-quantum-400" />
         </svg>
       </div>
     </div>
+  );
+};
+
+// 3D Card Component
+const Card3D = ({ children, className = "", delay = 0 }: any) => (
+  <motion.div
+    initial={{ opacity: 0, y: 50, rotateX: 15 }}
+    whileInView={{ opacity: 1, y: 0, rotateX: 0 }}
+    viewport={{ once: true }}
+    transition={{ delay, duration: 0.8, type: "spring" }}
+    whileHover={{ 
+      y: -10, 
+      rotateX: 5, 
+      rotateY: 5,
+      transition: { duration: 0.3 }
+    }}
+    className={`astral-card-premium transform-gpu perspective-1000 ${className}`}
+    style={{ transformStyle: 'preserve-3d' }}
+  >
+    {children}
+  </motion.div>
+);
+
+// Modern feature showcase
+const FeatureShowcase = ({ icon: Icon, title, description, delay, gradient }: any) => (
+  <Card3D delay={delay} className="group cursor-pointer">
+    <div className="relative">
+      <motion.div 
+        className={`w-16 h-16 rounded-2xl ${gradient} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}
+        whileHover={{ rotate: 360 }}
+        transition={{ duration: 0.6 }}
+      >
+        <Icon className="w-8 h-8 text-white" />
+      </motion.div>
+      <h3 className="text-xl font-bold text-white mb-3 text-heading">{title}</h3>
+      <p className="text-starlight-400 leading-relaxed">{description}</p>
+      
+      <motion.div
+        className="absolute top-0 right-0 w-8 h-8 border border-quantum-400/30 rounded-full opacity-0 group-hover:opacity-100"
+        initial={false}
+        animate={{ rotate: 360 }}
+        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+      >
+        <ArrowRight className="w-4 h-4 text-quantum-400 m-auto mt-2" />
+      </motion.div>
+    </div>
+  </Card3D>
+);
+
+// Premium stats component
+const PremiumStats = ({ value, label, icon: Icon, delay }: any) => {
+  const [displayValue, setDisplayValue] = useState(0);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const duration = 2000;
+      const steps = 60;
+      const increment = value / steps;
+      let current = 0;
+      
+      const counter = setInterval(() => {
+        current += increment;
+        if (current >= value) {
+          setDisplayValue(value);
+          clearInterval(counter);
+        } else {
+          setDisplayValue(Math.floor(current));
+        }
+      }, duration / steps);
+      
+      return () => clearInterval(counter);
+    }, delay * 100);
+    
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.5 }}
+      whileInView={{ opacity: 1, scale: 1 }}
+      viewport={{ once: true }}
+      transition={{ delay: delay * 0.1, duration: 0.6, type: "spring" }}
+      className="text-center group"
+    >
+      <motion.div
+        whileHover={{ scale: 1.1, rotate: 5 }}
+        className="w-16 h-16 bg-gradient-cosmic rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-glow-quantum group-hover:shadow-glow-cosmic transition-all duration-300"
+      >
+        <Icon className="w-8 h-8 text-white" />
+      </motion.div>
+      <motion.div 
+        className="text-4xl font-bold mb-2 text-heading"
+        animate={{ 
+          textShadow: [
+            "0 0 10px rgba(26, 145, 255, 0.5)",
+            "0 0 20px rgba(102, 0, 204, 0.5)",
+            "0 0 10px rgba(26, 145, 255, 0.5)"
+          ]
+        }}
+        transition={{ duration: 2, repeat: Infinity }}
+      >
+        <GradientText>
+          {displayValue}{typeof value === 'string' && value.includes('%') ? '%' : ''}
+          {typeof value === 'string' && value.includes('+') ? '+' : ''}
+        </GradientText>
+      </motion.div>
+      <p className="text-starlight-400 font-medium">{label}</p>
+    </motion.div>
   );
 };
 
@@ -195,11 +309,15 @@ const TestimonialCard = ({ quote, author, role, avatar, delay }: any) => (
   </motion.div>
 );
 
-// Main landing page component
-export default function ModernLandingPage() {
+// Revolutionary Landing Page Component
+export default function RevolutionaryLandingPage() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
-
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({ target: containerRef });
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.3], [1, 0]);
+  const heroScale = useTransform(scrollYProgress, [0, 0.3], [1, 0.8]);
+  
   // Redirect authenticated users
   useEffect(() => {
     if (!isLoading && user) {
@@ -209,14 +327,18 @@ export default function ModernLandingPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+      <div className="min-h-screen bg-void-500 flex items-center justify-center">
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           className="text-center"
         >
-          <Trophy className="w-16 h-16 text-purple-500 animate-pulse mx-auto mb-4" />
-          <p className="text-white">Loading...</p>
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+            className="w-20 h-20 border-4 border-quantum-400/30 border-t-quantum-400 rounded-full mx-auto mb-6"
+          />
+          <GradientText className="text-xl font-heading">Initializing Dynasty...</GradientText>
         </motion.div>
       </div>
     );
@@ -225,297 +347,396 @@ export default function ModernLandingPage() {
   if (user) return null;
 
   return (
-    <div className="relative min-h-screen bg-slate-950 overflow-hidden">
-      <AnimatedBackground />
+    <div ref={containerRef} className="relative min-h-screen bg-void-500 overflow-hidden">
+      <FuturisticBackground />
       
-      {/* Navigation */}
-      <nav className="relative z-50 px-6 py-6">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+      {/* Hero Section with Parallax */}
+      <motion.section 
+        className="relative min-h-screen flex items-center justify-center"
+        style={{ opacity: heroOpacity, scale: heroScale }}
+      >
+        <div className="relative z-10 text-center max-w-6xl mx-auto px-6">
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-3"
-          >
-            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-600 rounded-xl flex items-center justify-center">
-              <Trophy className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-xl font-bold text-white">AstralField</span>
-          </motion.div>
-          
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-6"
-          >
-            <button
-              onClick={() => router.push('/login')}
-              className="px-6 py-2 text-white/80 hover:text-white transition-colors"
-            >
-              Sign In
-            </button>
-            <button
-              onClick={() => router.push('/login')}
-              className="px-6 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-full hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-300"
-            >
-              Get Started
-            </button>
-          </motion.div>
-        </div>
-      </nav>
-
-      {/* Hero Section */}
-      <section className="relative z-10 px-6 py-20 md:py-32">
-        <div className="max-w-7xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center max-w-4xl mx-auto"
+            transition={{ duration: 1, ease: "easeOut" }}
+            className="mb-8"
           >
             <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.2, duration: 0.6 }}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600/20 backdrop-blur-sm rounded-full border border-purple-500/30 mb-8"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.3, duration: 0.8, type: "spring" }}
+              className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-cosmic/20 backdrop-blur-xl rounded-full border border-quantum-400/30 mb-8"
             >
-              <Sparkles className="w-4 h-4 text-purple-400" />
-              <span className="text-purple-300 text-sm font-semibold">2025 Season Now Live</span>
-            </motion.div>
-
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold mb-8 leading-tight">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3, duration: 0.8 }}
-              >
-                Dominate Your
-              </motion.div>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5, duration: 0.8 }}
-              >
-                <GradientText className="font-black">Fantasy Dynasty</GradientText>
-              </motion.div>
-            </h1>
-
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.7, duration: 0.8 }}
-              className="text-xl md:text-2xl text-gray-400 mb-12 max-w-3xl mx-auto leading-relaxed"
-            >
-              Join the elite fantasy football platform where champions are made. 
-              Real-time stats, AI-powered insights, and the most competitive leagues.
-            </motion.p>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.9, duration: 0.8 }}
-              className="flex flex-col sm:flex-row gap-4 justify-center"
-            >
-              <button
-                onClick={() => router.push('/login')}
-                className="group px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold text-lg rounded-full hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300 transform hover:scale-105"
-              >
-                <span className="flex items-center gap-2">
-                  Start Your Dynasty
-                  <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </span>
-              </button>
-              <button
-                className="px-8 py-4 bg-white/10 backdrop-blur-sm text-white font-bold text-lg rounded-full border border-white/20 hover:bg-white/20 transition-all duration-300"
-              >
-                <span className="flex items-center gap-2">
-                  <Play className="w-5 h-5" />
-                  Watch Demo
-                </span>
-              </button>
-            </motion.div>
-
-            {/* Trust badges */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 1.2, duration: 1 }}
-              className="flex flex-wrap items-center justify-center gap-8 mt-16 text-gray-500"
-            >
-              <div className="flex items-center gap-2">
-                <Shield className="w-5 h-5" />
-                <span className="text-sm">Secure Platform</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock className="w-5 h-5" />
-                <span className="text-sm">Real-Time Updates</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Globe className="w-5 h-5" />
-                <span className="text-sm">10K+ Players</span>
-              </div>
+              <Sparkles className="w-5 h-5 text-quantum-400 animate-pulse" />
+              <span className="text-quantum-300 font-medium tracking-wide">2025 DYNASTY SEASON LIVE</span>
+              <Rocket className="w-5 h-5 text-nebula-400 animate-bounce" />
             </motion.div>
           </motion.div>
-        </div>
-      </section>
 
-      {/* Stats Section */}
-      <section className="relative z-10 px-6 py-20">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            <StatsCounter end={10} label="Active Teams" suffix="+" delay={0} />
-            <StatsCounter end={100} label="Games Played" suffix="+" delay={0.1} />
-            <StatsCounter end={95} label="Completion Rate" suffix="%" delay={0.2} />
-            <StatsCounter end={2025} label="Season Year" delay={0.3} />
-          </div>
-        </div>
-      </section>
+          <motion.h1 
+            className="text-7xl md:text-8xl lg:text-9xl font-black mb-8 leading-tight text-heading"
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5, duration: 1 }}
+          >
+            <motion.div
+              animate={{ 
+                textShadow: [
+                  "0 0 20px rgba(26, 145, 255, 0.5)",
+                  "0 0 40px rgba(102, 0, 204, 0.5)",
+                  "0 0 20px rgba(26, 145, 255, 0.5)"
+                ]
+              }}
+              transition={{ duration: 3, repeat: Infinity }}
+            >
+              DOMINATE THE
+            </motion.div>
+            <motion.div
+              className="bg-gradient-cosmic bg-clip-text text-transparent"
+              animate={{ 
+                backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
+              }}
+              transition={{ duration: 8, repeat: Infinity }}
+              style={{ backgroundSize: "200% 200%" }}
+            >
+              ASTRALFIELD
+            </motion.div>
+          </motion.h1>
 
-      {/* Features Grid */}
-      <section className="relative z-10 px-6 py-20">
-        <div className="max-w-7xl mx-auto">
+          <motion.p
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.8, duration: 0.8 }}
+            className="text-2xl md:text-3xl text-starlight-300 mb-12 max-w-4xl mx-auto leading-relaxed"
+          >
+            The most advanced fantasy football platform ever created. 
+            <span className="text-quantum-400 font-semibold"> AI-powered insights</span>, 
+            <span className="text-cosmic-400 font-semibold"> real-time analytics</span>, and 
+            <span className="text-nebula-400 font-semibold"> championship-grade tools</span>.
+          </motion.p>
+
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.1, duration: 0.8 }}
+            className="flex flex-col sm:flex-row gap-6 justify-center items-center"
+          >
+            <motion.button
+              onClick={() => router.push('/login')}
+              className="btn-astral-primary text-xl px-12 py-6 group"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Zap className="w-6 h-6 mr-3 group-hover:animate-pulse" />
+              LAUNCH DYNASTY
+              <motion.div
+                className="ml-3"
+                animate={{ x: [0, 5, 0] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              >
+                <ArrowRight className="w-6 h-6" />
+              </motion.div>
+            </motion.button>
+            
+            <motion.button
+              className="btn-astral-secondary text-xl px-12 py-6 group"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Play className="w-6 h-6 mr-3" />
+              Experience Demo
+            </motion.button>
+          </motion.div>
+
+          {/* Floating achievement badges */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.5, duration: 1 }}
+            className="flex flex-wrap items-center justify-center gap-8 mt-20 text-starlight-400"
+          >
+            {[
+              { icon: Shield, text: "Military-Grade Security" },
+              { icon: Cpu, text: "AI-Powered Engine" },
+              { icon: Activity, text: "Real-Time Analytics" },
+              { icon: Infinity, text: "Unlimited Potential" }
+            ].map((badge, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1.5 + index * 0.1 }}
+                className="flex items-center gap-3"
+                whileHover={{ scale: 1.1 }}
+              >
+                <badge.icon className="w-6 h-6 text-quantum-400" />
+                <span className="text-sm font-medium">{badge.text}</span>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </motion.section>
+
+      {/* Premium Stats Section */}
+      <section className="relative z-10 py-32">
+        <div className="max-w-7xl mx-auto px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            className="grid grid-cols-2 md:grid-cols-4 gap-8"
           >
-            <h2 className="text-4xl md:text-5xl font-bold mb-6">
-              <GradientText>Elite Features</GradientText>
+            <PremiumStats value={2025} label="Season Year" icon={Calendar} delay={0} />
+            <PremiumStats value={10} label="Dynasty Teams" icon={Crown} delay={1} />
+            <PremiumStats value={99} label="Uptime %" icon={Activity} delay={2} />
+            <PremiumStats value={247} label="24/7 Support" icon={Shield} delay={3} />
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Revolutionary Features */}
+      <section className="relative z-10 py-32">
+        <div className="max-w-7xl mx-auto px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-20"
+          >
+            <h2 className="text-6xl md:text-7xl font-black mb-8 text-heading">
+              <GradientText>REVOLUTIONARY</GradientText>
+              <br />
+              <span className="text-white">FEATURES</span>
             </h2>
-            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-              Everything you need to build a championship dynasty
+            <p className="text-2xl text-starlight-300 max-w-3xl mx-auto">
+              Experience the future of fantasy football with cutting-edge technology
             </p>
           </motion.div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <FeatureCard
-              icon={BarChart3}
-              title="Real-Time Analytics"
-              description="Live scoring updates, advanced stats, and performance metrics at your fingertips."
+            <FeatureShowcase
+              icon={Brain}
+              title="Neural Analytics Engine"
+              description="Advanced AI algorithms analyze millions of data points to predict player performance with unprecedented accuracy."
               delay={0}
+              gradient="bg-gradient-cosmic"
             />
-            <FeatureCard
-              icon={Gamepad2}
-              title="Dynasty Mode"
-              description="Build your franchise over multiple seasons with keeper leagues and dynasty scoring."
+            <FeatureShowcase
+              icon={Eye}
+              title="Real-Time Vision System"
+              description="Live game tracking with computer vision technology provides instant updates and insights as plays unfold."
               delay={0.1}
+              gradient="bg-gradient-nebula"
             />
-            <FeatureCard
-              icon={Target}
-              title="AI Draft Assistant"
-              description="Smart recommendations powered by machine learning to dominate your draft."
+            <FeatureShowcase
+              icon={Layers}
+              title="Multi-Dimensional Strategy"
+              description="Layer complex strategies across multiple timeframes with our advanced simulation and modeling tools."
               delay={0.2}
+              gradient="bg-gradient-aurora"
             />
-            <FeatureCard
-              icon={Users}
-              title="League Management"
-              description="Complete control over league settings, scoring, trades, and waivers."
+            <FeatureShowcase
+              icon={Database}
+              title="Quantum Data Processing"
+              description="Process massive datasets instantly with our quantum-inspired algorithms for lightning-fast insights."
               delay={0.3}
+              gradient="bg-gradient-quantum"
             />
-            <FeatureCard
-              icon={TrendingUp}
-              title="Market Insights"
-              description="Player value trends, trade calculator, and waiver wire predictions."
+            <FeatureShowcase
+              icon={LineChart}
+              title="Predictive Market Intelligence"
+              description="Stay ahead of trends with predictive analytics that forecast player values and market movements."
               delay={0.4}
+              gradient="bg-gradient-starfield"
             />
-            <FeatureCard
-              icon={Award}
-              title="Achievement System"
-              description="Unlock badges, earn rewards, and showcase your fantasy accomplishments."
+            <FeatureShowcase
+              icon={Rocket}
+              title="Championship Acceleration"
+              description="Accelerate your path to victory with our championship-tested strategies and optimization tools."
               delay={0.5}
+              gradient="bg-gradient-cosmic"
             />
           </div>
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="relative z-10 px-6 py-20">
-        <div className="max-w-7xl mx-auto">
+      {/* Elite Testimonials */}
+      <section className="relative z-10 py-32">
+        <div className="max-w-7xl mx-auto px-6">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            className="text-center mb-20"
           >
-            <h2 className="text-4xl md:text-5xl font-bold mb-6">
-              <GradientText>Champions Speak</GradientText>
+            <h2 className="text-6xl md:text-7xl font-black mb-8 text-heading">
+              <span className="text-white">ELITE</span>
+              <br />
+              <GradientText>CHAMPIONS</GradientText>
             </h2>
-            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-              Join thousands of fantasy managers who've found their home
+            <p className="text-2xl text-starlight-300 max-w-3xl mx-auto">
+              Hear from the dynasty builders who dominate the AstralField
             </p>
           </motion.div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            <TestimonialCard
-              quote="The best fantasy platform I've ever used. The real-time updates and analytics are game-changing."
-              author="Nicholas D'Amato"
-              role="3x League Champion"
-              avatar="ND"
-              delay={0}
-            />
-            <TestimonialCard
-              quote="Dynasty mode is incredible. I've built a powerhouse team over three seasons."
-              author="Sarah Chen"
-              role="Dynasty League Winner"
-              avatar="SC"
-              delay={0.1}
-            />
-            <TestimonialCard
-              quote="The trade calculator alone is worth it. Helped me make championship-winning moves."
-              author="Mike Johnson"
-              role="2024 Champion"
-              avatar="MJ"
-              delay={0.2}
-            />
+            {[
+              {
+                quote: "AstralField's AI-powered insights gave me the edge I needed to win my first championship. The predictive analytics are game-changing.",
+                author: "Nicholas D'Amato",
+                role: "Dynasty Champion • 3x Winner",
+                avatar: "ND",
+                delay: 0
+              },
+              {
+                quote: "The real-time analytics and market intelligence helped me build a dynasty that's dominated for 4 consecutive seasons.",
+                author: "Sarah Chen",
+                role: "Dynasty Architect • Hall of Fame",
+                avatar: "SC", 
+                delay: 0.1
+              },
+              {
+                quote: "From rookie to champion in one season. AstralField's tools and community support made all the difference.",
+                author: "Marcus Johnson",
+                role: "Rising Star • Rookie Champion",
+                avatar: "MJ",
+                delay: 0.2
+              }
+            ].map((testimonial, index) => (
+              <Card3D key={index} delay={testimonial.delay} className="p-8">
+                <div className="flex items-center mb-6">
+                  {Array.from({ length: 5 }, (_, i) => (
+                    <Star key={i} className="w-5 h-5 text-gold-400 fill-current" />
+                  ))}
+                </div>
+                <p className="text-starlight-300 text-lg mb-8 italic leading-relaxed">
+                  "{testimonial.quote}"
+                </p>
+                <div className="flex items-center">
+                  <div className="w-14 h-14 rounded-full bg-gradient-cosmic flex items-center justify-center text-white font-bold text-lg mr-4">
+                    {testimonial.avatar}
+                  </div>
+                  <div>
+                    <p className="text-white font-semibold text-lg">{testimonial.author}</p>
+                    <p className="text-quantum-400 text-sm font-medium">{testimonial.role}</p>
+                  </div>
+                </div>
+              </Card3D>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="relative z-10 px-6 py-32">
-        <div className="max-w-4xl mx-auto text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="relative"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 to-blue-600/20 blur-3xl" />
-            <div className="relative bg-gradient-to-r from-purple-900/40 to-blue-900/40 backdrop-blur-xl rounded-3xl p-12 md:p-16 border border-white/10">
-              <Crown className="w-16 h-16 text-yellow-500 mx-auto mb-6" />
-              <h2 className="text-4xl md:text-5xl font-bold mb-6">
-                Ready to Build Your
-                <span className="block mt-2">
-                  <GradientText>Championship Dynasty?</GradientText>
-                </span>
-              </h2>
-              <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
-                Join the D'Amato Dynasty League today and compete with the best fantasy managers.
-              </p>
-              <button
+      {/* Final CTA - Championship Ready */}
+      <section className="relative z-10 py-32">
+        <div className="max-w-5xl mx-auto px-6">
+          <Card3D delay={0} className="text-center p-16 relative overflow-hidden">
+            <motion.div
+              className="absolute inset-0 bg-gradient-cosmic opacity-10"
+              animate={{ 
+                backgroundPosition: ["0% 0%", "100% 100%", "0% 0%"],
+              }}
+              transition={{ duration: 20, repeat: Infinity }}
+              style={{ backgroundSize: "400% 400%" }}
+            />
+            
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+              className="w-20 h-20 mx-auto mb-8"
+            >
+              <Crown className="w-20 h-20 text-gold-400 animate-pulse" />
+            </motion.div>
+            
+            <h2 className="text-5xl md:text-6xl font-black mb-6 text-heading">
+              READY TO BUILD YOUR
+              <br />
+              <GradientText>CHAMPIONSHIP DYNASTY?</GradientText>
+            </h2>
+            
+            <p className="text-2xl text-starlight-300 mb-12 max-w-3xl mx-auto leading-relaxed">
+              Join the most elite fantasy football platform and compete with the greatest dynasty builders in the galaxy.
+            </p>
+            
+            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-12">
+              <motion.button
                 onClick={() => router.push('/login')}
-                className="px-10 py-5 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold text-lg rounded-full hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300 transform hover:scale-105"
+                className="btn-astral-primary text-2xl px-16 py-8 group"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
-                Join the League Now
-              </button>
-              <p className="text-gray-400 text-sm mt-6">
-                No credit card required • Free to start • Cancel anytime
-              </p>
+                <Rocket className="w-8 h-8 mr-4 group-hover:animate-bounce" />
+                LAUNCH DYNASTY NOW
+                <motion.div
+                  className="ml-4"
+                  animate={{ x: [0, 10, 0] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  <ChevronRight className="w-8 h-8" />
+                </motion.div>
+              </motion.button>
             </div>
-          </motion.div>
+            
+            <div className="flex flex-wrap items-center justify-center gap-8 text-starlight-400">
+              {[
+                { icon: CheckCircle, text: "No Setup Fees" },
+                { icon: Zap, text: "Instant Access" },
+                { icon: Shield, text: "100% Secure" },
+                { icon: Infinity, text: "Unlimited Potential" }
+              ].map((feature, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, scale: 0 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.1, type: "spring" }}
+                  className="flex items-center gap-3"
+                >
+                  <feature.icon className="w-5 h-5 text-quantum-400" />
+                  <span className="text-sm font-medium">{feature.text}</span>
+                </motion.div>
+              ))}
+            </div>
+          </Card3D>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="relative z-10 px-6 py-12 border-t border-white/10">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-3">
-            <Trophy className="w-6 h-6 text-purple-500" />
-            <span className="text-white font-semibold">AstralField</span>
+      {/* Futuristic Footer */}
+      <footer className="relative z-10 border-t border-white/10 bg-void-500/50 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto px-6 py-16">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="flex items-center gap-4"
+            >
+              <div className="w-12 h-12 bg-gradient-cosmic rounded-2xl flex items-center justify-center shadow-glow-quantum">
+                <Trophy className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <h3 className="text-2xl font-bold text-heading bg-gradient-cosmic bg-clip-text text-transparent">
+                  AstralField
+                </h3>
+                <p className="text-quantum-400 text-sm font-mono">DYNASTY LEAGUE</p>
+              </div>
+            </motion.div>
+            
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="text-center md:text-right"
+            >
+              <p className="text-starlight-400 mb-2">
+                © 2025 AstralField Dynasty League. All rights reserved.
+              </p>
+              <p className="text-quantum-400 text-sm">
+                Built for champions, by champions. 🚀
+              </p>
+            </motion.div>
           </div>
-          <p className="text-gray-400 text-sm">
-            © 2025 AstralField. All rights reserved. Built for champions, by champions.
-          </p>
         </div>
       </footer>
     </div>
