@@ -157,6 +157,7 @@ export default function ModernLoginPage() {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('handleSignIn called');
     setError('');
     setLoading(true);
 
@@ -172,24 +173,34 @@ export default function ModernLoginPage() {
         })
       });
 
-      if (response.ok) {
+      console.log('Login response:', response.status);
+      const data = await response.json();
+      console.log('Login data:', data);
+      
+      if (response.ok && data.success) {
+        console.log('Login successful, checking session...');
         // Verify session was created by checking /api/auth/me
         const sessionCheck = await fetch('/api/auth/me', {
           credentials: 'include'
         });
         
-        if (sessionCheck.ok) {
+        const sessionData = await sessionCheck.json();
+        console.log('Session check:', sessionData);
+        
+        if (sessionCheck.ok && sessionData.success) {
+          console.log('Session valid, redirecting...');
           // Success animation
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          router.push('/dashboard');
+          await new Promise(resolve => setTimeout(resolve, 500));
+          // Try different paths
+          window.location.href = '/dashboard';
         } else {
           setError('Session creation failed');
         }
       } else {
-        const data = await response.json();
         setError(data.error || 'Invalid credentials');
       }
     } catch (err) {
+      console.error('Login error:', err);
       setError('Network error. Please try again.');
     } finally {
       setLoading(false);
@@ -213,15 +224,20 @@ export default function ModernLoginPage() {
         })
       });
 
-      if (response.ok) {
+      const data = await response.json();
+      console.log('Quick login response:', data);
+      
+      if (response.ok && data.success) {
         // Verify session was created by checking /api/auth/me
         const sessionCheck = await fetch('/api/auth/me', {
           credentials: 'include'
         });
         
-        if (sessionCheck.ok) {
-          await new Promise(resolve => setTimeout(resolve, 800));
-          router.push('/dashboard');
+        const sessionData = await sessionCheck.json();
+        if (sessionCheck.ok && sessionData.success) {
+          console.log('Quick login successful, redirecting...');
+          await new Promise(resolve => setTimeout(resolve, 500));
+          window.location.href = '/dashboard';
         } else {
           setError('Session creation failed');
           setMode('signin');
@@ -345,7 +361,10 @@ export default function ModernLoginPage() {
 
                         <div className="flex gap-3">
                           <button
-                            onClick={handleQuickLogin}
+                            onClick={() => {
+                              console.log('Quick login button clicked!');
+                              handleQuickLogin();
+                            }}
                             disabled={loading}
                             className="flex-1 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-purple-500/25 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                           >

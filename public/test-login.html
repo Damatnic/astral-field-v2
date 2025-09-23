@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #f9f9f9;
+            min-height: 100px;
+        }
+        .success {
+            color: green;
+        }
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <h1>Login Test Page</h1>
+    <p>This page tests the login functionality directly.</p>
+    
+    <button onclick="testLogin('nicholas.damato@test.com')">Login as Nicholas D'Amato</button>
+    <button onclick="testLogin('nick.hartley@test.com')">Login as Nick Hartley</button>
+    <button onclick="testSession()">Check Session</button>
+    <button onclick="goToDashboard()">Go to Dashboard</button>
+    
+    <div id="result">
+        <h3>Results:</h3>
+        <div id="log"></div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = type;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.appendChild(entry);
+            console.log(message);
+        }
+
+        async function testLogin(email) {
+            log(`Testing login for ${email}...`);
+            
+            try {
+                const response = await fetch('/api/auth/simple-login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        email: email,
+                        password: 'Dynasty2025!'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    log(`✅ Login successful! Session ID: ${data.sessionId}`, 'success');
+                    log(`User: ${data.user.name} (${data.user.email})`, 'success');
+                    
+                    // Automatically check session after login
+                    setTimeout(() => testSession(), 1000);
+                } else {
+                    log(`❌ Login failed: ${data.error || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testSession() {
+            log('Checking session...');
+            
+            try {
+                const response = await fetch('/api/auth/me', {
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    log(`✅ Session valid! User: ${data.user.name}`, 'success');
+                    log(`Email: ${data.user.email}`, 'success');
+                } else {
+                    log(`❌ No valid session: ${data.error || 'Not authenticated'}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        function goToDashboard() {
+            log('Redirecting to dashboard...');
+            window.location.href = '/dashboard';
+        }
+
+        // Check session on page load
+        window.onload = () => {
+            log('Page loaded. Click a button to test login.');
+            testSession();
+        };
+    </script>
+</body>
+</html>
