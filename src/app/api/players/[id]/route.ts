@@ -257,7 +257,7 @@ export async function POST(
 
     // TODO: Update social data in database
     // For now, just invalidate cache
-    await redisCache.invalidateByTag([CACHE_TAGS.PLAYERS]);
+    await redisCache.invalidateByTag(CACHE_TAGS.PLAYERS);
 
     return NextResponse.json({
       success: true,
