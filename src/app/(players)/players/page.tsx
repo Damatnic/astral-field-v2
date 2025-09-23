@@ -12,7 +12,7 @@ import {
   User, Activity, Calendar, DollarSign, Award, Target, Info,
   ChevronDown, ChevronUp, Star, Heart, BarChart3, Clock,
   PlayCircle, FileText, ExternalLink, X, Check, Zap, Eye,
-  Sparkles, Crown, Shield, Brain, Cpu, Bolt, Flame, Radar
+  Sparkles, Crown, Shield, Brain, Cpu, Bolt, Flame
 } from 'lucide-react';
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -649,7 +649,7 @@ export default function PlayersPage() {
             animate={{ opacity: 1, y: 0 }}
             className="text-center py-16"
           >
-            <Radar className="w-16 h-16 text-astral-cosmic-400 mx-auto mb-4" />
+            <Search className="w-16 h-16 text-astral-cosmic-400 mx-auto mb-4" />
             <h3 className="text-xl font-bold text-white font-orbitron mb-2">
               No Champions Found
             </h3>

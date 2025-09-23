@@ -24,36 +24,68 @@ async function checkAndSeedUsers() {
     if (existingUsers.length === 0) {
       console.log('No users found. Seeding test users...');
       
-      // Create test league first
+      // Create commissioner user first
+      const commissionerData = TEST_USERS.find(u => u.email === 'nicholas.damato@test.com') || TEST_USERS[0];
+      const commissioner = await prisma.user.create({
+        data: {
+          email: commissionerData.email,
+          name: commissionerData.name,
+          role: 'COMMISSIONER'
+        }
+      });
+      console.log('Created commissioner user');
+      
+      // Create test league with commissioner
       const league = await prisma.league.create({
         data: {
           id: 'test-league-2025',
           name: 'Test League 2025',
           season: '2025',
           isActive: true,
+          commissionerId: commissioner.id,
           settings: {},
-          platform: 'espn',
-          platformId: 'test-2025'
+          scoringSettings: {},
+          rosterSettings: {},
+          draftSettings: {}
         }
       });
       console.log('Created test league');
       
-      // Create users and teams
-      for (const userData of TEST_USERS) {
+      // Create team for commissioner
+      await prisma.team.create({
+        data: {
+          name: commissionerData.team,
+          ownerId: commissioner.id,
+          leagueId: league.id,
+          wins: 0,
+          losses: 0,
+          ties: 0,
+          pointsFor: 0,
+          pointsAgainst: 0
+        }
+      });
+      console.log(`Created commissioner team: ${commissionerData.team}`);
+      
+      // Create remaining users and teams
+      for (const userData of TEST_USERS.filter(u => u.email !== commissionerData.email)) {
         const user = await prisma.user.create({
           data: {
             email: userData.email,
             name: userData.name,
-            role: userData.email === 'nicholas.damato@test.com' ? 'ADMIN' : 'USER'
+            role: 'PLAYER'
           }
         });
         
         await prisma.team.create({
           data: {
             name: userData.team,
-            userId: user.id,
+            ownerId: user.id,
             leagueId: league.id,
-            isActive: true
+            wins: 0,
+            losses: 0,
+            ties: 0,
+            pointsFor: 0,
+            pointsAgainst: 0
           }
         });
         
