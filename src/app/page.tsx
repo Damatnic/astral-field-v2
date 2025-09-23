@@ -17,6 +17,7 @@ import {
   Award,
   BarChart3,
   Clock,
+  Calendar,
   Globe,
   Gamepad2,
   Target,
@@ -25,7 +26,7 @@ import {
   Brain,
   Eye,
   Layers,
-  Infinity,
+  Infinity as InfinityIcon,
   Cpu,
   Activity,
   ArrowRight,
@@ -460,7 +461,7 @@ export default function RevolutionaryLandingPage() {
               { icon: Shield, text: "Military-Grade Security" },
               { icon: Cpu, text: "AI-Powered Engine" },
               { icon: Activity, text: "Real-Time Analytics" },
-              { icon: Infinity, text: "Unlimited Potential" }
+              { icon: InfinityIcon, text: "Unlimited Potential" }
             ].map((badge, index) => (
               <motion.div
                 key={index}
@@ -470,7 +471,7 @@ export default function RevolutionaryLandingPage() {
                 className="flex items-center gap-3"
                 whileHover={{ scale: 1.1 }}
               >
-                <badge.icon className="w-6 h-6 text-quantum-400" />
+                {React.createElement(badge.icon, { className: "w-6 h-6 text-quantum-400" })}
                 <span className="text-sm font-medium">{badge.text}</span>
               </motion.div>
             ))}
@@ -683,7 +684,7 @@ export default function RevolutionaryLandingPage() {
                 { icon: CheckCircle, text: "No Setup Fees" },
                 { icon: Zap, text: "Instant Access" },
                 { icon: Shield, text: "100% Secure" },
-                { icon: Infinity, text: "Unlimited Potential" }
+                { icon: InfinityIcon, text: "Unlimited Potential" }
               ].map((feature, index) => (
                 <motion.div
                   key={index}
@@ -693,7 +694,7 @@ export default function RevolutionaryLandingPage() {
                   transition={{ delay: index * 0.1, type: "spring" }}
                   className="flex items-center gap-3"
                 >
-                  <feature.icon className="w-5 h-5 text-quantum-400" />
+                  {React.createElement(feature.icon, { className: "w-5 h-5 text-quantum-400" })}
                   <span className="text-sm font-medium">{feature.text}</span>
                 </motion.div>
               ))}

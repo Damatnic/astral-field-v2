@@ -216,7 +216,7 @@ class UserAnalyticsService {
       
       // Get feature usage from user activity and sessions
       // Using available data to infer feature preferences
-      const auditLogs = await this.inferFeatureUsageFromSessions(sessions, user);
+      const auditLogs = await this.inferFeatureUsageFromSessions(sessions, userId);
 
       const preferredFeatures = this.analyzeFeaturePreferences(auditLogs);
       
