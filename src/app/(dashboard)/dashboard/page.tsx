@@ -253,8 +253,7 @@ const MatchupShowcase = ({ matchup, userTeam }: any) => (
         </motion.div>
       </div>
     </motion.div>
-  );
-};
+);
 
 // Enhanced action cards
 const ActionCard = ({ 
