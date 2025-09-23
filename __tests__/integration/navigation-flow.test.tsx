@@ -27,6 +27,11 @@ describe('Navigation Flow Integration', () => {
     mockUseAuth.mockReturnValue({
       user: { id: '1', name: 'Test User', email: 'test@test.com', role: 'PLAYER' as any },
       isLoading: false,
+      isAuthenticated: true,
+      login: jest.fn(),
+      logout: jest.fn(),
+      hasRole: jest.fn(),
+      hasPermission: jest.fn()
     });
   });
 
@@ -109,6 +114,11 @@ describe('Navigation Flow Integration', () => {
     mockUseAuth.mockReturnValue({
       user: null,
       isLoading: false,
+      isAuthenticated: false,
+      login: jest.fn(),
+      logout: jest.fn(),
+      hasRole: jest.fn(),
+      hasPermission: jest.fn()
     });
 
     const { container } = render(<Navigation />);
@@ -121,6 +131,11 @@ describe('Navigation Flow Integration', () => {
     mockUseAuth.mockReturnValue({
       user: null,
       isLoading: true,
+      isAuthenticated: false,
+      login: jest.fn(),
+      logout: jest.fn(),
+      hasRole: jest.fn(),
+      hasPermission: jest.fn()
     });
 
     const { container } = render(<Navigation />);

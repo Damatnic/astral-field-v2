@@ -16,6 +16,11 @@ describe('DashboardPage', () => {
     mockUseAuth.mockReturnValue({
       user: { id: '1', name: 'Test User', email: 'test@test.com', role: 'PLAYER' as any },
       isLoading: false,
+      isAuthenticated: true,
+      login: jest.fn(),
+      logout: jest.fn(),
+      hasRole: jest.fn(),
+      hasPermission: jest.fn()
     });
   });
 

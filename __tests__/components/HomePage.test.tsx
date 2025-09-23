@@ -66,6 +66,11 @@ describe('HomePage', () => {
     mockUseAuth.mockReturnValue({
       user: null,
       isLoading: false,
+      isAuthenticated: false,
+      login: jest.fn(),
+      logout: jest.fn(),
+      hasRole: jest.fn(),
+      hasPermission: jest.fn()
     });
 
     render(<HomePage />);
@@ -79,6 +84,11 @@ describe('HomePage', () => {
     mockUseAuth.mockReturnValue({
       user: null,
       isLoading: false,
+      isAuthenticated: false,
+      login: jest.fn(),
+      logout: jest.fn(),
+      hasRole: jest.fn(),
+      hasPermission: jest.fn()
     });
 
     render(<HomePage />);
@@ -93,6 +103,11 @@ describe('HomePage', () => {
     mockUseAuth.mockReturnValue({
       user: null,
       isLoading: false,
+      isAuthenticated: false,
+      login: jest.fn(),
+      logout: jest.fn(),
+      hasRole: jest.fn(),
+      hasPermission: jest.fn()
     });
 
     render(<HomePage />);
@@ -107,6 +122,11 @@ describe('HomePage', () => {
     mockUseAuth.mockReturnValue({
       user: null,
       isLoading: false,
+      isAuthenticated: false,
+      login: jest.fn(),
+      logout: jest.fn(),
+      hasRole: jest.fn(),
+      hasPermission: jest.fn()
     });
 
     render(<HomePage />);
@@ -125,6 +145,11 @@ describe('HomePage', () => {
     mockUseAuth.mockReturnValue({
       user: null,
       isLoading: false,
+      isAuthenticated: false,
+      login: jest.fn(),
+      logout: jest.fn(),
+      hasRole: jest.fn(),
+      hasPermission: jest.fn()
     });
 
     render(<HomePage />);
