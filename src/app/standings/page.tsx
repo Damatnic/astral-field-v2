@@ -66,8 +66,8 @@ const StandingsPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">League Standings</h1>
-              <p className="text-gray-600 mt-1">2024 Season - Week 3</p>
+              <h1 className="text-3xl font-bold text-gray-900">Standings</h1>
+              <p className="text-gray-600 mt-1">League rankings and playoff picture</p>
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-500">8 Teams</span>

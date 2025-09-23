@@ -107,7 +107,7 @@ export default function LiveScoresTicker() {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Helper function to get period suffix
   function getPeriodSuffix(period: number): string {

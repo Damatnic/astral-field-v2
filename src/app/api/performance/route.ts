@@ -1,29 +1,74 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { handleComponentError } from '@/lib/error-handling';
+import { 
+  generatePerformanceReport,
+  getMetrics,
+  recordMetric,
+  PerformanceMetric
+} from '@/lib/performance-monitor';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    await request.json(); // Consume the request body
+    const { searchParams } = new URL(request.url);
+    const metricName = searchParams.get('metric');
+    const windowMs = parseInt(searchParams.get('window') || '60000');
+    const since = searchParams.get('since');
     
-    // Log performance metrics (in production, send to monitoring service)
-    return NextResponse.json({ 
-      success: true, 
-      message: 'Performance metrics recorded' 
-    });
+    if (metricName) {
+      const metrics = getMetrics(
+        metricName,
+        since ? parseInt(since) : Date.now() - windowMs
+      );
+      
+      return NextResponse.json({
+        metrics,
+        count: metrics.length,
+        window: windowMs
+      });
+    }
+    
+    const report = generatePerformanceReport(windowMs);
+    
+    return NextResponse.json(report);
   } catch (error) {
-    handleComponentError(error as Error, 'route');
+    console.error('Failed to generate performance report:', error);
     return NextResponse.json(
-      { success: false, message: 'Failed to record metrics' },
+      { error: 'Failed to generate performance report' },
       { status: 500 }
     );
   }
 }
 
-export async function GET() {
-  return NextResponse.json({ 
-    message: 'Performance endpoint active',
-    timestamp: new Date().toISOString()
-  });
+export async function POST(request: NextRequest) {
+  try {
+    const metrics: PerformanceMetric[] = await request.json();
+    
+    if (!Array.isArray(metrics)) {
+      return NextResponse.json(
+        { error: 'Invalid request: metrics must be an array' },
+        { status: 400 }
+      );
+    }
+    
+    for (const metric of metrics) {
+      recordMetric(
+        metric.name,
+        metric.value,
+        metric.unit,
+        metric.metadata
+      );
+    }
+    
+    return NextResponse.json({
+      success: true,
+      processed: metrics.length
+    });
+  } catch (error) {
+    console.error('Failed to record metrics:', error);
+    return NextResponse.json(
+      { error: 'Failed to record metrics' },
+      { status: 500 }
+    );
+  }
 }

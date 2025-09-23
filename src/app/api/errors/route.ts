@@ -1,97 +1,112 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { handleComponentError } from '@/utils/errorHandling';
-import { errorTracker, ErrorCategory, captureError } from '@/lib/error-tracking';
-import { logger } from '@/lib/logger';
+import { headers } from 'next/headers';
+import { ErrorCategory, ErrorSeverity } from '@/lib/error-tracking';
 
-export const dynamic = 'force-dynamic';
+interface ErrorLogEntry {
+  message: string;
+  stack?: string;
+  componentStack?: string;
+  timestamp: string;
+  userAgent?: string;
+  url?: string;
+  category?: ErrorCategory;
+  severity?: ErrorSeverity;
+  userId?: string;
+  sessionId?: string;
+  metadata?: Record<string, any>;
+}
+
+const errorStorage: ErrorLogEntry[] = [];
+const MAX_STORED_ERRORS = 1000;
+
+async function storeError(errorEntry: ErrorLogEntry) {
+  errorStorage.push(errorEntry);
+  if (errorStorage.length > MAX_STORED_ERRORS) {
+    errorStorage.shift();
+  }
+}
+
+async function notifyAdmins(errorEntry: ErrorLogEntry) {
+  if (errorEntry.severity === ErrorSeverity.CRITICAL) {
+    console.error('[CRITICAL ERROR ALERT]:', {
+      message: errorEntry.message,
+      url: errorEntry.url,
+      timestamp: errorEntry.timestamp,
+      stack: errorEntry.stack
+    });
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const errorData = await request.json();
+    const headersList = headers();
+    const errorEntry: ErrorLogEntry = await request.json();
     
-    // Use new comprehensive error tracking system
-    const errorId = captureError(
-      errorData.error || errorData.message || 'Unknown error',
-      errorData.category || ErrorCategory.USER_ERROR,
-      {
-        component: errorData.component || 'client',
-        userId: errorData.userId,
-        url: errorData.url,
-        userAgent: request.headers.get('user-agent') || undefined,
-        metadata: errorData.metadata
-      }
-    );
+    errorEntry.userAgent = errorEntry.userAgent || headersList.get('user-agent') || undefined;
+    
+    const clientIp = headersList.get('x-forwarded-for') || 
+                    headersList.get('x-real-ip') || 
+                    'unknown';
 
-    // Also use legacy error handling for backward compatibility
-    handleComponentError(errorData as Error, 'legacy-route');
-    
-    logger.info({
-      errorReport: {
-        errorId,
-        source: 'legacy-api',
-        component: errorData.component
-      }
-    }, 'Error reported via legacy API');
-    
-    return NextResponse.json({ 
-      success: true, 
-      errorId,
-      message: 'Error recorded' 
+    console.error('[Client Error]', {
+      message: errorEntry.message,
+      url: errorEntry.url,
+      stack: errorEntry.stack,
+      timestamp: errorEntry.timestamp,
+      ip: clientIp,
+      userAgent: errorEntry.userAgent
+    });
+
+    await storeError(errorEntry);
+    await notifyAdmins(errorEntry);
+
+    return NextResponse.json({
+      success: true,
+      message: 'Error logged successfully',
+      errorId: `err_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     });
   } catch (error) {
-    const errorId = captureError(
-      error as Error,
-      ErrorCategory.SYSTEM_ERROR,
-      {
-        component: 'legacy-error-api',
-        action: 'POST /api/errors'
-      }
-    );
-
-    handleComponentError(error as Error, 'legacy-route');
-    
+    console.error('Failed to process error log:', error);
     return NextResponse.json(
-      { 
-        success: false, 
-        message: 'Failed to record error',
-        errorId
-      },
+      { error: 'Failed to log error' },
       { status: 500 }
     );
   }
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    // Get basic error tracking status
-    const metrics = errorTracker.getErrorMetrics();
-    const recentErrors = errorTracker.getRecentErrors(5);
+    const { searchParams } = new URL(request.url);
+    const category = searchParams.get('category') as ErrorCategory | null;
+    const severity = searchParams.get('severity') as ErrorSeverity | null;
+    const limit = parseInt(searchParams.get('limit') || '50');
+    const offset = parseInt(searchParams.get('offset') || '0');
+
+    let filteredErrors = [...errorStorage];
     
-    return NextResponse.json({ 
-      message: 'Error endpoint active',
-      timestamp: new Date().toISOString(),
-      status: 'operational',
-      metrics: {
-        totalErrors: metrics.totalErrors,
-        errorRate: metrics.errorRate,
-        recentErrorCount: recentErrors.length
-      }
-    });
-  } catch (error) {
-    const errorId = captureError(
-      error as Error,
-      ErrorCategory.SYSTEM_ERROR,
-      {
-        component: 'legacy-error-api',
-        action: 'GET /api/errors'
-      }
-    );
+    if (category) {
+      filteredErrors = filteredErrors.filter(e => e.category === category);
+    }
+    if (severity) {
+      filteredErrors = filteredErrors.filter(e => e.severity === severity);
+    }
+
+    const total = filteredErrors.length;
+    const errors = filteredErrors
+      .reverse()
+      .slice(offset, offset + limit);
 
     return NextResponse.json({
-      message: 'Error endpoint operational with issues',
-      timestamp: new Date().toISOString(),
-      status: 'degraded',
-      errorId
-    }, { status: 200 }); // Return 200 to indicate endpoint is available
+      errors,
+      total,
+      limit,
+      offset
+    });
+  } catch (error) {
+    console.error('Failed to fetch error logs:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch error logs' },
+      { status: 500 }
+    );
   }
 }

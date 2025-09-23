@@ -4,6 +4,7 @@ import AuthProvider from '@/components/AuthProvider';
 import QueryProvider from '@/components/QueryProvider';
 import { ResponsiveNavigation, SafeAreaProvider } from '@/components/mobile/ResponsiveUtils';
 import { ToastProvider } from '@/components/ui/Toast';
+import { ThemeProvider } from '@/components/ThemeProvider';
 
 // Local font configuration (no Google Fonts dependency for faster builds)
 const fontClass = 'font-sans';
@@ -120,10 +121,11 @@ export default function RootLayout({
         {/* Auth Provider wraps everything to provide authentication context */}
         <AuthProvider>
           <QueryProvider>
-            <SafeAreaProvider>
-              <ToastProvider>
-              {/* Responsive Navigation component */}
-              <ResponsiveNavigation />
+            <ThemeProvider>
+              <SafeAreaProvider>
+                <ToastProvider>
+                {/* Responsive Navigation component */}
+                <ResponsiveNavigation />
               
               {/* Main content area */}
               <main 
@@ -134,7 +136,8 @@ export default function RootLayout({
                 {children}
               </main>
               </ToastProvider>
-            </SafeAreaProvider>
+              </SafeAreaProvider>
+            </ThemeProvider>
           </QueryProvider>
 
           {/* Mobile-Responsive Footer */}

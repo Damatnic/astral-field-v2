@@ -352,6 +352,47 @@ export const getMatchupsOptimized = createServerCache(
 );
 
 /**
+ * Get player by ID with optimized queries
+ */
+export const getPlayerByIdOptimized = createServerCache(
+  async (playerId: string, options?: { includeStats?: boolean; includeNews?: boolean }) => {
+    const startTime = Date.now();
+    
+    try {
+      const player = await prisma.player.findUnique({
+        where: { id: playerId },
+        include: {
+          stats: options?.includeStats ? {
+            orderBy: { week: 'desc' },
+            take: 5
+          } : false,
+          projections: {
+            where: { 
+              week: getCurrentWeek(),
+              season: new Date().getFullYear().toString()
+            }
+          },
+          news: options?.includeNews ? {
+            orderBy: { publishedAt: 'desc' },
+            take: 3
+          } : false
+        }
+      });
+      
+      recordQueryPerformance('getPlayerById', Date.now() - startTime);
+      return player;
+    } catch (error) {
+      recordQueryPerformance('getPlayerById', Date.now() - startTime, true);
+      throw error;
+    }
+  },
+  { 
+    tags: [`player-{0}`],
+    revalidate: 60 
+  }
+);
+
+/**
  * Get roster with optimized queries
  */
 export const getRosterOptimized = createServerCache(

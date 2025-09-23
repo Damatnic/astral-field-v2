@@ -79,29 +79,32 @@ jest.mock('next/router', () => ({
 }));
 
 // Mock Next.js App Router navigation
+const mockUseRouter = jest.fn();
+const mockUsePathname = jest.fn();
+const mockUseSearchParams = jest.fn();
+const mockUseParams = jest.fn();
+
 jest.mock('next/navigation', () => ({
-  useRouter() {
-    return {
-      push: jest.fn(),
-      replace: jest.fn(),
-      prefetch: jest.fn(),
-      back: jest.fn(),
-      forward: jest.fn(),
-      refresh: jest.fn(),
-    };
-  },
-  useSearchParams() {
-    return new URLSearchParams();
-  },
-  usePathname() {
-    return '/';
-  },
-  useParams() {
-    return {};
-  },
+  useRouter: mockUseRouter.mockReturnValue({
+    push: jest.fn(),
+    replace: jest.fn(),
+    prefetch: jest.fn(),
+    back: jest.fn(),
+    forward: jest.fn(),
+    refresh: jest.fn(),
+  }),
+  useSearchParams: mockUseSearchParams.mockReturnValue(new URLSearchParams()),
+  usePathname: mockUsePathname.mockReturnValue('/'),
+  useParams: mockUseParams.mockReturnValue({}),
   notFound: jest.fn(),
   redirect: jest.fn(),
 }));
+
+// Export mocks for use in tests
+global.mockUseRouter = mockUseRouter;
+global.mockUsePathname = mockUsePathname;
+global.mockUseSearchParams = mockUseSearchParams;
+global.mockUseParams = mockUseParams;
 
 // Mock Next.js headers for server components
 jest.mock('next/headers', () => ({
@@ -144,51 +147,57 @@ global.ResizeObserver = jest.fn(() => ({
   unobserve: jest.fn(),
 }));
 
-// Mock matchMedia for responsive design tests
-Object.defineProperty(window, 'matchMedia', {
-  writable: true,
-  value: jest.fn().mockImplementation(query => ({
-    matches: false,
-    media: query,
-    onchange: null,
-    addListener: jest.fn(),
-    removeListener: jest.fn(),
-    addEventListener: jest.fn(),
-    removeEventListener: jest.fn(),
-    dispatchEvent: jest.fn(),
-  })),
-});
+// Mock matchMedia for responsive design tests (only in browser environment)
+if (typeof window !== 'undefined') {
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: jest.fn().mockImplementation(query => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: jest.fn(),
+      removeListener: jest.fn(),
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      dispatchEvent: jest.fn(),
+    })),
+  });
+}
 
-// Mock Canvas API for chart components
-HTMLCanvasElement.prototype.getContext = jest.fn(() => ({
-  fillRect: jest.fn(),
-  clearRect: jest.fn(),
-  getImageData: jest.fn(() => ({ data: new Uint8ClampedArray(4) })),
-  putImageData: jest.fn(),
-  createImageData: jest.fn(() => []),
-  setTransform: jest.fn(),
-  drawImage: jest.fn(),
-  save: jest.fn(),
-  fillText: jest.fn(),
-  restore: jest.fn(),
-  beginPath: jest.fn(),
-  moveTo: jest.fn(),
-  lineTo: jest.fn(),
-  closePath: jest.fn(),
-  stroke: jest.fn(),
-  translate: jest.fn(),
-  scale: jest.fn(),
-  rotate: jest.fn(),
-  arc: jest.fn(),
-  fill: jest.fn(),
-  measureText: jest.fn(() => ({ width: 0 })),
-  transform: jest.fn(),
-  rect: jest.fn(),
-  clip: jest.fn(),
-}));
+// Mock Canvas API for chart components (only in browser environment)
+if (typeof HTMLCanvasElement !== 'undefined') {
+  HTMLCanvasElement.prototype.getContext = jest.fn(() => ({
+    fillRect: jest.fn(),
+    clearRect: jest.fn(),
+    getImageData: jest.fn(() => ({ data: new Uint8ClampedArray(4) })),
+    putImageData: jest.fn(),
+    createImageData: jest.fn(() => []),
+    setTransform: jest.fn(),
+    drawImage: jest.fn(),
+    save: jest.fn(),
+    fillText: jest.fn(),
+    restore: jest.fn(),
+    beginPath: jest.fn(),
+    moveTo: jest.fn(),
+    lineTo: jest.fn(),
+    closePath: jest.fn(),
+    stroke: jest.fn(),
+    translate: jest.fn(),
+    scale: jest.fn(),
+    rotate: jest.fn(),
+    arc: jest.fn(),
+    fill: jest.fn(),
+    measureText: jest.fn(() => ({ width: 0 })),
+    transform: jest.fn(),
+    rect: jest.fn(),
+    clip: jest.fn(),
+  }));
+}
 
-// Mock scrollTo for smooth scrolling tests
-window.scrollTo = jest.fn();
+// Mock scrollTo for smooth scrolling tests (only in browser environment)
+if (typeof window !== 'undefined') {
+  window.scrollTo = jest.fn();
+}
 
 // Mock local and session storage
 const createStorageMock = () => ({

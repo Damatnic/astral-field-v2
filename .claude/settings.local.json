@@ -28,7 +28,15 @@
       "Bash(gh workflow:*)",
       "Bash(gh run list:*)",
       "Bash(gh run view:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(npm test)",
+      "Bash(npm test:*)",
+      "Bash(npx jest:*)",
+      "Bash(npm install:*)",
+      "Bash(mkdir:*)",
+      "Bash(touch:*)",
+      "Bash(sed:*)",
+      "Bash(test:*)"
     ],
     "deny": [],
     "ask": []
