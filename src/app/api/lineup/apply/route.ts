@@ -381,12 +381,13 @@ function validatePositionLimits(team: any, lineupChanges: any[], rosterSettings:
   // Validate each position
   for (const [position, requirements] of Object.entries(limits)) {
     const count = positionCounts[position] || 0;
+    const req = requirements as { min: number; max: number };
     
-    if (count < requirements.min) {
-      errors.push(`Insufficient ${position} players: need ${requirements.min}, have ${count}`);
+    if (count < req.min) {
+      errors.push(`Insufficient ${position} players: need ${req.min}, have ${count}`);
     }
-    if (count > requirements.max) {
-      errors.push(`Too many ${position} players: max ${requirements.max}, have ${count}`);
+    if (count > req.max) {
+      errors.push(`Too many ${position} players: max ${req.max}, have ${count}`);
     }
   }
 

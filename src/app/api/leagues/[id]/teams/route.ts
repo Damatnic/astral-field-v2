@@ -118,7 +118,7 @@ export async function GET(
 
     // Transform team data
     const teamsData = await Promise.all(
-      teams.map(async (team) => {
+      teams.map(async (team: any) => {
         // Calculate current week projected points
         let projectedPoints = 0;
         let actualPoints = 0;
@@ -189,8 +189,8 @@ export async function GET(
               id: currentMatchup.id,
               week: currentMatchup.week,
               opponent: currentMatchup.homeTeamId === team.id 
-                ? currentMatchup.awayTeam 
-                : currentMatchup.homeTeam,
+                ? (currentMatchup as any).awayTeam 
+                : (currentMatchup as any).homeTeam,
               isHome: currentMatchup.homeTeamId === team.id,
               score: {
                 team: currentMatchup.homeTeamId === team.id 

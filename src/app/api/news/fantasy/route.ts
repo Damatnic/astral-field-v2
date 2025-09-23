@@ -71,7 +71,7 @@ export async function GET(request: Request) {
 
     // Transform news data with fantasy analysis
     const fantasyNews = await Promise.all(
-      playerNews.map(async (news) => {
+      playerNews.map(async (news: any) => {
         const analysis = includeAnalysis ? await generateFantasyAnalysis(news, news.player) : null;
         
         return {
@@ -434,7 +434,7 @@ function getTrendingPlayers(fantasyNews: any[]) {
   }, {} as { [key: string]: number });
   
   return Object.entries(playerCounts)
-    .sort(([,a], [,b]) => b - a)
+    .sort(([,a], [,b]) => (b as number) - (a as number))
     .slice(0, 5)
     .map(([name, count]) => ({ name, mentions: count }));
 }
@@ -451,7 +451,7 @@ function getTrendingTopics(fantasyNews: any[]) {
   }, {} as { [key: string]: number });
   
   return Object.entries(wordCounts)
-    .sort(([,a], [,b]) => b - a)
+    .sort(([,a], [,b]) => (b as number) - (a as number))
     .slice(0, 5)
     .map(([topic, count]) => ({ topic, mentions: count }));
 }
@@ -466,7 +466,7 @@ function getTrendingTeams(fantasyNews: any[]) {
   }, {} as { [key: string]: number });
   
   return Object.entries(teamCounts)
-    .sort(([,a], [,b]) => b - a)
+    .sort(([,a], [,b]) => (b as number) - (a as number))
     .slice(0, 5)
     .map(([team, count]) => ({ team, mentions: count }));
 }
