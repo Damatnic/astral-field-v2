@@ -11,6 +11,13 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   return withRateLimit(request, RATE_LIMIT_CONFIGS.auth, async () => {
+  // Only allow in development mode - this endpoint bypasses proper password validation
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ 
+      success: false,
+      error: 'Simple login is disabled in production. Use proper authentication.' 
+    }, { status: 403 });
+  }
   try {
     let body;
     try {
@@ -118,6 +125,14 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET() {
+  // Only allow in development mode
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ 
+      success: false,
+      error: 'Simple login is disabled in production' 
+    }, { status: 403 });
+  }
+  
   return NextResponse.json(
     { 
       success: false, 

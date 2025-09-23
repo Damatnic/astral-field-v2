@@ -7,6 +7,12 @@ export const dynamic = 'force-dynamic';
 const prisma = new PrismaClient();
 
 export async function POST(req: NextRequest) {
+  // Only allow in development mode
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ 
+      error: 'Test endpoints are disabled in production' 
+    }, { status: 403 });
+  }
   try {
     const { email } = await req.json();
     
@@ -66,6 +72,13 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET() {
+  // Only allow in development mode
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ 
+      error: 'Test endpoints are disabled in production' 
+    }, { status: 403 });
+  }
+  
   // Return list of test users for quick reference
   const testUsers = [
     { name: "Nicholas D'Amato", email: "nicholas.damato@test.com", role: "Commissioner" },

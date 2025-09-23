@@ -5,6 +5,13 @@ import { logError } from '@/lib/error-handling';
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
+  // Only allow in development mode
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ 
+      success: false,
+      error: 'Debug endpoints are disabled in production' 
+    }, { status: 403 });
+  }
   try {
     logError('Debug request', { 
       operation: 'auth-debug',
@@ -49,6 +56,14 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET() {
+  // Only allow in development mode
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ 
+      success: false,
+      error: 'Debug endpoints are disabled in production' 
+    }, { status: 403 });
+  }
+  
   return NextResponse.json({ 
     message: 'Debug endpoint ready',
     method: 'POST',

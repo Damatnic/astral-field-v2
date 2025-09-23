@@ -136,9 +136,8 @@ const PremiumStatCard = ({
 );
 
 // Enhanced matchup card component
-const MatchupShowcase = ({ matchup, userTeam }: any) => {
-  return (
-    <motion.div
+const MatchupShowcase = ({ matchup, userTeam }: any) => (
+  <motion.div
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ delay: 0.6, duration: 0.8 }}

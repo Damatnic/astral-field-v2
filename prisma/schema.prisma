@@ -3,7 +3,7 @@
 
 generator client {
   provider = "prisma-client-js"
-  previewFeatures = ["fullTextSearch"]
+  previewFeatures = ["fullTextSearchPostgres", "postgresqlExtensions"]
 }
 
 datasource db {
@@ -32,6 +32,7 @@ model User {
   notifications   Notification[]
   messages        Message[] @relation("UserMessages")
   preferences     UserPreferences?
+  auditLogs       AuditLog[]
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   
@@ -77,7 +78,7 @@ model UserSession {
   userId       String
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   isActive     Boolean  @default(true)
-  // lastActivity DateTime @default(now()) // Temporarily disabled - column doesn't exist in current DB
+  lastActivity DateTime @default(now())
   expiresAt    DateTime
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -173,12 +174,19 @@ model Player {
   injuryDetails   String?
   stats           PlayerStats[]
   projections     Projection[]
+  playerProjections PlayerProjection[]
   roster          Roster[]
   rosterPlayers   RosterPlayer[]
   news            PlayerNews[]
   byeWeek         Int?
   adp             Float?    // Average Draft Position
   rank            Int?
+  isFantasyRelevant Boolean @default(true)
+  lastUpdated      DateTime @default(now())
+  isRookie         Boolean  @default(false)
+  isDynastyTarget  Boolean  @default(false)
+  dynastyRank      Int?
+  isActive         Boolean  @default(true)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   
@@ -222,6 +230,7 @@ model PlayerStats {
   fantasyPoints   Float     @default(0)
   isProjection    Boolean   @default(false)
   createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
   
   @@unique([playerId, week, season])
   @@index([playerId, season])
@@ -393,6 +402,41 @@ model RosterPlayer {
   @@index([teamId])
   @@index([playerId])
   @@map("roster_players")
+}
+
+// ==================== AUDIT LOG & PROJECTIONS ====================
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action    String
+  details   Json?
+  createdAt DateTime @default(now())
+  
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model PlayerProjection {
+  id         String   @id @default(cuid())
+  playerId   String
+  player     Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  week       Int
+  season     Int
+  points     Float
+  source     String
+  confidence Float?   // 0-1 confidence score
+  stats      Json?    // Projected stats breakdown
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  @@unique([playerId, week, season, source])
+  @@index([playerId, week, season])
+  @@index([source])
+  @@map("player_projections")
 }
 
 // ==================== ENUMS ====================
