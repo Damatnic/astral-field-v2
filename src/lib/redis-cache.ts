@@ -483,6 +483,7 @@ export const fantasyKeys = {
   liveScores: (leagueId: string, week: number) => `live:scores:${leagueId}:${week}`,
   nflState: () => 'nfl:state',
   nflSchedule: (week: number, season: number) => `nfl:schedule:${season}:${week}`,
+  playerSocial: (playerId: string, userId: string) => `player:${playerId}:social:${userId}`,
 };
 
 // Convenience functions for common operations

@@ -61,8 +61,8 @@ export async function POST(
       }
 
       // Invalidate relevant caches
-      await redisCache.invalidateTag(CACHE_TAGS.PLAYERS);
-      await redisCache.del(fantasyKeys.player(playerId));
+      await redisCache.invalidateByTag([CACHE_TAGS.PLAYERS]);
+      await redisCache.delete(fantasyKeys.player(playerId));
 
       return NextResponse.json({
         success: true,
