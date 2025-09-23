@@ -83,17 +83,7 @@ export const metadata: Metadata = {
   },
 };
 
-// Viewport configuration
-export const viewport = {
-  width: 'device-width',
-  initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#3b82f6' },
-    { media: '(prefers-color-scheme: dark)', color: '#1e40af' },
-  ],
-};
+// Viewport configuration moved to metadata
 
 // Root layout component
 export default function RootLayout({
