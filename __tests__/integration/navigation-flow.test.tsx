@@ -25,7 +25,7 @@ describe('Navigation Flow Integration', () => {
     });
 
     mockUseAuth.mockReturnValue({
-      user: { id: '1', name: 'Test User', email: 'test@test.com' },
+      user: { id: '1', name: 'Test User', email: 'test@test.com', role: 'PLAYER' as any },
       isLoading: false,
     });
   });

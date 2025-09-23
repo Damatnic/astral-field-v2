@@ -48,6 +48,7 @@ describe('/api/auth/simple-login', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     // Enable simple login for tests
+    // @ts-ignore - test environment
     process.env.NODE_ENV = 'test';
     process.env.ENABLE_SIMPLE_LOGIN = 'true';
   });

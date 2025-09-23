@@ -105,6 +105,7 @@ describe('ResponsiveNavigation', () => {
   beforeEach(() => {
     window.innerWidth = 1024;
     window.innerHeight = 768;
+    // @ts-ignore - test environment
     navigator.userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
   });
 

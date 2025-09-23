@@ -32,6 +32,11 @@ describe('HomePage', () => {
     mockUseAuth.mockReturnValue({
       user: null,
       isLoading: true,
+      isAuthenticated: false,
+      login: jest.fn(),
+      logout: jest.fn(),
+      hasRole: jest.fn(),
+      hasPermission: jest.fn()
     });
 
     render(<HomePage />);
@@ -41,8 +46,13 @@ describe('HomePage', () => {
 
   it('redirects to dashboard when user is authenticated', async () => {
     mockUseAuth.mockReturnValue({
-      user: { id: '1', name: 'Test User', email: 'test@test.com' },
+      user: { id: '1', name: 'Test User', email: 'test@test.com', role: 'PLAYER' as any },
       isLoading: false,
+      isAuthenticated: true,
+      login: jest.fn(),
+      logout: jest.fn(),
+      hasRole: jest.fn(),
+      hasPermission: jest.fn()
     });
 
     render(<HomePage />);

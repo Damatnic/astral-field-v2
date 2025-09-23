@@ -36,7 +36,8 @@
       "Bash(mkdir:*)",
       "Bash(touch:*)",
       "Bash(sed:*)",
-      "Bash(test:*)"
+      "Bash(test:*)",
+      "WebFetch(domain:astralfield.vercel.app)"
     ],
     "deny": [],
     "ask": []
