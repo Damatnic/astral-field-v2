@@ -27,7 +27,8 @@
       "WebFetch(domain:astral-field-v2.vercel.app)",
       "Bash(gh workflow:*)",
       "Bash(gh run list:*)",
-      "Bash(gh run view:*)"
+      "Bash(gh run view:*)",
+      "WebSearch"
     ],
     "deny": [],
     "ask": []
