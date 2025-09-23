@@ -11,11 +11,14 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   return withRateLimit(request, RATE_LIMIT_CONFIGS.auth, async () => {
-  // Only allow in development mode - this endpoint bypasses proper password validation
-  if (process.env.NODE_ENV === 'production') {
+  // Allow simple login if explicitly enabled via environment variable
+  // This is for demo/testing purposes only
+  const simpleLoginEnabled = process.env.ENABLE_SIMPLE_LOGIN === 'true' || process.env.NODE_ENV === 'development';
+  
+  if (!simpleLoginEnabled) {
     return NextResponse.json({ 
       success: false,
-      error: 'Simple login is disabled in production. Use proper authentication.' 
+      error: 'Simple login is disabled. Use proper authentication.' 
     }, { status: 403 });
   }
   try {
@@ -125,11 +128,13 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET() {
-  // Only allow in development mode
-  if (process.env.NODE_ENV === 'production') {
+  // Allow simple login if explicitly enabled via environment variable
+  const simpleLoginEnabled = process.env.ENABLE_SIMPLE_LOGIN === 'true' || process.env.NODE_ENV === 'development';
+  
+  if (!simpleLoginEnabled) {
     return NextResponse.json({ 
       success: false,
-      error: 'Simple login is disabled in production' 
+      error: 'Simple login is disabled' 
     }, { status: 403 });
   }
   
