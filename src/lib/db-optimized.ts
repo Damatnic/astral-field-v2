@@ -379,15 +379,14 @@ export const getPlayerByIdOptimized = createServerCache(
         }
       });
       
-      recordQueryPerformance('getPlayerById', Date.now() - startTime);
       return player;
     } catch (error) {
-      recordQueryPerformance('getPlayerById', Date.now() - startTime, true);
       throw error;
     }
   },
+  `player-optimized`,
   { 
-    tags: [`player-{0}`],
+    tags: [`player`],
     revalidate: 60 
   }
 );

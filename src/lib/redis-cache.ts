@@ -481,6 +481,7 @@ export const fantasyKeys = {
   notifications: (userId: string) => `notifications:${userId}`,
   user: (userId: string) => `user:${userId}`,
   liveScores: (leagueId: string, week: number) => `live:scores:${leagueId}:${week}`,
+  liveUpdates: (type: string) => `live:updates:${type}`,
   nflState: () => 'nfl:state',
   nflSchedule: (week: number, season: number) => `nfl:schedule:${season}:${week}`,
   playerSocial: (playerId: string, userId: string) => `player:${playerId}:social:${userId}`,

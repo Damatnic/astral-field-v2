@@ -37,7 +37,8 @@
       "Bash(touch:*)",
       "Bash(sed:*)",
       "Bash(test:*)",
-      "WebFetch(domain:astralfield.vercel.app)"
+      "WebFetch(domain:astralfield.vercel.app)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []

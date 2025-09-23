@@ -33,6 +33,8 @@ model User {
   messages        Message[] @relation("UserMessages")
   preferences     UserPreferences?
   auditLogs       AuditLog[]
+  playerActivities PlayerActivity[]
+  playerNotes     PlayerNote[]
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   
@@ -352,6 +354,7 @@ model PlayerNote {
   content   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id])
   
   @@unique([playerId, userId])
   @@index([playerId])
@@ -363,12 +366,16 @@ model PlayerActivity {
   id         String   @id @default(cuid())
   playerId   String
   userId     String
-  action     String   // like, watch, note, share
+  type       String   // like, watch, note, share
+  action     String   // alias for type for backward compatibility
+  content    String?  // for note content
   metadata   Json?
   createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id])
   
   @@index([playerId])
   @@index([userId])
+  @@index([type])
   @@index([action])
   @@index([createdAt])
   @@map("player_activities")

@@ -83,7 +83,7 @@ export interface APIContext {
   sessionId?: string;
 }
 
-export type APIHandler<T = any> = (context: APIContext) => Promise<NextResponse<T>>;
+export type APIHandler<T = any> = (context: APIContext) => Promise<NextResponse<T> | NextResponse<{ error: boolean; message: string; errorId: string; statusCode: number; timestamp: string; }>>;
 
 export function withErrorHandling<T = any>(
   handler: APIHandler<T>,

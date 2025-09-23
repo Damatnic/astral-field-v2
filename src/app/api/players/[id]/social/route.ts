@@ -342,6 +342,7 @@ async function logSocialActivity(
         playerId,
         userId,
         type,
+        action: type, // backward compatibility
         content,
         createdAt: new Date()
       }

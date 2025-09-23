@@ -18,6 +18,7 @@ export const CACHE_TAGS = {
   ANALYTICS: 'analytics',
   USER: 'user',
   NOTIFICATIONS: 'notifications',
+  LIVE_UPDATES: 'live_updates',
 } as const;
 
 export const CACHE_DURATIONS = {

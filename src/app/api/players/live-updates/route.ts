@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     const types = searchParams.get('types')?.split(',') || ['all'];
 
     // Build cache key
-    const cacheKey = fantasyKeys.liveUpdates(since, playerIds, types);
+    const cacheKey = fantasyKeys.liveUpdates(`${since}_${playerIds?.join(',')}_${types.join(',')}`);
     
     // Try cache first (very short TTL for live data)
     const cached = await redisCache.get(cacheKey, [CACHE_TAGS.LIVE_UPDATES]);

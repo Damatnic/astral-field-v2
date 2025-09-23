@@ -25,7 +25,8 @@ export enum ErrorCategory {
   VALIDATION_ERROR = 'validation_error',
   BUSINESS_LOGIC_ERROR = 'business_logic_error',
   PERFORMANCE_ERROR = 'performance_error',
-  INTEGRATION_ERROR = 'integration_error'
+  INTEGRATION_ERROR = 'integration_error',
+  EXTERNAL_API_ERROR = 'external_api_error'
 }
 
 // Error context interface
