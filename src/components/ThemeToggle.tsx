@@ -1,11 +1,25 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Moon, Sun } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
 
 export function ThemeToggle() {
+  const [mounted, setMounted] = useState(false);
   const { theme, toggleTheme } = useTheme();
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  
+  // Avoid hydration mismatch by not rendering until mounted
+  if (!mounted) {
+    return (
+      <div className="relative p-2 rounded-lg bg-white/80 backdrop-blur-sm border border-gray-200 w-9 h-9">
+        <div className="w-5 h-5" />
+      </div>
+    );
+  }
 
   return (
     <button
@@ -36,7 +50,21 @@ export function ThemeToggle() {
 }
 
 export function ThemeToggleCompact() {
+  const [mounted, setMounted] = useState(false);
   const { theme, toggleTheme } = useTheme();
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  
+  // Avoid hydration mismatch by not rendering until mounted
+  if (!mounted) {
+    return (
+      <div className="p-2 rounded-md w-8 h-8">
+        <div className="w-4 h-4" />
+      </div>
+    );
+  }
 
   return (
     <button
