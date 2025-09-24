@@ -116,7 +116,7 @@ export default function LoginPage() {
         credentials: 'include',
         body: JSON.stringify({ 
           email: team.email,
-          password: 'Dynasty2025!'  // Default password for all users
+          password: 'Dynasty2025'  // Default password for all users
         })
       });
 

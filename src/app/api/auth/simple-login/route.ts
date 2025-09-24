@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import bcrypt from 'bcryptjs';
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { nanoid } from 'nanoid';
 import { withRateLimit, RATE_LIMIT_CONFIGS } from '@/lib/rate-limiter';
 import { createJWTToken } from '@/lib/auth';
@@ -24,8 +24,7 @@ export async function POST(request: NextRequest) {
   try {
     let body;
     try {
-      const text = await request.text();
-      body = JSON.parse(text);
+      body = await request.json();
     } catch (parseError) {
       console.error('JSON parse error:', parseError);
       return NextResponse.json(

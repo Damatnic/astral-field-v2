@@ -36,9 +36,23 @@ class DraftWebSocketServer {
     this.io = new SocketIOServer(server, {
       cors: {
         origin: process.env.NODE_ENV === 'production' 
-          ? ['https://astralfield.vercel.app', 'https://astralfield.com']
-          : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002'],
-        credentials: true
+          ? [
+              'https://astralfield-v2.vercel.app',
+              'https://astralfield.vercel.app', 
+              'https://astralfield.com',
+              /^https:\/\/.*\.vercel\.app$/
+            ]
+          : [
+              'http://localhost:3000', 
+              'http://localhost:3001', 
+              'http://localhost:3002',
+              'http://localhost:3010',
+              'http://localhost:3011',
+              'http://localhost:3012',
+              'http://localhost:3013'
+            ],
+        credentials: true,
+        methods: ['GET', 'POST']
       },
       transports: ['websocket', 'polling']
     });

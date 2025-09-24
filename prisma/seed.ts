@@ -1,6 +1,6 @@
 #!/usr/bin/env tsx
 
-import { prisma } from '../src/lib/db'
+import { prisma } from '../src/lib/prisma'
 
 async function main() {
   try {

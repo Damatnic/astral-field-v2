@@ -61,7 +61,9 @@
       "Bash(find:*)",
       "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_rkDs2yUYZEQ7@ep-proud-pond-adntwlpd-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require\" npx prisma migrate dev --name add-job-execution)",
       "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_rkDs2yUYZEQ7@ep-proud-pond-adntwlpd-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require\" npx prisma db push --accept-data-loss)",
-      "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_rkDs2yUYZEQ7@ep-proud-pond-adntwlpd-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require\" npx tsc --noEmit --skipLibCheck src/components/draft/PlayerList.tsx src/components/draft/TeamRoster.tsx src/components/draft/DraftChat.tsx src/lib/api/error-handler.ts src/lib/sleeper/api.ts)"
+      "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_rkDs2yUYZEQ7@ep-proud-pond-adntwlpd-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require\" npx tsc --noEmit --skipLibCheck src/components/draft/PlayerList.tsx src/components/draft/TeamRoster.tsx src/components/draft/DraftChat.tsx src/lib/api/error-handler.ts src/lib/sleeper/api.ts)",
+      "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_rkDs2yUYZEQ7@ep-proud-pond-adntwlpd-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require\" npx prisma db seed)",
+      "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_rkDs2yUYZEQ7@ep-proud-pond-adntwlpd-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require\" node test-db.js)"
     ],
     "deny": [],
     "ask": []
