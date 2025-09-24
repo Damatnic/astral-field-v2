@@ -121,6 +121,7 @@ model League {
   messages        Message[]
   drafts          Draft[]
   chatMessages    ChatMessage[]
+  jobExecutions   JobExecution[]
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   
@@ -541,7 +542,7 @@ model Notification {
   id              String    @id @default(cuid())
   type            String
   title           String
-  body            String
+  body            String    @default("")
   data            Json?
   priority        String    @default("normal") // high, normal, low
   createdAt       DateTime  @default(now())
@@ -877,4 +878,29 @@ enum ChatMessageType {
   TRASH_TALK
   ANNOUNCEMENT
   POLL
+}
+
+// ==================== JOB EXECUTION SYSTEM ====================
+
+model JobExecution {
+  id            String   @id @default(cuid())
+  jobName       String
+  jobType       String   // 'waiver_processing', 'data_sync', 'cache_reconcile', 'archive'
+  status        String   // 'pending', 'running', 'completed', 'failed'
+  startedAt     DateTime @default(now())
+  completedAt   DateTime?
+  error         String?
+  metadata      Json?    // Job-specific data
+  result        Json?    // Job execution results
+  duration      Int?     // Duration in milliseconds
+  retryCount    Int      @default(0)
+  maxRetries    Int      @default(3)
+  scheduledFor  DateTime?
+  leagueId      String?
+  league        League?  @relation(fields: [leagueId], references: [id])
+  
+  @@index([jobType, status])
+  @@index([scheduledFor])
+  @@index([leagueId])
+  @@map("job_executions")
 }

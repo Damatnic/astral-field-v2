@@ -3,39 +3,9 @@ import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
 import { useDraftRoom } from '@/lib/socket/client';
 import { DraftBoard } from './DraftBoard';
-// import PlayerList from './PlayerList';
-// import TeamRoster from './TeamRoster';
-// import DraftChat from './DraftChat';
-
-// Temporary stub components
-interface PlayerListProps {
-  players: any[];
-  selectedPlayer: any;
-  onSelectPlayer: (player: any) => void;
-  isMyTurn: boolean;
-}
-
-interface TeamRosterProps {
-  team: any;
-  roster: any[];
-}
-
-interface DraftChatProps {
-  messages: any[];
-  draftId: string;
-}
-
-const PlayerList = ({ players, selectedPlayer, onSelectPlayer, isMyTurn }: PlayerListProps) => (
-  <div>Player List Component</div>
-);
-
-const TeamRoster = ({ team, roster }: TeamRosterProps) => (
-  <div>Team Roster Component</div>
-);
-
-const DraftChat = ({ messages, draftId }: DraftChatProps) => (
-  <div>Draft Chat Component</div>
-);
+import { PlayerList } from './PlayerList';
+import { TeamRoster } from './TeamRoster';
+import { DraftChat } from './DraftChat';
 import DraftTimer from './DraftTimer';
 import { toast } from 'react-hot-toast';
 

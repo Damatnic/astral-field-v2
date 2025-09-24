@@ -1,30 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
-import { sleeperAPI } from '@/lib/sleeper-api';
+import { prisma } from '@/lib/prisma';
+import { sleeperAPI } from '@/lib/sleeper/api';
+import { getServerSession } from '@/lib/auth/get-session';
+import { withErrorHandling, validateSession, createApiError } from '@/lib/api/error-handler';
 
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const action = searchParams.get('action');
+async function getSleeperHandler(request: NextRequest) {
+  const session = await getServerSession();
+  const user = validateSession(session);
 
-    switch (action) {
-      case 'trending':
-        return await getTrendingPlayers();
-      case 'injuries':
-        return await getInjuryReport();
-      case 'projections':
-        return await getCurrentWeekProjections();
-      case 'state':
-        return await getNFLState();
-      default:
-        return await syncPlayers();
-    }
-  } catch (error) {
-    console.error('Sleeper sync error:', error);
-    return NextResponse.json(
-      { error: 'Failed to sync with Sleeper API' },
-      { status: 500 }
-    );
+  const { searchParams } = new URL(request.url);
+  const action = searchParams.get('action');
+
+  switch (action) {
+    case 'trending':
+      return await getTrendingPlayers();
+    case 'state':
+      return await getNFLState();
+    case 'status':
+      return await getSleeperStatus();
+    default:
+      throw createApiError.badRequest('Invalid action. Supported actions: trending, state, status');
   }
 }
 
@@ -105,45 +100,151 @@ async function getTrendingPlayers() {
   });
 }
 
-async function getInjuryReport() {
-  const injuries = await sleeperAPI.getInjuryReport();
-  
-  return NextResponse.json({
-    success: true,
-    data: injuries.slice(0, 50), // Limit to top 50
-    count: injuries.length
+async function getSleeperStatus() {
+  // Get recent job executions
+  const recentJobs = await prisma.jobExecution.findMany({
+    where: {
+      jobType: 'sleeper_sync'
+    },
+    orderBy: {
+      startedAt: 'desc'
+    },
+    take: 10
   });
-}
 
-async function getCurrentWeekProjections() {
-  const nflState = await sleeperAPI.getNFLState();
-  const projections = await sleeperAPI.getPlayerProjections(
-    nflState.season,
-    nflState.week,
-    'regular'
-  );
+  // Get player count from our database
+  const playerCount = await prisma.player.count({
+    where: {
+      sleeperPlayerId: { not: null }
+    }
+  });
 
-  const formattedProjections = Object.entries(projections)
-    .map(([playerId, data]) => ({
-      playerId,
-      ...data
-    }))
-    .sort((a, b) => (b.points?.ppr || 0) - (a.points?.ppr || 0))
-    .slice(0, 100);
+  // Get cache stats
+  const cacheStats = sleeperAPI.getCacheStats();
 
   return NextResponse.json({
     success: true,
-    week: nflState.week,
-    season: nflState.season,
-    data: formattedProjections
+    data: {
+      playerCount,
+      recentJobs: recentJobs.map(job => ({
+        id: job.id,
+        status: job.status,
+        startedAt: job.startedAt,
+        completedAt: job.completedAt,
+        duration: job.duration,
+        result: job.result,
+        error: job.error
+      })),
+      cache: cacheStats
+    }
   });
 }
 
 async function getNFLState() {
-  const state = await sleeperAPI.getNFLState();
+  const state = await sleeperAPI.getNflState();
   
   return NextResponse.json({
     success: true,
     data: state
   });
 }
+
+async function postSleeperHandler(request: NextRequest) {
+  const session = await getServerSession();
+  const user = validateSession(session);
+
+  // Only allow admins to trigger sync
+  if (!(user as any).isAdmin) {
+    throw createApiError.forbidden('Admin access required');
+  }
+
+  const { searchParams } = new URL(request.url);
+  const force = searchParams.get('force') === 'true';
+
+  // Check if sync is already running
+  const runningJob = await prisma.jobExecution.findFirst({
+    where: {
+      jobType: 'sleeper_sync',
+      status: 'running'
+    }
+  });
+
+  if (runningJob && !force) {
+    throw createApiError.conflict('Sleeper sync is already running');
+  }
+
+  // Create job execution record
+  const job = await prisma.jobExecution.create({
+    data: {
+      jobName: 'Sleeper Player Sync',
+      jobType: 'sleeper_sync',
+      status: 'running',
+      metadata: {
+        triggeredBy: user.id,
+        force
+      }
+    }
+  });
+
+  // Run sync in background
+  syncSleeperData(job.id).catch((error) => {
+    console.error('Background Sleeper sync failed:', error);
+  });
+
+  return NextResponse.json({
+    success: true,
+    data: {
+      jobId: job.id,
+      message: 'Sleeper sync started'
+    }
+  });
+}
+
+async function syncSleeperData(jobId: string) {
+  const startTime = Date.now();
+  
+  try {
+    // Update job status
+    await prisma.jobExecution.update({
+      where: { id: jobId },
+      data: { status: 'running' }
+    });
+
+    // Sync players using our new API
+    const syncResults = await sleeperAPI.syncPlayersToDatabase();
+    
+    const duration = Date.now() - startTime;
+
+    // Update job as completed
+    await prisma.jobExecution.update({
+      where: { id: jobId },
+      data: {
+        status: 'completed',
+        completedAt: new Date(),
+        duration,
+        result: syncResults
+      }
+    });
+
+    console.log(`Sleeper sync job ${jobId} completed successfully in ${duration}ms`);
+
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    
+    await prisma.jobExecution.update({
+      where: { id: jobId },
+      data: {
+        status: 'failed',
+        completedAt: new Date(),
+        duration,
+        error: error instanceof Error ? error.message : String(error)
+      }
+    });
+
+    console.error(`Sleeper sync job ${jobId} failed:`, error);
+    throw error;
+  }
+}
+
+export const GET = withErrorHandling(getSleeperHandler);
+export const POST = withErrorHandling(postSleeperHandler);

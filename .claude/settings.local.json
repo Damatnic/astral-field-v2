@@ -57,7 +57,11 @@
       "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_rkDs2yUYZEQ7@ep-proud-pond-adntwlpd-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require\" ESLINT_NO_DEV_ERRORS=true npm run build)",
       "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_rkDs2yUYZEQ7@ep-proud-pond-adntwlpd-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require\" DISABLE_ESLINT_PLUGIN=true npm run build)",
       "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_rkDs2yUYZEQ7@ep-proud-pond-adntwlpd-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require\" npx tsc --noEmit --skipLibCheck src/app/api/notifications/send/route.ts src/app/api/trades/create/route.ts)",
-      "WebFetch(domain:astralfield-v2.vercel.app)"
+      "WebFetch(domain:astralfield-v2.vercel.app)",
+      "Bash(find:*)",
+      "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_rkDs2yUYZEQ7@ep-proud-pond-adntwlpd-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require\" npx prisma migrate dev --name add-job-execution)",
+      "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_rkDs2yUYZEQ7@ep-proud-pond-adntwlpd-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require\" npx prisma db push --accept-data-loss)",
+      "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_rkDs2yUYZEQ7@ep-proud-pond-adntwlpd-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require\" npx tsc --noEmit --skipLibCheck src/components/draft/PlayerList.tsx src/components/draft/TeamRoster.tsx src/components/draft/DraftChat.tsx src/lib/api/error-handler.ts src/lib/sleeper/api.ts)"
     ],
     "deny": [],
     "ask": []
