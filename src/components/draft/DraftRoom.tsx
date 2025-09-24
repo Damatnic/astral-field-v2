@@ -8,9 +8,34 @@ import { DraftBoard } from './DraftBoard';
 // import DraftChat from './DraftChat';
 
 // Temporary stub components
-const PlayerList = () => <div>Player List Component</div>;
-const TeamRoster = () => <div>Team Roster Component</div>;
-const DraftChat = () => <div>Draft Chat Component</div>;
+interface PlayerListProps {
+  players: any[];
+  selectedPlayer: any;
+  onSelectPlayer: (player: any) => void;
+  isMyTurn: boolean;
+}
+
+interface TeamRosterProps {
+  team: any;
+  roster: any[];
+}
+
+interface DraftChatProps {
+  messages: any[];
+  draftId: string;
+}
+
+const PlayerList = ({ players, selectedPlayer, onSelectPlayer, isMyTurn }: PlayerListProps) => (
+  <div>Player List Component</div>
+);
+
+const TeamRoster = ({ team, roster }: TeamRosterProps) => (
+  <div>Team Roster Component</div>
+);
+
+const DraftChat = ({ messages, draftId }: DraftChatProps) => (
+  <div>Draft Chat Component</div>
+);
 import DraftTimer from './DraftTimer';
 import { toast } from 'react-hot-toast';
 
@@ -191,11 +216,7 @@ export default function DraftRoom({ draftId }: DraftRoomProps) {
       <div className="flex-1 flex overflow-hidden">
         {/* Left Panel - Draft Board */}
         <div className="w-1/3 bg-white border-r overflow-y-auto">
-          <DraftBoard 
-            picks={draftState.picks}
-            teams={draftState.teams}
-            currentPick={draftState.currentPick}
-          />
+          <DraftBoard draftId={draftId} />
         </div>
 
         {/* Center Panel - Available Players */}

@@ -29,6 +29,7 @@ export interface User {
   name: string;
   role: 'ADMIN' | 'COMMISSIONER' | 'PLAYER';
   avatar?: string;
+  onboardingCompleted?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

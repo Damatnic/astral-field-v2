@@ -157,7 +157,7 @@ export default function FeedbackWidget({ isOpen, onClose, initialType = 'general
 
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
-            <Tabs value={formData.type} onValueChange={(value) => handleInputChange('type', value)}>
+            <Tabs defaultValue={formData.type} value={formData.type} onValueChange={(value) => handleInputChange('type', value)}>
               <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="general" className="flex items-center gap-1">
                   <MessageCircle className="h-3 w-3" />
