@@ -2,10 +2,15 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
 import { useDraftRoom } from '@/lib/socket/client';
-import DraftBoard from './DraftBoard';
-import PlayerList from './PlayerList';
-import TeamRoster from './TeamRoster';
-import DraftChat from './DraftChat';
+import { DraftBoard } from './DraftBoard';
+// import PlayerList from './PlayerList';
+// import TeamRoster from './TeamRoster';
+// import DraftChat from './DraftChat';
+
+// Temporary stub components
+const PlayerList = () => <div>Player List Component</div>;
+const TeamRoster = () => <div>Team Roster Component</div>;
+const DraftChat = () => <div>Draft Chat Component</div>;
 import DraftTimer from './DraftTimer';
 import { toast } from 'react-hot-toast';
 

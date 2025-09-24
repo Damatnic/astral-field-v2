@@ -7,7 +7,10 @@ export class MobilePerformanceManager {
   private networkStatusCallback?: (online: boolean) => void;
 
   private constructor() {
-    this.initializePerformanceMonitoring();
+    // Only initialize in browser environment
+    if (typeof window !== 'undefined') {
+      this.initializePerformanceMonitoring();
+    }
   }
 
   public static getInstance(): MobilePerformanceManager {
@@ -62,6 +65,9 @@ export class MobilePerformanceManager {
   }
 
   private clearImageCache() {
+    // Only run in browser environment
+    if (typeof window === 'undefined') return;
+    
     // Clear cached images that are no longer visible
     const images = document.querySelectorAll('img');
     images.forEach((img) => {
@@ -72,6 +78,9 @@ export class MobilePerformanceManager {
   }
 
   private clearLocalStorageOldItems() {
+    // Only run in browser environment
+    if (typeof window === 'undefined') return;
+    
     const maxAge = 24 * 60 * 60 * 1000; // 24 hours
     const now = Date.now();
 
@@ -92,6 +101,9 @@ export class MobilePerformanceManager {
   }
 
   private isElementInViewport(el: Element): boolean {
+    // Only run in browser environment
+    if (typeof window === 'undefined') return false;
+    
     const rect = el.getBoundingClientRect();
     return (
       rect.top >= 0 &&
@@ -103,6 +115,9 @@ export class MobilePerformanceManager {
 
   // Network Monitoring
   private monitorNetworkStatus() {
+    // Only run in browser environment
+    if (typeof window === 'undefined') return;
+    
     const updateNetworkStatus = (online: boolean) => {
       this.networkStatusCallback?.(online);
       
@@ -162,6 +177,9 @@ export class MobilePerformanceManager {
   }
 
   private setPowerSaveMode(enabled: boolean) {
+    // Only run in browser environment
+    if (typeof window === 'undefined') return;
+    
     if (enabled) {
       // Reduce animations, disable auto-refresh, etc.
       document.documentElement.classList.add('power-save-mode');
@@ -173,6 +191,9 @@ export class MobilePerformanceManager {
   }
 
   private reducePowerConsumption() {
+    // Only run in browser environment
+    if (typeof window === 'undefined') return;
+    
     // Disable auto-refresh
     this.pauseAutoRefresh();
     
@@ -191,6 +212,9 @@ export class MobilePerformanceManager {
   }
 
   private restoreNormalPowerConsumption() {
+    // Only run in browser environment
+    if (typeof window === 'undefined') return;
+    
     this.resumeAutoRefresh();
     
     const powerSaveStyle = document.getElementById('power-save-animations');
@@ -201,6 +225,9 @@ export class MobilePerformanceManager {
 
   // Orientation Monitoring
   private monitorOrientationChanges() {
+    // Only run in browser environment
+    if (typeof window === 'undefined') return;
+    
     const handleOrientationChange = () => {
       // Delay to allow for orientation change completion
       setTimeout(() => {
@@ -213,6 +240,9 @@ export class MobilePerformanceManager {
   }
 
   private optimizeForOrientation() {
+    // Only run in browser environment
+    if (typeof window === 'undefined') return;
+    
     const isLandscape = window.innerWidth > window.innerHeight;
     document.documentElement.classList.toggle('landscape', isLandscape);
     document.documentElement.classList.toggle('portrait', !isLandscape);
@@ -220,6 +250,9 @@ export class MobilePerformanceManager {
 
   // Performance Utilities
   public preloadCriticalResources(urls: string[]) {
+    // Only run in browser environment
+    if (typeof window === 'undefined') return;
+    
     urls.forEach((url) => {
       const link = document.createElement('link');
       link.rel = 'preload';
@@ -278,6 +311,9 @@ export class MobilePerformanceManager {
 
   // Lazy Loading
   public setupLazyLoading() {
+    // Only run in browser environment
+    if (typeof window === 'undefined') return;
+    
     if ('IntersectionObserver' in window) {
       const imageObserver = new IntersectionObserver((entries) => {
         entries.forEach((entry) => {
@@ -301,6 +337,9 @@ export class MobilePerformanceManager {
 
   // Cache Management
   private cacheCurrentState() {
+    // Only run in browser environment
+    if (typeof window === 'undefined') return;
+    
     const state = {
       timestamp: Date.now(),
       url: window.location.href,
@@ -311,6 +350,9 @@ export class MobilePerformanceManager {
   }
 
   private getOfflineActions(): any[] {
+    // Only run in browser environment
+    if (typeof window === 'undefined') return [];
+    
     const actions = localStorage.getItem('offline_actions');
     return actions ? JSON.parse(actions) : [];
   }
@@ -325,6 +367,9 @@ export class MobilePerformanceManager {
   }
 
   private clearOfflineActions() {
+    // Only run in browser environment
+    if (typeof window === 'undefined') return;
+    
     localStorage.removeItem('offline_actions');
   }
 

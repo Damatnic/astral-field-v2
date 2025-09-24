@@ -265,7 +265,7 @@ export default function AdvancedAnalyticsDashboard({ teamId, leagueId }: Advance
       </div>
 
       {/* Main Analytics Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={setActiveTab} defaultValue="overview">
         <TabsList className="grid grid-cols-5 w-full">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="trends">Trends</TabsTrigger>

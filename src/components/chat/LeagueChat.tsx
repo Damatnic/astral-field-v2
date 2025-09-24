@@ -19,7 +19,7 @@ import {
   Edit,
   Trash2,
   Reply,
-  Poll,
+  BarChart3,
   Megaphone,
   TrendingUp,
   TrendingDown
@@ -420,7 +420,7 @@ export default function LeagueChat({ leagueId, isCommissioner = false }: LeagueC
           <MessageCircle className="h-5 w-5" />
           League Chat
         </CardTitle>
-        <Tabs value={activeTab} onValueChange={(value: any) => setActiveTab(value)}>
+        <Tabs value={activeTab} onValueChange={(value: any) => setActiveTab(value)} defaultValue="all">
           <TabsList>
             <TabsTrigger value="all">
               <Hash className="h-3 w-3 mr-1" />
@@ -490,7 +490,7 @@ export default function LeagueChat({ leagueId, isCommissioner = false }: LeagueC
           
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="icon">
+              <Button variant="outline" size="sm">
                 <Flame className="h-4 w-4" />
               </Button>
             </PopoverTrigger>
@@ -520,7 +520,7 @@ export default function LeagueChat({ leagueId, isCommissioner = false }: LeagueC
           {isCommissioner && (
             <Button
               variant="outline"
-              size="icon"
+              size="sm"
               onClick={() => handleSendMessage('announcement')}
               title="Send as announcement"
             >
