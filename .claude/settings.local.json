@@ -41,7 +41,14 @@
       "Bash(curl:*)",
       "Bash(gh api:*)",
       "WebFetch(domain:astralfield-v2-8xt4x6vj4-astral-productions.vercel.app)",
-      "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_rkDs2yUYZEQ7@ep-proud-pond-adntwlpd-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require\" npm run build)"
+      "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_rkDs2yUYZEQ7@ep-proud-pond-adntwlpd-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require\" npm run build)",
+      "WebFetch(domain:astralfield-v2-mxab9ev3k-astral-productions.vercel.app)",
+      "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_rkDs2yUYZEQ7@ep-proud-pond-adntwlpd-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require\" npx tsx prisma/seed.ts)",
+      "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_rkDs2yUYZEQ7@ep-proud-pond-adntwlpd-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require\" npx tsx scripts/seed-test-league.ts)",
+      "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_rkDs2yUYZEQ7@ep-proud-pond-adntwlpd-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require\" npx tsx scripts/seed-player-stats-week-1-2-3.ts)",
+      "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_rkDs2yUYZEQ7@ep-proud-pond-adntwlpd-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require\" npx tsx scripts/sync-espn-players.ts)",
+      "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_rkDs2yUYZEQ7@ep-proud-pond-adntwlpd-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require\" npx tsx scripts/setup-week3-matchups.ts)",
+      "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_rkDs2yUYZEQ7@ep-proud-pond-adntwlpd-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require\" npx tsx scripts/test-all-features.js)"
     ],
     "deny": [],
     "ask": []

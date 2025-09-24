@@ -653,10 +653,8 @@ function selectBestAvailablePlayer(
 function determineRosterPosition(position: string, currentRoster: any[]): string {
   const counts = {
     QB: currentRoster.filter(p => p.rosterPosition === 'QB').length,
-    RB1: currentRoster.filter(p => p.rosterPosition === 'RB1').length,
-    RB2: currentRoster.filter(p => p.rosterPosition === 'RB2').length,
-    WR1: currentRoster.filter(p => p.rosterPosition === 'WR1').length,
-    WR2: currentRoster.filter(p => p.rosterPosition === 'WR2').length,
+    RB: currentRoster.filter(p => p.rosterPosition === 'RB').length,
+    WR: currentRoster.filter(p => p.rosterPosition === 'WR').length,
     TE: currentRoster.filter(p => p.rosterPosition === 'TE').length,
     FLEX: currentRoster.filter(p => p.rosterPosition === 'FLEX').length,
     K: currentRoster.filter(p => p.rosterPosition === 'K').length,
@@ -667,13 +665,11 @@ function determineRosterPosition(position: string, currentRoster: any[]): string
     case 'QB':
       return counts.QB === 0 ? 'QB' : 'BENCH';
     case 'RB':
-      if (counts.RB1 === 0) return 'RB1';
-      if (counts.RB2 === 0) return 'RB2';
+      if (counts.RB < 2) return 'RB';
       if (counts.FLEX === 0) return 'FLEX';
       return 'BENCH';
     case 'WR':
-      if (counts.WR1 === 0) return 'WR1';
-      if (counts.WR2 === 0) return 'WR2';
+      if (counts.WR < 2) return 'WR';
       if (counts.FLEX === 0) return 'FLEX';
       return 'BENCH';
     case 'TE':
