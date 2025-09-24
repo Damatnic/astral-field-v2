@@ -13,28 +13,39 @@ import {
 } from 'lucide-react';
 
 const TEAMS = [
-  { id: 1, name: "John Smith", email: "john.smith@test.com", team: "Team Alpha", role: "Manager" },
-  { id: 2, name: "Jane Doe", email: "jane.doe@test.com", team: "Power Squad", role: "Manager" },
-  { id: 3, name: "Mike Johnson", email: "mike.johnson@test.com", team: "Elite Team", role: "Manager" },
-  { id: 4, name: "Sarah Wilson", email: "sarah.wilson@test.com", team: "Victory Squad", role: "Manager" }
+  { id: 1, name: "Nicholas D'Amato", email: "nicholas.damato@astralfield.com", team: "Astral Commanders", role: "Commissioner" },
+  { id: 2, name: "Nick Hartley", email: "nick.hartley@astralfield.com", team: "Hartley's Heroes", role: "Manager" },
+  { id: 3, name: "Jack McCaigue", email: "jack.mccaigue@astralfield.com", team: "Jack Attack", role: "Manager" },
+  { id: 4, name: "Larry McCaigue", email: "larry.mccaigue@astralfield.com", team: "Larry's Legends", role: "Manager" },
+  { id: 5, name: "Renee McCaigue", email: "renee.mccaigue@astralfield.com", team: "Renee's Raiders", role: "Manager" },
+  { id: 6, name: "Jon Kornbeck", email: "jon.kornbeck@astralfield.com", team: "Kornbeck's Crushers", role: "Manager" },
+  { id: 7, name: "David Jarvey", email: "david.jarvey@astralfield.com", team: "Jarvey's Juggernauts", role: "Manager" },
+  { id: 8, name: "Kaity Lorbecki", email: "kaity.lorbecki@astralfield.com", team: "Kaity's Knights", role: "Manager" },
+  { id: 9, name: "Cason Minor", email: "cason.minor@astralfield.com", team: "Minor League Majors", role: "Manager" },
+  { id: 10, name: "Brittany Bergum", email: "brittany.bergum@astralfield.com", team: "Bergum's Ballers", role: "Manager" }
 ];
 
 const TeamCard = ({ team, onSelect, isSelected }: any) => (
   <button
     onClick={() => onSelect(team)}
-    className={`p-4 rounded-lg border text-left transition-all ${
+    className={`p-3 rounded-lg border text-left transition-all relative ${
       isSelected 
         ? 'border-field-green-500 bg-field-green-50' 
         : 'border-gray-200 bg-white hover:border-gray-300'
     }`}
   >
+    {team.role === 'Commissioner' && (
+      <span className="absolute top-2 right-2 px-2 py-1 text-xs bg-field-green-500 text-white rounded">
+        Commissioner
+      </span>
+    )}
     <div className="flex items-center gap-3">
-      <div className="w-12 h-12 rounded-lg bg-field-green-500 flex items-center justify-center text-white font-bold">
+      <div className="w-10 h-10 rounded-lg bg-field-green-500 flex items-center justify-center text-white font-bold text-sm">
         {team.name.split(' ').map((n: string) => n[0]).join('')}
       </div>
       <div>
-        <p className="font-medium text-gray-900">{team.name}</p>
-        <p className="text-sm text-gray-600">{team.team}</p>
+        <p className="font-medium text-gray-900 text-sm">{team.name}</p>
+        <p className="text-xs text-gray-600">{team.team}</p>
       </div>
     </div>
   </button>
@@ -136,13 +147,13 @@ export default function LoginPage() {
         </p>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-2xl">
         <div className="card">
           <div className="card-body">
             {!selectedTeam ? (
               <div className="space-y-4">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Choose Your Team</h3>
-                <div className="space-y-3">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Choose Your Team (10-Man League)</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {TEAMS.map(team => (
                     <TeamCard
                       key={team.id}
