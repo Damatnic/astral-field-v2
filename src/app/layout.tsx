@@ -5,6 +5,7 @@ import QueryProvider from '@/components/QueryProvider';
 import { ResponsiveNavigation, SafeAreaProvider } from '@/components/mobile/ResponsiveUtils';
 import { ToastProvider } from '@/components/ui/Toast';
 import { ThemeProvider } from '@/components/ThemeProvider';
+import PWAInstallPrompt from '@/components/mobile/PWAInstallPrompt';
 
 // Local font configuration (no Google Fonts dependency for faster builds)
 const fontClass = 'font-sans';
@@ -81,6 +82,17 @@ export const metadata: Metadata = {
   other: {
     'msapplication-TileColor': '#3b82f6',
     'theme-color': '#3b82f6',
+    'apple-mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-status-bar-style': 'default',
+    'apple-mobile-web-app-title': 'AstralField',
+    'mobile-web-app-capable': 'yes',
+  },
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 5,
+    userScalable: true,
+    viewportFit: 'cover',
   },
 };
 
@@ -135,6 +147,9 @@ export default function RootLayout({
               >
                 {children}
               </main>
+              
+              {/* PWA Install Prompt */}
+              <PWAInstallPrompt />
               </ToastProvider>
               </SafeAreaProvider>
             </ThemeProvider>

@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev -p 3007",
     "build": "prisma generate && next build",
+    "build:analyze": "ANALYZE=true npm run build",
     "start": "next start -p 3007",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
@@ -42,7 +43,9 @@
     "setup:espn": "tsx scripts/finalize-migration.ts",
     "setup:test-league": "cross-env DATABASE_URL=\"postgresql://neondb_owner:npg_rkDs2yUYZEQ7@ep-proud-pond-adntwlpd-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require\" npx prisma db push --accept-data-loss && cross-env DATABASE_URL=\"postgresql://neondb_owner:npg_rkDs2yUYZEQ7@ep-proud-pond-adntwlpd-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require\" npx tsx scripts/seed-test-league.ts",
     "quick-start": "npm run setup:test-league && npm run dev",
-    "reset:test-league": "cross-env DATABASE_URL=\"postgresql://neondb_owner:npg_rkDs2yUYZEQ7@ep-proud-pond-adntwlpd-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require\" npx prisma migrate reset --force && npm run setup:test-league"
+    "reset:test-league": "cross-env DATABASE_URL=\"postgresql://neondb_owner:npg_rkDs2yUYZEQ7@ep-proud-pond-adntwlpd-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require\" npx prisma migrate reset --force && npm run setup:test-league",
+    "waiver:init": "cross-env DATABASE_URL=\"postgresql://neondb_owner:npg_rkDs2yUYZEQ7@ep-proud-pond-adntwlpd-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require\" npx tsx scripts/initialize-waiver-scheduler.ts",
+    "waiver:test": "cross-env DATABASE_URL=\"postgresql://neondb_owner:npg_rkDs2yUYZEQ7@ep-proud-pond-adntwlpd-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require\" npx tsx scripts/test-waiver-automation.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.10.0",
@@ -155,6 +158,7 @@
     "sonner": "^1.4.0",
     "stream-browserify": "^3.0.0",
     "stream-http": "^3.2.0",
+    "web-push": "^3.6.7",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-react": "^5.17.14",
     "swr": "^2.0.0",
@@ -180,14 +184,18 @@
     "@types/js-cookie": "^3.0.6",
     "@types/lodash": "^4.14.202",
     "@types/node": "^20.11.17",
+    "@types/node-fetch": "^2.6.13",
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-react": "^4.18.3",
     "@types/uuid": "^9.0.8",
+    "@types/web-push": "^3.6.3",
     "eslint": "^8.57.0",
     "eslint-config-next": "^14.1.0",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
+    "node-fetch": "^3.3.2",
     "node-mocks-http": "^1.17.2",
-    "postcss": "^8.4.35"
+    "postcss": "^8.4.35",
+    "webpack-bundle-analyzer": "^4.9.0"
   }
 }

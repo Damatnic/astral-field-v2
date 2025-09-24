@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth/get-session';
 import { prisma } from '@/lib/prisma';
+import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,65 +15,156 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const leagueId = searchParams.get('leagueId');
+    const draftId = searchParams.get('draftId');
 
-    // Get user's leagues or specific league
-    const whereClause = leagueId 
-      ? { id: leagueId }
-      : { teams: { some: { ownerId: session.user.id } } };
-
-    const leagues = await prisma.league.findMany({
-      where: whereClause,
-      include: {
-        teams: {
-          include: {
-            owner: {
-              select: { id: true, name: true, email: true }
+    if (draftId) {
+      // Get specific draft
+      const draft = await prisma.draft.findUnique({
+        where: { id: draftId },
+        include: {
+          league: {
+            include: {
+              teams: {
+                include: {
+                  owner: {
+                    select: { id: true, name: true, email: true }
+                  }
+                }
+              }
             }
           },
-          orderBy: { waiverPriority: 'asc' }
+          picks: {
+            include: {
+              team: {
+                include: {
+                  owner: { select: { id: true, name: true } }
+                }
+              },
+              player: {
+                select: { id: true, name: true, position: true, nflTeam: true }
+              }
+            },
+            orderBy: { pickNumber: 'asc' }
+          },
+          draftOrder: {
+            include: {
+              team: {
+                include: {
+                  owner: { select: { id: true, name: true } }
+                }
+              }
+            },
+            orderBy: { pickOrder: 'asc' }
+          }
         }
-      }
-    });
-
-    // Create draft information from league data
-    const drafts = leagues.map(league => {
-      const draftDate = league.draftDate;
-      const isCompleted = league.teams.every(team => {
-        // Check if team has a full roster (basic heuristic)
-        return true; // For now, assume drafts are completed if league exists
       });
 
-      return {
-        id: `draft-${league.id}`,
-        leagueId: league.id,
-        leagueName: league.name,
-        season: league.season,
-        status: isCompleted ? 'completed' : 'scheduled',
-        draftDate: draftDate,
-        draftType: 'snake', // Default to snake draft
-        teams: league.teams.length,
-        rounds: 16, // Standard fantasy football draft
-        currentPick: isCompleted ? null : 1,
-        currentRound: isCompleted ? null : 1,
-        participants: league.teams.map((team, index) => ({
-          id: team.id,
-          teamName: team.name,
-          ownerName: team.owner.name,
-          draftOrder: index + 1,
-          pickCount: 0 // Would need to calculate from roster
-        })),
-        settings: {
-          timePerPick: 90, // 90 seconds
-          allowTrades: false,
-          autopickEnabled: true
+      if (!draft) {
+        return NextResponse.json({ error: 'Draft not found' }, { status: 404 });
+      }
+
+      // Check if user has access to this draft
+      const userTeam = draft.league.teams.find(team => team.ownerId === session.user.id);
+      if (!userTeam && draft.league.commissionerId !== session.user.id) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      }
+
+      return NextResponse.json({
+        success: true,
+        data: {
+          draft: {
+            id: draft.id,
+            leagueId: draft.leagueId,
+            leagueName: draft.league.name,
+            status: draft.status,
+            type: draft.type,
+            currentRound: draft.currentRound,
+            currentPick: draft.currentPick,
+            currentTeamId: draft.currentTeamId,
+            timePerPick: draft.timePerPick,
+            timeRemaining: draft.timeRemaining,
+            startedAt: draft.startedAt,
+            completedAt: draft.completedAt,
+            picks: draft.picks,
+            draftOrder: draft.draftOrder,
+            participants: draft.league.teams.map(team => ({
+              teamId: team.id,
+              teamName: team.name,
+              ownerName: team.owner.name,
+              ownerId: team.ownerId
+            }))
+          }
         }
-      };
+      });
+    }
+
+    // Get drafts for user's leagues
+    const whereClause = leagueId 
+      ? { leagueId }
+      : { 
+          league: {
+            OR: [
+              { commissionerId: session.user.id },
+              { teams: { some: { ownerId: session.user.id } } }
+            ]
+          }
+        };
+
+    const drafts = await prisma.draft.findMany({
+      where: whereClause,
+      include: {
+        league: {
+          include: {
+            teams: {
+              include: {
+                owner: {
+                  select: { id: true, name: true, email: true }
+                }
+              }
+            }
+          }
+        },
+        picks: {
+          select: { id: true, overallPick: true }
+        },
+        draftOrder: {
+          include: {
+            team: {
+              include: {
+                owner: { select: { id: true, name: true } }
+              }
+            }
+          },
+          orderBy: { pickOrder: 'asc' }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
     });
 
     return NextResponse.json({
       success: true,
       data: {
-        drafts,
+        drafts: drafts.map(draft => ({
+          id: draft.id,
+          leagueId: draft.leagueId,
+          leagueName: draft.league.name,
+          season: draft.league.season,
+          status: draft.status,
+          type: draft.type,
+          currentRound: draft.currentRound,
+          currentPick: draft.currentPick,
+          timePerPick: draft.timePerPick,
+          startedAt: draft.startedAt,
+          completedAt: draft.completedAt,
+          totalPicks: draft.picks.length,
+          totalRounds: draft.totalRounds,
+          participants: draft.draftOrder.map(order => ({
+            position: order.pickOrder,
+            teamId: order.teamId,
+            teamName: order.team.name,
+            ownerName: order.team.owner.name
+          }))
+        })),
         count: drafts.length
       }
     });
@@ -83,6 +175,14 @@ export async function GET(request: NextRequest) {
   }
 }
 
+const createDraftSchema = z.object({
+  leagueId: z.string().min(1, 'League ID is required'),
+  type: z.enum(['SNAKE', 'LINEAR']).default('SNAKE'),
+  timePerPick: z.number().min(30).max(300).default(90),
+  totalRounds: z.number().min(1).max(25).default(16),
+  autostart: z.boolean().default(false)
+});
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession();
@@ -91,16 +191,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { leagueId, draftDate, draftType = 'snake', settings = {} } = await request.json();
-
-    if (!leagueId) {
-      return NextResponse.json({ error: 'League ID is required' }, { status: 400 });
-    }
+    const body = await request.json();
+    const validatedData = createDraftSchema.parse(body);
 
     // Verify user is commissioner of the league
     const league = await prisma.league.findUnique({
-      where: { id: leagueId },
-      include: { teams: true }
+      where: { id: validatedData.leagueId },
+      include: { 
+        teams: {
+          include: {
+            owner: { select: { id: true, name: true } }
+          },
+          orderBy: { createdAt: 'asc' }
+        }
+      }
     });
 
     if (!league) {
@@ -108,18 +212,76 @@ export async function POST(request: NextRequest) {
     }
 
     if (league.commissionerId !== session.user.id) {
-      return NextResponse.json({ error: 'Only commissioners can schedule drafts' }, { status: 403 });
+      return NextResponse.json({ error: 'Only commissioners can create drafts' }, { status: 403 });
     }
 
-    // Update league with draft information
-    const updatedLeague = await prisma.league.update({
-      where: { id: leagueId },
-      data: {
-        draftDate: draftDate ? new Date(draftDate) : null,
-        settings: {
-          ...league.settings as any,
-          draftType,
-          draftSettings: settings
+    if (league.teams.length < 2) {
+      return NextResponse.json({ error: 'League must have at least 2 teams' }, { status: 400 });
+    }
+
+    // Check if draft already exists for this league
+    const existingDraft = await prisma.draft.findFirst({
+      where: { 
+        leagueId: validatedData.leagueId,
+        status: { in: ['SCHEDULED', 'IN_PROGRESS', 'PAUSED'] }
+      }
+    });
+
+    if (existingDraft) {
+      return NextResponse.json({ error: 'League already has an active draft' }, { status: 400 });
+    }
+
+    // Create draft with transaction to ensure data integrity
+    const draft = await prisma.$transaction(async (tx) => {
+      // Create the draft
+      const newDraft = await tx.draft.create({
+        data: {
+          leagueId: validatedData.leagueId,
+          type: validatedData.type,
+          status: validatedData.autostart ? 'IN_PROGRESS' : 'SCHEDULED',
+          timePerPick: validatedData.timePerPick,
+          totalRounds: validatedData.totalRounds,
+          startedAt: validatedData.autostart ? new Date() : null,
+          currentRound: validatedData.autostart ? 1 : 0,
+          currentPick: validatedData.autostart ? 1 : 0,
+          currentTeamId: validatedData.autostart ? league.teams[0].id : null
+        }
+      });
+
+      // Create draft order - randomize team order
+      const shuffledTeams = [...league.teams].sort(() => Math.random() - 0.5);
+      
+      const draftOrderPromises = shuffledTeams.map((team, index) => 
+        tx.draftOrder.create({
+          data: {
+            draftId: newDraft.id,
+            teamId: team.id,
+            pickOrder: index + 1
+          }
+        })
+      );
+
+      await Promise.all(draftOrderPromises);
+
+      return newDraft;
+    });
+
+    // Fetch the complete draft data to return
+    const completeDraft = await prisma.draft.findUnique({
+      where: { id: draft.id },
+      include: {
+        league: {
+          select: { id: true, name: true, season: true }
+        },
+        draftOrder: {
+          include: {
+            team: {
+              include: {
+                owner: { select: { id: true, name: true } }
+              }
+            }
+          },
+          orderBy: { pickOrder: 'asc' }
         }
       }
     });
@@ -127,17 +289,37 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        id: `draft-${leagueId}`,
-        leagueId,
-        draftDate: updatedLeague.draftDate,
-        draftType,
-        settings,
-        message: 'Draft scheduled successfully'
+        draft: {
+          id: completeDraft!.id,
+          leagueId: completeDraft!.leagueId,
+          leagueName: completeDraft!.league.name,
+          season: completeDraft!.league.season,
+          status: completeDraft!.status,
+          type: completeDraft!.type,
+          timePerPick: completeDraft!.timePerPick,
+          totalRounds: completeDraft!.totalRounds,
+          currentRound: completeDraft!.currentRound,
+          currentPick: completeDraft!.currentPick,
+          draftOrder: completeDraft!.draftOrder.map(order => ({
+            position: order.pickOrder,
+            teamId: order.teamId,
+            teamName: order.team.name,
+            ownerName: order.team.owner.name
+          }))
+        },
+        message: 'Draft created successfully'
       }
-    });
+    }, { status: 201 });
 
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ 
+        error: 'Invalid request data', 
+        details: error.errors 
+      }, { status: 400 });
+    }
+    
     console.error('Draft creation error:', error);
-    return NextResponse.json({ error: 'Failed to schedule draft' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to create draft' }, { status: 500 });
   }
 }

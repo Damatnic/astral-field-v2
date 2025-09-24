@@ -17,9 +17,16 @@ export function safeToFixed(
 ): string {
   // Handle null or undefined
   if (value == null) {
-    return defaultValue.includes('.') 
-      ? defaultValue 
-      : Number(defaultValue).toFixed(decimals);
+    // If defaultValue doesn't have decimals, add them
+    if (defaultValue.includes('.')) {
+      return defaultValue;
+    }
+    // Check if defaultValue is a valid number before using toFixed
+    const defaultNum = Number(defaultValue);
+    if (isNaN(defaultNum)) {
+      return defaultValue; // Return as-is if it's not a valid number (like 'N/A')
+    }
+    return defaultNum.toFixed(decimals);
   }
 
   // Try to convert to number
@@ -27,9 +34,16 @@ export function safeToFixed(
   
   // Check if conversion resulted in valid number
   if (isNaN(num) || !isFinite(num)) {
-    return defaultValue.includes('.') 
-      ? defaultValue 
-      : Number(defaultValue).toFixed(decimals);
+    // If defaultValue doesn't have decimals, add them
+    if (defaultValue.includes('.')) {
+      return defaultValue;
+    }
+    // Check if defaultValue is a valid number before using toFixed
+    const defaultNum = Number(defaultValue);
+    if (isNaN(defaultNum)) {
+      return defaultValue; // Return as-is if it's not a valid number (like 'N/A')
+    }
+    return defaultNum.toFixed(decimals);
   }
 
   return num.toFixed(decimals);
@@ -45,8 +59,18 @@ export function safePercentage(
   value: any,
   decimals: number = 1
 ): string {
-  const formatted = safeToFixed(value, decimals, '0');
-  return `${formatted}%`;
+  // Handle null/undefined/NaN first
+  if (value == null) {
+    return '0.0%';
+  }
+  
+  const num = Number(value);
+  if (isNaN(num) || !isFinite(num)) {
+    return '0.0%';
+  }
+  
+  // Convert decimal to percentage (e.g., 0.652 = 65.2%)
+  return `${(num * 100).toFixed(decimals)}%`;
 }
 
 /**

@@ -167,46 +167,126 @@ class DraftWebSocketServer {
   }
 
   private async getDraftState(draftId: string) {
-    // Mock implementation - replace with actual database queries
-    return {
-      id: draftId,
-      status: 'active',
-      currentRound: 1,
-      currentPickNumber: 1,
-      timeRemaining: 90,
-      picks: [],
-      currentPick: {
-        round: 1,
-        pick: 1,
-        teamId: 'team1',
-        teamName: 'Team 1'
+    try {
+      const draft = await prisma.draft.findUnique({
+        where: { id: draftId },
+        include: {
+          league: {
+            include: {
+              teams: {
+                include: {
+                  owner: { select: { id: true, name: true } }
+                }
+              }
+            }
+          },
+          picks: {
+            include: {
+              team: {
+                include: {
+                  owner: { select: { id: true, name: true } }
+                }
+              },
+              player: {
+                select: { id: true, name: true, position: true, nflTeam: true }
+              }
+            },
+            orderBy: { pickNumber: 'asc' }
+          },
+          draftOrder: {
+            include: {
+              team: {
+                include: {
+                  owner: { select: { id: true, name: true } }
+                }
+              }
+            },
+            orderBy: { pickOrder: 'asc' }
+          }
+        }
+      });
+
+      if (!draft) {
+        throw new Error('Draft not found');
       }
-    };
+
+      const currentTeam = draft.draftOrder.find(order => order.teamId === draft.currentTeamId);
+
+      return {
+        id: draft.id,
+        leagueId: draft.leagueId,
+        status: draft.status,
+        type: draft.type,
+        currentRound: draft.currentRound,
+        currentPick: draft.currentPick,
+        timeRemaining: draft.timeRemaining,
+        timePerPick: draft.timePerPick,
+        totalRounds: draft.totalRounds,
+        participants: draft.draftOrder.map(order => ({
+          position: order.pickOrder,
+          teamId: order.teamId,
+          teamName: order.team.name,
+          ownerName: order.team.owner.name,
+          ownerId: order.team.owner.id
+        })),
+        picks: draft.picks.map(pick => ({
+          id: pick.id,
+          round: pick.round,
+          pickInRound: pick.pickInRound,
+          pickNumber: pick.pickNumber,
+          teamId: pick.teamId,
+          teamName: pick.team.name,
+          player: pick.player,
+          pickMadeAt: pick.pickMadeAt
+        })),
+        currentTeam: currentTeam ? {
+          teamId: currentTeam.teamId,
+          teamName: currentTeam.team.name,
+          ownerName: currentTeam.team.owner.name,
+          position: currentTeam.pickOrder
+        } : null,
+        isComplete: draft.status === 'COMPLETED',
+        startedAt: draft.startedAt,
+        completedAt: draft.completedAt
+      };
+    } catch (error) {
+      console.error('Error fetching draft state:', error);
+      throw error;
+    }
   }
 
   private async processDraftPick(pickData: DraftPickData) {
-    // Mock implementation - replace with actual database operations
     try {
-      // Validate pick
-      // Save to database
-      // Calculate next pick
+      // Make API call to process the pick
+      const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3007'}/api/draft/${pickData.draftId}/picks`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          playerId: pickData.playerId,
+          teamId: pickData.teamId
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        return {
+          success: false,
+          error: errorData.error || 'Failed to process pick'
+        };
+      }
+
+      const result = await response.json();
       
       return {
         success: true,
-        pick: {
-          ...pickData,
-          playerName: 'Mock Player',
-          position: 'RB',
-          team: 'SF'
-        },
-        nextUp: {
-          round: pickData.round,
-          pick: pickData.pick + 1,
-          teamId: 'team2',
-          teamName: 'Team 2'
-        }
+        pick: result.data.pick,
+        nextUp: result.data.draftState.nextUp,
+        draftState: result.data.draftState
       };
     } catch (error) {
+      console.error('Error processing draft pick:', error);
       return {
         success: false,
         error: 'Failed to process pick'
@@ -214,13 +294,29 @@ class DraftWebSocketServer {
     }
   }
 
-  private startPickTimer(draftId: string, currentPick: any) {
+  private async startPickTimer(draftId: string, currentPick: any) {
     this.clearPickTimer(draftId);
     
-    let timeRemaining = 90; // 90 seconds per pick
+    // Get current draft state to get the correct time remaining
+    const draft = await prisma.draft.findUnique({
+      where: { id: draftId },
+      select: { timeRemaining: true, timePerPick: true, status: true }
+    });
+
+    if (!draft || draft.status !== 'IN_PROGRESS') {
+      return;
+    }
+
+    let timeRemaining = draft.timeRemaining || draft.timePerPick;
     
-    const timer = setInterval(() => {
+    const timer = setInterval(async () => {
       timeRemaining--;
+      
+      // Update database with current time remaining
+      await prisma.draft.update({
+        where: { id: draftId },
+        data: { timeRemaining }
+      }).catch(err => console.error('Error updating timer:', err));
       
       // Broadcast timer update
       this.io?.to(`draft_${draftId}`).emit('timer_update', {
@@ -231,7 +327,7 @@ class DraftWebSocketServer {
 
       if (timeRemaining <= 0) {
         // Auto-pick logic
-        this.handleAutoPick(draftId, currentPick);
+        await this.handleAutoPick(draftId, currentPick);
         clearInterval(timer);
         this.timers.delete(draftId);
       }
@@ -249,42 +345,142 @@ class DraftWebSocketServer {
   }
 
   private async handleAutoPick(draftId: string, currentPick: any) {
-    // Auto-pick best available player
-    const autoPickData: DraftPickData = {
-      draftId,
-      round: currentPick.round,
-      pick: currentPick.pick,
-      overall: (currentPick.round - 1) * 10 + currentPick.pick, // Assuming 10 teams
-      teamId: currentPick.teamId,
-      playerId: 'auto_pick_player',
-      userId: 'system'
-    };
-
-    const result = await this.processDraftPick(autoPickData);
-    if (result.success) {
-      this.io?.to(`draft_${draftId}`).emit('auto_pick_made', {
-        pick: result.pick,
-        nextUp: result.nextUp,
-        timestamp: new Date().toISOString()
+    try {
+      // Get draft and already picked players
+      const draft = await prisma.draft.findUnique({
+        where: { id: draftId },
+        include: {
+          picks: { select: { playerId: true } }
+        }
       });
 
-      this.startPickTimer(draftId, result.nextUp);
+      if (!draft) {
+        console.error('Draft not found for auto-pick');
+        return;
+      }
+
+      const pickedPlayerIds = draft.picks.map(pick => pick.playerId);
+
+      // Find best available player (simple ranking by ADP)
+      const availablePlayer = await prisma.player.findFirst({
+        where: {
+          id: { notIn: pickedPlayerIds },
+          status: 'active'
+        },
+        orderBy: [
+          { adp: 'asc' },
+          { rank: 'asc' },
+          { name: 'asc' }
+        ]
+      });
+
+      if (!availablePlayer) {
+        console.error('No available players found for auto-pick');
+        return;
+      }
+
+      const autoPickData: DraftPickData = {
+        draftId,
+        round: currentPick.round,
+        pick: currentPick.pick,
+        overall: (currentPick.round - 1) * 10 + currentPick.pick, // Estimate
+        teamId: currentPick.teamId,
+        playerId: availablePlayer.id,
+        userId: 'system'
+      };
+
+      const result = await this.processDraftPick(autoPickData);
+      if (result.success) {
+        this.io?.to(`draft_${draftId}`).emit('auto_pick_made', {
+          pick: result.pick,
+          nextUp: result.nextUp,
+          timestamp: new Date().toISOString()
+        });
+
+        if (result.nextUp) {
+          await this.startPickTimer(draftId, result.nextUp);
+        }
+      }
+    } catch (error) {
+      console.error('Error handling auto-pick:', error);
     }
   }
 
   private async startDraft(draftId: string) {
-    // Mock implementation
-    console.log(`Starting draft ${draftId}`);
+    try {
+      const draft = await prisma.draft.findUnique({
+        where: { id: draftId },
+        include: {
+          draftOrder: {
+            orderBy: { pickOrder: 'asc' },
+            take: 1
+          }
+        }
+      });
+
+      if (!draft) {
+        throw new Error('Draft not found');
+      }
+
+      if (draft.status !== 'SCHEDULED') {
+        throw new Error('Draft cannot be started');
+      }
+
+      const firstTeam = draft.draftOrder[0];
+      
+      await prisma.draft.update({
+        where: { id: draftId },
+        data: {
+          status: 'IN_PROGRESS',
+          startedAt: new Date(),
+          currentRound: 1,
+          currentPick: 1,
+          currentTeamId: firstTeam.teamId,
+          timeRemaining: draft.timePerPick
+        }
+      });
+
+      console.log(`Started draft ${draftId}`);
+    } catch (error) {
+      console.error('Error starting draft:', error);
+      throw error;
+    }
   }
 
   private async pauseDraft(draftId: string) {
-    // Mock implementation
-    console.log(`Pausing draft ${draftId}`);
+    try {
+      await prisma.draft.update({
+        where: { id: draftId },
+        data: {
+          status: 'PAUSED'
+        }
+      });
+
+      console.log(`Paused draft ${draftId}`);
+    } catch (error) {
+      console.error('Error pausing draft:', error);
+      throw error;
+    }
   }
 
   private async resumeDraft(draftId: string) {
-    // Mock implementation
-    console.log(`Resuming draft ${draftId}`);
+    try {
+      await prisma.draft.update({
+        where: { id: draftId },
+        data: {
+          status: 'IN_PROGRESS',
+          timeRemaining: (await prisma.draft.findUnique({
+            where: { id: draftId },
+            select: { timePerPick: true }
+          }))?.timePerPick || 90
+        }
+      });
+
+      console.log(`Resumed draft ${draftId}`);
+    } catch (error) {
+      console.error('Error resuming draft:', error);
+      throw error;
+    }
   }
 
   public cleanup() {

@@ -48,7 +48,11 @@
       "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_rkDs2yUYZEQ7@ep-proud-pond-adntwlpd-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require\" npx tsx scripts/seed-player-stats-week-1-2-3.ts)",
       "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_rkDs2yUYZEQ7@ep-proud-pond-adntwlpd-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require\" npx tsx scripts/sync-espn-players.ts)",
       "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_rkDs2yUYZEQ7@ep-proud-pond-adntwlpd-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require\" npx tsx scripts/setup-week3-matchups.ts)",
-      "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_rkDs2yUYZEQ7@ep-proud-pond-adntwlpd-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require\" npx tsx scripts/test-all-features.js)"
+      "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_rkDs2yUYZEQ7@ep-proud-pond-adntwlpd-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require\" npx tsx scripts/test-all-features.js)",
+      "Bash(npm run test:coverage:*)",
+      "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_rkDs2yUYZEQ7@ep-proud-pond-adntwlpd-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require\" npx tsc --noEmit --skipLibCheck src/lib/cron/waiver-scheduler.ts src/lib/waivers/processor.ts)",
+      "Bash(node:*)",
+      "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_rkDs2yUYZEQ7@ep-proud-pond-adntwlpd-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require\" npx tsx scripts/update-test-league-week4.ts)"
     ],
     "deny": [],
     "ask": []

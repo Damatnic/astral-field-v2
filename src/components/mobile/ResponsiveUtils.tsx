@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, createContext, useContext } from 'react';
 import { usePathname } from 'next/navigation';
 import Navigation from '@/components/Navigation';
 import MobileHeader from '@/components/mobile/MobileOptimizedNavigation';
+import { performanceManager } from '@/lib/mobile/performance';
 
 // Hook to detect mobile devices
 function useIsMobile() {
@@ -78,23 +79,61 @@ export function useTouchDevice() {
 }
 
 // Safe area utilities for mobile devices with notches
+const SafeAreaContext = createContext({
+  top: 0,
+  bottom: 0,
+  left: 0,
+  right: 0,
+});
+
 export function SafeAreaProvider({ children }: { children: React.ReactNode }) {
+  const [safeArea, setSafeArea] = useState({ top: 0, bottom: 0, left: 0, right: 0 });
+
   useEffect(() => {
     // Set CSS custom properties for safe area insets
     const updateSafeAreas = () => {
-      const safeAreaTop = getComputedStyle(document.documentElement).getPropertyValue('--sat') || '0px';
-      const safeAreaBottom = getComputedStyle(document.documentElement).getPropertyValue('--sab') || '0px';
+      const computedStyle = getComputedStyle(document.documentElement);
       
-      document.documentElement.style.setProperty('--safe-area-top', safeAreaTop);
-      document.documentElement.style.setProperty('--safe-area-bottom', safeAreaBottom);
+      const top = parseInt(computedStyle.getPropertyValue('env(safe-area-inset-top)')) || 
+                  parseInt(computedStyle.getPropertyValue('--sat')) || 0;
+      const bottom = parseInt(computedStyle.getPropertyValue('env(safe-area-inset-bottom)')) || 
+                     parseInt(computedStyle.getPropertyValue('--sab')) || 0;
+      const left = parseInt(computedStyle.getPropertyValue('env(safe-area-inset-left)')) || 
+                   parseInt(computedStyle.getPropertyValue('--sal')) || 0;
+      const right = parseInt(computedStyle.getPropertyValue('env(safe-area-inset-right)')) || 
+                    parseInt(computedStyle.getPropertyValue('--sar')) || 0;
+      
+      setSafeArea({ top, bottom, left, right });
+      
+      document.documentElement.style.setProperty('--safe-area-top', `${top}px`);
+      document.documentElement.style.setProperty('--safe-area-bottom', `${bottom}px`);
+      document.documentElement.style.setProperty('--safe-area-left', `${left}px`);
+      document.documentElement.style.setProperty('--safe-area-right', `${right}px`);
     };
 
     updateSafeAreas();
-    window.addEventListener('orientationchange', updateSafeAreas);
+    
+    // Initialize performance manager
+    performanceManager.onNetworkStatusChange((online) => {
+      document.documentElement.classList.toggle('offline', !online);
+    });
+
+    window.addEventListener('orientationchange', () => {
+      setTimeout(updateSafeAreas, 100);
+    });
+    
     return () => window.removeEventListener('orientationchange', updateSafeAreas);
   }, []);
 
-  return <>{children}</>;
+  return (
+    <SafeAreaContext.Provider value={safeArea}>
+      {children}
+    </SafeAreaContext.Provider>
+  );
+}
+
+export function useSafeArea() {
+  return useContext(SafeAreaContext);
 }
 
 // Enhanced mobile utilities

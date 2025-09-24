@@ -2,9 +2,26 @@
 // - Extends jest-dom matchers
 // - Provides stable test environment defaults
 // - Mocks external dependencies and browser APIs
+// - Sets up test database and authentication helpers
 
-import '@testing-library/jest-dom';
-import { TextEncoder, TextDecoder } from 'util';
+require('@testing-library/jest-dom');
+const { TextEncoder, TextDecoder } = require('util');
+
+// Import test helpers (only in Node.js environment)
+let TestDatabase, TestHelpers, AuthTestHelpers;
+if (typeof window === 'undefined') {
+  try {
+    const testDb = require('./__tests__/setup/test-database');
+    const testHelpers = require('./__tests__/setup/test-helpers');
+    const authHelpers = require('./__tests__/setup/auth-helpers');
+    
+    TestDatabase = testDb.TestDatabase;
+    TestHelpers = testHelpers.TestHelpers;
+    AuthTestHelpers = authHelpers.AuthTestHelpers;
+  } catch (error) {
+    console.warn('Test helpers not found - some test features may not work');
+  }
+}
 
 // Ensure a predictable NODE_ENV
 process.env.NODE_ENV = 'test';
@@ -20,10 +37,45 @@ global.TextDecoder = TextDecoder;
 
 // In Node 18+, fetch is available globally. Guard just in case.
 if (typeof global.fetch === 'undefined') {
-  // Lazy import to avoid bundling for environments that already have fetch
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const fetchImpl = require('node-fetch');
-  global.fetch = fetchImpl;
+  try {
+    // Try Node.js built-in fetch first (Node 18+)
+    const { fetch, Request, Response, Headers } = require('undici');
+    global.fetch = fetch;
+    global.Request = Request;
+    global.Response = Response;  
+    global.Headers = Headers;
+  } catch {
+    // Fallback to mock implementations for testing
+    global.fetch = jest.fn(() => Promise.resolve({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({}),
+      text: () => Promise.resolve(''),
+    }));
+    
+    global.Request = class MockRequest {
+      constructor(url, init) {
+        this.url = url;
+        this.method = init?.method || 'GET';
+        this.headers = new Map(Object.entries(init?.headers || {}));
+        this.body = init?.body;
+      }
+    };
+    
+    global.Response = class MockResponse {
+      constructor(body, init) {
+        this.body = body;
+        this.status = init?.status || 200;
+        this.ok = this.status >= 200 && this.status < 300;
+        this.headers = new Map(Object.entries(init?.headers || {}));
+      }
+      
+      async json() { return JSON.parse(this.body || '{}'); }
+      async text() { return this.body || ''; }
+    };
+    
+    global.Headers = Map;
+  }
 }
 
 // Enhanced console handling for cleaner test output
@@ -225,8 +277,24 @@ global.DataTransfer = jest.fn(() => ({
   setDragImage: jest.fn(),
 }));
 
+// Global test setup - runs once before all tests
+beforeAll(async () => {
+  // Skip database setup for now to focus on unit tests
+  // if (TestDatabase && typeof TestDatabase.setup === 'function') {
+  //   try {
+  //     await TestDatabase.setup();
+  //   } catch (error) {
+  //     console.error('Failed to setup test database:', error);
+  //   }
+  // }
+  
+  if (TestHelpers) {
+    TestHelpers.mockExternalAPIs();
+  }
+});
+
 // Clean up between tests
-afterEach(() => {
+afterEach(async () => {
   jest.clearAllMocks();
   jest.clearAllTimers();
   global.localStorage.clear();
@@ -235,10 +303,28 @@ afterEach(() => {
   if (global.fetch && typeof global.fetch.mockClear === 'function') {
     global.fetch.mockClear();
   }
+  
+  // Skip database cleanup for unit tests
+  // if (TestHelpers && typeof TestHelpers.cleanup === 'function') {
+  //   try {
+  //     await TestHelpers.cleanup();
+  //   } catch (error) {
+  //     // Ignore cleanup errors in tests
+  //   }
+  // }
 });
 
 // Restore all mocks after test suite
-afterAll(() => {
+afterAll(async () => {
   jest.restoreAllMocks();
+  
+  // Skip database teardown for unit tests
+  // if (TestDatabase && typeof TestDatabase.teardown === 'function') {
+  //   try {
+  //     await TestDatabase.teardown();
+  //   } catch (error) {
+  //     console.error('Failed to teardown test database:', error);
+  //   }
+  // }
 });
 

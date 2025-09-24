@@ -1,645 +1,250 @@
-'use client';
-
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { motion } from 'framer-motion';
-import {
-  MessageCircle,
-  Search,
-  Play,
-  Pause,
-  Volume2,
-  VolumeX,
-  Send,
-  Bot,
-  User,
-  Wifi,
-  WifiOff
-} from 'lucide-react';
-import { useDraftSSE } from '@/hooks/useDraftSSE';
-import { useAuth } from '@/components/AuthProvider';
-
-interface DraftPick {
-  id: string;
-  round: number;
-  pick: number;
-  overall: number;
-  team: string;
-  player?: {
-    id: string;
-    name: string;
-    position: string;
-    team: string;
-    adp: number;
-    projectedPoints: number;
-    tier: number;
-  };
-  timestamp?: string;
-}
-
-interface AvailablePlayer {
-  id: string;
-  name: string;
-  position: string;
-  team: string;
-  adp: number; // Average Draft Position
-  projectedPoints: number;
-  tier: number;
-  bye: number;
-  injury?: string;
-  news?: string;
-  stats: {
-    lastYear: number;
-    projection: number;
-    consistency: number;
-  };
-}
-
-interface DraftTeam {
-  id: string;
-  name: string;
-  owner: string;
-  draftPosition: number;
-  picks: DraftPick[];
-  isCurrentPick: boolean;
-  isUserTeam: boolean;
-  needsByPosition: Record<string, number>;
-}
-
-interface ChatMessage {
-  id: string;
-  user: string;
-  message: string;
-  timestamp: string;
-  isSystem?: boolean;
-}
+import React, { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/router';
+import { useSession } from 'next-auth/react';
+import { useDraftRoom } from '@/lib/socket/client';
+import DraftBoard from './DraftBoard';
+import PlayerList from './PlayerList';
+import TeamRoster from './TeamRoster';
+import DraftChat from './DraftChat';
+import DraftTimer from './DraftTimer';
+import { toast } from 'react-hot-toast';
 
 interface DraftRoomProps {
   draftId: string;
-  userId?: string;
 }
 
-export default function DraftRoom({ draftId, userId }: DraftRoomProps) {
-  const { user } = useAuth();
-  const [selectedPlayer, setSelectedPlayer] = useState<AvailablePlayer | null>(null);
-  const [availablePlayers, setAvailablePlayers] = useState<AvailablePlayer[]>([]);
-  const [draftBoard, setDraftBoard] = useState<DraftPick[]>([]);
-  const [teams, setTeams] = useState<DraftTeam[]>([]);
-  const [positionFilter, setPositionFilter] = useState<string>('ALL');
+export default function DraftRoom({ draftId }: DraftRoomProps) {
+  const router = useRouter();
+  const { data: session } = useSession();
+  const { draftState, chatMessages, onlineUsers } = useDraftRoom(draftId);
+  
+  const [selectedPlayer, setSelectedPlayer] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [draftData, setDraftData] = useState<any>(null);
+  const [availablePlayers, setAvailablePlayers] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [newMessage, setNewMessage] = useState('');
-  const [soundEnabled, setSoundEnabled] = useState(true);
-  const [autoPickEnabled, setAutoPickEnabled] = useState(false);
-  const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [positionFilter, setPositionFilter] = useState('ALL');
 
-  // WebSocket integration
-  const {
-    isConnected,
-    draftState,
-    chatMessages,
-    makePick,
-    sendChatMessage,
-    startDraft,
-    pauseDraft,
-    resumeDraft,
-    reconnect
-  } = useDraftSSE({
-    draftId,
-    userId: userId || user?.id,
-    username: user?.name || 'Anonymous',
-    onPickMade: (pick) => {
-      setDraftBoard(prev => [...prev, pick]);
-      setAvailablePlayers(prev => prev.filter(p => p.id !== pick.player?.id));
-      if (soundEnabled) {
-        playDraftSound();
-      }
-    },
-    onChatMessage: (message) => {
-      // Chat messages are handled by the hook
-    },
-    onDraftStateUpdate: (state) => {
-      // Draft state updates are handled by the hook
-    },
-    onTimerUpdate: (timeRemaining) => {
-      // Timer updates are handled by the hook
-    },
-    onError: (error) => {
-      setConnectionError(error);
-    }
-  });
-
-  // Derived state from WebSocket
-  const draftStarted = draftState?.status === 'active';
-  const isPaused = draftState?.status === 'paused';
-  const timeRemaining = draftState?.timeRemaining || 90;
-  const currentPick = draftState ? {
-    id: `${draftState.currentRound}-${draftState.currentPick}`,
-    round: draftState.currentRound,
-    pick: draftState.currentPick,
-    overall: (draftState.currentRound - 1) * 10 + draftState.currentPick,
-    team: draftState.currentTeam?.name || 'Unknown Team'
-  } : {
-    id: '1',
-    round: 1,
-    pick: 1,
-    overall: 1,
-    team: 'Thunder Bolts'
-  };
-
-  const chatEndRef = useRef<HTMLDivElement>(null);
-
-  // Real data initialization
+  // Fetch initial draft data
   useEffect(() => {
-    const initializeDraftData = async () => {
-      try {
-        // Fetch available players for the draft
-        const playersResponse = await fetch('/api/players?limit=50&availability=available');
-        if (playersResponse.ok) {
-          const playersData = await playersResponse.json();
-          const players = playersData.data || [];
-          
-          const draftPlayers: AvailablePlayer[] = players.map((player: any) => ({
-            id: player.id,
-            name: player.name,
-            position: player.position,
-            team: player.nflTeam || 'FA',
-            adp: player.adp || Math.random() * 100,
-            projectedPoints: player.projection?.points || player.seasonStats?.totalPoints || 0,
-            tier: Math.ceil((player.searchRank || 50) / 10),
-            bye: player.byeWeek || Math.floor(Math.random() * 17) + 1,
-            stats: {
-              lastYear: player.seasonStats?.totalPoints || 0,
-              projection: player.projection?.points || 0,
-              consistency: player.seasonStats?.consistency / 100 || Math.random()
-            }
-          }));
-          
-          setAvailablePlayers(draftPlayers);
-        }
+    fetchDraftData();
+    fetchAvailablePlayers();
+  }, [draftId]);
 
-        // Fetch draft teams data
-        const teamsResponse = await fetch('/api/teams');
-        if (teamsResponse.ok) {
-          const teamsData = await teamsResponse.json();
-          if (teamsData.success && teamsData.data) {
-            const draftTeams: DraftTeam[] = teamsData.data.map((team: any, index: number) => ({
-              id: team.id,
-              name: team.name,
-              owner: team.owner?.name || `Owner ${index + 1}`,
-              draftPosition: index + 1,
-              picks: [],
-              isCurrentPick: index === 0,
-              isUserTeam: team.ownerId === getCurrentUserId(), // Check if this is user's team
-              needsByPosition: {
-                QB: 2,
-                RB: 5,
-                WR: 5,
-                TE: 2,
-                K: 1,
-                DEF: 1
-              }
-            }));
-            
-            setTeams(draftTeams);
-          } else {
-            // Fallback to mock teams if no real data
-            setTeams(getMockTeams());
-          }
-        } else {
-          setTeams(getMockTeams());
-        }
-
-      } catch (error) {
-        console.error('Error initializing draft data:', error);
-        // Fallback to mock data
-        setAvailablePlayers(getMockPlayers());
-        setTeams(getMockTeams());
-      }
-    };
-
-    initializeDraftData();
-  }, []);
-
-  // Helper function to get current user ID (would need to be implemented based on auth system)
-  const getCurrentUserId = (): string => {
-    // This would typically come from your auth context/session
-    return 'current-user-id'; // Placeholder
+  const fetchDraftData = async () => {
+    try {
+      const response = await fetch(`/api/draft/${draftId}`);
+      if (!response.ok) throw new Error('Failed to fetch draft data');
+      const data = await response.json();
+      setDraftData(data);
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Error fetching draft data:', error);
+      toast.error('Failed to load draft');
+      setIsLoading(false);
+    }
   };
 
-  const getMockPlayers = (): AvailablePlayer[] => [
-    {
-      id: 'p1',
-      name: 'Christian McCaffrey',
-      position: 'RB',
-      team: 'SF',
-      adp: 1.2,
-      projectedPoints: 320,
-      tier: 1,
-      bye: 9,
-      stats: { lastYear: 298, projection: 320, consistency: 0.92 }
-    },
-    {
-      id: 'p2',
-      name: 'Josh Allen',
-      position: 'QB',
-      team: 'BUF',
-      adp: 12.3,
-      projectedPoints: 380,
-      tier: 1,
-      bye: 7,
-      stats: { lastYear: 365, projection: 380, consistency: 0.94 }
+  const fetchAvailablePlayers = async () => {
+    try {
+      const params = new URLSearchParams({
+        position: positionFilter,
+        search: searchQuery,
+        limit: '200'
+      });
+      
+      const response = await fetch(`/api/draft/${draftId}/available-players?${params}`);
+      if (!response.ok) throw new Error('Failed to fetch players');
+      const data = await response.json();
+      setAvailablePlayers(data.players);
+    } catch (error) {
+      console.error('Error fetching available players:', error);
+      toast.error('Failed to load available players');
     }
-  ];
+  };
 
-  const getMockTeams = (): DraftTeam[] => Array.from({ length: 10 }, (_, i) => ({
-    id: `team${i + 1}`,
-    name: `Dynasty Team ${i + 1}`,
-    owner: `Owner ${i + 1}`,
-    draftPosition: i + 1,
-    picks: [],
-    isCurrentPick: i === 0,
-    isUserTeam: i === 2, // User is team 3
-    needsByPosition: {
-      QB: 2,
-      RB: 5,
-      WR: 5,
-      TE: 2,
-      K: 1,
-      DEF: 1
+  // Refetch available players when filters change
+  useEffect(() => {
+    if (draftId) {
+      fetchAvailablePlayers();
     }
-  }));
+  }, [positionFilter, searchQuery, draftState?.picks]);
 
-  // getNextPick is now handled by WebSocket server
+  const handleMakePick = async () => {
+    if (!selectedPlayer) {
+      toast.error('Please select a player');
+      return;
+    }
 
-  const handleDraftPlayer = useCallback(() => {
-    if (!selectedPlayer) return;
+    if (draftState?.currentTeamId !== draftData?.userTeam?.id) {
+      toast.error('Not your turn to pick');
+      return;
+    }
 
-    // Use WebSocket to make the pick
-    makePick(
-      selectedPlayer.id,
-      selectedPlayer.name,
-      selectedPlayer.position,
-      selectedPlayer.team
+    try {
+      const response = await fetch(`/api/draft/${draftId}/make-pick`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          playerId: selectedPlayer.id
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to make pick');
+      }
+
+      toast.success(`Drafted ${selectedPlayer.name}!`);
+      setSelectedPlayer(null);
+      fetchAvailablePlayers();
+    } catch (error) {
+      console.error('Error making pick:', error);
+      toast.error(error.message || 'Failed to make pick');
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading draft room...</p>
+        </div>
+      </div>
     );
+  }
 
-    setSelectedPlayer(null);
-  }, [selectedPlayer, makePick]);
+  if (!draftData || !draftState) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <p className="text-red-600">Failed to load draft room</p>
+          <button
+            onClick={() => router.push('/leagues')}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Back to Leagues
+          </button>
+        </div>
+      </div>
+    );
+  }
 
-  const playDraftSound = () => {
-    // Simple beep sound using Audio API
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-
-    oscillator.frequency.value = 800;
-    oscillator.type = 'sine';
-    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-
-    oscillator.start();
-    oscillator.stop(audioContext.currentTime + 0.5);
-  };
-
-  // Auto-pick and timer countdown are now handled by WebSocket server
-
-  // Auto-scroll chat
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatMessages]);
-
-  const handleStartDraft = () => {
-    startDraft();
-  };
-
-  const handlePauseDraft = () => {
-    if (isPaused) {
-      resumeDraft();
-    } else {
-      pauseDraft();
-    }
-  };
-
-
-
-
-
-
-
-  // System messages are now handled by WebSocket
-
-  const handleSendChatMessage = () => {
-    if (!newMessage.trim()) return;
-
-    sendChatMessage(newMessage);
-    setNewMessage('');
-  };
-
-
-
-  const filteredPlayers = availablePlayers.filter(player => {
-    const matchesPosition = positionFilter === 'ALL' || player.position === positionFilter;
-    const matchesSearch = player.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         player.team.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesPosition && matchesSearch;
-  });
-
-  const getPositionColor = (position: string) => {
-    const colors: Record<string, string> = {
-      QB: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
-      RB: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
-      WR: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-      TE: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
-      K: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
-      DEF: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
-    };
-    return colors[position] || 'bg-gray-100 text-gray-700';
-  };
-
-  const getTierColor = (tier: number) => {
-    const colors = [
-      'border-yellow-400 bg-yellow-50 dark:bg-yellow-900/20',
-      'border-gray-300 bg-gray-50 dark:bg-gray-800/20',
-      'border-orange-400 bg-orange-50 dark:bg-orange-900/20',
-      'border-blue-400 bg-blue-50 dark:bg-blue-900/20',
-      'border-gray-200 bg-white dark:bg-gray-900/20'
-    ];
-    return colors[tier - 1] || colors[4];
-  };
+  const isMyTurn = draftState.currentTeamId === draftData.userTeam?.id;
+  const currentTeam = draftState.teams.find(t => t.id === draftState.currentTeamId);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 p-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="bg-black/40 backdrop-blur-sm rounded-xl p-6 mb-6 border border-white/10">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-white mb-2">
-                2025 Draft Room
-              </h1>
-              <div className="flex items-center gap-4">
-                <p className="text-gray-300">
-                  D&apos;Amato Dynasty League • Snake Draft • 16 Rounds
-                </p>
-                <div className="flex items-center gap-2">
-                  {isConnected ? (
-                    <><Wifi className="h-4 w-4 text-green-400" />
-                    <span className="text-green-400 text-sm">Connected</span></>
-                  ) : (
-                    <><WifiOff className="h-4 w-4 text-red-400" />
-                    <span className="text-red-400 text-sm">Disconnected</span></>
-                  )}
-                </div>
-              </div>
-              {connectionError && (
-                <div className="mt-2 p-2 bg-red-900/50 border border-red-500 rounded text-red-200 text-sm">
-                  Connection Error: {connectionError}
-                  <button 
-                    onClick={reconnect}
-                    className="ml-2 underline hover:no-underline"
-                  >
-                    Reconnect
-                  </button>
-                </div>
-              )}
-            </div>
-            
-            {/* Timer */}
-            <div className="text-center">
-              <div className={`text-5xl font-bold ${
-                timeRemaining <= 10 ? 'text-red-500 animate-pulse' : 'text-white'
-              }`}>
-                {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
-              </div>
-              <p className="text-gray-400 text-sm mt-1">Time Remaining</p>
-            </div>
-
-            {/* Controls */}
-            <div className="flex items-center gap-3">
-              {!draftStarted ? (
-                <button
-                  onClick={handleStartDraft}
-                  className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold flex items-center gap-2 transition-colors"
-                >
-                  <Play className="h-5 w-5" />
-                  Start Draft
-                </button>
-              ) : (
-                <>
-                  <button
-                    onClick={handlePauseDraft}
-                    className="p-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
-                  >
-                    {isPaused ? <Play className="h-5 w-5" /> : <Pause className="h-5 w-5" />}
-                  </button>
-                  <button
-                    onClick={() => setSoundEnabled(!soundEnabled)}
-                    className="p-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
-                  >
-                    {soundEnabled ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
-                  </button>
-                  <button
-                    onClick={() => setAutoPickEnabled(!autoPickEnabled)}
-                    className={`px-4 py-3 rounded-lg font-medium transition-colors ${
-                      autoPickEnabled 
-                        ? 'bg-blue-600 text-white' 
-                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                    }`}
-                  >
-                    <Bot className="h-5 w-5" />
-                  </button>
-                </>
-              )}
-            </div>
+    <div className="h-screen flex flex-col bg-gray-100">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <h1 className="text-xl font-bold">
+              {draftData.draft.league.name} Draft
+            </h1>
+            <span className="text-sm text-gray-600">
+              Round {draftState.currentRound} • Pick {draftState.currentPick}
+            </span>
           </div>
-
-          {/* Current Pick Info */}
-          {draftStarted && (
-            <div className="mt-4 p-4 bg-white/10 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div className="text-white">
-                  <span className="text-sm text-gray-400">On the Clock:</span>
-                  <p className="text-xl font-bold">{currentPick.team}</p>
-                </div>
-                <div className="text-white text-right">
-                  <span className="text-sm text-gray-400">Pick:</span>
-                  <p className="text-xl font-bold">
-                    Round {currentPick.round}, Pick {currentPick.pick} (#{currentPick.overall} Overall)
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Player Pool */}
-          <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl shadow-xl">
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-lg font-semibold mb-3">Available Players</h2>
-              
-              {/* Filters */}
-              <div className="flex gap-2 mb-3">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search players..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
-                  />
-                </div>
-                <select
-                  value={positionFilter}
-                  onChange={(e) => setPositionFilter(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
-                >
-                  <option value="ALL">All Positions</option>
-                  <option value="QB">QB</option>
-                  <option value="RB">RB</option>
-                  <option value="WR">WR</option>
-                  <option value="TE">TE</option>
-                  <option value="K">K</option>
-                  <option value="DEF">DEF</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Player List */}
-            <div className="max-h-[600px] overflow-y-auto p-4">
-              <div className="space-y-2">
-                {filteredPlayers.map((player) => (
-                  <motion.div
-                    key={player.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                      selectedPlayer?.id === player.id
-                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                        : getTierColor(player.tier)
-                    }`}
-                    onClick={() => setSelectedPlayer(player)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <span className={`px-2 py-1 rounded text-xs font-bold ${getPositionColor(player.position)}`}>
-                          {player.position}
-                        </span>
-                        <div>
-                          <p className="font-semibold">{player.name}</p>
-                          <p className="text-xs text-gray-600 dark:text-gray-400">
-                            {player.team} • Bye: {player.bye}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-semibold">{player.projectedPoints} pts</p>
-                        <p className="text-xs text-gray-500">ADP: {player.adp}</p>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-
-            {/* Draft Button */}
-            {selectedPlayer && (
-              <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+          
+          <div className="flex items-center space-x-4">
+            <DraftTimer 
+              timeRemaining={draftState.timeRemaining}
+              isMyTurn={isMyTurn}
+            />
+            
+            {isMyTurn && (
+              <div className="flex items-center space-x-2">
+                <span className="text-sm font-medium text-blue-600">Your turn!</span>
                 <button
-                  onClick={handleDraftPlayer}
-                  className="w-full py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-lg font-semibold transition-all transform hover:scale-105"
+                  onClick={handleMakePick}
+                  disabled={!selectedPlayer}
+                  className={`px-4 py-2 rounded font-medium ${
+                    selectedPlayer
+                      ? 'bg-blue-600 text-white hover:bg-blue-700'
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  }`}
                 >
-                  Draft {selectedPlayer.name}
+                  Draft {selectedPlayer?.name || 'Select Player'}
                 </button>
               </div>
             )}
+            
+            {!isMyTurn && currentTeam && (
+              <span className="text-sm text-gray-600">
+                On the clock: <span className="font-medium">{currentTeam.name}</span>
+              </span>
+            )}
           </div>
+        </div>
+      </div>
 
-          {/* Draft Board */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl">
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-lg font-semibold">Draft Board</h2>
-            </div>
-            <div className="max-h-[600px] overflow-y-auto p-4">
-              <div className="space-y-2">
-                {draftBoard.map((pick) => (
-                  <div key={pick.id} className="flex items-center gap-2 text-sm">
-                    <span className="text-gray-500 w-12">#{pick.overall}</span>
-                    <span className="font-medium w-24 truncate">{pick.team}</span>
-                    {pick.player && (
-                      <>
-                        <span className={`px-2 py-0.5 rounded text-xs font-bold ${
-                          getPositionColor(pick.player.position)
-                        }`}>
-                          {pick.player.position}
-                        </span>
-                        <span className="flex-1 truncate">{pick.player.name}</span>
-                      </>
-                    )}
-                  </div>
-                ))}
-              </div>
+      {/* Main Content */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left Panel - Draft Board */}
+        <div className="w-1/3 bg-white border-r overflow-y-auto">
+          <DraftBoard 
+            picks={draftState.picks}
+            teams={draftState.teams}
+            currentPick={draftState.currentPick}
+          />
+        </div>
+
+        {/* Center Panel - Available Players */}
+        <div className="flex-1 bg-white flex flex-col">
+          <div className="p-4 border-b">
+            <div className="flex items-center space-x-4">
+              <input
+                type="text"
+                placeholder="Search players..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              
+              <select
+                value={positionFilter}
+                onChange={(e) => setPositionFilter(e.target.value)}
+                className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="ALL">All Positions</option>
+                <option value="QB">QB</option>
+                <option value="RB">RB</option>
+                <option value="WR">WR</option>
+                <option value="TE">TE</option>
+                <option value="K">K</option>
+                <option value="DEF">DEF</option>
+              </select>
             </div>
           </div>
+          
+          <div className="flex-1 overflow-y-auto">
+            <PlayerList
+              players={availablePlayers}
+              selectedPlayer={selectedPlayer}
+              onSelectPlayer={setSelectedPlayer}
+              isMyTurn={isMyTurn}
+            />
+          </div>
+        </div>
 
-          {/* Chat */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl">
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <MessageCircle className="h-5 w-5" />
-                Draft Chat
-              </h2>
-            </div>
-            <div className="h-[400px] overflow-y-auto p-4">
-              <div className="space-y-3">
-                {chatMessages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={`${
-                      msg.isSystem
-                        ? 'text-center text-gray-500 italic text-sm'
-                        : 'flex items-start gap-2'
-                    }`}
-                  >
-                    {!msg.isSystem && (
-                      <>
-                        <div className="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
-                          <User className="h-4 w-4" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {msg.user}
-                          </p>
-                          <p className="text-sm">{msg.message}</p>
-                        </div>
-                      </>
-                    )}
-                    {msg.isSystem && <p>{msg.message}</p>}
-                  </div>
-                ))}
-                <div ref={chatEndRef} />
-              </div>
-            </div>
-            <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendChatMessage()}
-                  placeholder="Type a message..."
-                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
-                />
-                <button
-                  onClick={handleSendChatMessage}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-                >
-                  <Send className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
+        {/* Right Panel - Team Roster & Chat */}
+        <div className="w-1/3 bg-white border-l flex flex-col">
+          <div className="flex-1 overflow-y-auto border-b">
+            <TeamRoster
+              team={draftData.userTeam}
+              roster={draftState.teams.find(t => t.id === draftData.userTeam?.id)?.roster || []}
+            />
+          </div>
+          
+          <div className="h-1/3">
+            <DraftChat
+              messages={chatMessages}
+              draftId={draftId}
+            />
           </div>
         </div>
       </div>

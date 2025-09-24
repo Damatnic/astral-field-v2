@@ -8,7 +8,10 @@ const createJestConfig = nextJest({
 // Add any custom config to be passed to Jest
 const customJestConfig = {
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
-  testEnvironment: 'jsdom',
+  testEnvironment: 'jsdom', // Use jsdom by default for React components
+  testEnvironmentOptions: {
+    customExportConditions: ['node', 'node-addons'],
+  },
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     '^@/components/(.*)$': '<rootDir>/src/components/$1',
@@ -19,12 +22,13 @@ const customJestConfig = {
     '<rootDir>/.next/',
     '<rootDir>/node_modules/',
     '<rootDir>/cypress/',
-    '<rootDir>/__tests__/utils/test-helpers.ts',
+    '<rootDir>/src/test-utils/',
   ],
   collectCoverageFrom: [
     'src/**/*.{js,jsx,ts,tsx}',
     '!src/**/*.d.ts',
     '!src/**/*.stories.{js,jsx,ts,tsx}',
+    '!src/test-utils/**/*',
   ],
   transformIgnorePatterns: [
     'node_modules/(?!(uncrypto|@upstash|web-vitals|uuid|nanoid|@hello-pangea|@sentry|isomorphic-dompurify)/)'
@@ -36,11 +40,11 @@ const customJestConfig = {
       useESM: true
     }
   },
-  testTimeout: 10000, // Reasonable timeout for most tests
-  maxWorkers: '50%', // Use half available cores for better performance
-  clearMocks: true, // Clear mocks between tests
-  restoreMocks: true, // Restore original implementations
-  resetMocks: false, // Don't reset mocks completely (preserve manual mocks)
+  testTimeout: 10000,
+  maxWorkers: '50%',
+  clearMocks: true,
+  restoreMocks: true,
+  resetMocks: false
 }
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async

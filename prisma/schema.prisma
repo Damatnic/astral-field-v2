@@ -24,17 +24,26 @@ model User {
   hashedPassword  String?   // For secure password storage
   avatar          String?   // User avatar/emoji
   profileId       String?   // External profile identifier
+  notificationSettings Json? // User notification preferences
+  isAdmin         Boolean   @default(false)
+  lastActiveAt    DateTime?
+  onboardingCompleted Boolean @default(false)
+  onboardingCompletedAt DateTime?
+  onboardingSteps Json?     // Array of completed onboarding steps
   accounts        Account[]
   sessions        Session[]
   userSessions    UserSession[]
   leagues         League[]
   teams           Team[]
-  notifications   Notification[]
   messages        Message[] @relation("UserMessages")
   preferences     UserPreferences?
   auditLogs       AuditLog[]
   playerActivities PlayerActivity[]
   playerNotes     PlayerNote[]
+  feedback        Feedback[] @relation("UserFeedback")
+  feedbackResponses FeedbackResponse[] @relation("UserFeedbackResponses")
+  chatMessages    ChatMessage[]
+  messageReactions MessageReaction[]
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   
@@ -110,6 +119,8 @@ model League {
   matchups        Matchup[]
   transactions    Transaction[]
   messages        Message[]
+  drafts          Draft[]
+  chatMessages    ChatMessage[]
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   
@@ -142,6 +153,12 @@ model Team {
   transactions    Transaction[]
   tradeProposals  TradeProposal[]
   rosterPlayers   RosterPlayer[]
+  
+  // Draft relationships
+  currentDrafts   Draft[]       @relation("CurrentDraftTeam")
+  draftPicks      DraftPick[]   @relation("DraftPickTeam")  
+  draftOrders     DraftOrder[]  @relation("DraftOrderTeam")
+  
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   
@@ -180,6 +197,10 @@ model Player {
   roster          Roster[]
   rosterPlayers   RosterPlayer[]
   news            PlayerNews[]
+  
+  // Draft relationships
+  draftPicks      DraftPick[]   @relation("DraftPickPlayer")
+  
   byeWeek         Int?
   adp             Float?    // Average Draft Position
   rank            Int?
@@ -403,6 +424,86 @@ model ErrorLog {
   @@map("error_logs")
 }
 
+// ==================== DRAFT SYSTEM ====================
+
+model Draft {
+  id              String      @id @default(cuid())
+  leagueId        String
+  league          League      @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  status          DraftStatus @default(SCHEDULED)
+  type            DraftType   @default(SNAKE)
+  settings        Json        // { rounds, timePerPick, startTime, autopickSettings }
+  currentRound    Int         @default(1)
+  currentPick     Int         @default(1)
+  currentTeamId   String?
+  currentTeam     Team?       @relation("CurrentDraftTeam", fields: [currentTeamId], references: [id])
+  timeRemaining   Int         @default(90) // seconds
+  totalRounds     Int         @default(15)
+  timePerPick     Int         @default(90)
+  picks           DraftPick[]
+  draftOrder      DraftOrder[]
+  startedAt       DateTime?
+  pausedAt        DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  @@index([leagueId, status])
+  @@index([status])
+  @@map("drafts")
+}
+
+model DraftPick {
+  id              String    @id @default(cuid())
+  draftId         String
+  draft           Draft     @relation(fields: [draftId], references: [id], onDelete: Cascade)
+  pickNumber      Int       // Overall pick number (1, 2, 3...)
+  round           Int
+  pickInRound     Int       // Pick within round (1, 2, 3...)
+  teamId          String
+  team            Team      @relation("DraftPickTeam", fields: [teamId], references: [id])
+  playerId        String?
+  player          Player?   @relation("DraftPickPlayer", fields: [playerId], references: [id])
+  timeUsed        Int       @default(0) // seconds used for this pick
+  isAutoPick      Boolean   @default(false)
+  autoPickReason  String?   // "timeout", "offline", "manual"
+  pickMadeAt      DateTime  @default(now())
+  
+  @@unique([draftId, pickNumber])
+  @@index([draftId, round])
+  @@index([teamId])
+  @@index([playerId])
+  @@map("draft_picks")
+}
+
+model DraftOrder {
+  id              String    @id @default(cuid())
+  draftId         String
+  draft           Draft     @relation(fields: [draftId], references: [id], onDelete: Cascade)
+  teamId          String
+  team            Team      @relation("DraftOrderTeam", fields: [teamId], references: [id])
+  pickOrder       Int       // 1-10 for 10 team league (draft position)
+  
+  @@unique([draftId, teamId])
+  @@unique([draftId, pickOrder])
+  @@index([draftId])
+  @@map("draft_order")
+}
+
+enum DraftStatus {
+  SCHEDULED
+  IN_PROGRESS  
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+enum DraftType {
+  SNAKE
+  AUCTION
+  LINEAR
+}
+
 // ==================== NEWS & COMMUNICATION ====================
 
 model PlayerNews {
@@ -438,17 +539,63 @@ model Message {
 
 model Notification {
   id              String    @id @default(cuid())
-  userId          String
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   type            String
   title           String
-  message         String
+  body            String
   data            Json?
-  read            Boolean   @default(false)
+  priority        String    @default("normal") // high, normal, low
   createdAt       DateTime  @default(now())
+  targets         NotificationTarget[]
+  delivery        NotificationDelivery[]
   
-  @@index([userId, read])
+  @@index([type])
+  @@index([createdAt])
   @@map("notifications")
+}
+
+model NotificationTarget {
+  id              String       @id @default(cuid())
+  notificationId  String
+  notification    Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  userId          String
+  teamId          String?
+  leagueId        String?
+  createdAt       DateTime     @default(now())
+  
+  @@index([userId])
+  @@index([notificationId])
+  @@map("notification_targets")
+}
+
+model NotificationDelivery {
+  id              String       @id @default(cuid())
+  notificationId  String
+  notification    Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  userId          String
+  status          String       // delivered, failed, pending
+  deliveredAt     DateTime?
+  readAt          DateTime?
+  error           String?
+  createdAt       DateTime     @default(now())
+  
+  @@index([userId])
+  @@index([notificationId])
+  @@unique([notificationId, userId])
+  @@map("notification_delivery")
+}
+
+model PushSubscription {
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  endpoint        String
+  p256dh          String
+  auth            String
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@index([userId])
+  @@map("push_subscriptions")
 }
 
 model UserPreferences {
@@ -571,4 +718,181 @@ enum UserRole {
   ADMIN
   COMMISSIONER
   PLAYER
+}
+
+// ==================== FEEDBACK SYSTEM ====================
+
+model Feedback {
+  id                String             @id @default(cuid())
+  userId            String
+  user              User               @relation("UserFeedback", fields: [userId], references: [id], onDelete: Cascade)
+  type              FeedbackType       @default(GENERAL)
+  category          FeedbackCategory   @default(GENERAL)
+  title             String
+  description       String
+  priority          FeedbackPriority   @default(MEDIUM)
+  status            FeedbackStatus     @default(OPEN)
+  steps             String?            // Steps to reproduce (for bugs)
+  expectedBehavior  String?            // Expected behavior (for bugs)
+  actualBehavior    String?            // Actual behavior (for bugs)
+  browserInfo       String?            // Browser information
+  pageUrl           String?            // Page URL where feedback originated
+  screenshot        String?            // Screenshot URL
+  rating            Int?               // 1-5 rating (for general feedback)
+  responses         FeedbackResponse[]
+  lastResponseAt    DateTime?
+  resolvedAt        DateTime?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  
+  @@index([userId])
+  @@index([type])
+  @@index([category])
+  @@index([priority])
+  @@index([status])
+  @@index([createdAt])
+  @@map("feedback")
+}
+
+model FeedbackResponse {
+  id                  String         @id @default(cuid())
+  feedbackId          String
+  feedback            Feedback       @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+  respondedBy         String
+  respondedByUser     User           @relation("UserFeedbackResponses", fields: [respondedBy], references: [id])
+  response            String
+  status              FeedbackStatus
+  estimatedResolution DateTime?
+  createdAt           DateTime       @default(now())
+  
+  @@index([feedbackId])
+  @@index([respondedBy])
+  @@index([createdAt])
+  @@map("feedback_responses")
+}
+
+enum FeedbackType {
+  BUG
+  FEATURE_REQUEST
+  GENERAL
+  UI_UX
+  PERFORMANCE
+}
+
+enum FeedbackCategory {
+  DRAFT
+  TRADES
+  SCORING
+  MOBILE
+  GENERAL
+  PERFORMANCE
+}
+
+enum FeedbackPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum FeedbackStatus {
+  OPEN
+  ACKNOWLEDGED
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+// ==================== SESSION TRACKING & ANALYTICS ====================
+
+model UserSession {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessionToken  String    @unique
+  ipAddress     String?
+  userAgent     String?
+  duration      Int?      // Session duration in seconds
+  pageViews     Int       @default(0)
+  lastActivity  DateTime  @default(now())
+  createdAt     DateTime  @default(now())
+  
+  @@index([userId])
+  @@index([sessionToken])
+  @@index([createdAt])
+  @@map("user_sessions")
+}
+
+model PerformanceMetric {
+  id          String               @id @default(cuid())
+  metricName  String
+  metricType  PerformanceMetricType
+  value       Float
+  metadata    Json?
+  timestamp   DateTime             @default(now())
+  
+  @@index([metricName])
+  @@index([metricType])
+  @@index([timestamp])
+  @@map("performance_metrics")
+}
+
+enum PerformanceMetricType {
+  PAGE_LOAD
+  API_RESPONSE
+  DATABASE_QUERY
+  CACHE_HIT
+  ERROR_RATE
+  MEMORY_USAGE
+}
+
+// ==================== SOCIAL & CHAT SYSTEM ====================
+
+model ChatMessage {
+  id          String             @id @default(cuid())
+  leagueId    String
+  league      League             @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User               @relation(fields: [userId], references: [id])
+  content     String
+  type        ChatMessageType    @default(TEXT)
+  metadata    String?            // JSON string for additional data
+  replyToId   String?
+  replyTo     ChatMessage?       @relation("MessageReplies", fields: [replyToId], references: [id])
+  replies     ChatMessage[]      @relation("MessageReplies")
+  reactions   MessageReaction[]
+  edited      Boolean            @default(false)
+  editedAt    DateTime?
+  deleted     Boolean            @default(false)
+  deletedAt   DateTime?
+  createdAt   DateTime           @default(now())
+  
+  @@index([leagueId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("chat_messages")
+}
+
+model MessageReaction {
+  id          String       @id @default(cuid())
+  messageId   String
+  message     ChatMessage  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User         @relation(fields: [userId], references: [id])
+  emoji       String
+  createdAt   DateTime     @default(now())
+  
+  @@unique([messageId, userId, emoji])
+  @@index([messageId])
+  @@index([userId])
+  @@map("message_reactions")
+}
+
+enum ChatMessageType {
+  TEXT
+  TRADE
+  SCORE_UPDATE
+  TRASH_TALK
+  ANNOUNCEMENT
+  POLL
 }

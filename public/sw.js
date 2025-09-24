@@ -198,20 +198,37 @@ self.addEventListener('push', (event) => {
     return;
   }
 
-  const data = event.data.json();
-  const options = {
-    body: data.body,
-    icon: '/icon-192.png',
-    badge: '/icon-192.png',
-    tag: data.tag || 'astral-field-notification',
-    data: data.data || {},
-    actions: data.actions || [],
-    requireInteraction: data.requireInteraction || false
-  };
+  try {
+    const data = event.data.json();
+    console.log('[SW] Push data:', data);
 
-  event.waitUntil(
-    self.registration.showNotification(data.title, options)
-  );
+    const options = {
+      body: data.body,
+      icon: data.icon || '/icon-192.png',
+      badge: data.badge || '/icon-192.png',
+      tag: data.tag || 'astral-field-notification',
+      data: data.data || {},
+      actions: data.actions || [],
+      requireInteraction: data.requireInteraction || false,
+      silent: false,
+      timestamp: data.timestamp || Date.now()
+    };
+
+    event.waitUntil(
+      self.registration.showNotification(data.title, options)
+    );
+  } catch (error) {
+    console.error('[SW] Error parsing push data:', error);
+    
+    // Show default notification if parsing fails
+    event.waitUntil(
+      self.registration.showNotification('AstralField', {
+        body: 'You have a new notification',
+        icon: '/icon-192.png',
+        badge: '/icon-192.png'
+      })
+    );
+  }
 });
 
 // Notification click handling
@@ -220,24 +237,115 @@ self.addEventListener('notificationclick', (event) => {
   
   event.notification.close();
 
-  const urlToOpen = event.notification.data?.url || '/';
+  const data = event.notification.data;
+  const action = event.action;
   
+  let url = '/';
+
+  // Handle notification actions
+  if (action === 'view' || action === 'accept' || action === 'reject') {
+    if (data.type === 'trade' && data.tradeId) {
+      url = `/leagues/${data.leagueId}/trades/${data.tradeId}`;
+    } else if (data.type === 'draft' && data.leagueId) {
+      url = `/leagues/${data.leagueId}/draft`;
+    } else if (data.type === 'waivers' && data.leagueId) {
+      url = `/leagues/${data.leagueId}/waivers`;
+    } else if (data.type === 'lineup' && data.leagueId) {
+      url = `/leagues/${data.leagueId}/team`;
+    } else if (data.leagueId) {
+      url = `/leagues/${data.leagueId}`;
+    }
+  } else if (data.action) {
+    // Handle data-driven actions
+    switch (data.action) {
+      case 'view_trade':
+        url = `/leagues/${data.leagueId}/trades`;
+        break;
+      case 'make_pick':
+        url = `/leagues/${data.leagueId}/draft`;
+        break;
+      case 'view_waivers':
+        url = `/leagues/${data.leagueId}/waivers`;
+        break;
+      case 'set_lineup':
+        url = `/leagues/${data.leagueId}/team`;
+        break;
+      case 'view_matchup':
+        url = `/leagues/${data.leagueId}/matchup`;
+        break;
+      case 'view_league':
+        url = `/leagues/${data.leagueId}`;
+        break;
+      default:
+        if (data.leagueId) {
+          url = `/leagues/${data.leagueId}`;
+        }
+        break;
+    }
+  } else if (data.url) {
+    url = data.url;
+  }
+
+  // Handle specific actions like accept/reject
+  if (action === 'accept' && data.type === 'trade' && data.tradeId) {
+    event.waitUntil(
+      fetch(`/api/trades/${data.tradeId}/accept`, {
+        method: 'POST',
+        credentials: 'same-origin'
+      }).then(() => {
+        clients.openWindow(url);
+      }).catch(() => {
+        clients.openWindow(url);
+      })
+    );
+    return;
+  }
+
+  if (action === 'reject' && data.type === 'trade' && data.tradeId) {
+    event.waitUntil(
+      fetch(`/api/trades/${data.tradeId}/reject`, {
+        method: 'POST',
+        credentials: 'same-origin'
+      }).then(() => {
+        clients.openWindow(url);
+      }).catch(() => {
+        clients.openWindow(url);
+      })
+    );
+    return;
+  }
+
+  // Default action - open the appropriate page
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true })
       .then((clientList) => {
-        // Check if a window is already open
-        for (const client of clientList) {
-          if (client.url === urlToOpen && 'focus' in client) {
+        // Check if the page is already open
+        for (let client of clientList) {
+          if (client.url.includes(url.split('?')[0]) && 'focus' in client) {
             return client.focus();
           }
         }
         
-        // Open new window
+        // Open new window/tab
         if (clients.openWindow) {
-          return clients.openWindow(urlToOpen);
+          return clients.openWindow(url);
         }
       })
   );
+
+  // Mark notification as read
+  if (data.notificationId) {
+    fetch('/api/notifications/mark-read', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ notificationId: data.notificationId }),
+      credentials: 'same-origin'
+    }).catch((error) => {
+      console.error('[SW] Failed to mark notification as read:', error);
+    });
+  }
 });
 
 // Helper functions for background sync

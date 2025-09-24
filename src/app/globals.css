@@ -3,6 +3,107 @@
 @tailwind components;
 @tailwind utilities;
 
+/* PWA and Mobile Optimizations */
+@supports (display: standalone) {
+  .pwa-standalone {
+    /* PWA-specific styles when installed as app */
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+}
+
+/* Safe Area Support */
+@supports (padding: max(0px)) {
+  .safe-area-top {
+    padding-top: max(var(--safe-area-inset-top), 1rem);
+  }
+  .safe-area-bottom {
+    padding-bottom: max(var(--safe-area-inset-bottom), 1rem);
+  }
+  .safe-area-left {
+    padding-left: max(var(--safe-area-inset-left), 1rem);
+  }
+  .safe-area-right {
+    padding-right: max(var(--safe-area-inset-right), 1rem);
+  }
+}
+
+/* Mobile Touch Optimizations */
+.mobile .touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Performance Optimizations for Low-End Devices */
+.low-end-device * {
+  animation-duration: 0.2s !important;
+  transition-duration: 0.2s !important;
+}
+
+.low-end-device .disable-hover {
+  pointer-events: none;
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.reduced-motion *,
+.reduced-motion *::before,
+.reduced-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+/* Power Save Mode */
+.power-save-mode * {
+  animation-play-state: paused !important;
+  transition-duration: 0.1s !important;
+}
+
+/* Offline Mode Styles */
+.offline {
+  filter: grayscale(0.3);
+}
+
+.offline .online-only {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Keyboard Navigation Enhancement */
+.keyboard-navigation *:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* High DPI Display Optimizations */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .high-dpi-text {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Landscape Orientation Optimizations */
+.landscape .portrait-only {
+  display: none;
+}
+
+.portrait .landscape-only {
+  display: none;
+}
+
 :root {
   /* 🏈 FANTASY FOOTBALL COLOR PALETTE - Professional Sports Theme */
   
