@@ -4,12 +4,10 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   Trophy,
-  Mail,
-  Lock,
-  Eye,
-  EyeOff,
+  Shield,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  CheckCircle
 } from 'lucide-react';
 
 const TEAMS = [
@@ -25,106 +23,128 @@ const TEAMS = [
   { id: 10, name: "Brittany Bergum", email: "brittany.bergum@astralfield.com", team: "Bergum's Ballers", role: "Manager" }
 ];
 
-const TeamCard = ({ team, onSelect, isSelected }: any) => (
-  <button
-    onClick={() => onSelect(team)}
-    className={`p-3 rounded-lg border text-left transition-all relative ${
-      isSelected 
-        ? 'border-field-green-500 bg-field-green-50' 
-        : 'border-gray-200 bg-white hover:border-gray-300'
-    }`}
-  >
-    {team.role === 'Commissioner' && (
-      <span className="absolute top-2 right-2 px-2 py-1 text-xs bg-field-green-500 text-white rounded">
-        Commissioner
-      </span>
-    )}
-    <div className="flex items-center gap-3">
-      <div className="w-10 h-10 rounded-lg bg-field-green-500 flex items-center justify-center text-white font-bold text-sm">
-        {team.name.split(' ').map((n: string) => n[0]).join('')}
+const TeamCard = ({ team, onQuickLogin, isLoading }: any) => {
+  const [isHovered, setIsHovered] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+  const handleClick = async () => {
+    setIsLoggingIn(true);
+    await onQuickLogin(team);
+    setIsLoggingIn(false);
+  };
+
+  return (
+    <button
+      onClick={handleClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      disabled={isLoading || isLoggingIn}
+      className={`
+        p-4 rounded-lg border-2 text-left transition-all relative
+        ${isLoggingIn 
+          ? 'border-blue-500 bg-blue-50 scale-95' 
+          : isHovered 
+            ? 'border-blue-400 bg-gray-50 shadow-lg scale-105' 
+            : 'border-gray-300 bg-white hover:shadow-md'
+        }
+        ${(isLoading || isLoggingIn) ? 'opacity-75 cursor-wait' : 'cursor-pointer'}
+      `}
+    >
+      {/* Commissioner Badge */}
+      {team.role === 'Commissioner' && (
+        <div className="absolute -top-2 -right-2">
+          <Shield className="w-6 h-6 text-yellow-500 fill-yellow-100" />
+        </div>
+      )}
+
+      {/* Loading Indicator */}
+      {isLoggingIn && (
+        <div className="absolute top-2 right-2">
+          <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
+        </div>
+      )}
+
+      <div className="flex items-center gap-3">
+        {/* Avatar */}
+        <div className={`
+          w-12 h-12 rounded-lg flex items-center justify-center text-white font-bold
+          ${team.role === 'Commissioner' 
+            ? 'bg-gradient-to-br from-yellow-400 to-yellow-600' 
+            : 'bg-gradient-to-br from-blue-500 to-blue-700'
+          }
+        `}>
+          {team.name.split(' ').map((n: string) => n[0]).join('')}
+        </div>
+
+        {/* Team Info */}
+        <div className="flex-1">
+          <p className="font-semibold text-gray-900">{team.name}</p>
+          <p className="text-sm text-gray-700 font-medium">{team.team}</p>
+          {isHovered && !isLoggingIn && (
+            <p className="text-xs text-blue-600 mt-1 font-medium">
+              Click to sign in →
+            </p>
+          )}
+          {isLoggingIn && (
+            <p className="text-xs text-blue-600 mt-1 font-medium">
+              Signing in...
+            </p>
+          )}
+        </div>
       </div>
-      <div>
-        <p className="font-medium text-gray-900 text-sm">{team.name}</p>
-        <p className="text-xs text-gray-600">{team.team}</p>
-      </div>
-    </div>
-  </button>
-);
+    </button>
+  );
+};
 
 export default function LoginPage() {
   const router = useRouter();
-  const [selectedTeam, setSelectedTeam] = useState<any>(null);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
-  useEffect(() => {
-    // Check if user selected a team from landing page
-    const savedEmail = localStorage.getItem('selected_team_email');
-    if (savedEmail) {
-      const team = TEAMS.find(t => t.email === savedEmail);
-      if (team) {
-        setSelectedTeam(team);
-        setEmail(team.email);
-      }
-      localStorage.removeItem('selected_team_email');
-    }
-  }, []);
-
-  const handleTeamSelect = (team: any) => {
-    setSelectedTeam(team);
-    setEmail(team.email);
-  };
-
-  const handleSignIn = async (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log('handleSignIn called');
+  const handleQuickLogin = async (team: any) => {
+    console.log('Quick login for:', team.name);
     setError('');
+    setSuccessMessage('');
     setLoading(true);
 
     try {
-      // Authenticate with credentials
+      // Quick sign-in with default password
       const response = await fetch('/api/auth/simple-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // Important for cookies
+        credentials: 'include',
         body: JSON.stringify({ 
-          email: selectedTeam?.email || email,
-          password: password || 'Dynasty2025!' 
+          email: team.email,
+          password: 'Dynasty2025!'  // Default password for all users
         })
       });
 
-      console.log('Login response:', response.status);
       const data = await response.json();
-      console.log('Login data:', data);
       
       if (response.ok && data.success) {
-        console.log('Login successful, checking session...');
-        // Verify session was created by checking /api/auth/me
+        // Verify session
         const sessionCheck = await fetch('/api/auth/me', {
           credentials: 'include'
         });
         
         const sessionData = await sessionCheck.json();
-        console.log('Session check:', sessionData);
         
         if (sessionCheck.ok && sessionData.success) {
-          console.log('Session valid, redirecting...');
-          // Success animation
-          await new Promise(resolve => setTimeout(resolve, 500));
-          // Try different paths
+          setSuccessMessage(`Welcome back, ${team.name}!`);
+          // Short delay for success message
+          await new Promise(resolve => setTimeout(resolve, 800));
+          // Redirect to dashboard
           window.location.href = '/dashboard';
         } else {
-          setError('Session creation failed');
+          setError('Session creation failed. Please try again.');
         }
       } else {
-        setError(data.error || 'Invalid credentials');
+        setError(data.error || 'Login failed. Please try again.');
       }
     } catch (err) {
       console.error('Login error:', err);
-      setError('Network error. Please try again.');
+      setError('Connection error. Please check your network and try again.');
     } finally {
       setLoading(false);
     }
@@ -132,122 +152,59 @@ export default function LoginPage() {
 
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
-          <div className="w-16 h-16 bg-field-green-500 rounded-2xl flex items-center justify-center">
+          <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-xl">
             <Trophy className="w-10 h-10 text-white" />
           </div>
         </div>
         <h2 className="mt-6 text-center text-3xl font-bold text-gray-900">
-          Fantasy Football League
+          AstralField Dynasty League
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
-          Sign in to manage your team
+          Select your team to sign in
         </p>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-2xl">
-        <div className="card">
-          <div className="card-body">
-            {!selectedTeam ? (
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Choose Your Team (10-Man League)</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {TEAMS.map(team => (
-                    <TeamCard
-                      key={team.id}
-                      team={team}
-                      onSelect={handleTeamSelect}
-                      isSelected={selectedTeam?.id === team.id}
-                    />
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-field-green-500 rounded-lg flex items-center justify-center text-white font-bold text-lg mx-auto mb-3">
-                    {selectedTeam.name.split(' ').map((n: string) => n[0]).join('')}
-                  </div>
-                  <h3 className="text-lg font-medium text-gray-900">{selectedTeam.team}</h3>
-                  <p className="text-sm text-gray-600">{selectedTeam.name}</p>
-                </div>
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-2xl px-4">
+        {/* Success Message */}
+        {successMessage && (
+          <div className="mb-4 p-4 bg-green-50 border-2 border-green-400 rounded-lg flex items-center justify-center gap-2">
+            <CheckCircle className="w-5 h-5 text-green-600" />
+            <span className="text-green-800 font-medium">{successMessage}</span>
+          </div>
+        )}
 
-                <form onSubmit={handleSignIn} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Email
-                    </label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-field-green-500 focus:border-field-green-500"
-                        placeholder="Enter your email"
-                        required
-                      />
-                    </div>
-                  </div>
+        {/* Error Message */}
+        {error && (
+          <div className="mb-4 p-4 bg-red-50 border-2 border-red-400 rounded-lg flex items-center justify-center gap-2">
+            <AlertCircle className="w-5 h-5 text-red-600" />
+            <span className="text-red-800 font-medium">{error}</span>
+          </div>
+        )}
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Password
-                    </label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="pl-10 pr-12 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-field-green-500 focus:border-field-green-500"
-                        placeholder="Enter your password"
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                      >
-                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                      </button>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">Default password: Dynasty2025!</p>
-                  </div>
+        {/* Team Cards Grid */}
+        <div className="bg-white/90 backdrop-blur rounded-xl shadow-xl p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-6 text-center">
+            🏈 10-Team Dynasty League - 2025 Season
+          </h3>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {TEAMS.map(team => (
+              <TeamCard
+                key={team.id}
+                team={team}
+                onQuickLogin={handleQuickLogin}
+                isLoading={loading}
+              />
+            ))}
+          </div>
 
-                  {error && (
-                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
-                      <AlertCircle className="w-5 h-5 text-red-500" />
-                      <span className="text-red-700 text-sm">{error}</span>
-                    </div>
-                  )}
-
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full btn-primary flex items-center justify-center gap-2"
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                        Signing In...
-                      </>
-                    ) : (
-                      'Sign In'
-                    )}
-                  </button>
-                </form>
-
-                <button
-                  onClick={() => setSelectedTeam(null)}
-                  className="w-full text-sm text-gray-600 hover:text-gray-800"
-                >
-                  Choose Different Team
-                </button>
-              </div>
-            )}
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <p className="text-xs text-gray-500 text-center">
+              Quick sign-in enabled • Default password: Dynasty2025!
+            </p>
           </div>
         </div>
       </div>
