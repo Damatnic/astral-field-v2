@@ -125,7 +125,7 @@ export async function GET(request: NextRequest) {
           }
         },
         picks: {
-          select: { id: true, overallPick: true }
+          select: { id: true, pickNumber: true }
         },
         draftOrder: {
           include: {
@@ -236,15 +236,23 @@ export async function POST(request: NextRequest) {
       // Create the draft
       const newDraft = await tx.draft.create({
         data: {
-          leagueId: validatedData.leagueId,
+          league: { connect: { id: validatedData.leagueId } },
           type: validatedData.type,
           status: validatedData.autostart ? 'IN_PROGRESS' : 'SCHEDULED',
+          settings: {
+            rounds: validatedData.totalRounds,
+            timePerPick: validatedData.timePerPick,
+            startTime: validatedData.autostart ? new Date() : null,
+            autopickSettings: {}
+          },
           timePerPick: validatedData.timePerPick,
           totalRounds: validatedData.totalRounds,
           startedAt: validatedData.autostart ? new Date() : null,
           currentRound: validatedData.autostart ? 1 : 0,
           currentPick: validatedData.autostart ? 1 : 0,
-          currentTeamId: validatedData.autostart ? league.teams[0].id : null
+          ...(validatedData.autostart && league.teams[0] ? {
+            currentTeam: { connect: { id: league.teams[0].id } }
+          } : {})
         }
       });
 

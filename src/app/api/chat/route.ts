@@ -410,24 +410,28 @@ async function createMentionNotifications(
     }
   });
   
-  // Create notifications for each mentioned user
-  const notifications = users
-    .filter(user => user.id !== senderId) // Don't notify self
-    .map(user => ({
-      userId: user.id,
-      type: 'NEWS_UPDATE' as const,
-      title: 'You were mentioned in chat',
-      message: `You were mentioned in a chat message`,
+  // Create notifications for each mentioned user  
+  for (const user of users.filter(u => u.id !== senderId)) {
+    const notification = await prisma.notification.create({
       data: {
-        messageId,
-        senderId,
+        type: 'NEWS_UPDATE',
+        title: 'You were mentioned in chat',
+        body: `You were mentioned in a chat message`,
+        data: {
+          messageId,
+          senderId,
+          leagueId
+        }
+      }
+    });
+
+    // Create notification target
+    await prisma.notificationTarget.create({
+      data: {
+        notificationId: notification.id,
+        userId: user.id,
         leagueId
       }
-    }));
-  
-  if (notifications.length > 0) {
-    await prisma.notification.createMany({
-      data: notifications
     });
   }
 }

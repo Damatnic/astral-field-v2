@@ -326,12 +326,11 @@ export async function POST(request: NextRequest) {
       });
       
       // Create notification for team owner
-      await tx.notification.create({
+      const notification = await tx.notification.create({
         data: {
-          userId: team.ownerId,
           type: 'SCORE_UPDATE', // Using existing type, could add BUDGET_UPDATE
           title: 'FAAB Budget Adjusted',
-          message: `Your FAAB budget has been ${finalBudget > oldBudget ? 'increased' : 'decreased'} from $${oldBudget} to $${finalBudget}${reason ? ` - ${reason}` : ''}.`,
+          body: `Your FAAB budget has been ${finalBudget > oldBudget ? 'increased' : 'decreased'} from $${oldBudget} to $${finalBudget}${reason ? ` - ${reason}` : ''}.`,
           data: {
             leagueId,
             teamId,
@@ -340,6 +339,14 @@ export async function POST(request: NextRequest) {
             adjustedBy: session.user.name,
             reason
           }
+        }
+      });
+
+      // Create notification target
+      await tx.notificationTarget.create({
+        data: {
+          notificationId: notification.id,
+          userId: team.ownerId
         }
       });
     });

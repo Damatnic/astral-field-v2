@@ -339,7 +339,7 @@ export default function AchievementDisplay() {
                     </select>
 
                     <Button
-                      variant={showOnlyUnlocked ? "default" : "outline"}
+                      variant={showOnlyUnlocked ? "primary" : "outline"}
                       size="sm"
                       onClick={() => setShowOnlyUnlocked(!showOnlyUnlocked)}
                     >

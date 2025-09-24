@@ -37,7 +37,7 @@ export async function POST(
               select: { id: true, name: true }
             }
           },
-          orderBy: { position: 'asc' }
+          orderBy: { pickOrder: 'asc' }
         }
       }
     });

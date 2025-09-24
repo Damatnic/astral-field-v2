@@ -285,7 +285,7 @@ export default function AIProjectionsPanel({ teamId, week, season }: AIProjectio
           </p>
         </CardHeader>
         <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <Tabs value={activeTab} onValueChange={setActiveTab} defaultValue="projections">
             <TabsList className="mb-4">
               <TabsTrigger value="projections">Player Projections</TabsTrigger>
               <TabsTrigger value="optimizer">Lineup Optimizer</TabsTrigger>

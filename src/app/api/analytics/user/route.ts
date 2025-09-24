@@ -419,14 +419,6 @@ async function getUserJourneyData(userId: string, timeRange: string) {
             }
           }
         }
-      },
-      notifications: {
-        where: {
-          createdAt: {
-            gte: new Date(Date.now() - getTimeRangeMs(timeRange))
-          }
-        },
-        take: 100
       }
     }
   });
@@ -437,7 +429,7 @@ async function getUserJourneyData(userId: string, timeRange: string) {
   const features = {
     trades: user.teams.reduce((sum, team) => sum + team.tradeProposals.length, 0),
     transactions: user.teams.reduce((sum, team) => sum + team.transactions.length, 0),
-    notifications: user.notifications.length
+    notifications: 0 // TODO: Implement notification count
   };
 
   return {

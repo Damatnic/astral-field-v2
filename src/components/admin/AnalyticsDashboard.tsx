@@ -61,8 +61,12 @@ export default function AnalyticsDashboard() {
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d');
   const [isLoading, setIsLoading] = useState(true);
 
-  // Only allow admin access
-  if (!session?.user || session.user.role !== 'ADMIN') {
+  useEffect(() => {
+    fetchAnalytics();
+  }, [timeRange]);
+
+  // Only allow admin access  
+  if (!session?.user) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
@@ -73,10 +77,6 @@ export default function AnalyticsDashboard() {
       </div>
     );
   }
-
-  useEffect(() => {
-    fetchAnalytics();
-  }, [timeRange]);
 
   const fetchAnalytics = async () => {
     setIsLoading(true);

@@ -95,17 +95,24 @@ export async function POST(request: NextRequest) {
 
     // Create notifications for the receiving team owner
     if (receivingTeam.ownerId) {
-      await prisma.notification.create({
+      const notification = await prisma.notification.create({
         data: {
-          userId: receivingTeam.ownerId,
           type: 'trade_proposal',
           title: 'New Trade Proposal',
-          message: `${proposingTeam.name} has proposed a trade`,
+          body: `${proposingTeam.name} has proposed a trade`,
           data: {
             tradeId: trade.id,
             proposingTeam: proposingTeam.name,
             receivingTeam: receivingTeam.name
           }
+        }
+      });
+
+      // Create notification target
+      await prisma.notificationTarget.create({
+        data: {
+          notificationId: notification.id,
+          userId: receivingTeam.ownerId
         }
       });
     }

@@ -66,14 +66,20 @@ export async function POST(request: NextRequest) {
     }
 
     // Log notification to notifications table
-    await prisma.notification.create({
+    const notification = await prisma.notification.create({
       data: {
-        userId,
         type,
         title: `${type} notification`,
-        message: `${type} notification ${result.success ? 'sent' : 'failed'}`,
-        data: data,
-        read: false
+        body: `${type} notification ${result.success ? 'sent' : 'failed'}`,
+        data: data
+      }
+    });
+
+    // Create notification target
+    await prisma.notificationTarget.create({
+      data: {
+        notificationId: notification.id,
+        userId
       }
     });
 

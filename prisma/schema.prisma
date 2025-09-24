@@ -805,24 +805,6 @@ enum FeedbackStatus {
 
 // ==================== SESSION TRACKING & ANALYTICS ====================
 
-model UserSession {
-  id            String    @id @default(cuid())
-  userId        String
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  sessionToken  String    @unique
-  ipAddress     String?
-  userAgent     String?
-  duration      Int?      // Session duration in seconds
-  pageViews     Int       @default(0)
-  lastActivity  DateTime  @default(now())
-  createdAt     DateTime  @default(now())
-  
-  @@index([userId])
-  @@index([sessionToken])
-  @@index([createdAt])
-  @@map("user_sessions")
-}
-
 model PerformanceMetric {
   id          String               @id @default(cuid())
   metricName  String

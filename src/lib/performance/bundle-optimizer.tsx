@@ -265,12 +265,12 @@ const reportPerformanceMetric = async (metrics: PerformanceMetrics) => {
 
 export const createLazyComponent = <P extends object>(
   importFn: () => Promise<{ default: ComponentType<P> }>,
-  fallback?: ComponentType
+  FallbackComponent?: ComponentType
 ) => {
   const LazyComponent = lazy(importFn);
   
   return (props: P) => (
-    <Suspense fallback={fallback ? <fallback /> : <div>Loading...</div>}>
+    <Suspense fallback={FallbackComponent ? <FallbackComponent /> : <div>Loading...</div>}>
       <LazyComponent {...props} />
     </Suspense>
   );

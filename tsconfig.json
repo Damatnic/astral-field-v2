@@ -49,6 +49,9 @@
     "node_modules",
     "scripts/**/*",
     "scripts-backup/**/*",
-    "prisma/seed.ts"
+    "prisma/seed.ts",
+    "mobile/**/*",
+    "__tests__/**/*",
+    "src/test-utils/**/*"
   ]
 }

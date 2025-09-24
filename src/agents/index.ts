@@ -88,9 +88,9 @@ export class NotifierAgent {
   async run(): Promise<void> {
     try {
       // Check for notifications that need to be sent
-      const pendingNotifications = await prisma.notification.count({
+      const pendingNotifications = await prisma.notificationDelivery.count({
         where: {
-          read: false,
+          readAt: null,
           createdAt: {
             gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24 hours
           }
@@ -103,7 +103,6 @@ export class NotifierAgent {
         // Process notifications
         const notifications = await prisma.notification.findMany({
           where: {
-            read: false,
             createdAt: {
               gte: new Date(Date.now() - 24 * 60 * 60 * 1000)
             }
@@ -113,9 +112,10 @@ export class NotifierAgent {
         
         for (const notification of notifications) {
           // Mark as processed (actual sending would require email/push service)
-          await prisma.notification.update({
-            where: { id: notification.id },
-            data: { read: true }
+          // Mark as processed in delivery record
+          await prisma.notificationDelivery.updateMany({
+            where: { notificationId: notification.id },
+            data: { readAt: new Date() }
           });
         }
         

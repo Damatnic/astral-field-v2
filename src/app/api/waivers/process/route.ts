@@ -329,12 +329,11 @@ export async function POST(request: NextRequest) {
             });
             
             // Create success notification
-            await tx.notification.create({
+            const notification = await tx.notification.create({
               data: {
-                userId: claim.team.ownerId,
                 type: 'SCORE_UPDATE',
                 title: 'Waiver Claim Successful',
-                message: `You successfully claimed ${claim.player?.name || 'Unknown Player'} ${claim.faabBid ? `for $${claim.faabBid}` : ''}${claim.dropPlayerId ? ' (player dropped)' : ''}.`,
+                body: `You successfully claimed ${claim.player?.name || 'Unknown Player'} ${claim.faabBid ? `for $${claim.faabBid}` : ''}${claim.dropPlayerId ? ' (player dropped)' : ''}.`,
                 data: {
                   leagueId,
                   playerId: claim.playerId,
@@ -344,6 +343,14 @@ export async function POST(request: NextRequest) {
                   bidAmount: claim.faabBid,
                   successful: true
                 }
+              }
+            });
+
+            // Create notification target
+            await tx.notificationTarget.create({
+              data: {
+                notificationId: notification.id,
+                userId: claim.team.ownerId
               }
             });
           });
@@ -460,12 +467,11 @@ async function markClaimFailed(claimId: string, reason: string) {
     });
     
     // Create failure notification
-    await tx.notification.create({
+    const failureNotification = await tx.notification.create({
       data: {
-        userId: transaction.team.ownerId,
         type: 'SCORE_UPDATE',
         title: 'Waiver Claim Failed',
-        message: `Your waiver claim for ${player?.name || 'Unknown Player'} failed: ${reason}`,
+        body: `Your waiver claim for ${player?.name || 'Unknown Player'} failed: ${reason}`,
         data: {
           leagueId: transaction.leagueId,
           playerId,
@@ -476,6 +482,14 @@ async function markClaimFailed(claimId: string, reason: string) {
           successful: false,
           failureReason: reason
         }
+      }
+    });
+
+    // Create notification target for failure
+    await tx.notificationTarget.create({
+      data: {
+        notificationId: failureNotification.id,
+        userId: transaction.team.ownerId
       }
     });
   });

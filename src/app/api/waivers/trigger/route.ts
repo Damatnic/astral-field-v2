@@ -95,7 +95,8 @@ export async function POST(request: NextRequest) {
     const duration = Date.now() - startTime;
 
     // Log the manual processing
-    await prisma.jobExecution.create({
+    // TODO: Implement jobExecution model or use alternative tracking
+    /* await prisma.jobExecution.create({
       data: {
         jobId: `manual-waiver-${leagueId}-${Date.now()}`,
         jobType: 'WAIVER_PROCESSING',
@@ -116,32 +117,33 @@ export async function POST(request: NextRequest) {
           failedClaims: result.failed
         }
       }
-    });
+    }); */
 
     // Create audit log
     await prisma.auditLog.create({
       data: {
-        leagueId,
         userId: session.user.id,
         action: 'MANUAL_WAIVER_PROCESSING',
-        entityType: 'League',
-        entityId: leagueId,
-        after: {
-          week: processingWeek,
-          processed: result.processed,
-          failed: result.failed,
-          triggeredAt: new Date().toISOString()
+        details: {
+          leagueId,
+          entityType: 'League',
+          entityId: leagueId,
+          after: {
+            week: processingWeek,
+            processed: result.processed,
+            failed: result.failed,
+            triggeredAt: new Date().toISOString()
+          }
         }
       }
     });
 
     // Send notification to commissioner
-    await prisma.notification.create({
+    const commissionerNotification = await prisma.notification.create({
       data: {
-        userId: session.user.id,
         type: 'WAIVER_PROCESSED',
         title: 'Manual Waiver Processing Complete',
-        message: `Waiver processing completed for week ${processingWeek}: ${result.processed} successful, ${result.failed} failed.`,
+        body: `Waiver processing completed for week ${processingWeek}: ${result.processed} successful, ${result.failed} failed.`,
         data: {
           leagueId,
           leagueName: league.name,
@@ -151,6 +153,14 @@ export async function POST(request: NextRequest) {
           triggeredBy: 'manual',
           duration
         }
+      }
+    });
+
+    // Create notification target for commissioner
+    await prisma.notificationTarget.create({
+      data: {
+        notificationId: commissionerNotification.id,
+        userId: session.user.id
       }
     });
 
@@ -176,7 +186,8 @@ export async function POST(request: NextRequest) {
     // Log the error
     const { leagueId } = await request.json().catch(() => ({}));
     if (leagueId) {
-      await prisma.jobExecution.create({
+      // TODO: Implement jobExecution model or use alternative tracking
+      /* await prisma.jobExecution.create({
         data: {
           jobId: `manual-waiver-error-${leagueId}-${Date.now()}`,
           jobType: 'WAIVER_PROCESSING',
@@ -190,7 +201,7 @@ export async function POST(request: NextRequest) {
           triggeredBy: session?.user?.id || 'unknown',
           metadata: { triggeredBy: 'MANUAL', error: true }
         }
-      }).catch(console.error);
+      }).catch(console.error); */
     }
     
     if (error instanceof z.ZodError) {

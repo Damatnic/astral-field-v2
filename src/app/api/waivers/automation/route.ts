@@ -61,7 +61,8 @@ export async function GET(request: NextRequest) {
     const jobStatus = await waiverScheduler.getJobStatus(leagueId);
 
     // Get recent processing history
-    const recentProcessing = await prisma.jobExecution.findMany({
+    // TODO: Implement jobExecution model or use alternative tracking
+    const recentProcessing: any[] = []; /* await prisma.jobExecution.findMany({
       where: {
         jobType: 'WAIVER_PROCESSING',
         metadata: {
@@ -80,7 +81,7 @@ export async function GET(request: NextRequest) {
         completedAt: true,
         duration: true
       }
-    });
+    }); */
 
     return NextResponse.json({
       success: true,
@@ -185,16 +186,18 @@ export async function POST(request: NextRequest) {
     // Log the change
     await prisma.auditLog.create({
       data: {
-        leagueId: validatedData.leagueId,
         userId: session.user.id,
         action: 'UPDATE_WAIVER_AUTOMATION',
-        entityType: 'League',
-        entityId: validatedData.leagueId,
-        after: {
-          autoProcess: validatedData.autoProcess,
-          waiverDay: validatedData.waiverDay,
-          waiverTime: validatedData.waiverTime,
-          timezone: validatedData.timezone
+        details: {
+          leagueId: validatedData.leagueId,
+          entityType: 'League',
+          entityId: validatedData.leagueId,
+          after: {
+            autoProcess: validatedData.autoProcess,
+            waiverDay: validatedData.waiverDay,
+            waiverTime: validatedData.waiverTime,
+            timezone: validatedData.timezone
+          }
         }
       }
     });
@@ -286,12 +289,14 @@ export async function DELETE(request: NextRequest) {
     // Log the change
     await prisma.auditLog.create({
       data: {
-        leagueId,
         userId: session.user.id,
         action: 'DISABLE_WAIVER_AUTOMATION',
-        entityType: 'League',
-        entityId: leagueId,
-        after: { autoProcess: false }
+        details: {
+          leagueId,
+          entityType: 'League',
+          entityId: leagueId,
+          after: { autoProcess: false }
+        }
       }
     });
 

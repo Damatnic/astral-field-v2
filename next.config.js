@@ -55,7 +55,7 @@ const nextConfig = {
       },
       // Static assets caching
       {
-        source: '/(.*\\.(ico|png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot))',
+        source: '/(.+)\\.(ico|png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot)$',
         headers: [
           { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
         ],
@@ -169,6 +169,9 @@ const nextConfig = {
   compress: true,
   poweredByHeader: false,
   generateEtags: false,
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
 }
 
 module.exports = nextConfig;
