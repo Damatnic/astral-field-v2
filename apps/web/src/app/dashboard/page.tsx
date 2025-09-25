@@ -78,7 +78,7 @@ async function getDashboardData(userId: string) {
 
   // Get league standings for user's leagues
   const standings = await Promise.all(
-    userTeams.map(async (team) => {
+    userTeams.map(async (team: any) => {
       const leagueTeams = await prisma.team.findMany({
         where: { leagueId: team.leagueId },
         orderBy: [
