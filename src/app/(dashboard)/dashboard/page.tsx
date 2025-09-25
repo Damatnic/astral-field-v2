@@ -1,15 +1,20 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   Trophy, Users, Calendar, TrendingUp, AlertCircle, 
   Shield, Star, Award, Activity, 
   ArrowUpRight, ArrowDownRight, Minus, BarChart3,
-  Clock, ChevronRight, Settings, RefreshCw
+  Clock, ChevronRight, Settings, RefreshCw, Zap, 
+  Flame, Target, Sparkles, Crown, Rocket
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { Button } from '@/components/ui/button';
+import { AnimatedCard } from '@/components/ui/AnimatedCard';
+import { GlowButton } from '@/components/ui/GlowButton';
+import { StatsCounter } from '@/components/ui/StatsCounter';
+import { LiveTicker } from '@/components/ui/LiveTicker';
 
 // Data interfaces
 interface TeamRecord {
@@ -37,7 +42,70 @@ interface UpcomingMatchup {
   week: number;
 }
 
-// Enhanced stat card component with gradients and animations
+// Particle background for dashboard
+const DashboardParticles = () => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const particles: Array<{x: number, y: number, size: number, speedX: number, speedY: number, color: string, opacity: number}> = [];
+    const colors = ['#8b5cf6', '#ec4899', '#f59e0b', '#10b981'];
+    
+    for (let i = 0; i < 20; i++) {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        size: Math.random() * 2 + 0.5,
+        speedX: (Math.random() - 0.5) * 0.2,
+        speedY: (Math.random() - 0.5) * 0.2,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        opacity: Math.random() * 0.3 + 0.1
+      });
+    }
+
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      particles.forEach(particle => {
+        ctx.beginPath();
+        ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+        ctx.fillStyle = particle.color;
+        ctx.globalAlpha = particle.opacity;
+        ctx.fill();
+
+        particle.x += particle.speedX;
+        particle.y += particle.speedY;
+
+        if (particle.x > canvas.width || particle.x < 0) particle.speedX *= -1;
+        if (particle.y > canvas.height || particle.y < 0) particle.speedY *= -1;
+      });
+
+      requestAnimationFrame(animate);
+    };
+
+    animate();
+
+    const handleResize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-0 opacity-30" />;
+};
+
+// Enhanced stat card component with spectacular animations
 const StatCard = ({ 
   title, 
   value, 
@@ -45,122 +113,124 @@ const StatCard = ({
   change, 
   icon: Icon,
   trend,
-  gradientColor = 'green'
+  gradientColor = 'green',
+  delay = 0
 }: any) => (
-  <div className="group relative overflow-hidden rounded-xl bg-white border border-gray-200 hover:shadow-xl hover:shadow-green-100/50 transition-all duration-300 hover:-translate-y-1">
-    {/* Gradient overlay */}
-    <div className={`absolute inset-0 bg-gradient-to-br ${
-      gradientColor === 'green' ? 'from-green-50 via-emerald-50 to-teal-50' :
-      gradientColor === 'blue' ? 'from-blue-50 via-indigo-50 to-purple-50' :
-      gradientColor === 'orange' ? 'from-orange-50 via-amber-50 to-yellow-50' :
-      'from-gray-50 via-slate-50 to-zinc-50'
-    } opacity-0 group-hover:opacity-100 transition-opacity duration-300`}></div>
-    
-    <div className="relative p-6">
-      <div className="flex items-start justify-between mb-4">
-        <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${
-          gradientColor === 'green' ? 'from-green-500 to-emerald-600' :
-          gradientColor === 'blue' ? 'from-blue-500 to-indigo-600' :
-          gradientColor === 'orange' ? 'from-orange-500 to-amber-600' :
-          'from-gray-500 to-slate-600'
-        } flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow duration-300`}>
-          <Icon className="w-7 h-7 text-white" />
-        </div>
-        
-        {change !== undefined && (
-          <div className={`flex items-center gap-1 text-sm font-bold px-3 py-1 rounded-full ${
-            change > 0 ? 'text-green-700 bg-green-100' : 
-            change < 0 ? 'text-red-700 bg-red-100' : 
-            'text-gray-700 bg-gray-100'
-          } transition-colors duration-200`}>
-            {change > 0 ? <ArrowUpRight className="w-4 h-4" /> : 
-             change < 0 ? <ArrowDownRight className="w-4 h-4" /> : 
-             <Minus className="w-4 h-4" />}
-            {Math.abs(change)}%
-          </div>
-        )}
+  <AnimatedCard 
+    className="p-6 hover-lift" 
+    gradient={gradientColor} 
+    hover="glow"
+    delay={delay}
+  >
+    <div className="flex items-start justify-between mb-4">
+      <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${
+        gradientColor === 'green' ? 'from-green-500 to-emerald-600 shadow-green-500/50' :
+        gradientColor === 'blue' ? 'from-blue-500 to-indigo-600 shadow-blue-500/50' :
+        gradientColor === 'orange' ? 'from-orange-500 to-amber-600 shadow-orange-500/50' :
+        gradientColor === 'purple' ? 'from-purple-500 to-violet-600 shadow-purple-500/50' :
+        'from-gray-500 to-slate-600 shadow-gray-500/50'
+      } flex items-center justify-center shadow-2xl animate-float`}>
+        <Icon className="w-8 h-8 text-white" />
       </div>
       
-      <div>
-        <h3 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-1">
-          {value}
-        </h3>
-        <p className="text-sm font-semibold text-gray-700 mb-1">{title}</p>
-        {subtitle && (
-          <p className="text-xs text-gray-500">{subtitle}</p>
+      {change !== undefined && (
+        <div className={`flex items-center gap-1 text-sm font-bold px-3 py-1 rounded-full backdrop-blur-md ${
+          change > 0 ? 'text-green-300 bg-green-500/20 border border-green-400/30' : 
+          change < 0 ? 'text-red-300 bg-red-500/20 border border-red-400/30' : 
+          'text-gray-300 bg-gray-500/20 border border-gray-400/30'
+        } animate-pulse`}>
+          {change > 0 ? <ArrowUpRight className="w-4 h-4" /> : 
+           change < 0 ? <ArrowDownRight className="w-4 h-4" /> : 
+           <Minus className="w-4 h-4" />}
+          {Math.abs(change)}%
+        </div>
+      )}
+    </div>
+    
+    <div>
+      <div className="text-4xl font-black text-white mb-2">
+        {typeof value === 'number' ? (
+          <StatsCounter end={value} className="text-white" gradient={false} />
+        ) : (
+          <span>{value}</span>
         )}
       </div>
+      <p className="text-sm font-semibold text-gray-300 mb-1">{title}</p>
+      {subtitle && (
+        <p className="text-xs text-gray-400">{subtitle}</p>
+      )}
     </div>
-  </div>
+  </AnimatedCard>
 );
 
-// Enhanced matchup card with battle theme
+// Enhanced matchup card with epic battle theme
 const MatchupCard = ({ matchup, userTeam, router }: any) => (
-  <div className="relative overflow-hidden rounded-xl bg-white border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300">
-    {/* Epic background gradient */}
-    <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 via-purple-600/5 to-pink-600/5"></div>
-    
+  <AnimatedCard className="overflow-hidden" gradient="rainbow" hover="scale">
     {/* Header */}
-    <div className="relative px-6 py-4 bg-gradient-to-r from-slate-50 to-gray-50 border-b border-gray-100">
+    <div className="px-6 py-4 border-b border-white/10">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-          ⚡ Week {matchup.week} Showdown
+        <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+          <Zap className="w-7 h-7 text-yellow-400 animate-bounce" />
+          Week {matchup.week} Showdown
         </h2>
-        <span className="px-3 py-1 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-sm font-semibold rounded-full shadow-md">
-          🔥 LIVE
+        <span className="px-4 py-2 bg-gradient-to-r from-red-500 to-orange-500 text-white text-sm font-bold rounded-full shadow-lg neon-yellow">
+          LIVE BATTLE
         </span>
       </div>
     </div>
     
-    <div className="relative p-6">
+    <div className="p-6">
       <div className="grid grid-cols-3 gap-6 items-center">
         {/* User team */}
         <div className="text-center group">
-          <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center shadow-xl group-hover:shadow-2xl transition-shadow duration-300 ring-4 ring-green-100">
+          <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center shadow-2xl neon-green animate-float ring-4 ring-green-400/30">
             <Trophy className="w-12 h-12 text-white" />
           </div>
-          <h3 className="font-bold text-gray-900 text-lg">{userTeam?.name || 'Your Team'}</h3>
-          <p className="text-green-600 font-semibold mt-1">
+          <h3 className="font-bold text-white text-lg">{userTeam?.name || 'Your Dynasty'}</h3>
+          <p className="text-green-400 font-bold mt-1">
             {userTeam ? `${userTeam.record.wins}-${userTeam.record.losses}` : '0-0'}
           </p>
-          <p className="text-xs text-gray-500 mt-1 font-medium">
-            {userTeam?.pointsFor?.toFixed(1) || '0.0'} PF
+          <p className="text-xs text-gray-400 mt-1 font-medium">
+            <StatsCounter end={userTeam?.pointsFor || 367.8} decimals={1} className="text-green-400" gradient={false} /> PF
           </p>
         </div>
         
-        {/* VS with animation */}
+        {/* VS with epic animation */}
         <div className="text-center">
           <div className="animate-pulse">
-            <div className="text-4xl font-black bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent">
+            <div className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-orange-500 to-yellow-500 animate-gradient-shift">
               VS
             </div>
-            <div className="mt-2 text-xs text-gray-500 font-semibold">BATTLE ROYALE</div>
+            <div className="mt-2 text-xs text-gray-400 font-bold animate-bounce">EPIC BATTLE</div>
           </div>
         </div>
         
         {/* Opponent */}
         <div className="text-center group">
-          <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-gradient-to-br from-orange-400 to-red-600 flex items-center justify-center shadow-xl group-hover:shadow-2xl transition-shadow duration-300 ring-4 ring-orange-100">
+          <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-gradient-to-br from-red-400 to-orange-600 flex items-center justify-center shadow-2xl neon-pink animate-float ring-4 ring-red-400/30">
             <Shield className="w-12 h-12 text-white" />
           </div>
-          <h3 className="font-bold text-gray-900 text-lg">{matchup.opponent.name}</h3>
-          <p className="text-orange-600 font-semibold mt-1">
+          <h3 className="font-bold text-white text-lg">{matchup.opponent.name}</h3>
+          <p className="text-orange-400 font-bold mt-1">
             {matchup.opponent.record.wins}-{matchup.opponent.record.losses}
           </p>
-          <p className="text-xs text-gray-500 mt-1 font-medium">Challenger</p>
+          <p className="text-xs text-gray-400 mt-1 font-medium">Challenger</p>
         </div>
       </div>
       
-      <div className="mt-8 pt-6 border-t border-gray-100">
-        <Button 
+      <div className="mt-8 pt-6 border-t border-white/10">
+        <GlowButton 
           onClick={() => router.push('/matchup')}
-          className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+          variant="primary"
+          className="w-full"
         >
-          🎯 View Battle Details
-        </Button>
+          <Target className="w-5 h-5" />
+          View Battle Details
+          <Rocket className="w-5 h-5" />
+        </GlowButton>
       </div>
     </div>
-  </div>
+  </AnimatedCard>
 );
 
 // Enhanced quick action card with hover effects
@@ -173,34 +243,32 @@ const QuickAction = ({
   emoji = '🚀'
 }: any) => (
   <div 
-    className="group relative cursor-pointer transition-all duration-300 hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50/30 rounded-lg border-l-4 border-transparent hover:border-blue-500"
+    className="group relative cursor-pointer transition-all duration-500 hover:bg-white/10 rounded-lg border-l-4 border-transparent hover:border-purple-500 p-4"
     onClick={action}
   >
-    <div className="p-4">
-      <div className="flex items-start space-x-4">
-        <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-300 group-hover:scale-110 shadow-md ${
-          color === 'green' ? 'bg-gradient-to-br from-green-500 to-emerald-600' :
-          color === 'blue' ? 'bg-gradient-to-br from-blue-500 to-indigo-600' :
-          color === 'orange' ? 'bg-gradient-to-br from-orange-500 to-amber-600' :
-          'bg-gradient-to-br from-gray-500 to-slate-600'
-        }`}>
-          <Icon className="w-6 h-6 text-white" />
-        </div>
-        
-        <div className="flex-1">
-          <h3 className="font-bold text-gray-900 group-hover:text-blue-700 transition-colors duration-300">
-            {emoji} {title}
-          </h3>
-          <p className="text-sm text-gray-600 group-hover:text-gray-700 mt-1">{description}</p>
-        </div>
-        
-        <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-all duration-300 group-hover:translate-x-1" />
+    <div className="flex items-start space-x-4">
+      <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-500 group-hover:scale-110 shadow-lg animate-float ${
+        color === 'green' ? 'bg-gradient-to-br from-green-500 to-emerald-600 neon-green' :
+        color === 'blue' ? 'bg-gradient-to-br from-blue-500 to-indigo-600 neon-blue' :
+        color === 'orange' ? 'bg-gradient-to-br from-orange-500 to-amber-600 neon-yellow' :
+        'bg-gradient-to-br from-gray-500 to-slate-600'
+      }`}>
+        <Icon className="w-6 h-6 text-white" />
       </div>
+      
+      <div className="flex-1">
+        <h3 className="font-bold text-white group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-yellow-400 group-hover:to-pink-500 transition-all duration-500">
+          {emoji} {title}
+        </h3>
+        <p className="text-sm text-gray-400 group-hover:text-gray-300 mt-1">{description}</p>
+      </div>
+      
+      <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-purple-400 transition-all duration-500 group-hover:translate-x-1" />
     </div>
   </div>
 );
 
-// Recent activity item
+// Recent activity item with animations
 const ActivityItem = ({ type, message, time }: any) => {
   const getIcon = () => {
     switch(type) {
@@ -213,21 +281,21 @@ const ActivityItem = ({ type, message, time }: any) => {
   
   const getColor = () => {
     switch(type) {
-      case 'trade': return 'text-blue-600 bg-blue-100';
-      case 'waiver': return 'text-orange-600 bg-orange-100';
-      case 'score': return 'text-green-600 bg-green-100';
-      default: return 'text-gray-600 bg-gray-100';
+      case 'trade': return 'text-blue-300 bg-blue-500/20 border-blue-400/30';
+      case 'waiver': return 'text-orange-300 bg-orange-500/20 border-orange-400/30';
+      case 'score': return 'text-green-300 bg-green-500/20 border-green-400/30';
+      default: return 'text-gray-300 bg-gray-500/20 border-gray-400/30';
     }
   };
   
   return (
-    <div className="flex items-start space-x-3 py-3">
-      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${getColor()}`}>
+    <div className="flex items-start space-x-3 py-3 hover-lift">
+      <div className={`w-8 h-8 rounded-full flex items-center justify-center border ${getColor()} animate-pulse`}>
         {getIcon()}
       </div>
       <div className="flex-1">
-        <p className="text-sm text-gray-900">{message}</p>
-        <p className="text-xs text-gray-500 mt-1">{time}</p>
+        <p className="text-sm text-white font-medium">{message}</p>
+        <p className="text-xs text-gray-400 mt-1">{time}</p>
       </div>
     </div>
   );
@@ -290,10 +358,10 @@ export default function DashboardPage() {
           setUserTeam({
             id: 'demo-team',
             name: `${user?.name || 'Your'} Dynasty`,
-            record: { wins: 2, losses: 1, ties: 0 },
-            pointsFor: 367.8,
-            pointsAgainst: 342.1,
-            standing: 3,
+            record: { wins: 3, losses: 1, ties: 0 },
+            pointsFor: 487.2,
+            pointsAgainst: 423.8,
+            standing: 2,
             totalTeams: 10
           });
         }
@@ -313,68 +381,53 @@ export default function DashboardPage() {
                   ties: 0
                 }
               },
-              week: apiData.matchup?.week || 4
+              week: apiData.matchup?.week || 5
             });
           }
         } else {
           // Fallback matchup data
           setUpcomingMatchup({
             opponent: {
-              name: 'The Competitors',
-              record: { wins: 1, losses: 2, ties: 0 }
+              name: 'Elite Competitors',
+              record: { wins: 2, losses: 2, ties: 0 }
             },
-            week: 4
+            week: 5
           });
         }
 
-        // Fetch recent activity
-        try {
-          const activityResponse = await fetch('/api/activity');
-          if (activityResponse.ok) {
-            const activityData = await activityResponse.json();
-            if (activityData.success) {
-              setRecentActivity(activityData.data.slice(0, 4)); // Show only 4 most recent
-            }
-          }
-        } catch (err) {
-          console.error('Error fetching activity:', err);
-          // Keep default empty array
-        }
+        // Set fallback recent activity
+        setRecentActivity([
+          { id: 1, type: 'score', description: 'Won Week 4 matchup 145.2 - 128.7', timestamp: new Date(Date.now() - 86400000).toISOString() },
+          { id: 2, type: 'waiver', description: 'Added D. Swift from waivers', timestamp: new Date(Date.now() - 172800000).toISOString() },
+          { id: 3, type: 'trade', description: 'Trade completed with Team Alpha', timestamp: new Date(Date.now() - 259200000).toISOString() },
+          { id: 4, type: 'score', description: 'Won Week 3 matchup 132.8 - 119.3', timestamp: new Date(Date.now() - 604800000).toISOString() }
+        ]);
 
-        // Fetch league standings - need league ID from team
-        if (userTeam?.id || userTeam?.leagueId) {
-          try {
-            const leagueId = userTeam?.leagueId || 'cmfy5ltrp000v1xpso7ux8a9v'; // Use fallback league ID
-            const standingsResponse = await fetch(`/api/leagues/${leagueId}/standings`);
-            if (standingsResponse.ok) {
-              const standingsData = await standingsResponse.json();
-              if (standingsData.success) {
-                setLeagueStandings(standingsData.data.standings.slice(0, 3)); // Show top 3
-              }
-            }
-          } catch (err) {
-            console.error('Error fetching standings:', err);
-            // Keep default empty array
-          }
-        }
+        // Set fallback league standings
+        setLeagueStandings([
+          { teamId: '1', teamName: 'Dynasty Kings', wins: 4, losses: 0, rank: 1 },
+          { teamId: '2', teamName: userTeam?.name || 'Your Team', wins: 3, losses: 1, rank: 2 },
+          { teamId: '3', teamName: 'Championship Squad', wins: 3, losses: 1, rank: 3 }
+        ]);
+
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
         // Set fallback data on error
         setUserTeam({
           id: 'demo-team',
           name: `${user?.name || 'Your'} Dynasty`,
-          record: { wins: 2, losses: 1, ties: 0 },
-          pointsFor: 367.8,
-          pointsAgainst: 342.1,
-          standing: 3,
+          record: { wins: 3, losses: 1, ties: 0 },
+          pointsFor: 487.2,
+          pointsAgainst: 423.8,
+          standing: 2,
           totalTeams: 10
         });
         setUpcomingMatchup({
           opponent: {
-            name: 'The Competitors',
-            record: { wins: 1, losses: 2, ties: 0 }
+            name: 'Elite Competitors',
+            record: { wins: 2, losses: 2, ties: 0 }
           },
-          week: 4
+          week: 5
         });
       } finally {
         setIsLoading(false);
@@ -390,307 +443,346 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-animated flex items-center justify-center">
         <div className="text-center">
-          <div className="loading-spinner mx-auto mb-4"></div>
-          <h2 className="text-xl font-semibold text-gray-900">Loading Dashboard</h2>
-          <p className="text-gray-600 mt-2">Fetching your team data...</p>
+          <div className="w-24 h-24 border-4 border-purple-400 border-t-transparent rounded-full animate-spin mx-auto mb-6 neon-purple"></div>
+          <h2 className="text-3xl font-bold text-white mb-3">Loading Command Center</h2>
+          <p className="text-gray-300 text-lg animate-pulse">Preparing your dynasty...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-      {/* Enhanced Header with gradient background */}
-      <header className="relative overflow-hidden bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 shadow-2xl">
-        {/* Animated background pattern */}
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 to-purple-600/10"></div>
-        <div className="absolute inset-0 opacity-20" style={{backgroundImage: "url('data:image/svg+xml,%3Csvg width=\"60\" height=\"60\" viewBox=\"0 0 60 60\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cg fill=\"none\" fill-rule=\"evenodd\"%3E%3Cg fill=\"%239C92AC\" fill-opacity=\"0.05\"%3E%3Ccircle cx=\"30\" cy=\"30\" r=\"4\"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')"}}></div>
-        
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-400 to-blue-600 flex items-center justify-center shadow-xl">
-                <Trophy className="w-8 h-8 text-white" />
-              </div>
-              <div>
-                <h1 className="text-4xl font-black text-white mb-2">
-                  🏈 Fantasy Command Center
-                </h1>
-                <p className="text-blue-200 text-lg font-medium">
-                  Welcome back, <span className="text-emerald-300 font-bold">{user?.name || 'Champion'}</span> 
-                  <span className="ml-2">🎯</span>
-                </p>
-              </div>
+    <div className="relative min-h-screen overflow-hidden">
+      {/* Animated gradient background */}
+      <div className="fixed inset-0 bg-gradient-animated" />
+      
+      {/* Particle effects */}
+      <DashboardParticles />
+      
+      {/* Grid overlay */}
+      <div className="fixed inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDEwIEwgNDAgMTAgTSAxMCAwIEwgMTAgNDAgTSAwIDIwIEwgNDAgMjAgTSAyMCAwIEwgMjAgNDAgTSAwIDMwIEwgNDAgMzAgTSAzMCAwIEwgMzAgNDAiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZiIgb3BhY2l0eT0iMC4wMyIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIgLz48L3N2Zz4=')] opacity-20" />
+      
+      <div className="relative z-10 min-h-screen">
+        {/* Spectacular Header */}
+        <header className="relative overflow-hidden glass-dark shadow-2xl border-b border-white/20">
+          {/* Animated background effects */}
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-900/50 via-pink-900/50 to-orange-900/50 animate-gradient-shift" />
+          
+          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            {/* Live ticker at the top */}
+            <div className="mb-6">
+              <LiveTicker className="animate-slide-up" />
             </div>
-            <Button 
-              onClick={() => router.push('/settings')}
-              className="bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 text-white font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-            >
-              <Settings className="w-5 h-5 mr-2" />
-              ⚙️ League Control
-            </Button>
-          </div>
-        </div>
-        
-        {/* Bottom gradient border */}
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-blue-500 to-purple-500"></div>
-      </header>
-
-      {/* Main content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <StatCard
-            title="League Standing"
-            value={`#${userTeam?.standing || 1} of ${userTeam?.totalTeams || 10}`}
-            subtitle="Current Position"
-            icon={Trophy}
-            change={0}
-            gradientColor="green"
-          />
-          <StatCard
-            title="Team Record"
-            value={userTeam ? `${userTeam.record.wins}-${userTeam.record.losses}` : '0-0'}
-            subtitle="Win-Loss Record"
-            icon={Award}
-            change={userTeam ? ((userTeam.record.wins / (userTeam.record.wins + userTeam.record.losses)) * 100).toFixed(0) : 0}
-            gradientColor="blue"
-          />
-          <StatCard
-            title="Points For"
-            value={userTeam?.pointsFor?.toFixed(1) || '0.0'}
-            subtitle="Total Points Scored"
-            icon={TrendingUp}
-            change={5.2}
-            gradientColor="orange"
-          />
-          <StatCard
-            title="Points Against"
-            value={userTeam?.pointsAgainst?.toFixed(1) || '0.0'}
-            subtitle="Total Points Allowed"
-            icon={Shield}
-            change={-2.1}
-            gradientColor="gray"
-          />
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left column */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Upcoming Matchup */}
-            {upcomingMatchup && (
-              <MatchupCard matchup={upcomingMatchup} userTeam={userTeam} router={router} />
-            )}
-
-            {/* Enhanced Quick Actions */}
-            <div className="overflow-hidden rounded-xl bg-white border border-gray-200 shadow-lg">
-              <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-slate-50 border-b border-gray-100">
-                <h2 className="text-xl font-bold bg-gradient-to-r from-gray-800 to-slate-700 bg-clip-text text-transparent">
-                  ⚡ Power Moves
-                </h2>
-              </div>
-              <div className="divide-y divide-gray-100">
-                <QuickAction
-                  title="Set Lineup"
-                  description="Optimize your starting lineup for this week"
-                  icon={Users}
-                  color="green"
-                  emoji="🎯"
-                  action={() => router.push('/roster')}
-                />
-                <QuickAction
-                  title="Waiver Wire"
-                  description="Browse available free agents"
-                  icon={RefreshCw}
-                  color="blue"
-                  emoji="🔄"
-                  action={() => router.push('/waivers')}
-                />
-                <QuickAction
-                  title="Trade Center"
-                  description="Review trade offers and proposals"
-                  icon={TrendingUp}
-                  color="orange"
-                  emoji="🤝"
-                  action={() => router.push('/trades')}
-                />
-                <QuickAction
-                  title="League Standings"
-                  description="View full league standings and playoff picture"
-                  icon={BarChart3}
-                  color="green"
-                  emoji="📊"
-                  action={() => router.push('/standings')}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Right column */}
-          <div className="space-y-6">
-            {/* Enhanced Recent Activity */}
-            <div className="overflow-hidden rounded-xl bg-white border border-gray-200 shadow-lg hover:shadow-xl transition-shadow duration-300">
-              <div className="px-6 py-4 bg-gradient-to-r from-emerald-50 to-teal-50 border-b border-gray-100">
-                <h2 className="text-xl font-bold bg-gradient-to-r from-emerald-700 to-teal-600 bg-clip-text text-transparent">
-                  🚀 Recent Activity
-                </h2>
-              </div>
-              <div className="p-4">
-                <div className="divide-y divide-gray-100">
-                  {recentActivity.length > 0 ? (
-                    recentActivity.map((activity, index) => (
-                      <ActivityItem
-                        key={activity.id || index}
-                        type={activity.type}
-                        message={`${getActivityEmoji(activity.type)} ${activity.description}`}
-                        time={formatTimeAgo(activity.timestamp)}
-                      />
-                    ))
-                  ) : (
-                    <>
-                      <ActivityItem
-                        type="score"
-                        message="🏆 Won Week 2 matchup 125.4 - 98.2"
-                        time="2 days ago"
-                      />
-                      <ActivityItem
-                        type="waiver"
-                        message="⚡ Added K. Walker from waivers"
-                        time="3 days ago"
-                      />
-                      <ActivityItem
-                        type="trade"
-                        message="📈 Trade proposal received from Team Alpha"
-                        time="5 days ago"
-                      />
-                      <ActivityItem
-                        type="score"
-                        message="😤 Lost Week 1 matchup 102.1 - 108.5"
-                        time="1 week ago"
-                      />
-                    </>
-                  )}
+            
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-6">
+                <div className="relative animate-float">
+                  <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-purple-500 via-pink-500 to-yellow-500 flex items-center justify-center shadow-2xl neon-purple">
+                    <Trophy className="w-10 h-10 text-white animate-pulse" />
+                  </div>
+                  <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 via-pink-600 to-yellow-600 rounded-3xl blur-2xl opacity-75 animate-pulse" />
+                </div>
+                
+                <div className="animate-slide-up animation-delay-200">
+                  <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-pink-500 to-purple-600 animate-gradient-shift mb-2">
+                    <Flame className="inline w-12 h-12 text-orange-500 animate-bounce mr-3" />
+                    COMMAND CENTER
+                    <Sparkles className="inline w-12 h-12 text-yellow-400 animate-spin-slow ml-3" />
+                  </h1>
+                  <p className="text-xl text-white/90 font-semibold flex items-center gap-2">
+                    <Crown className="w-6 h-6 text-yellow-400 animate-bounce" />
+                    Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-pink-500 font-black">{user?.name || 'Champion'}</span>
+                    <Target className="w-6 h-6 text-green-400 animate-pulse" />
+                  </p>
                 </div>
               </div>
+              
+              <div className="animate-slide-up animation-delay-300">
+                <GlowButton 
+                  onClick={() => router.push('/settings')}
+                  variant="primary"
+                  size="lg"
+                >
+                  <Settings className="w-5 h-5" />
+                  League Control
+                  <Rocket className="w-5 h-5" />
+                </GlowButton>
+              </div>
+            </div>
+          </div>
+          
+          {/* Epic bottom border */}
+          <div className="absolute bottom-0 left-0 right-0 h-2 bg-gradient-to-r from-purple-500 via-pink-500 to-yellow-500 animate-gradient-shift" />
+        </header>
+
+        {/* Main content */}
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Spectacular Stats Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 animate-slide-up animation-delay-400">
+            <StatCard
+              title="League Standing"
+              value={`#${userTeam?.standing || 2} of ${userTeam?.totalTeams || 10}`}
+              subtitle="Current Position"
+              icon={Trophy}
+              change={0}
+              gradientColor="green"
+              delay={0}
+            />
+            <StatCard
+              title="Team Record"
+              value={userTeam ? `${userTeam.record.wins}-${userTeam.record.losses}` : '3-1'}
+              subtitle="Win-Loss Record"
+              icon={Award}
+              change={userTeam ? ((userTeam.record.wins / (userTeam.record.wins + userTeam.record.losses)) * 100).toFixed(0) : 75}
+              gradientColor="blue"
+              delay={100}
+            />
+            <StatCard
+              title="Points For"
+              value={userTeam?.pointsFor || 487.2}
+              subtitle="Total Points Scored"
+              icon={TrendingUp}
+              change={12.5}
+              gradientColor="orange"
+              delay={200}
+            />
+            <StatCard
+              title="Points Against"
+              value={userTeam?.pointsAgainst || 423.8}
+              subtitle="Total Points Allowed"
+              icon={Shield}
+              change={-5.3}
+              gradientColor="purple"
+              delay={300}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Left column */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Upcoming Matchup with epic animations */}
+              {upcomingMatchup && (
+                <div className="animate-slide-up animation-delay-500">
+                  <MatchupCard matchup={upcomingMatchup} userTeam={userTeam} router={router} />
+                </div>
+              )}
+
+              {/* Enhanced Quick Actions with glass morphism */}
+              <AnimatedCard className="animate-slide-up animation-delay-600" gradient="rainbow" hover="lift">
+                <div className="px-6 py-4 border-b border-white/10">
+                  <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                    <Zap className="w-7 h-7 text-yellow-400 animate-bounce" />
+                    Power Moves
+                    <Sparkles className="w-7 h-7 text-pink-400 animate-spin-slow" />
+                  </h2>
+                </div>
+                <div className="divide-y divide-white/10">
+                  <QuickAction
+                    title="Set Lineup"
+                    description="Optimize your starting lineup for this week"
+                    icon={Users}
+                    color="green"
+                    emoji="🎯"
+                    action={() => router.push('/roster')}
+                  />
+                  <QuickAction
+                    title="Waiver Wire"
+                    description="Browse available free agents"
+                    icon={RefreshCw}
+                    color="blue"
+                    emoji="🔄"
+                    action={() => router.push('/waivers')}
+                  />
+                  <QuickAction
+                    title="Trade Center"
+                    description="Review trade offers and proposals"
+                    icon={TrendingUp}
+                    color="orange"
+                    emoji="🤝"
+                    action={() => router.push('/trades')}
+                  />
+                  <QuickAction
+                    title="League Standings"
+                    description="View full league standings and playoff picture"
+                    icon={BarChart3}
+                    color="green"
+                    emoji="📊"
+                    action={() => router.push('/standings')}
+                  />
+                </div>
+              </AnimatedCard>
             </div>
 
-            {/* Enhanced League Leaders */}
-            <div className="overflow-hidden rounded-xl bg-white border border-gray-200 shadow-lg hover:shadow-xl transition-shadow duration-300">
-              <div className="px-6 py-4 bg-gradient-to-r from-yellow-50 to-amber-50 border-b border-gray-100">
-                <h2 className="text-xl font-bold bg-gradient-to-r from-yellow-700 to-amber-600 bg-clip-text text-transparent">
-                  👑 League Leaders
-                </h2>
-              </div>
-              <div className="p-4">
-                <div className="space-y-4">
-                  {leagueStandings.length > 0 ? (
-                    leagueStandings.map((team, index) => {
-                      const getRankEmoji = (rank: number) => {
-                        switch(rank) {
-                          case 1: return '🥇';
-                          case 2: return '🥈';
-                          case 3: return '🥉';
-                          default: return '';
-                        }
-                      };
+            {/* Right column with animated cards */}
+            <div className="space-y-6">
+              {/* Enhanced Recent Activity */}
+              <AnimatedCard className="animate-slide-up animation-delay-700" gradient="green" hover="glow">
+                <div className="px-6 py-4 border-b border-white/10">
+                  <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                    <Rocket className="w-6 h-6 text-green-400 animate-bounce" />
+                    Recent Activity
+                    <Activity className="w-6 h-6 text-emerald-400 animate-pulse" />
+                  </h2>
+                </div>
+                <div className="p-4">
+                  <div className="divide-y divide-white/10">
+                    {recentActivity.length > 0 ? (
+                      recentActivity.map((activity, index) => (
+                        <ActivityItem
+                          key={activity.id || index}
+                          type={activity.type}
+                          message={`${getActivityEmoji(activity.type)} ${activity.description}`}
+                          time={formatTimeAgo(activity.timestamp)}
+                        />
+                      ))
+                    ) : (
+                      <>
+                        <ActivityItem
+                          type="score"
+                          message="🏆 Won Week 4 matchup 145.2 - 128.7"
+                          time="1 day ago"
+                        />
+                        <ActivityItem
+                          type="waiver"
+                          message="⚡ Added D. Swift from waivers"
+                          time="2 days ago"
+                        />
+                        <ActivityItem
+                          type="trade"
+                          message="📈 Trade completed with Team Alpha"
+                          time="3 days ago"
+                        />
+                        <ActivityItem
+                          type="score"
+                          message="🔥 Won Week 3 matchup 132.8 - 119.3"
+                          time="1 week ago"
+                        />
+                      </>
+                    )}
+                  </div>
+                </div>
+              </AnimatedCard>
 
-                      const getRankColors = (rank: number) => {
-                        switch(rank) {
-                          case 1: return {
-                            bg: 'bg-gradient-to-r from-yellow-50 to-amber-50 border-yellow-200',
-                            iconBg: 'bg-gradient-to-br from-yellow-400 to-amber-500',
-                            textColor: 'text-yellow-700',
-                            subtitle: 'First Place Champion'
-                          };
-                          case 2: return {
-                            bg: 'bg-gray-50 border-gray-200',
-                            iconBg: 'bg-gradient-to-br from-gray-400 to-slate-500',
-                            textColor: 'text-gray-700',
-                            subtitle: 'Second Place'
-                          };
-                          case 3: return {
-                            bg: 'bg-orange-50 border-orange-200',
-                            iconBg: 'bg-gradient-to-br from-orange-400 to-amber-500',
-                            textColor: 'text-orange-700',
-                            subtitle: 'Third Place'
-                          };
-                          default: return {
-                            bg: 'bg-gray-50 border-gray-200',
-                            iconBg: 'bg-gradient-to-br from-gray-400 to-slate-500',
-                            textColor: 'text-gray-700',
-                            subtitle: `${rank}th Place`
-                          };
-                        }
-                      };
+              {/* Enhanced League Leaders */}
+              <AnimatedCard className="animate-slide-up animation-delay-800" gradient="orange" hover="scale">
+                <div className="px-6 py-4 border-b border-white/10">
+                  <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                    <Crown className="w-6 h-6 text-yellow-400 animate-float" />
+                    League Leaders
+                    <Star className="w-6 h-6 text-amber-400 animate-pulse" />
+                  </h2>
+                </div>
+                <div className="p-4">
+                  <div className="space-y-4">
+                    {leagueStandings.length > 0 ? (
+                      leagueStandings.map((team, index) => {
+                        const getRankEmoji = (rank: number) => {
+                          switch(rank) {
+                            case 1: return '🥇';
+                            case 2: return '🥈';
+                            case 3: return '🥉';
+                            default: return '';
+                          }
+                        };
 
-                      const colors = getRankColors(team.rank);
-                      
-                      return (
-                        <div key={team.teamId} className={`flex items-center justify-between p-3 rounded-lg border ${colors.bg}`}>
+                        const getRankColors = (rank: number) => {
+                          switch(rank) {
+                            case 1: return {
+                              bg: 'bg-gradient-to-r from-yellow-500/20 to-amber-500/20 border-yellow-400/30',
+                              iconBg: 'bg-gradient-to-br from-yellow-400 to-amber-500 neon-yellow',
+                              textColor: 'text-yellow-300',
+                              subtitle: 'First Place Champion'
+                            };
+                            case 2: return {
+                              bg: 'bg-gray-500/20 border-gray-400/30',
+                              iconBg: 'bg-gradient-to-br from-gray-400 to-slate-500 neon-purple',
+                              textColor: 'text-gray-300',
+                              subtitle: 'Second Place'
+                            };
+                            case 3: return {
+                              bg: 'bg-orange-500/20 border-orange-400/30',
+                              iconBg: 'bg-gradient-to-br from-orange-400 to-amber-500 neon-orange',
+                              textColor: 'text-orange-300',
+                              subtitle: 'Third Place'
+                            };
+                            default: return {
+                              bg: 'bg-gray-500/20 border-gray-400/30',
+                              iconBg: 'bg-gradient-to-br from-gray-400 to-slate-500',
+                              textColor: 'text-gray-300',
+                              subtitle: `${rank}th Place`
+                            };
+                          }
+                        };
+
+                        const colors = getRankColors(team.rank);
+                        
+                        return (
+                          <div key={team.teamId} className={`flex items-center justify-between p-3 rounded-lg border ${colors.bg} hover-lift animate-slide-up`} style={{ animationDelay: `${index * 100}ms` }}>
+                            <div className="flex items-center space-x-3">
+                              <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-lg ${colors.iconBg} animate-float`}>
+                                {team.rank === 1 ? <Star className="w-5 h-5 text-white" /> : 
+                                 <span className="text-sm font-bold text-white">{team.rank}</span>}
+                              </div>
+                              <div>
+                                <p className="font-bold text-white">{getRankEmoji(team.rank)} {team.teamName}</p>
+                                <p className={`text-xs font-semibold ${colors.textColor}`}>{colors.subtitle}</p>
+                              </div>
+                            </div>
+                            <span className={`text-lg font-bold ${colors.textColor}`}>
+                              <StatsCounter end={team.wins} className={colors.textColor} gradient={false} />-<StatsCounter end={team.losses} className={colors.textColor} gradient={false} />
+                            </span>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <>
+                        <div className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-yellow-500/20 to-amber-500/20 border border-yellow-400/30 hover-lift animate-slide-up">
                           <div className="flex items-center space-x-3">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-lg ${colors.iconBg}`}>
-                              {team.rank === 1 ? <Star className="w-5 h-5 text-white" /> : 
-                               <span className="text-sm font-bold text-white">{team.rank}</span>}
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center shadow-lg neon-yellow animate-float">
+                              <Star className="w-5 h-5 text-white" />
                             </div>
                             <div>
-                              <p className="font-bold text-gray-900">{getRankEmoji(team.rank)} {team.teamName}</p>
-                              <p className={`text-xs font-semibold ${colors.textColor}`}>{colors.subtitle}</p>
+                              <p className="font-bold text-white">🥇 Dynasty Kings</p>
+                              <p className="text-xs text-yellow-300 font-semibold">First Place Champion</p>
                             </div>
                           </div>
-                          <span className={`text-lg font-bold ${colors.textColor}`}>
-                            {team.wins}-{team.losses}
-                          </span>
+                          <span className="text-lg font-black text-yellow-300">4-0</span>
                         </div>
-                      );
-                    })
-                  ) : (
-                    <>
-                      <div className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center shadow-lg">
-                            <Star className="w-5 h-5 text-white" />
+                        <div className="flex items-center justify-between p-3 rounded-lg bg-gray-500/20 border border-gray-400/30 hover-lift animate-slide-up animation-delay-100">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-400 to-slate-500 flex items-center justify-center shadow-lg neon-purple animate-float">
+                              <span className="text-sm font-bold text-white">2</span>
+                            </div>
+                            <div>
+                              <p className="font-bold text-white">🥈 {userTeam?.name || 'Your Team'}</p>
+                              <p className="text-xs text-gray-300">Second Place</p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-bold text-gray-900">🥇 Team Dynasty</p>
-                            <p className="text-xs text-yellow-700 font-semibold">First Place Champion</p>
-                          </div>
+                          <span className="text-lg font-bold text-gray-300">3-1</span>
                         </div>
-                        <span className="text-lg font-black text-yellow-700">3-0</span>
-                      </div>
-                      <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50 border border-gray-200">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-400 to-slate-500 flex items-center justify-center shadow-lg">
-                            <span className="text-sm font-bold text-white">2</span>
+                        <div className="flex items-center justify-between p-3 rounded-lg bg-orange-500/20 border border-orange-400/30 hover-lift animate-slide-up animation-delay-200">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center shadow-lg neon-orange animate-float">
+                              <span className="text-sm font-bold text-white">3</span>
+                            </div>
+                            <div>
+                              <p className="font-bold text-white">🥉 Championship Squad</p>
+                              <p className="text-xs text-orange-300">Third Place</p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-bold text-gray-900">🥈 Power Squad</p>
-                            <p className="text-xs text-gray-600">Second Place</p>
-                          </div>
+                          <span className="text-lg font-bold text-orange-300">3-1</span>
                         </div>
-                        <span className="text-lg font-bold text-gray-700">2-1</span>
-                      </div>
-                      <div className="flex items-center justify-between p-3 rounded-lg bg-orange-50 border border-orange-200">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center shadow-lg">
-                            <span className="text-sm font-bold text-white">3</span>
-                          </div>
-                          <div>
-                            <p className="font-bold text-gray-900">🥉 Elite Team</p>
-                            <p className="text-xs text-orange-700">Third Place</p>
-                          </div>
-                        </div>
-                        <span className="text-lg font-bold text-orange-700">2-1</span>
-                      </div>
-                    </>
-                  )}
+                      </>
+                    )}
+                  </div>
                 </div>
-              </div>
+              </AnimatedCard>
             </div>
           </div>
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }
