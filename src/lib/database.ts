@@ -124,7 +124,7 @@ class DatabaseManager {
       logger.info('Database connection pool initialized successfully');
 
     } catch (error) {
-      logger.error('Failed to initialize database connection pool', { error: error.message });
+      logger.error({ error: error.message }, 'Failed to initialize database connection pool');
       throw error;
     }
   }
@@ -138,11 +138,11 @@ class DatabaseManager {
       
       if (duration > this.config.slowQueryThresholdMs) {
         this.stats.slowQueries++;
-        logger.warn('Slow query detected', { duration, query: event.query.substring(0, 200) });
+        logger.warn({ duration, query: event.query.substring(0, 200) }, 'Slow query detected');
       }
 
       if (this.config.logQueries) {
-        logger.debug('Database query', { duration, query: event.query.substring(0, 200) });
+        logger.debug({ duration, query: event.query.substring(0, 200) }, 'Database query');
       }
     });
 
@@ -151,11 +151,11 @@ class DatabaseManager {
       this.stats.lastError = event.message;
       this.stats.lastErrorTime = new Date();
       
-      logger.error('Database error', { message: event.message });
+      logger.error({ message: event.message }, 'Database error');
     });
 
     this.prisma.$on('warn', (event: any) => {
-      logger.warn('Database warning', { message: event.message });
+      logger.warn({ message: event.message }, 'Database warning');
     });
   }
 
@@ -189,7 +189,7 @@ class DatabaseManager {
       try {
         await this.performHealthCheck();
       } catch (error) {
-        logger.error('Health check failed', { error });
+        logger.error({ error }, 'Health check failed');
       }
     }, 30000); // Check every 30 seconds
   }
@@ -204,7 +204,7 @@ class DatabaseManager {
         connectionWorking = true;
       }
     } catch (error) {
-      logger.warn('Database health check failed', { error });
+      logger.warn({ error }, 'Database health check failed');
     }
 
     const responseTime = Date.now() - startTime;
@@ -412,7 +412,7 @@ class DatabaseManager {
       return result;
     } catch (error) {
       this.stats.failedQueries++;
-      logger.error('Raw query failed', { query: query.substring(0, 200), error });
+      logger.error({ query: query.substring(0, 200), error }, 'Raw query failed');
       throw error;
     }
   }
@@ -435,11 +435,11 @@ class DatabaseManager {
         const result = await operation(batch, client);
         results.push(result);
       } catch (error) {
-        logger.error('Bulk operation batch failed', { 
+        logger.error({ 
           batchIndex: Math.floor(i / batchSize),
           batchSize: batch.length,
           error 
-        });
+        }, 'Bulk operation batch failed');
         throw error;
       }
     }
@@ -475,7 +475,7 @@ export async function runMigrations(): Promise<void> {
     logger.info(`Found ${migrations.length} completed migrations`);
     
   } catch (error) {
-    logger.error('Migration check failed', { error });
+    logger.error({ error }, 'Migration check failed');
     throw error;
   }
 }
@@ -501,7 +501,7 @@ export async function seedDatabase(): Promise<void> {
     });
     
   } catch (error) {
-    logger.error('Database seeding failed', { error });
+    logger.error({ error }, 'Database seeding failed');
     throw error;
   }
 }

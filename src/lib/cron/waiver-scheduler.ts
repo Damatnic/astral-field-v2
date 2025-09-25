@@ -193,25 +193,18 @@ class WaiverScheduler {
 
   private async logScheduledJob(leagueId: string, cronPattern: string, timezone: string) {
     try {
-      await prisma.scheduledJob.upsert({
-        where: {
-          name: `waiver-processing-${leagueId}`
-        },
-        create: {
-          name: `waiver-processing-${leagueId}`,
-          jobType: 'WAIVER_PROCESSING',
-          cronPattern,
-          timezone,
-          enabled: true,
-          data: { leagueId },
-          nextRun: this.calculateNextRun(cronPattern, timezone)
-        },
-        update: {
-          cronPattern,
-          timezone,
-          enabled: true,
-          data: { leagueId },
-          nextRun: this.calculateNextRun(cronPattern, timezone)
+      await prisma.jobExecution.create({
+        data: {
+          jobName: `waiver-processing-${leagueId}`,
+          jobType: 'waiver_processing',
+          status: 'pending',
+          scheduledFor: this.calculateNextRun(cronPattern, timezone),
+          metadata: { 
+            leagueId,
+            cronPattern,
+            timezone
+          },
+          leagueId: leagueId
         }
       });
     } catch (error) {
@@ -223,21 +216,19 @@ class WaiverScheduler {
     try {
       await prisma.jobExecution.create({
         data: {
-          jobId: `waiver-${leagueId}-${Date.now()}`,
-          jobType: 'WAIVER_PROCESSING',
-          queueName: 'waivers',
-          status: 'COMPLETED',
-          data: { leagueId },
+          jobName: `waiver-${leagueId}-${Date.now()}`,
+          jobType: 'waiver_processing',
+          status: 'completed',
           result,
           startedAt: new Date(),
           completedAt: new Date(),
           duration: 0,
-          triggeredBy: 'SCHEDULER',
           metadata: {
             leagueId,
             processedClaims: result.processed,
             failedClaims: result.failed
-          }
+          },
+          leagueId: leagueId
         }
       });
     } catch (error) {
@@ -249,17 +240,14 @@ class WaiverScheduler {
     try {
       await prisma.jobExecution.create({
         data: {
-          jobId: `waiver-error-${leagueId}-${Date.now()}`,
-          jobType: 'WAIVER_PROCESSING',
-          queueName: 'waivers',
-          status: 'FAILED',
-          data: { leagueId },
+          jobName: `waiver-error-${leagueId}-${Date.now()}`,
+          jobType: 'waiver_processing',
+          status: 'failed',
           error: error.message,
-          stackTrace: error.stack,
           startedAt: new Date(),
           completedAt: new Date(),
-          triggeredBy: 'SCHEDULER',
-          metadata: { leagueId }
+          metadata: { leagueId, stackTrace: error.stack },
+          leagueId: leagueId
         }
       });
     } catch (dbError) {

@@ -232,7 +232,7 @@ export default function LineupManager({ teamId, week, isOwner = true }: LineupMa
           setBench(newBench);
           setHasChanges(true);
         } else {
-          toast.info('Invalid position', `${player.player.name} (${player.player.position}) cannot be placed in ${targetSlot.position} slot`);
+          toast.info(`${player.player.name} (${player.player.position}) cannot be placed in ${targetSlot.position} slot`);
         }
       }
     }
@@ -341,13 +341,13 @@ export default function LineupManager({ teamId, week, isOwner = true }: LineupMa
       
       if (data.success) {
         await fetchLineup(); // Refresh lineup
-        toast.success('Lineup optimized', 'Set to highest projected points');
+        toast.success('Lineup optimized - Set to highest projected points');
       } else {
-        toast.error('Failed to optimize lineup', data.error);
+        toast.error(`Failed to optimize lineup: ${data.error}`);
       }
     } catch (err) {
       handleComponentError(err as Error, 'LineupManager');
-      toast.error('Failed to optimize lineup', 'Please try again');
+      toast.error('Failed to optimize lineup. Please try again.');
     } finally {
       setIsOptimizing(false);
     }

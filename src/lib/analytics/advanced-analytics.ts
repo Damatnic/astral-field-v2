@@ -167,7 +167,8 @@ export class AdvancedAnalyticsService {
         roster: {
           include: { player: true }
         },
-        trades: true,
+        transactions: true,
+        tradeProposals: true,
         league: {
           include: { teams: true }
         }
@@ -197,7 +198,7 @@ export class AdvancedAnalyticsService {
   }
 
   private async calculatePerformanceMetrics(team: any): Promise<PerformanceMetrics> {
-    const allMatchups = [...team.matchupsHome, ...team.matchupsAway];
+    const allMatchups = [...team.homeMatchups, ...team.awayMatchups];
     const completedMatchups = allMatchups.filter(m => m.status === 'COMPLETED');
     
     if (completedMatchups.length === 0) {
@@ -362,13 +363,13 @@ export class AdvancedAnalyticsService {
   }
 
   private async projectOutcome(team: any): Promise<ProjectedOutcome> {
-    const currentWins = team.matchupsHome.filter((m: any) => 
+    const currentWins = team.homeMatchups.filter((m: any) => 
       m.status === 'COMPLETED' && m.homeScore > m.awayScore
-    ).length + team.matchupsAway.filter((m: any) => 
+    ).length + team.awayMatchups.filter((m: any) => 
       m.status === 'COMPLETED' && m.awayScore > m.homeScore
     ).length;
 
-    const remainingGames = 17 - (team.matchupsHome.length + team.matchupsAway.length);
+    const remainingGames = 17 - (team.homeMatchups.length + team.awayMatchups.length);
     
     // Run Monte Carlo simulation
     const simulations = 1000;
@@ -444,7 +445,7 @@ export class AdvancedAnalyticsService {
   }
 
   private async analyzeTradeImpact(team: any): Promise<TradeImpactAnalysis> {
-    const recentTrades = team.trades || [];
+    const recentTrades = [...(team.transactions || []), ...(team.tradeProposals || [])];
     const tradeImpacts: TradeImpact[] = [];
 
     for (const trade of recentTrades.slice(0, 5)) {
@@ -467,7 +468,7 @@ export class AdvancedAnalyticsService {
   }
 
   private async analyzeSchedule(team: any): Promise<ScheduleAnalysis> {
-    const allMatchups = [...team.matchupsHome, ...team.matchupsAway];
+    const allMatchups = [...team.homeMatchups, ...team.awayMatchups];
     const remainingMatchups = allMatchups.filter(m => m.status === 'SCHEDULED');
     
     // Calculate strength of schedule

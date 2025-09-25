@@ -62,8 +62,7 @@ export class AIProjectionEngine {
           },
           orderBy: { week: 'desc' },
           take: 10
-        },
-        team: true
+        }
       }
     });
 
@@ -121,7 +120,7 @@ export class AIProjectionEngine {
       : 0;
 
     // Get upcoming opponent
-    const upcomingGame = await this.getUpcomingGame(player.teamId, week, season);
+    const upcomingGame = await this.getUpcomingGame(player.nflTeam || player.team, week, season);
     const opponentDefenseRank = await this.getDefenseRanking(upcomingGame?.opponentId);
     
     // Calculate matchup difficulty (1-10, 10 being hardest)
@@ -153,7 +152,7 @@ export class AIProjectionEngine {
 
     // Expected game script
     const teamGameScript = await this.predictGameScript(
-      player.teamId,
+      player.nflTeam || player.team || 'unknown',
       upcomingGame?.opponentId
     );
 
