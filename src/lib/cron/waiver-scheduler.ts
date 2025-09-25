@@ -266,7 +266,5 @@ class WaiverScheduler {
 // Export singleton instance
 export const waiverScheduler = new WaiverScheduler();
 
-// Auto-initialize on import in production
-if (process.env.NODE_ENV === 'production') {
-  waiverScheduler.initialize().catch(console.error);
-}
+// Auto-initialize only at runtime, not during build
+// Initialization is handled by API endpoints when needed

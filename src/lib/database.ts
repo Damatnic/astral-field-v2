@@ -59,7 +59,8 @@ class DatabaseManager {
     this.startTime = Date.now();
     this.config = this.getConfig();
     this.stats = this.initializeStats();
-    this.initialize();
+    // Don't auto-initialize during construction to avoid build-time database connections
+    // Initialization happens on first database access
   }
 
   private getConfig(): DatabaseConfig {
@@ -85,6 +86,42 @@ class DatabaseManager {
       avgQueryTime: 0,
       uptime: 0,
     };
+  }
+
+  private initializeSync(): void {
+    try {
+      logger.info('Initializing database connection pool...');
+      
+      // Create main Prisma client with optimized settings (no connection testing)
+      this.prisma = new PrismaClient({
+        log: this.config.logQueries 
+          ? [
+              { level: 'query', emit: 'event' },
+              { level: 'error', emit: 'event' },
+              { level: 'warn', emit: 'event' },
+            ]
+          : [],
+        datasources: {
+          db: {
+            url: this.config.url,
+          },
+        },
+      });
+
+      // Set up query logging and monitoring
+      if (this.config.logQueries) {
+        this.setupQueryLogging();
+      }
+
+      // Set up graceful shutdown
+      this.setupGracefulShutdown();
+
+      logger.info('Database connection pool initialized successfully');
+
+    } catch (error) {
+      logger.error({ error: error.message }, 'Failed to initialize database connection pool');
+      throw error;
+    }
   }
 
   private async initialize(): Promise<void> {
@@ -269,9 +306,10 @@ class DatabaseManager {
    */
   getClient(): PrismaClient {
     if (!this.prisma) {
-      throw new Error('Database not initialized. Call initialize() first.');
+      // Lazy initialization - only initialize when actually needed
+      this.initializeSync();
     }
-    return this.prisma;
+    return this.prisma!;
   }
 
   /**
