@@ -204,7 +204,7 @@ export default async function DashboardPage() {
             </div>
             <div className="p-6 space-y-4">
               {data.userTeams.length > 0 ? (
-                data.userTeams.map((team) => {
+                data.userTeams.map((team: any) => {
                   const matchup = team.homeMatchups[0] || team.awayMatchups[0]
                   return (
                     <div key={team.id} className="flex items-center justify-between p-4 bg-slate-700/50 rounded-lg">
