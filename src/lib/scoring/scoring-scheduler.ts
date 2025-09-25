@@ -10,7 +10,7 @@ import { broadcastToLeague } from '@/lib/socket/server';
 
 interface ScoringJob {
   leagueId: string;
-  task: cron.ScheduledTask;
+  task: any; // cron.ScheduledTask type not available
   isRunning: boolean;
 }
 
@@ -44,8 +44,7 @@ export class ScoringScheduler {
           message: 'Live scoring has started for this week'
         });
       }, {
-        scheduled: false,
-        timezone: 'America/New_York'
+          timezone: 'America/New_York'
       });
 
       // Schedule scoring to stop on Tuesdays at 2:00 AM ET (after Monday Night Football)
@@ -61,8 +60,7 @@ export class ScoringScheduler {
           message: 'Week scores have been finalized'
         });
       }, {
-        scheduled: false,
-        timezone: 'America/New_York'
+          timezone: 'America/New_York'
       });
 
       // Start the scheduled tasks
@@ -157,8 +155,8 @@ export class ScoringScheduler {
             where: { id: winner },
             data: {
               wins: { increment: 1 },
-              totalPointsFor: { increment: winner === matchup.team1.id ? matchup.team1.score : matchup.team2.score },
-              totalPointsAgainst: { increment: winner === matchup.team1.id ? matchup.team2.score : matchup.team1.score }
+              pointsFor: { increment: winner === matchup.team1.id ? matchup.team1.score : matchup.team2.score },
+              pointsAgainst: { increment: winner === matchup.team1.id ? matchup.team2.score : matchup.team1.score }
             }
           });
 
@@ -167,8 +165,8 @@ export class ScoringScheduler {
             where: { id: loser },
             data: {
               losses: { increment: 1 },
-              totalPointsFor: { increment: loser === matchup.team1.id ? matchup.team1.score : matchup.team2.score },
-              totalPointsAgainst: { increment: loser === matchup.team1.id ? matchup.team2.score : matchup.team1.score }
+              pointsFor: { increment: loser === matchup.team1.id ? matchup.team1.score : matchup.team2.score },
+              pointsAgainst: { increment: loser === matchup.team1.id ? matchup.team2.score : matchup.team1.score }
             }
           });
         } else {
@@ -219,7 +217,7 @@ export class ScoringScheduler {
               type,
               title: `Week ${currentWeek} Results`,
               message,
-              relatedId: teamMatchup.id
+              data: { relatedId: teamMatchup.id }
             }
           });
         }
@@ -263,7 +261,7 @@ export class ScoringScheduler {
     try {
       const activeLeagues = await prisma.league.findMany({
         where: {
-          status: 'ACTIVE',
+          isActive: true,
           currentWeek: { gte: 1, lte: 18 }
         }
       });
@@ -308,7 +306,7 @@ export class ScoringScheduler {
       console.log('Starting Thursday Night Football scoring');
       
       const activeLeagues = await prisma.league.findMany({
-        where: { status: 'ACTIVE' }
+        where: { isActive: true }
       });
 
       for (const league of activeLeagues) {
@@ -318,7 +316,6 @@ export class ScoringScheduler {
         });
       }
     }, {
-      scheduled: true,
       timezone: 'America/New_York'
     });
 
@@ -336,7 +333,7 @@ export class ScoringScheduler {
       // Wait 2 hours for final stats to be confirmed
       setTimeout(async () => {
         const activeLeagues = await prisma.league.findMany({
-          where: { status: 'ACTIVE' }
+          where: { isActive: true }
         });
 
         for (const league of activeLeagues) {
@@ -344,7 +341,6 @@ export class ScoringScheduler {
         }
       }, 2 * 60 * 60 * 1000); // 2 hours
     }, {
-      scheduled: true,
       timezone: 'America/New_York'
     });
 

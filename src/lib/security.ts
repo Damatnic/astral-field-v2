@@ -253,7 +253,7 @@ export class InputSanitizer {
     // Remove dangerous SQL patterns
     this.SQL_PATTERNS.forEach(pattern => {
       if (pattern.test(sanitized)) {
-        logger.warn('Potential SQL injection attempt detected', { input });
+        logger.warn('Potential SQL injection attempt detected', 'SecurityValidator', { input });
         sanitized = sanitized.replace(pattern, '');
       }
     });

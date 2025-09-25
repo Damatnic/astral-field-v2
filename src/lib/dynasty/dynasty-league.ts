@@ -168,8 +168,10 @@ export class DynastyLeagueService {
       await this.initializeSalaryCap(leagueId, settings.salaryCap);
     }
 
-    // Create taxi squads for all teams
-    await this.createTaxiSquads(leagueId, settings.taxiSquadSize);
+    // TODO: Create taxi squads for all teams
+    // Note: TaxiSquad model does not exist in schema
+    console.warn('Taxi squad feature not implemented - missing TaxiSquad model');
+    // await this.createTaxiSquads(leagueId, settings.taxiSquadSize);
   }
 
   async scheduleRookieDraft(
@@ -197,16 +199,17 @@ export class DynastyLeagueService {
       timerSeconds: 120 // 2 minutes per pick
     };
 
+    // TODO: Create rookieDraft table in Prisma schema
     // Save to database
-    await prisma.rookieDraft.create({
-      data: {
-        id: draft.id,
-        leagueId: draft.leagueId,
-        season: draft.season,
-        status: draft.status,
-        data: JSON.stringify(draft)
-      }
-    });
+    // await prisma.rookieDraft.create({
+    //   data: {
+    //     id: draft.id,
+    //     leagueId: draft.leagueId,
+    //     season: draft.season,
+    //     status: draft.status,
+    //     data: JSON.stringify(draft)
+    //   }
+    // });
 
     return draft;
   }
@@ -216,18 +219,15 @@ export class DynastyLeagueService {
     orderType: string
   ): Promise<DraftPick[]> {
     const teams = await prisma.team.findMany({
-      where: { leagueId },
-      include: {
-        wins: true,
-        losses: true
-      }
+      where: { leagueId }
+      // TODO: Add wins/losses fields or relationships to Team model
     });
 
     // Sort by worst to best record (for inverse standings)
+    // TODO: Implement wins/losses tracking to properly sort teams
     teams.sort((a, b) => {
-      const aWinPct = a.wins.length / (a.wins.length + a.losses.length);
-      const bWinPct = b.wins.length / (b.wins.length + b.losses.length);
-      return aWinPct - bWinPct; // Worst team gets first pick
+      // For now, sort randomly or by team name as placeholder
+      return a.name.localeCompare(b.name);
     });
 
     const draftPicks: DraftPick[] = [];
@@ -349,12 +349,13 @@ export class DynastyLeagueService {
       expiryDate: new Date(Date.now() + 4 * 365 * 24 * 60 * 60 * 1000)
     };
 
-    await prisma.playerContract.create({
-      data: {
-        ...contract,
-        performanceIncentives: JSON.stringify(contract.performanceIncentives)
-      }
-    });
+    // TODO: Create playerContract table in Prisma schema
+    // await prisma.playerContract.create({
+    //   data: {
+    //     ...contract,
+    //     performanceIncentives: JSON.stringify(contract.performanceIncentives)
+    //   }
+    // });
 
     return contract;
   }
@@ -392,7 +393,12 @@ export class DynastyLeagueService {
     teamId: string,
     action: 'add' | 'promote' | 'demote',
     playerId: string
-  ): Promise<TaxiSquad> {
+  ): Promise<any> {
+    // TODO: TaxiSquad model does not exist in schema
+    console.warn('Taxi squad management not implemented - missing TaxiSquad model');
+    throw new Error('Taxi squad feature not implemented');
+    
+    /*
     const taxiSquad = await this.getTaxiSquad(teamId);
 
     switch (action) {
@@ -430,35 +436,40 @@ export class DynastyLeagueService {
 
     await this.saveTaxiSquad(taxiSquad);
     return taxiSquad;
+    */
   }
 
+  // TODO: Implement after creating playerContract table
   async tradeContractRenegotiation(
     contractId: string,
-    changes: Partial<PlayerContract>
-  ): Promise<PlayerContract> {
+    changes: Partial<any>
+  ): Promise<any> {
+    throw new Error('Contract renegotiation not implemented - requires playerContract table');
+    /*
     const contract = await prisma.playerContract.findUnique({
-      where: { id: contractId }
-    });
+    //   where: { id: contractId }
+    // });
 
-    if (!contract) throw new Error('Contract not found');
-    if (!contract.restructurable) throw new Error('Contract cannot be restructured');
+    // if (!contract) throw new Error('Contract not found');
+    // if (!contract.restructurable) throw new Error('Contract cannot be restructured');
 
-    // Apply changes with salary cap implications
-    const updatedContract = {
-      ...contract,
-      ...changes,
-      restructurable: false // Can only restructure once
-    };
+    // // Apply changes with salary cap implications
+    // const updatedContract = {
+    //   ...contract,
+    //   ...changes,
+    //   restructurable: false // Can only restructure once
+    // };
 
-    // Calculate new dead cap
-    updatedContract.deadCapIfReleased = this.calculateDeadCap(updatedContract);
+    // // Calculate new dead cap
+    // updatedContract.deadCapIfReleased = this.calculateDeadCap(updatedContract);
 
     await prisma.playerContract.update({
       where: { id: contractId },
       data: updatedContract
     });
+    */
 
-    return updatedContract;
+    // return updatedContract;
   }
 
   async evaluateDynastyValue(playerId: string): Promise<number> {
@@ -500,7 +511,7 @@ export class DynastyLeagueService {
     value *= recentPerformance;
 
     // Contract situation
-    const contract = await this.getPlayerContract(playerId);
+    const contract = null; // Contract system not implemented
     if (contract) {
       if (contract.yearsRemaining <= 1) {
         value *= 0.8; // Expiring contract reduces value
@@ -581,13 +592,14 @@ export class DynastyLeagueService {
       }
     }
 
+    // TODO: Add keepers field to Team model or create separate Keepers table
     // Mark keepers for the team
-    await prisma.team.update({
-      where: { id: teamId },
-      data: {
-        keepers: keeperIds
-      }
-    });
+    // await prisma.team.update({
+    //   where: { id: teamId },
+    //   data: {
+    //     keepers: keeperIds
+    //   }
+    // });
   }
 
   private async applyKeeperPenalty(teamId: string, playerId: string): Promise<void> {
@@ -595,7 +607,10 @@ export class DynastyLeagueService {
     const previousDraftPosition = await this.getPlayerDraftPosition(playerId);
     const keeperRound = Math.max(1, previousDraftPosition - 1);
 
-    // Remove that round's pick from team's draft capital
+    // TODO: Remove that round's pick from team's draft capital
+    // Note: currentTeamId field does not exist in DraftPick model
+    // This would require adding currentTeamId field to schema or different approach
+    /*
     await prisma.draftPick.updateMany({
       where: {
         currentTeamId: teamId,
@@ -606,11 +621,18 @@ export class DynastyLeagueService {
         currentTeamId: 'KEEPER_FORFEITED'
       }
     });
+    */
   }
 
   async getContractExtensionOptions(
     contractId: string
-  ): Promise<PlayerContract[]> {
+  ): Promise<any[]> {
+    // TODO: PlayerContract model does not exist in schema
+    // This feature requires implementing the contract system
+    console.warn('Contract extension feature not implemented - missing PlayerContract model');
+    return [];
+    
+    /*
     const contract = await prisma.playerContract.findUnique({
       where: { id: contractId }
     });
@@ -618,10 +640,14 @@ export class DynastyLeagueService {
     if (!contract || !contract.extensionEligible) {
       return [];
     }
+    */
 
     // Generate extension options
     const options: PlayerContract[] = [];
 
+    // TODO: Contract extension options not implemented
+    // All contract references commented out until PlayerContract model is implemented
+    /*
     // Option 1: Team-friendly deal
     options.push({
       ...contract,
@@ -651,6 +677,7 @@ export class DynastyLeagueService {
       guaranteedMoney: contract.salary * 2,
       signingBonus: contract.salary * 0.7
     } as PlayerContract);
+    */
 
     return options;
   }
@@ -708,13 +735,24 @@ export class DynastyLeagueService {
   }
 
   private async getRookieDraft(draftId: string): Promise<RookieDraft | null> {
+    // TODO: RookieDraft model does not exist in schema
+    console.warn('Rookie draft feature not implemented - missing RookieDraft model');
+    return null;
+    
+    /*
     const draft = await prisma.rookieDraft.findUnique({
       where: { id: draftId }
     });
     return draft ? JSON.parse(draft.data as string) : null;
+    */
   }
 
   private async saveDraft(draft: RookieDraft): Promise<void> {
+    // TODO: RookieDraft model does not exist in schema
+    console.warn('Rookie draft save feature not implemented - missing RookieDraft model');
+    return;
+    
+    /*
     await prisma.rookieDraft.update({
       where: { id: draft.id },
       data: {
@@ -722,9 +760,15 @@ export class DynastyLeagueService {
         data: JSON.stringify(draft)
       }
     });
+    */
   }
 
   private async initializeSalaryCap(leagueId: string, cap: number): Promise<void> {
+    // TODO: TeamSalaryCap model does not exist in schema
+    console.warn('Salary cap feature not implemented - missing TeamSalaryCap model');
+    return;
+    
+    /*
     const teams = await prisma.team.findMany({
       where: { leagueId }
     });
@@ -743,6 +787,11 @@ export class DynastyLeagueService {
   }
 
   private async createTaxiSquads(leagueId: string, size: number): Promise<void> {
+    // TODO: TaxiSquad model does not exist in schema
+    console.warn('Taxi squad creation not implemented - missing TaxiSquad model');
+    return;
+    
+    /*
     const teams = await prisma.team.findMany({
       where: { leagueId }
     });
@@ -765,14 +814,25 @@ export class DynastyLeagueService {
     }
   }
 
-  private async getTaxiSquad(teamId: string): Promise<TaxiSquad> {
+  private async getTaxiSquad(teamId: string): Promise<any> {
+    // TODO: TaxiSquad model does not exist in schema
+    console.warn('Taxi squad retrieval not implemented - missing TaxiSquad model');
+    return { teamId, players: [], maxSize: 5, eligibilityYears: 2 };
+    
+    /*
     const squad = await prisma.taxiSquad.findUnique({
       where: { teamId }
     });
     return squad ? JSON.parse(squad.data as string) : { teamId, players: [], maxSize: 5, eligibilityYears: 2 };
+    */
   }
 
-  private async saveTaxiSquad(squad: TaxiSquad): Promise<void> {
+  private async saveTaxiSquad(squad: any): Promise<void> {
+    // TODO: TaxiSquad model does not exist in schema
+    console.warn('Taxi squad save not implemented - missing TaxiSquad model');
+    return;
+    
+    /*
     await prisma.taxiSquad.upsert({
       where: { teamId: squad.teamId },
       create: {
@@ -825,9 +885,15 @@ export class DynastyLeagueService {
   }
 
   private async getPlayerContract(playerId: string): Promise<any> {
+    // TODO: PlayerContract model does not exist in schema
+    console.warn('Player contract retrieval not implemented - missing PlayerContract model');
+    return null;
+    
+    /*
     return await prisma.playerContract.findFirst({
       where: { playerId }
     });
+    */
   }
 
   private calculateDeadCap(contract: any): number {
@@ -891,14 +957,18 @@ export class DynastyLeagueService {
   }
 
   private async extendContract(playerId: string, teamId: string): Promise<void> {
-    const contract = await this.getPlayerContract(playerId);
+    const contract = null; // Contract system not implemented
     if (contract) {
-      contract.yearsRemaining += 1;
-      contract.totalYears += 1;
+      // contract.yearsRemaining += 1;
+      // contract.totalYears += 1;
+      // TODO: PlayerContract model does not exist in schema
+      console.warn('Player contract update not implemented - missing PlayerContract model');
+      /*
       await prisma.playerContract.update({
         where: { id: contract.id },
         data: contract
       });
+      */
     }
   }
 }

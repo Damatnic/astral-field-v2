@@ -42,8 +42,7 @@ export class TradeProcessor {
     try {
       // Get league settings
       const league = await prisma.league.findUnique({
-        where: { id: leagueId },
-        include: { settings: true }
+        where: { id: leagueId }
       });
 
       if (!league) {
@@ -52,9 +51,10 @@ export class TradeProcessor {
       }
 
       // Check trade deadline
-      if (league.settings?.tradeDeadlineWeek) {
+      const settings = league.settings as any;
+      if (settings?.tradeDeadlineWeek) {
         const currentWeek = league.currentWeek || 1;
-        if (currentWeek >= league.settings.tradeDeadlineWeek) {
+        if (currentWeek >= settings.tradeDeadlineWeek) {
           errors.push('Trade deadline has passed');
         }
       }
@@ -120,7 +120,7 @@ export class TradeProcessor {
         where: { teamId: proposal.toTeamId }
       });
 
-      const maxRosterSize = league.settings?.rosterSize || 16;
+      const maxRosterSize = (settings as any)?.rosterSize || 16;
       const fromTeamNewSize = fromTeamRosterCount - givingPlayers.length + receivingPlayers.length;
       const toTeamNewSize = toTeamRosterCount - receivingPlayers.length + givingPlayers.length;
 
@@ -574,7 +574,7 @@ export class TradeProcessor {
             type: 'TRADE_REJECTED',
             title: 'Trade Rejected',
             message: reason || 'Your trade proposal has been rejected',
-            relatedId: tradeId
+            data: { relatedId: tradeId }
           }
         });
 
@@ -689,7 +689,7 @@ export class TradeProcessor {
             type: 'TRADE_CANCELLED',
             title: 'Trade Cancelled',
             message: `${trade.team.name} has cancelled their trade proposal`,
-            relatedId: tradeId
+            data: { relatedId: tradeId }
           }
         });
       }

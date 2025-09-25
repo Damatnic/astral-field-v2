@@ -69,12 +69,12 @@ export class TradeValueCalculator {
     try {
       // Get league context
       const league = await prisma.league.findUnique({
-        where: { id: leagueId },
-        include: { settings: true }
+        where: { id: leagueId }
       });
 
       const currentWeek = league?.currentWeek || 1;
-      const scoringType = league?.settings?.scoringType || 'PPR';
+      const leagueSettings = league?.settings as any;
+      const scoringType = leagueSettings?.scoringType || 'PPR';
 
       // Get player details and calculate values
       const [givingPlayers, receivingPlayers] = await Promise.all([
@@ -135,7 +135,7 @@ export class TradeValueCalculator {
       include: {
         stats: {
           where: {
-            season: new Date().getFullYear(),
+            season: new Date().getFullYear().toString(),
             week: { lte: currentWeek }
           }
         }

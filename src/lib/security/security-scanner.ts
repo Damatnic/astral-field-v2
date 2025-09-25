@@ -176,7 +176,7 @@ export class SecurityScanner {
     // Check for old audit logs that should be archived
     const oldAuditLogs = await prisma.auditLog.count({
       where: {
-        timestamp: {
+        createdAt: {
           lt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) // 90 days ago
         }
       }
@@ -329,15 +329,15 @@ export class SecurityScanner {
       // Store summary in database for long-term tracking
       await prisma.auditLog.create({
         data: {
+          userId: 'SYSTEM', // System-generated scan
           action: 'SECURITY_SCAN_COMPLETED',
-          details: JSON.stringify({
+          details: {
             scanId: result.scanId,
             overallScore: result.overallScore,
             findingsCount: result.findings.length,
-            severity: result.severity
-          }),
-          category: 'SECURITY',
-          severity: result.severity.toUpperCase()
+            severity: result.severity,
+            category: 'SECURITY'
+          }
         }
       });
     } catch (error) {

@@ -215,7 +215,7 @@ export function initSocketServer(server: HTTPServer): SocketIOServer {
             return;
           }
 
-          await draftStateManager.pauseDraft(draftId);
+          await draftStateManager.pauseDraft(draftId, socket.userId);
           io?.to(`draft:${draftId}`).emit('draft:paused');
         } catch (error) {
           console.error('Error pausing draft:', error);
@@ -242,7 +242,7 @@ export function initSocketServer(server: HTTPServer): SocketIOServer {
             return;
           }
 
-          await draftStateManager.resumeDraft(draftId);
+          await draftStateManager.resumeDraft(draftId, socket.userId);
           io?.to(`draft:${draftId}`).emit('draft:resumed');
         } catch (error) {
           console.error('Error resuming draft:', error);

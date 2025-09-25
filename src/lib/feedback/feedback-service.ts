@@ -32,11 +32,11 @@ export class FeedbackService {
       const feedback = await prisma.feedback.create({
         data: {
           userId: submission.userId,
-          type: submission.type,
-          category: submission.category,
+          type: submission.type.toUpperCase() as any,
+          category: submission.category.toUpperCase() as any,
           title: submission.title,
           description: submission.description,
-          priority: submission.priority,
+          priority: submission.priority.toUpperCase() as any,
           steps: submission.steps,
           expectedBehavior: submission.expectedBehavior,
           actualBehavior: submission.actualBehavior,
@@ -44,13 +44,13 @@ export class FeedbackService {
           pageUrl: submission.pageUrl,
           screenshot: submission.screenshot,
           rating: submission.rating,
-          status: 'open'
+          status: 'OPEN'
         }
       });
 
       // Auto-assign priority based on type and content
       const adjustedPriority = this.calculatePriority(submission);
-      if (adjustedPriority !== submission.priority) {
+      if (adjustedPriority !== submission.priority.toUpperCase()) {
         await prisma.feedback.update({
           where: { id: feedback.id },
           data: { priority: adjustedPriority }
@@ -58,13 +58,13 @@ export class FeedbackService {
       }
 
       // Notify admins for high-priority feedback
-      if (adjustedPriority === 'high' || adjustedPriority === 'critical') {
+      if (adjustedPriority === 'HIGH' || adjustedPriority === 'CRITICAL') {
         await this.notifyAdminsOfHighPriorityFeedback(feedback.id, submission);
       }
 
       // Send confirmation to user
       await notificationService.sendNotification(
-        [{ userId: submission.userId, method: 'push' }],
+        [{ userId: submission.userId }],
         {
           title: 'Feedback Received',
           body: `Thank you for your ${submission.type.replace('_', ' ')}. We'll review it soon.`,
@@ -165,7 +165,7 @@ export class FeedbackService {
       await prisma.feedback.update({
         where: { id: feedbackId },
         data: { 
-          status: response.status === 'closed' ? 'closed' : 'in_progress',
+          status: response.status.toUpperCase() === 'CLOSED' ? 'CLOSED' : 'IN_PROGRESS',
           lastResponseAt: new Date()
         }
       });
@@ -178,7 +178,7 @@ export class FeedbackService {
 
       if (feedback) {
         await notificationService.sendNotification(
-          [{ userId: feedback.userId, method: 'push' }],
+          [{ userId: feedback.userId }],
           {
             title: 'Feedback Response',
             body: `We've responded to your feedback: "${feedback.title}"`,
@@ -287,7 +287,7 @@ export class FeedbackService {
     };
   }
 
-  private calculatePriority(submission: FeedbackSubmission): 'low' | 'medium' | 'high' | 'critical' {
+  private calculatePriority(submission: FeedbackSubmission): 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' {
     let score = 0;
 
     // Base score by type
@@ -328,10 +328,10 @@ export class FeedbackService {
     }
 
     // Convert score to priority
-    if (score >= 6) return 'critical';
-    if (score >= 4) return 'high';
-    if (score >= 2) return 'medium';
-    return 'low';
+    if (score >= 6) return 'CRITICAL';
+    if (score >= 4) return 'HIGH';
+    if (score >= 2) return 'MEDIUM';
+    return 'LOW';
   }
 
   private async notifyAdminsOfHighPriorityFeedback(
