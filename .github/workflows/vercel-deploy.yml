@@ -17,6 +17,9 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
+      - name: Clean old build artifacts
+        run: rm -rf .next .vercel/cache
+
       - name: Install dependencies
         run: npm ci
 
@@ -34,7 +37,7 @@ jobs:
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
           working-directory: ./
-          vercel-args: '--prod'
+          vercel-args: '--prod --force'
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
 
