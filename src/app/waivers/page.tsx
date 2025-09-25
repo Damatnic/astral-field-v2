@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { Search, Filter, Plus, TrendingUp, Clock, Users, Target } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 
 interface Player {
   id: string;
@@ -29,26 +30,34 @@ export default function WaiversPage() {
         const response = await fetch('/api/waivers/wire');
         const data = await response.json();
         
-        if (data.success && data.data) {
-          setPlayers(data.data.map((player: any) => ({
+        if (data.success && data.players) {
+          setPlayers(data.players.map((player: any) => ({
             id: player.id,
             name: player.name,
             position: player.position,
             nflTeam: player.nflTeam || 'FA',
-            fantasyPoints: player.fantasyPoints || 0,
+            fantasyPoints: player.totalPoints || 0,
             availability: 'available',
             projectedPoints: player.projectedPoints || 0
           })));
+        } else {
+          console.warn('No waiver wire data found:', data.error || 'Unknown error');
+          setPlayers([]);
         }
       } catch (error) {
         console.error('Error fetching waiver players:', error);
+        setPlayers([]);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchWaiverPlayers();
-  }, []);
+    if (user) {
+      fetchWaiverPlayers();
+    } else {
+      setLoading(false);
+    }
+  }, [user]);
 
   const filteredPlayers = players.filter(player => {
     const matchesSearch = player.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -81,11 +90,14 @@ export default function WaiversPage() {
             ? { ...p, availability: 'claimed' as const }
             : p
         ));
+        toast.success('Waiver claim submitted successfully!');
       } else {
         console.error('Failed to create waiver claim:', data.error);
+        toast.error(data.error || 'Failed to submit waiver claim');
       }
     } catch (error) {
       console.error('Error claiming player:', error);
+      toast.error('Failed to submit waiver claim');
     }
   };
 
@@ -226,6 +238,17 @@ export default function WaiversPage() {
             <div className="p-8 text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
               <p className="text-gray-500 mt-2">Loading players...</p>
+            </div>
+          ) : filteredPlayers.length === 0 ? (
+            <div className="p-8 text-center">
+              <Target className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No players available</h3>
+              <p className="text-gray-600 mb-4">
+                {searchTerm || positionFilter !== 'ALL' 
+                  ? 'Try adjusting your search filters or check back later.' 
+                  : 'All available players have been claimed. Check back after waivers process.'
+                }
+              </p>
             </div>
           ) : (
             <div className="space-y-3 sm:space-y-0 sm:divide-y sm:divide-gray-200">

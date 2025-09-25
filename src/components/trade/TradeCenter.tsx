@@ -18,7 +18,7 @@ import {
   RefreshCw,
   Loader2
 } from 'lucide-react';
-import { useToast } from '@/components/ui/Toast';
+import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/Skeleton';
 
 interface Player {
@@ -123,7 +123,7 @@ export default function TradeCenter({ leagueId, userId, teamId }: TradeCenterPro
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  const { success, error: showError, info } = useToast();
+  // Use sonner toast functions directly
 
   const fetchPendingTrades = useCallback(async () => {
     try {
@@ -184,11 +184,11 @@ export default function TradeCenter({ leagueId, userId, teamId }: TradeCenterPro
     } catch (err) {
       handleComponentError(err as Error, 'TradeCenter');
       setError('Failed to load league data');
-      showError('Failed to load data', 'Please try again');
+      toast.error('Failed to load data - Please try again');
     } finally {
       setIsLoading(false);
     }
-  }, [leagueId, teamId, activeTab, showError, fetchPendingTrades, fetchTradeHistory]);
+  }, [leagueId, teamId, activeTab, toast.error, fetchPendingTrades, fetchTradeHistory]);
 
   useEffect(() => {
     fetchLeagueData();
@@ -196,7 +196,7 @@ export default function TradeCenter({ leagueId, userId, teamId }: TradeCenterPro
 
   const analyzeTrade = async () => {
     if (playersOffered.length === 0 || playersRequested.length === 0) {
-      info('Add players', 'Select players to offer and request before analyzing');
+      toast.info('Add players - Select players to offer and request before analyzing');
       return;
     }
     
@@ -222,13 +222,13 @@ export default function TradeCenter({ leagueId, userId, teamId }: TradeCenterPro
       
       if (data.success) {
         // Handle analysis result
-        info('Analysis complete', `Trade fairness: ${data.analysis.fairnessScore}%`);
+        toast.info(`Analysis complete - Trade fairness: ${data.analysis.fairnessScore}%`);
       } else {
-        showError('Analysis failed', data.error);
+        toast.error(`Analysis failed - ${data.error}`);
       }
     } catch (err) {
       handleComponentError(err as Error, 'TradeCenter');
-      showError('Analysis failed', 'Please try again');
+      toast.error('Analysis failed - Please try again');
     } finally {
       setIsAnalyzing(false);
     }
@@ -236,7 +236,7 @@ export default function TradeCenter({ leagueId, userId, teamId }: TradeCenterPro
 
   const proposeTrade = async () => {
     if (!selectedTeam || playersOffered.length === 0 || playersRequested.length === 0) {
-      showError('Invalid trade', 'Select a team and players to trade');
+      toast.error('Invalid trade - Select a team and players to trade');
       return;
     }
     
@@ -275,7 +275,7 @@ export default function TradeCenter({ leagueId, userId, teamId }: TradeCenterPro
       const data = await response.json();
       
       if (data.success) {
-        success('Trade proposed', `Trade offer sent to ${selectedTeam.name}`);
+        toast.success(`Trade proposed - Trade offer sent to ${selectedTeam.name}`);
         resetTrade();
         
         // Refresh pending trades if on that tab
@@ -283,11 +283,11 @@ export default function TradeCenter({ leagueId, userId, teamId }: TradeCenterPro
           await fetchPendingTrades();
         }
       } else {
-        showError('Trade proposal failed', data.message || 'Please try again');
+        toast.error(`Trade proposal failed - ${data.message || 'Please try again'}`);
       }
     } catch (err) {
       handleComponentError(err as Error, 'TradeCenter');
-      showError('Trade proposal failed', 'Please try again');
+      toast.error('Trade proposal failed - Please try again');
     } finally {
       setIsProposing(false);
     }
@@ -306,17 +306,14 @@ export default function TradeCenter({ leagueId, userId, teamId }: TradeCenterPro
       const data = await response.json();
       
       if (data.success) {
-        success(
-          `Trade ${action}ed`, 
-          `Trade has been ${action}ed successfully`
-        );
+        toast.success(`Trade ${action}ed - Trade has been ${action}ed successfully`);
         await fetchPendingTrades();
       } else {
-        showError(`Failed to ${action} trade`, data.error);
+        toast.error(`Failed to ${action} trade - ${data.error}`);
       }
     } catch (err) {
       handleComponentError(err as Error, 'TradeCenter');
-      showError(`Failed to ${action} trade`, 'Please try again');
+      toast.error(`Failed to ${action} trade - Please try again`);
     }
   };
 

@@ -21,7 +21,7 @@ import {
   RotateCcw,
   Loader2
 } from 'lucide-react';
-import { useToast } from '@/components/ui/Toast';
+import { toast } from 'sonner';
 import { Skeleton, LineupSlotSkeleton } from '@/components/ui/Skeleton';
 
 interface Player {
@@ -115,7 +115,7 @@ export default function LineupManager({ teamId, week, isOwner = true }: LineupMa
   const [isLocked, setIsLocked] = useState(false);
   const [currentWeek] = useState(week || getCurrentWeek());
   
-  const { success, error, info } = useToast();
+  // Use sonner toast functions directly
 
   // Fetch lineup data from API
   const fetchLineup = useCallback(async () => {
@@ -158,11 +158,11 @@ export default function LineupManager({ teamId, week, isOwner = true }: LineupMa
         setIsLocked(locked);
         setHasChanges(false);
       } else {
-        error('Failed to load lineup', data.error);
+        toast.error('Failed to load lineup', data.error);
       }
     } catch (err) {
       handleComponentError(err as Error, 'LineupManager');
-      error('Failed to load lineup', 'Please try again');
+      toast.error('Failed to load lineup', 'Please try again');
     } finally {
       setIsLoading(false);
     }
@@ -232,7 +232,7 @@ export default function LineupManager({ teamId, week, isOwner = true }: LineupMa
           setBench(newBench);
           setHasChanges(true);
         } else {
-          info('Invalid position', `${player.player.name} (${player.player.position}) cannot be placed in ${targetSlot.position} slot`);
+          toast.info('Invalid position', `${player.player.name} (${player.player.position}) cannot be placed in ${targetSlot.position} slot`);
         }
       }
     }
@@ -277,13 +277,13 @@ export default function LineupManager({ teamId, week, isOwner = true }: LineupMa
       if (data.success) {
         setHasChanges(false);
         setOriginalLineup(lineupData);
-        success('Lineup saved', `Successfully updated Week ${currentWeek} lineup`);
+        toast.success('Lineup saved', `Successfully updated Week ${currentWeek} lineup`);
       } else {
-        error('Failed to save lineup', data.error);
+        toast.error('Failed to save lineup', data.error);
       }
     } catch (err) {
       handleComponentError(err as Error, 'LineupManager');
-      error('Failed to save lineup', 'Please try again');
+      toast.error('Failed to save lineup', 'Please try again');
     } finally {
       setIsSaving(false);
     }
@@ -317,7 +317,7 @@ export default function LineupManager({ teamId, week, isOwner = true }: LineupMa
       setLineup(newLineup);
       setBench(newBench);
       setHasChanges(false);
-      info('Lineup reset', 'Changes have been discarded');
+      toast.info('Lineup reset', 'Changes have been discarded');
     }
   };
   
@@ -341,13 +341,13 @@ export default function LineupManager({ teamId, week, isOwner = true }: LineupMa
       
       if (data.success) {
         await fetchLineup(); // Refresh lineup
-        success('Lineup optimized', 'Set to highest projected points');
+        toast.success('Lineup optimized', 'Set to highest projected points');
       } else {
-        error('Failed to optimize lineup', data.error);
+        toast.error('Failed to optimize lineup', data.error);
       }
     } catch (err) {
       handleComponentError(err as Error, 'LineupManager');
-      error('Failed to optimize lineup', 'Please try again');
+      toast.error('Failed to optimize lineup', 'Please try again');
     } finally {
       setIsOptimizing(false);
     }

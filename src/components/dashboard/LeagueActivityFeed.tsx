@@ -23,7 +23,7 @@ import {
   Loader2
 } from 'lucide-react';
 import Image from 'next/image';
-import { useToast } from '@/components/ui/Toast';
+import { toast } from 'sonner';
 import { ActivityFeedSkeleton } from '@/components/ui/Skeleton';
 
 type ActivityType = 'trade' | 'waiver' | 'message' | 'matchup' | 'injury' | 'milestone' | 'roster';
@@ -50,7 +50,7 @@ interface Activity {
     achievement?: string;
     status?: string;
     priority?: number;
-    successful?: boolean;
+    toast.successful?: boolean;
     week?: number;
     injury?: {
       player: string;
@@ -78,7 +78,7 @@ export default function LeagueActivityFeed({ leagueId, className = '' }: LeagueA
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  const { error: showError, success } = useToast();
+  // Use sonner toast functions directly
 
   const fetchActivities = useCallback(async (isRefresh = false) => {
     if (isRefresh) {
@@ -99,26 +99,26 @@ export default function LeagueActivityFeed({ leagueId, className = '' }: LeagueA
       const response = await fetch(url.toString());
       const data = await response.json();
       
-      if (data.success) {
+      if (data.toast.success) {
         setActivities(data.activities);
         setError(null);
         
         if (isRefresh) {
-          success('Activity feed updated', 'Latest league activity loaded');
+          toast.success('Activity feed updated', 'Latest league activity loaded');
         }
       } else {
         setError(data.error || 'Failed to load activities');
-        showError('Failed to load league activity', data.error);
+        toast.error('Failed to load league activity', data.error);
       }
     } catch (err) {
       handleComponentError(err as Error, 'LeagueActivityFeed');
       setError('Failed to load activities');
-      showError('Failed to load league activity', 'Please try again');
+      toast.error('Failed to load league activity', 'Please try again');
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [leagueId, filter, showError, success]);
+  }, [leagueId, filter, toast.error, toast.success]);
   
   useEffect(() => {
     if (leagueId) {

@@ -3,7 +3,7 @@ import './globals.css';
 import AuthProvider from '@/components/AuthProvider';
 import QueryProvider from '@/components/QueryProvider';
 import { ResponsiveNavigation, SafeAreaProvider } from '@/components/mobile/ResponsiveUtils';
-import { ToastProvider } from '@/components/ui/Toast';
+import { Toaster } from 'sonner';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import PWAInstallPrompt from '@/components/mobile/PWAInstallPrompt';
 
@@ -135,7 +135,6 @@ export default function RootLayout({
           <QueryProvider>
             <ThemeProvider>
               <SafeAreaProvider>
-                <ToastProvider>
                 {/* Responsive Navigation component */}
                 <ResponsiveNavigation />
               
@@ -150,7 +149,14 @@ export default function RootLayout({
               
               {/* PWA Install Prompt */}
               <PWAInstallPrompt />
-              </ToastProvider>
+              
+              {/* Sonner Toaster */}
+              <Toaster 
+                position="top-right"
+                richColors
+                closeButton
+                expand
+              />
               </SafeAreaProvider>
             </ThemeProvider>
           </QueryProvider>

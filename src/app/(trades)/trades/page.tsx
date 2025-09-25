@@ -1,14 +1,42 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   ArrowRightLeft, Check, X, Clock, AlertCircle, 
-  Plus, Eye, Send, Users, Trophy, TrendingUp
+  Plus, Eye, Send, Users, Trophy, TrendingUp, Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/components/AuthProvider';
+import { toast } from 'sonner';
 
-// Mock trade data
-const mockTrades = [
+interface Trade {
+  id: string;
+  status: 'pending' | 'accepted' | 'rejected' | 'expired';
+  type: 'sent' | 'received';
+  from: {
+    name: string;
+    owner: string;
+    players: { name: string; position: string; team: string; }[];
+  };
+  to: {
+    name: string;
+    owner: string;
+    players: { name: string; position: string; team: string; }[];
+  };
+  proposedAt: string;
+  expiresAt?: string;
+  acceptedAt?: string;
+  rejectedAt?: string;
+}
+
+interface TradeResponse {
+  success: boolean;
+  trades?: Trade[];
+  error?: string;
+}
+
+// Mock trade data for fallback
+const fallbackTrades: Trade[] = [
   {
     id: '1',
     status: 'pending',
@@ -76,7 +104,7 @@ const mockTrades = [
   }
 ];
 
-const TradeCard = ({ trade }: any) => {
+const TradeCard = ({ trade }: { trade: Trade }) => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return 'text-orange-600 bg-orange-50 border-orange-200';
@@ -169,11 +197,20 @@ const TradeCard = ({ trade }: any) => {
         {/* Actions */}
         {trade.status === 'pending' && trade.type === 'received' && (
           <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100">
-            <Button size="sm" className="btn-primary flex-1">
+            <Button 
+              size="sm" 
+              className="btn-primary flex-1"
+              onClick={() => handleAcceptTrade(trade.id)}
+            >
               <Check className="w-4 h-4 mr-1" />
               Accept
             </Button>
-            <Button size="sm" variant="outline" className="flex-1">
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="flex-1"
+              onClick={() => handleRejectTrade(trade.id)}
+            >
               <X className="w-4 h-4 mr-1" />
               Reject
             </Button>
@@ -194,9 +231,41 @@ const TradeCard = ({ trade }: any) => {
 };
 
 export default function TradesPage() {
+  const { user } = useAuth();
+  const [trades, setTrades] = useState<Trade[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
+  const [showCreateForm, setShowCreateForm] = useState(false);
 
-  const filteredTrades = mockTrades.filter(trade => {
+  // Fetch trades on component mount
+  useEffect(() => {
+    const fetchTrades = async () => {
+      try {
+        const response = await fetch('/api/trades');
+        const data: TradeResponse = await response.json();
+        
+        if (data.success && data.trades) {
+          setTrades(data.trades);
+        } else {
+          console.warn('No trades found, using fallback data');
+          setTrades(fallbackTrades);
+        }
+      } catch (error) {
+        console.error('Error fetching trades:', error);
+        setTrades(fallbackTrades);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user) {
+      fetchTrades();
+    } else {
+      setLoading(false);
+    }
+  }, [user]);
+
+  const filteredTrades = trades.filter(trade => {
     if (activeTab === 'all') return true;
     if (activeTab === 'pending') return trade.status === 'pending';
     if (activeTab === 'received') return trade.type === 'received';
@@ -205,11 +274,74 @@ export default function TradesPage() {
   });
 
   const tabs = [
-    { id: 'all', label: 'All Trades', count: mockTrades.length },
-    { id: 'pending', label: 'Pending', count: mockTrades.filter(t => t.status === 'pending').length },
-    { id: 'received', label: 'Received', count: mockTrades.filter(t => t.type === 'received').length },
-    { id: 'sent', label: 'Sent', count: mockTrades.filter(t => t.type === 'sent').length }
+    { id: 'all', label: 'All Trades', count: trades.length },
+    { id: 'pending', label: 'Pending', count: trades.filter(t => t.status === 'pending').length },
+    { id: 'received', label: 'Received', count: trades.filter(t => t.type === 'received').length },
+    { id: 'sent', label: 'Sent', count: trades.filter(t => t.type === 'sent').length }
   ];
+
+  const handleAcceptTrade = async (tradeId: string) => {
+    try {
+      const response = await fetch(`/api/trades/${tradeId}/respond`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'accept' })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setTrades(trades.map(t => 
+          t.id === tradeId 
+            ? { ...t, status: 'accepted' as const, acceptedAt: new Date().toISOString() }
+            : t
+        ));
+        toast.success('Trade accepted successfully!');
+      } else {
+        toast.error(data.error || 'Failed to accept trade');
+      }
+    } catch (error) {
+      console.error('Error accepting trade:', error);
+      toast.error('Failed to accept trade');
+    }
+  };
+
+  const handleRejectTrade = async (tradeId: string) => {
+    try {
+      const response = await fetch(`/api/trades/${tradeId}/respond`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'reject' })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setTrades(trades.map(t => 
+          t.id === tradeId 
+            ? { ...t, status: 'rejected' as const, rejectedAt: new Date().toISOString() }
+            : t
+        ));
+        toast.success('Trade rejected');
+      } else {
+        toast.error(data.error || 'Failed to reject trade');
+      }
+    } catch (error) {
+      console.error('Error rejecting trade:', error);
+      toast.error('Failed to reject trade');
+    }
+  };
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Login Required</h1>
+          <p className="text-gray-600">Please log in to view and manage trades.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -221,7 +353,10 @@ export default function TradesPage() {
               <h1 className="text-3xl font-bold text-gray-900">Trades</h1>
               <p className="text-gray-600 mt-1">Manage your trade proposals and offers</p>
             </div>
-            <Button className="btn-primary">
+            <Button 
+              className="btn-primary"
+              onClick={() => setShowCreateForm(true)}
+            >
               <Plus className="w-4 h-4 mr-2" />
               Propose Trade
             </Button>
@@ -269,7 +404,7 @@ export default function TradesPage() {
                 <span className="text-xs text-orange-600 font-medium">Active</span>
               </div>
               <p className="text-2xl font-bold text-gray-900">
-                {mockTrades.filter(t => t.status === 'pending').length}
+                {trades.filter(t => t.status === 'pending').length}
               </p>
               <p className="text-sm text-gray-600">Pending Trades</p>
             </div>
@@ -282,7 +417,7 @@ export default function TradesPage() {
                 <span className="text-xs text-green-600 font-medium">Success</span>
               </div>
               <p className="text-2xl font-bold text-gray-900">
-                {mockTrades.filter(t => t.status === 'accepted').length}
+                {trades.filter(t => t.status === 'accepted').length}
               </p>
               <p className="text-sm text-gray-600">Completed</p>
             </div>
@@ -295,7 +430,7 @@ export default function TradesPage() {
                 <span className="text-xs text-blue-600 font-medium">Outgoing</span>
               </div>
               <p className="text-2xl font-bold text-gray-900">
-                {mockTrades.filter(t => t.type === 'sent').length}
+                {trades.filter(t => t.type === 'sent').length}
               </p>
               <p className="text-sm text-gray-600">Proposals Sent</p>
             </div>
@@ -313,7 +448,12 @@ export default function TradesPage() {
         </div>
 
         {/* Trades List */}
-        {filteredTrades.length > 0 ? (
+        {loading ? (
+          <div className="text-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
+            <p className="text-gray-600">Loading trades...</p>
+          </div>
+        ) : filteredTrades.length > 0 ? (
           <div className="space-y-4">
             {filteredTrades.map((trade) => (
               <TradeCard key={trade.id} trade={trade} />
@@ -328,13 +468,45 @@ export default function TradesPage() {
                 ? 'You haven\'t made any trades yet.' 
                 : `No ${activeTab} trades found.`}
             </p>
-            <Button className="btn-primary">
+            <Button 
+              className="btn-primary"
+              onClick={() => setShowCreateForm(true)}
+            >
               <Plus className="w-4 h-4 mr-2" />
               Propose Your First Trade
             </Button>
           </div>
         )}
       </main>
+
+      {/* Simple Trade Creation Modal */}
+      {showCreateForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-lg w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Create Trade Proposal</h3>
+            <p className="text-gray-600 mb-4">
+              Full trade creation functionality coming soon! For now, you can view and manage existing trades.
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button 
+                variant="outline"
+                onClick={() => setShowCreateForm(false)}
+              >
+                Close
+              </Button>
+              <Button 
+                className="btn-primary"
+                onClick={() => {
+                  setShowCreateForm(false);
+                  toast.info('Trade creation feature coming soon!');
+                }}
+              >
+                Coming Soon
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
