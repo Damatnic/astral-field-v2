@@ -2,8 +2,16 @@ import { cookies } from 'next/headers';
 import { NextRequest } from 'next/server';
 import { UserRole } from '@/types/fantasy';
 import { handleComponentError } from '@/utils/errorHandling';
-import crypto from 'crypto';
-import bcrypt from 'bcryptjs';
+// Use dynamic import for crypto to avoid Edge Runtime issues
+let crypto: typeof import('crypto');
+if (typeof window === 'undefined') {
+  crypto = require('crypto');
+}
+// Use dynamic import for bcrypt to avoid Edge Runtime issues
+let bcrypt: typeof import('bcryptjs');
+if (typeof window === 'undefined') {
+  bcrypt = require('bcryptjs');
+}
 import { jwtVerify, SignJWT } from 'jose';
 import { prisma } from './db';
 // Helper function to convert user role string to our role type  
@@ -78,6 +86,10 @@ export async function createJWTToken(user: { id: string; email: string; name?: s
 
 // Session Management
 function generateSessionId(): string {
+  if (!crypto) {
+    // Fallback for environments where crypto isn't available
+    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+  }
   return crypto.randomBytes(32).toString('hex');
 }
 
@@ -208,6 +220,9 @@ export async function login(credentials: LoginCredentials): Promise<AuthResult> 
     }
     
     // Use bcrypt to verify hashed password
+    if (!bcrypt) {
+      throw new Error('Password verification not available in this environment');
+    }
     const isValidPassword = await bcrypt.compare(password, dbUser.hashedPassword);
     if (!isValidPassword) {
       return { 

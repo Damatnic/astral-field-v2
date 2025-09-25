@@ -5,6 +5,7 @@ const nextConfig = {
   swcMinify: true,
   experimental: {
     serverComponentsExternalPackages: ['@prisma/client'],
+    serverMinification: false,
   },
   // PWA optimizations
   compiler: {
