@@ -9,7 +9,7 @@ interface GlowButtonProps {
   onClick?: () => void;
   className?: string;
   variant?: 'primary' | 'secondary' | 'outline';
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
   loading?: boolean;
   disabled?: boolean;
   glow?: boolean;
@@ -32,7 +32,8 @@ export function GlowButton({
   const sizeClasses = {
     sm: 'px-4 py-2 text-sm',
     md: 'px-8 py-4 text-base',
-    lg: 'px-10 py-5 text-lg'
+    lg: 'px-10 py-5 text-lg',
+    xl: 'px-12 py-6 text-xl'
   };
 
   const variantClasses = {

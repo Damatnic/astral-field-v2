@@ -569,8 +569,30 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              {/* Enhanced Quick Actions with glass morphism */}
-              <AnimatedCard className="animate-slide-up animation-delay-600" gradient="rainbow" hover="lift">
+              {/* PRIMARY ROSTER ACTION - Most Important Feature */}
+              <AnimatedCard className="animate-slide-up animation-delay-600 mb-8" gradient="rainbow" hover="glow">
+                <div className="px-8 py-6 text-center">
+                  <h2 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-pink-500 to-purple-600 animate-gradient-shift mb-4">
+                    🎯 MANAGE YOUR ROSTER 🎯
+                  </h2>
+                  <p className="text-xl text-white/90 mb-8 font-semibold">
+                    Set your lineup • Drag & drop players • Optimize your team
+                  </p>
+                  <GlowButton 
+                    onClick={() => router.push('/roster')}
+                    variant="primary"
+                    size="xl"
+                    className="transform hover:scale-110 transition-all duration-300 text-2xl py-6 px-12"
+                  >
+                    <Users className="w-8 h-8" />
+                    EDIT LINEUP NOW
+                    <Rocket className="w-8 h-8" />
+                  </GlowButton>
+                </div>
+              </AnimatedCard>
+
+              {/* Enhanced Quick Actions */}
+              <AnimatedCard className="animate-slide-up animation-delay-700" gradient="blue" hover="lift">
                 <div className="px-6 py-4 border-b border-white/10">
                   <h2 className="text-2xl font-bold text-white flex items-center gap-2">
                     <Zap className="w-7 h-7 text-yellow-400 animate-bounce" />
@@ -579,14 +601,6 @@ export default function DashboardPage() {
                   </h2>
                 </div>
                 <div className="divide-y divide-white/10">
-                  <QuickAction
-                    title="Set Lineup"
-                    description="Optimize your starting lineup for this week"
-                    icon={Users}
-                    color="green"
-                    emoji="🎯"
-                    action={() => router.push('/roster')}
-                  />
                   <QuickAction
                     title="Waiver Wire"
                     description="Browse available free agents"

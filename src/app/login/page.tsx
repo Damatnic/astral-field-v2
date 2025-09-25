@@ -19,16 +19,16 @@ import {
 } from 'lucide-react';
 
 const TEAMS = [
-  { id: 1, name: "Nicholas D'Amato", email: "nicholas.damato@astralfield.com", team: "Astral Commanders", role: "Commissioner", color: "from-yellow-400 to-orange-500" },
-  { id: 2, name: "Nick Hartley", email: "nick.hartley@astralfield.com", team: "Hartley's Heroes", role: "Manager", color: "from-blue-400 to-purple-500" },
-  { id: 3, name: "Jack McCaigue", email: "jack.mccaigue@astralfield.com", team: "Jack Attack", role: "Manager", color: "from-green-400 to-teal-500" },
-  { id: 4, name: "Larry McCaigue", email: "larry.mccaigue@astralfield.com", team: "Larry's Legends", role: "Manager", color: "from-purple-400 to-pink-500" },
-  { id: 5, name: "Renee McCaigue", email: "renee.mccaigue@astralfield.com", team: "Renee's Raiders", role: "Manager", color: "from-pink-400 to-rose-500" },
-  { id: 6, name: "Jon Kornbeck", email: "jon.kornbeck@astralfield.com", team: "Kornbeck's Crushers", role: "Manager", color: "from-indigo-400 to-blue-500" },
-  { id: 7, name: "David Jarvey", email: "david.jarvey@astralfield.com", team: "Jarvey's Juggernauts", role: "Manager", color: "from-red-400 to-orange-500" },
-  { id: 8, name: "Kaity Lorbecki", email: "kaity.lorbecki@astralfield.com", team: "Kaity's Knights", role: "Manager", color: "from-cyan-400 to-blue-500" },
-  { id: 9, name: "Cason Minor", email: "cason.minor@astralfield.com", team: "Minor League Majors", role: "Manager", color: "from-amber-400 to-yellow-500" },
-  { id: 10, name: "Brittany Bergum", email: "brittany.bergum@astralfield.com", team: "Bergum's Ballers", role: "Manager", color: "from-emerald-400 to-green-500" }
+  { id: 1, name: "Nicholas D'Amato", email: "nicholas.damato@test.com", team: "D'Amato Dynasty", role: "Commissioner", color: "from-yellow-400 to-orange-500" },
+  { id: 2, name: "Nick Hartley", email: "nick.hartley@test.com", team: "Hartley's Heroes", role: "Manager", color: "from-blue-400 to-purple-500" },
+  { id: 3, name: "Jack McCaigue", email: "jack.mccaigue@test.com", team: "Jack Attack", role: "Manager", color: "from-green-400 to-teal-500" },
+  { id: 4, name: "Larry McCaigue", email: "larry.mccaigue@test.com", team: "Larry's Legends", role: "Manager", color: "from-purple-400 to-pink-500" },
+  { id: 5, name: "Renee McCaigue", email: "renee.mccaigue@test.com", team: "Renee's Reign", role: "Manager", color: "from-pink-400 to-rose-500" },
+  { id: 6, name: "Jon Kornbeck", email: "jon.kornbeck@test.com", team: "Kornbeck Crushers", role: "Manager", color: "from-indigo-400 to-blue-500" },
+  { id: 7, name: "David Jarvey", email: "david.jarvey@test.com", team: "Jarvey's Juggernauts", role: "Manager", color: "from-red-400 to-orange-500" },
+  { id: 8, name: "Kaity Lorbecki", email: "kaity.lorbecki@test.com", team: "Kaity's Knights", role: "Manager", color: "from-cyan-400 to-blue-500" },
+  { id: 9, name: "Cason Minor", email: "cason.minor@test.com", team: "Minor Threat", role: "Manager", color: "from-amber-400 to-yellow-500" },
+  { id: 10, name: "Brittany Bergum", email: "brittany.bergum@test.com", team: "Bergum's Best", role: "Manager", color: "from-emerald-400 to-green-500" }
 ];
 
 // Animated background component
@@ -243,7 +243,7 @@ export default function LoginPage() {
         credentials: 'include',
         body: JSON.stringify({ 
           email: team.email,
-          password: 'Dynasty2025'  // Default password for all users
+          password: 'fantasy2025'  // Default password from seeding script
         })
       });
 

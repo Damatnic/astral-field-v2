@@ -81,7 +81,9 @@
       "Bash(/bashes)",
       "Bash(pkill:*)",
       "Bash(taskkill:*)",
-      "Bash(npm run type-check:*)"
+      "Bash(npm run type-check:*)",
+      "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_rkDs2yUYZEQ7@ep-proud-pond-adntwlpd-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require\" npx next dev -p 3015)",
+      "Bash(DATABASE_URL:*)"
     ],
     "deny": [],
     "ask": []
