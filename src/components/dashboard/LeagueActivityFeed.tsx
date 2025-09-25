@@ -50,7 +50,7 @@ interface Activity {
     achievement?: string;
     status?: string;
     priority?: number;
-    toast.successful?: boolean;
+    successful?: boolean;
     week?: number;
     injury?: {
       player: string;
