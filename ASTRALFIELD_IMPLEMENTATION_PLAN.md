@@ -49,14 +49,14 @@
 | Export functionality | 🔴 Not Started | LOW | 6h | - | CSV, PDF reports |
 | Performance insights | 🔴 Not Started | MEDIUM | 10h | - | Team optimization |
 
-### Phase 5: Payments & Marketplace (Month 2)
+### Phase 5: Advanced NFL Features (Month 2)
 | Task | Status | Priority | Est. Hours | Owner | Notes |
 |------|--------|----------|------------|-------|-------|
-| Stripe integration | 🔴 Not Started | MEDIUM | 16h | - | Payment processing |
-| League fee collection | 🔴 Not Started | MEDIUM | 12h | - | Automated billing |
-| Payout management | 🔴 Not Started | LOW | 10h | - | Winner distributions |
-| Transaction history | 🔴 Not Started | LOW | 6h | - | Financial records |
-| Refund system | 🔴 Not Started | LOW | 8h | - | Dispute handling |
+| Dynasty league support | 🔴 Not Started | MEDIUM | 24h | - | Multi-year keeper leagues |
+| Daily fantasy contests | 🔴 Not Started | LOW | 20h | - | Tournament-style leagues |
+| Advanced stat integration | 🔴 Not Started | MEDIUM | 16h | - | Next Gen Stats, PFF data |
+| Playoff bracket system | 🔴 Not Started | MEDIUM | 12h | - | Enhanced playoff formats |
+| Keeper league functionality | 🔴 Not Started | MEDIUM | 18h | - | Player retention across seasons |
 
 ### Phase 6: AI Features (Month 3)
 | Task | Status | Priority | Est. Hours | Owner | Notes |
@@ -89,7 +89,7 @@
 ### Next Week
 - [x] ESPN API integration planning (Sleeper prioritized)
 - [x] Yahoo API integration planning (Future phase)
-- [x] Payment gateway selection (Future phase)
+- [x] Dynasty league feature planning (Future phase)
 - [x] Load testing setup and execution
 - [x] Production deployment checklist
 
@@ -282,10 +282,10 @@
 - Use simple auth for MVP
 
 ### Open Questions
-- Payment provider selection?
+- Dynasty league implementation timeline?
 - ESPN/Yahoo priority order?
 - Mobile app vs PWA only?
-- Premium features model?
+- Community engagement strategies?
 
 ### Technical Debt
 - Refactor notification system
