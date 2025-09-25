@@ -248,7 +248,7 @@ export default async function DashboardPage() {
             </div>
             <div className="p-6 space-y-4">
               {data.recentNews.length > 0 ? (
-                data.recentNews.map((news) => (
+                data.recentNews.map((news: any) => (
                   <div key={news.id} className="border-b border-slate-700 last:border-b-0 pb-4 last:pb-0">
                     <div className="flex items-start space-x-3">
                       <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold position-${news.player.position.toLowerCase()}`}>
