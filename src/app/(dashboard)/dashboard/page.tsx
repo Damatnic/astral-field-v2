@@ -26,6 +26,7 @@ interface UserTeam {
   pointsAgainst: number;
   standing: number;
   totalTeams: number;
+  leagueId?: string;
 }
 
 interface UpcomingMatchup {
@@ -94,7 +95,7 @@ const StatCard = ({
 );
 
 // Enhanced matchup card with battle theme
-const MatchupCard = ({ matchup, userTeam }: any) => (
+const MatchupCard = ({ matchup, userTeam, router }: any) => (
   <div className="relative overflow-hidden rounded-xl bg-white border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300">
     {/* Epic background gradient */}
     <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 via-purple-600/5 to-pink-600/5"></div>
@@ -341,9 +342,9 @@ export default function DashboardPage() {
         }
 
         // Fetch league standings - need league ID from team
-        if (userTeam?.id || team?.leagueId) {
+        if (userTeam?.id || userTeam?.leagueId) {
           try {
-            const leagueId = team?.leagueId || 'cmfy5ltrp000v1xpso7ux8a9v'; // Use fallback league ID
+            const leagueId = userTeam?.leagueId || 'cmfy5ltrp000v1xpso7ux8a9v'; // Use fallback league ID
             const standingsResponse = await fetch(`/api/leagues/${leagueId}/standings`);
             if (standingsResponse.ok) {
               const standingsData = await standingsResponse.json();
@@ -480,7 +481,7 @@ export default function DashboardPage() {
           <div className="lg:col-span-2 space-y-6">
             {/* Upcoming Matchup */}
             {upcomingMatchup && (
-              <MatchupCard matchup={upcomingMatchup} userTeam={userTeam} />
+              <MatchupCard matchup={upcomingMatchup} userTeam={userTeam} router={router} />
             )}
 
             {/* Enhanced Quick Actions */}

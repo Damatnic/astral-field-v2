@@ -269,7 +269,7 @@ export class SleeperPlayerDatabaseService {
         totalPlayers: stats._count.id,
         fantasyRelevant: fantasyStats._count.id,
         dynastyTargets: dynastyStats._count.id,
-        lastSyncTime: lastSync?.updatedAt || null,
+        lastSyncTime: lastSync?.lastUpdated || null,
         needsSync,
       };
     } catch (error: any) {

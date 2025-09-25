@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { redis } from '@/lib/redis';
+import { redisCache } from '@/lib/redis-cache';
 
 export interface Achievement {
   id: string;
@@ -572,7 +572,7 @@ export class AchievementSystem {
     });
 
     await this.updateUserAchievementScore(userId, achievement.points);
-    await redis.del(`user:achievements:${userId}`);
+    await redisCache.delete(`user:achievements:${userId}`);
 
     await this.checkForRelatedBadges(userId, achievementId);
   }

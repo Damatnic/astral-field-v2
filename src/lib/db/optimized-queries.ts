@@ -591,6 +591,98 @@ export class OptimizedQueries {
   static async invalidatePlayerCaches(playerId: string) {
     await cacheService.invalidatePlayerCache(playerId);
   }
+
+  /**
+   * Get players with pagination and filters
+   */
+  static async getPlayersOptimized(filters: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    positions?: string[];
+    teams?: string[];
+    onlyAvailable?: boolean;
+  }) {
+    const page = filters.page || 1;
+    const limit = filters.limit || 20;
+    const skip = (page - 1) * limit;
+    
+    const where: any = {};
+    
+    if (filters.search) {
+      where.name = { contains: filters.search, mode: 'insensitive' };
+    }
+    
+    if (filters.positions && filters.positions.length > 0) {
+      where.position = { in: filters.positions };
+    }
+    
+    if (filters.teams && filters.teams.length > 0) {
+      where.team = { in: filters.teams };
+    }
+    
+    if (filters.onlyAvailable) {
+      where.isActive = true;
+    }
+    
+    const [players, total] = await Promise.all([
+      prisma.player.findMany({
+        where,
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          name: true,
+          position: true,
+          team: true,
+          byeWeek: true,
+          injuryStatus: true,
+          isActive: true,
+          imageUrl: true
+        },
+        orderBy: { name: 'asc' }
+      }),
+      prisma.player.count({ where })
+    ]);
+    
+    return {
+      players,
+      total,
+      page,
+      pageSize: limit,
+      totalPages: Math.ceil(total / limit)
+    };
+  }
+
+  /**
+   * Get player by ID with optimized query
+   */
+  static async getPlayerByIdOptimized(playerId: string) {
+    return await prisma.player.findUnique({
+      where: { id: playerId },
+      select: {
+        id: true,
+        name: true,
+        position: true,
+        team: true,
+        byeWeek: true,
+        injuryStatus: true,
+        isActive: true,
+        imageUrl: true,
+        stats: {
+          select: {
+            week: true,
+            points: true,
+            projectedPoints: true
+          },
+          orderBy: { week: 'desc' },
+          take: 5
+        }
+      }
+    });
+  }
 }
 
 export { OptimizedQueries };
+export const getPlayersOptimized = OptimizedQueries.getPlayersOptimized;
+export const getPlayerByIdOptimized = OptimizedQueries.getPlayerByIdOptimized;

@@ -108,8 +108,8 @@ export function DraftChat({
       </CardHeader>
 
       <CardContent className="flex-1 p-0 flex flex-col">
-        <ScrollArea className="flex-1" ref={scrollRef}>
-          <div className="p-3 space-y-2">
+        <ScrollArea className="flex-1">
+          <div className="p-3 space-y-2" ref={scrollRef}>
             {messages.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <MessageSquare className="w-8 h-8 mx-auto mb-2 text-gray-300" />

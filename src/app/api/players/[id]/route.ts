@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { handleComponentError } from '@/lib/error-handling';
 import { authenticateFromRequest } from '@/lib/auth';
-import { getPlayerByIdOptimized } from '@/lib/prisma-optimized';
+import { getPlayerByIdOptimized } from '@/lib/db/optimized-queries';
 import { redisCache, fantasyKeys } from '@/lib/redis-cache';
 import { CACHE_TAGS } from '@/lib/cache';
 import { getCacheHeaders } from '@/lib/cache';
@@ -44,10 +44,7 @@ export async function GET(
     } else {
       console.log('❌ Player cache miss, fetching from database');
       
-      player = await getPlayerByIdOptimized(playerId, {
-        includeNews,
-        includeStats
-      });
+      player = await getPlayerByIdOptimized(playerId);
 
       if (!player) {
         return NextResponse.json(

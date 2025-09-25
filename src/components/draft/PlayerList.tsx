@@ -155,21 +155,21 @@ export function PlayerList({
 
           <div className="flex gap-2">
             <Button
-              variant={sortBy === 'adp' ? 'default' : 'outline'}
+              variant={sortBy === 'adp' ? 'primary' : 'outline'}
               size="sm"
               onClick={() => setSortBy('adp')}
             >
               ADP
             </Button>
             <Button
-              variant={sortBy === 'projected' ? 'default' : 'outline'}
+              variant={sortBy === 'projected' ? 'primary' : 'outline'}
               size="sm"
               onClick={() => setSortBy('projected')}
             >
               Projected
             </Button>
             <Button
-              variant={sortBy === 'name' ? 'default' : 'outline'}
+              variant={sortBy === 'name' ? 'primary' : 'outline'}
               size="sm"
               onClick={() => setSortBy('name')}
             >

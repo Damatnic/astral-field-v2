@@ -3,7 +3,7 @@ import { handleComponentError } from '@/lib/error-handling';
 import { authenticateFromRequest } from '@/lib/auth';
 import { redisCache, fantasyKeys } from '@/lib/redis-cache';
 import { CACHE_TAGS } from '@/lib/cache';
-import { getPlayersOptimized } from '@/lib/prisma-optimized';
+import { getPlayersOptimized } from '@/lib/db/optimized-queries';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
 
     // Fetch player data for analytics
     const playerData = await getPlayersOptimized({
-      position: positions?.[0],
+      positions: positions || [],
       team: teams?.[0],
       leagueId,
       limit: 1000, // Get more players for analytics

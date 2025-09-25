@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { sleeperAPI } from '@/lib/sleeper/api';
+import { sleeperAPI } from '@/lib/sleeper-api';
 import { getServerSession } from '@/lib/auth/get-session';
 import { withErrorHandling, validateSession, createApiError } from '@/lib/api/error-handler';
 

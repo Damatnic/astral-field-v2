@@ -223,6 +223,7 @@ export default function DraftRoom({ draftId }: DraftRoomProps) {
               selectedPlayer={selectedPlayer}
               onSelectPlayer={setSelectedPlayer}
               isMyTurn={isMyTurn}
+              currentPick={draftState?.currentPick || 1}
             />
           </div>
         </div>
