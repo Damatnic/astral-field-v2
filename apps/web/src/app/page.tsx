@@ -1,4 +1,4 @@
-import { Button } from '@astralfield/ui'
+import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { ArrowRightIcon, SparklesIcon, ChartBarIcon, BoltIcon } from '@heroicons/react/24/outline'
 
