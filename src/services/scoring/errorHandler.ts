@@ -3,7 +3,7 @@
  * Provides robust error handling, recovery mechanisms, and fallback data
  */
 
-import { prisma as db } from '@/lib/db';
+import { prisma as db } from '@/lib/prisma';
 import { handleComponentError } from '@/lib/error-handling';
 
 export interface ErrorContext {

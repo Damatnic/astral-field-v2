@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 
 // NFL Game Time Management Utilities
 export interface NFLGameTime {

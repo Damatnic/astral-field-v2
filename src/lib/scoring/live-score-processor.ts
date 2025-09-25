@@ -3,7 +3,7 @@
  * Handles real-time scoring calculations and updates
  */
 
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { broadcastScoringUpdate, broadcastToLeague } from '@/lib/socket/server';
 import { notificationService } from '@/lib/notifications/notification-service';
 

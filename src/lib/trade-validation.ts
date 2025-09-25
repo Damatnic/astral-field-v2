@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { Position } from '@prisma/client';
 
 // RosterSlot enum defined locally since it's not used in Prisma models

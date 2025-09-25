@@ -12,7 +12,7 @@ import DiscordProvider from 'next-auth/providers/discord';
 import TwitterProvider from 'next-auth/providers/twitter';
 import EmailProvider from 'next-auth/providers/email';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { compare, hash } from 'bcryptjs';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';

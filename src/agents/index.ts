@@ -1,5 +1,5 @@
 // Agent system for automated platform tasks
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { handleComponentError } from '@/lib/error-handling';
 
 export class SeedingAgent {

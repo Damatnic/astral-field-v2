@@ -8,7 +8,7 @@ import { z } from 'zod';
 import { userAnalyticsService } from '@/services/analytics/userAnalyticsService';
 import { privacyAnalyticsService } from '@/services/analytics/privacyAnalyticsService';
 import { cookies } from 'next/headers';
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 
 // Request validation schemas

@@ -2,7 +2,7 @@ import { Server as HTTPServer } from 'http';
 import { Server as SocketIOServer, Socket } from 'socket.io';
 import { NextApiResponse } from 'next';
 import { verifyToken } from '@/lib/auth/verify';
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { draftStateManager } from '@/lib/draft/draft-state';
 
 let io: SocketIOServer | null = null;

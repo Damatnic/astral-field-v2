@@ -54,7 +54,7 @@ async function syncPlayers() {
         
         synced++;
       } catch (err) {
-        console.error(`Failed to sync player ${sleeperPlayer.full_name}:`, err);
+        // Log sync failure without exposing internal details
         errors++;
       }
     }
@@ -188,7 +188,7 @@ async function postSleeperHandler(request: NextRequest) {
 
   // Run sync in background
   syncSleeperData(job.id).catch((error) => {
-    console.error('Background Sleeper sync failed:', error);
+    // Background sync failure will be logged in job execution record
   });
 
   return NextResponse.json({
@@ -226,7 +226,7 @@ async function syncSleeperData(jobId: string) {
       }
     });
 
-    console.log(`Sleeper sync job ${jobId} completed successfully in ${duration}ms`);
+    // Job completion logged in database record
 
   } catch (error) {
     const duration = Date.now() - startTime;
@@ -241,7 +241,7 @@ async function syncSleeperData(jobId: string) {
       }
     });
 
-    console.error(`Sleeper sync job ${jobId} failed:`, error);
+    // Job failure logged in database record
     throw error;
   }
 }

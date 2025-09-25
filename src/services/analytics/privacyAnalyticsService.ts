@@ -3,7 +3,7 @@
  * GDPR-compliant data collection, anonymization, and user consent management
  */
 
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { redisCache } from '@/lib/redis-cache';
 import { logger } from '@/lib/logger';
 import crypto from 'crypto';

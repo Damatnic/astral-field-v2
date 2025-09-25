@@ -290,7 +290,7 @@ export async function performStartupChecks(): Promise<void> {
 
   // Database connectivity
   try {
-    const { prisma } = await import('@/lib/db');
+    const { prisma } = await import('@/lib/prisma');
     await prisma.$connect();
     console.log('✅ Database connection successful');
   } catch (error) {

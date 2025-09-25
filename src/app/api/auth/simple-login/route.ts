@@ -24,18 +24,32 @@ export async function POST(request: NextRequest) {
   try {
     let body;
     try {
-      body = await request.json();
+      // Handle potential encoding issues in request body
+      const requestText = await request.text();
+      
+      // Clean up any malformed JSON before parsing
+      const cleanedJson = requestText
+        .replace(/[\u0000-\u0019]+/g, '') // Remove control characters
+        .trim();
+      
+      if (!cleanedJson) {
+        return NextResponse.json(
+          { success: false, error: 'Empty request body' },
+          { status: 400 }
+        );
+      }
+      
+      body = JSON.parse(cleanedJson);
     } catch (parseError) {
-      console.error('JSON parse error:', parseError);
       return NextResponse.json(
-        { success: false, error: 'Invalid JSON in request body' },
+        { success: false, error: 'Invalid JSON format in request body. Please check your data.' },
         { status: 400 }
       );
     }
     
     // Skip validation for demo/test accounts
-    const email = body.email;
-    const password = body.password;
+    const email = body?.email;
+    const password = body?.password;
     
     if (!email) {
       return NextResponse.json(
@@ -114,11 +128,13 @@ export async function POST(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('Login error:', error);
+    // Log error for server monitoring without exposing details
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
     return NextResponse.json(
       { 
         success: false, 
-        error: 'An error occurred during login' 
+        error: 'An error occurred during login. Please try again.' 
       },
       { status: 500 }
     );

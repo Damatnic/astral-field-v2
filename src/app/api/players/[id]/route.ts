@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { handleComponentError } from '@/lib/error-handling';
 import { authenticateFromRequest } from '@/lib/auth';
-import { getPlayerByIdOptimized } from '@/lib/db-optimized';
+import { getPlayerByIdOptimized } from '@/lib/prisma-optimized';
 import { redisCache, fantasyKeys } from '@/lib/redis-cache';
 import { CACHE_TAGS } from '@/lib/cache';
 import { getCacheHeaders } from '@/lib/cache';

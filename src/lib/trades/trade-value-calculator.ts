@@ -3,7 +3,7 @@
  * Advanced trade analysis and fairness evaluation
  */
 
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 
 export interface PlayerValue {
   playerId: string;

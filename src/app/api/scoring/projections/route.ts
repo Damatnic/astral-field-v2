@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { playerSyncService } from '@/services/sleeper/playerSyncService';
 import { nflStateService } from '@/services/sleeper/nflStateService';
 import { SleeperApiService } from '@/services/sleeper/sleeperApiService';
-import { prisma as db } from '@/lib/db';
+import { prisma as db } from '@/lib/prisma';
 import { DEFAULT_LEAGUE_ID, validateAndDefault } from '@/lib/constants';
 import { handleComponentError } from '@/lib/error-handling';
 // Force dynamic rendering for this route

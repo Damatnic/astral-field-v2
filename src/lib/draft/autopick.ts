@@ -3,7 +3,7 @@
  * Intelligent player selection for auto-drafting teams
  */
 
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 
 interface PlayerValue {
   id: string;

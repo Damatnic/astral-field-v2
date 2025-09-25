@@ -3,7 +3,7 @@
  * High-performance queries with proper indexing and minimal data fetching
  */
 
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { cacheService, CACHE_TTL } from '@/lib/cache/redis-client';
 
 export class OptimizedQueries {

@@ -205,7 +205,7 @@ export function DataTable<T extends Record<string, any>>({
                     type="checkbox"
                     checked={selectedRows.size === paginatedData.length && paginatedData.length > 0}
                     onChange={handleSelectAll}
-                    className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                    className="rounded border-gray-300 text-green-600 focus:ring-green-500"
                   />
                 </th>
               )}
@@ -270,7 +270,7 @@ export function DataTable<T extends Record<string, any>>({
                         checked={selectedRows.has(rowIndex)}
                         onChange={() => handleSelectRow(rowIndex)}
                         onClick={(e) => e.stopPropagation()}
-                        className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                        className="rounded border-gray-300 text-green-600 focus:ring-green-500"
                       />
                     </td>
                   )}

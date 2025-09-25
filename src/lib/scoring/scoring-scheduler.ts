@@ -5,7 +5,7 @@
 
 import cron from 'node-cron';
 import { liveScoreProcessor } from './live-score-processor';
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { broadcastToLeague } from '@/lib/socket/server';
 
 interface ScoringJob {

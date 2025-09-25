@@ -3,7 +3,7 @@ import { handleComponentError } from '@/lib/error-handling';
 import { authenticateFromRequest } from '@/lib/auth';
 import { redisCache, fantasyKeys } from '@/lib/redis-cache';
 import { CACHE_TAGS } from '@/lib/cache';
-import { getPlayersOptimized } from '@/lib/db-optimized';
+import { getPlayersOptimized } from '@/lib/prisma-optimized';
 
 export const dynamic = 'force-dynamic';
 

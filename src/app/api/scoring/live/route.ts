@@ -4,7 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sleeperRealTimeScoringService } from '@/services/sleeper/realTimeScoringService';
 import { nflStateService } from '@/services/sleeper/nflStateService';
-import { prisma as db } from '@/lib/db';
+import { prisma as db } from '@/lib/prisma';
 import { getLeagueIdOrDefault } from '@/lib/constants';
 import { handleComponentError } from '@/lib/error-handling';
 // Force dynamic rendering for this route

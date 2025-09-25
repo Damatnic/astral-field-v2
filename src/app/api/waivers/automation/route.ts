@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth/get-session';
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { waiverScheduler } from '@/lib/cron/waiver-scheduler';
 import { z } from 'zod';
 

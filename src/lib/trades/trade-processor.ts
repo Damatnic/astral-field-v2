@@ -3,7 +3,7 @@
  * Handles trade proposals, validation, and execution
  */
 
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { broadcastToUser, broadcastToLeague } from '@/lib/socket/server';
 import { notificationService } from '@/lib/notifications/notification-service';
 

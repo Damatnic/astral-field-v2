@@ -3,7 +3,7 @@
  * High-performance data aggregation, pre-computation, and intelligent caching
  */
 
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { redisCache } from '@/lib/redis-cache';
 import { logger } from '@/lib/logger';
 import EventEmitter from 'events';

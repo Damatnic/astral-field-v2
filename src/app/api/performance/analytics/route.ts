@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getPerformanceStats } from '@/lib/db-optimized';
+import { getPerformanceStats } from '@/lib/prisma-optimized';
 import { redisCache } from '@/lib/redis-cache';
 import { getWebSocketManager } from '@/lib/websocket-optimized';
 import { getCacheHeaders } from '@/lib/cache';

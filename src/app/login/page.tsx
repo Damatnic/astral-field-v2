@@ -203,7 +203,7 @@ export default function LoginPage() {
 
           <div className="mt-6 pt-6 border-t border-gray-200">
             <p className="text-xs text-gray-500 text-center">
-              Quick sign-in enabled • Default password: Dynasty2025!
+              Quick sign-in enabled • Default password: Dynasty2025
             </p>
           </div>
         </div>

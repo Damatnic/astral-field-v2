@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { Position as PrismaPosition } from '@prisma/client';
 import {
   TradeAnalysis,

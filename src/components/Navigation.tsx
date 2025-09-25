@@ -108,7 +108,7 @@ function MobileNav({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }
                 onClick={onClose}
                 className={`flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   active
-                    ? 'bg-field-green-50 text-field-green-700'
+                    ? 'bg-green-50 text-green-700'
                     : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
                 }`}
               >
@@ -274,7 +274,7 @@ export default function Navigation() {
             {/* Logo and brand */}
             <div className="flex items-center space-x-8">
               <Link href="/" className="flex items-center space-x-3">
-                <div className="h-10 w-10 bg-field-green-600 rounded-lg flex items-center justify-center">
+                <div className="h-10 w-10 bg-green-600 rounded-lg flex items-center justify-center">
                   <Trophy className="h-6 w-6 text-white" />
                 </div>
                 <span className="text-xl font-bold text-gray-900">Fantasy League</span>
@@ -293,7 +293,7 @@ export default function Navigation() {
                         href={item.href as any}
                         className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                           active
-                            ? 'bg-field-green-50 text-field-green-700'
+                            ? 'bg-green-50 text-green-700'
                             : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                         }`}
                       >

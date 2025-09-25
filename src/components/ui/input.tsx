@@ -49,19 +49,19 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
   const variantClasses = {
     default: [
       'bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600',
-      'focus:border-primary-500 focus:ring-primary-500',
+      'focus:border-green-500 focus:ring-green-500',
       error && 'border-danger-500 focus:border-danger-500 focus:ring-danger-500',
       success && 'border-success-500 focus:border-success-500 focus:ring-success-500'
     ].filter(Boolean).join(' '),
     filled: [
       'bg-gray-50 dark:bg-gray-800 border-transparent',
-      'focus:bg-white dark:focus:bg-gray-900 focus:border-primary-500 focus:ring-primary-500',
+      'focus:bg-white dark:focus:bg-gray-900 focus:border-green-500 focus:ring-green-500',
       error && 'bg-danger-50 dark:bg-danger-900/20 border-danger-500 focus:border-danger-500 focus:ring-danger-500',
       success && 'bg-success-50 dark:bg-success-900/20 border-success-500 focus:border-success-500 focus:ring-success-500'
     ].filter(Boolean).join(' '),
     underlined: [
       'bg-transparent border-0 border-b-2 border-gray-300 dark:border-gray-600 rounded-none',
-      'focus:border-primary-500 focus:ring-0 focus:ring-offset-0',
+      'focus:border-green-500 focus:ring-0 focus:ring-offset-0',
       error && 'border-danger-500 focus:border-danger-500',
       success && 'border-success-500 focus:border-success-500'
     ].filter(Boolean).join(' ')

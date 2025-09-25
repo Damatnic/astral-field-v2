@@ -64,7 +64,7 @@ const PlayerCard = ({ player, isBench = false }: any) => {
   };
 
   return (
-    <div className={`bg-white rounded-lg border ${isBench ? 'border-gray-200' : 'border-l-4 border-l-field-green-500 border-gray-200'} p-4 hover:shadow-md transition-shadow`}>
+    <div className={`bg-white rounded-lg border ${isBench ? 'border-gray-200' : 'border-l-4 border-l-green-500 border-gray-200'} p-4 hover:shadow-md transition-shadow`}>
       <div className="flex items-center justify-between">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
@@ -146,7 +146,7 @@ export default function RosterPage() {
           <div className="card">
             <div className="card-body">
               <div className="flex items-center justify-between mb-2">
-                <Users className="w-5 h-5 text-field-green-600" />
+                <Users className="w-5 h-5 text-green-600" />
                 <span className="text-xs text-green-600 font-medium">Full</span>
               </div>
               <p className="text-2xl font-bold text-gray-900">9/9</p>

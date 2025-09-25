@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { handleComponentError } from '@/lib/error-handling';
 import { authenticateFromRequest } from '@/lib/auth';
 import { Player, PlayerSearchFilters, PaginatedResponse } from '@/types/fantasy';
-import { getPlayersOptimized } from '@/lib/db-optimized';
+import { getPlayersOptimized } from '@/lib/prisma-optimized';
 import { redisCache, fantasyKeys } from '@/lib/redis-cache';
 import { CACHE_TAGS } from '@/lib/cache';
 import { getCacheHeaders } from '@/lib/cache';

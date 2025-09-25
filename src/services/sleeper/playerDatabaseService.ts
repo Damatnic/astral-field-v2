@@ -2,7 +2,7 @@
 // Syncs Sleeper API player data with our database
 
 import { sleeperPlayerService } from './playerService';
-import { prisma as db } from '@/lib/db';
+import { prisma as db } from '@/lib/prisma';
 
 import { handleComponentError } from '@/lib/error-handling';
 export interface DatabaseSyncResult {
@@ -100,13 +100,9 @@ export class SleeperPlayerDatabaseService {
         weight: sleeperPlayer.weight,
         college: sleeperPlayer.college,
         searchRank: sleeperPlayer.searchRank,
-        // TODO: isFantasyRelevant, lastUpdated fields don't exist in Player model
-        // isFantasyRelevant: sleeperPlayer.isFantasyRelevant,
-        // isActive: sleeperPlayer.isActive,
-        // fantasyPositions: sleeperPlayer.fantasyPositions || [],
-        // depthChartPosition: sleeperPlayer.depthChartPosition,
-        // depthChartOrder: sleeperPlayer.depthChartOrder,
-        // lastUpdated: new Date(),
+        isFantasyRelevant: Boolean(sleeperPlayer.fantasy_positions?.length > 0),
+        isActive: sleeperPlayer.status === 'Active' || sleeperPlayer.status !== 'Inactive',
+        lastUpdated: new Date(),
       };
 
       if (existingPlayer) {
@@ -150,10 +146,9 @@ export class SleeperPlayerDatabaseService {
           await db.player.updateMany({
             where: { sleeperPlayerId: player.id },
             data: { 
-              // TODO: isDynastyTarget, dynastyRank, lastUpdated fields don't exist in Player model
-              // isDynastyTarget: true,
-              // dynastyRank: player.searchRank,
-              // lastUpdated: new Date(),
+              isDynastyTarget: true,
+              dynastyRank: player.searchRank || null,
+              lastUpdated: new Date(),
             },
           });
           
@@ -182,8 +177,7 @@ export class SleeperPlayerDatabaseService {
 
       // Find database players that are no longer in Sleeper fantasy data
       const dbPlayers = await db.player.findMany({
-        // TODO: isFantasyRelevant field doesn't exist in Player model
-        where: { },
+        where: { isFantasyRelevant: true },
         select: { id: true, sleeperPlayerId: true, name: true },
       });
 
@@ -196,10 +190,9 @@ export class SleeperPlayerDatabaseService {
           await db.player.update({
             where: { id: dbPlayer.id },
             data: { 
-              // TODO: isFantasyRelevant, isActive, lastUpdated fields don't exist in Player model
-              // isFantasyRelevant: false,
-              // isActive: false,
-              // lastUpdated: new Date(),
+              isFantasyRelevant: false,
+              isActive: false,
+              lastUpdated: new Date(),
             },
           });
           deactivated++;}
@@ -211,7 +204,7 @@ export class SleeperPlayerDatabaseService {
 
       const oldPlayers = await db.player.deleteMany({
         where: {
-          // TODO: lastUpdated, isFantasyRelevant, isActive fields don't exist in Player model
+          
           // AND: [
           //   { lastUpdated: { lt: sixMonthsAgo } },
           //   { isFantasyRelevant: false },
@@ -251,29 +244,26 @@ export class SleeperPlayerDatabaseService {
         _count: {
           id: true,
         },
-        // TODO: isFantasyRelevant field doesn't exist in Player model
-        where: { },
+        where: { isFantasyRelevant: true },
       });
 
       const dynastyStats = await db.player.aggregate({
         _count: {
           id: true,
         },
-        // TODO: isDynastyTarget field doesn't exist in Player model
-        where: { },
+        where: { isDynastyTarget: true },
       });
 
       // Find most recent update
       const lastSync = await db.player.findFirst({
-        // TODO: lastUpdated field doesn't exist in Player model
-        orderBy: { updatedAt: 'desc' },
-        select: { updatedAt: true },
+        orderBy: { lastUpdated: 'desc' },
+        select: { lastUpdated: true },
       });
 
       // Consider sync needed if no players or last sync > 24 hours ago
       const now = new Date();
       const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-      const needsSync = !lastSync || lastSync.updatedAt < oneDayAgo;
+      const needsSync = !lastSync || lastSync.lastUpdated < oneDayAgo;
 
       return {
         totalPlayers: stats._count.id,

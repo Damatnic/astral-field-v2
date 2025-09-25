@@ -20,7 +20,7 @@ export function Pulse({
   className = ''
 }: PulseProps) {
   const colorClasses = {
-    primary: 'bg-primary-500',
+    primary: 'bg-green-500',
     success: 'bg-success-500',
     warning: 'bg-warning-500',
     danger: 'bg-danger-500',

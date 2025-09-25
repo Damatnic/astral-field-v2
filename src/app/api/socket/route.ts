@@ -4,7 +4,7 @@ import { Server as HTTPServer } from 'http';
 import { sleeperRealTimeScoringService } from '@/services/sleeper/realTimeScoringService';
 import { gameStatusService } from '@/services/sleeper/gameStatusService';
 import { scoringOrchestrator } from '@/services/scoring/scoringOrchestrator';
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 

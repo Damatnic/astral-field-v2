@@ -78,8 +78,8 @@ function DashboardStats() {
                   {stat.change}
                 </p>
               </div>
-              <div className="h-12 w-12 rounded-lg bg-primary-100 flex items-center justify-center">
-                <IconComponent className="h-6 w-6 text-primary-600" />
+              <div className="h-12 w-12 rounded-lg bg-green-100 flex items-center justify-center">
+                <IconComponent className="h-6 w-6 text-green-600" />
               </div>
             </div>
           </div>
@@ -152,14 +152,14 @@ function QuickActions() {
                   <IconComponent className="h-5 w-5 text-white" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h3 className="text-sm font-medium text-gray-900 group-hover:text-primary-600 transition-colors duration-200">
+                  <h3 className="text-sm font-medium text-gray-900 group-hover:text-green-600 transition-colors duration-200">
                     {action.name}
                   </h3>
                   <p className="text-sm text-gray-500 mt-1">
                     {action.description}
                   </p>
                 </div>
-                <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-primary-600 group-hover:translate-x-1 transition-all duration-200" />
+                <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-green-600 group-hover:translate-x-1 transition-all duration-200" />
               </div>
             </Link>
           );
@@ -228,7 +228,7 @@ function RecentActivity() {
       <div className="mt-6">
         <Link
           href={"/activity" as any}
-          className="text-sm font-medium text-primary-600 hover:text-primary-700 flex items-center"
+          className="text-sm font-medium text-green-600 hover:text-green-700 flex items-center"
         >
           View all activity
           <ArrowRight className="ml-1 h-4 w-4" />
@@ -410,7 +410,7 @@ function LandingPage() {
               </Link>
               <Link 
                 href="/features" 
-                className="text-sm font-semibold leading-6 text-gray-900 hover:text-primary-600 transition-colors"
+                className="text-sm font-semibold leading-6 text-gray-900 hover:text-green-600 transition-colors"
               >
                 Learn more <span aria-hidden="true">→</span>
               </Link>
@@ -427,7 +427,7 @@ function LandingPage() {
       <div className="py-24 sm:py-32">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="mx-auto max-w-2xl lg:text-center">
-            <h2 className="text-base font-semibold leading-7 text-primary-600">
+            <h2 className="text-base font-semibold leading-7 text-green-600">
               Everything you need
             </h2>
             <p className="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
@@ -446,7 +446,7 @@ function LandingPage() {
                 return (
                   <div key={feature.name} className="relative pl-16">
                     <dt className="text-base font-semibold leading-7 text-gray-900">
-                      <div className="absolute left-0 top-0 flex h-10 w-10 items-center justify-center rounded-lg bg-primary-600">
+                      <div className="absolute left-0 top-0 flex h-10 w-10 items-center justify-center rounded-lg bg-green-600">
                         <IconComponent className="h-6 w-6 text-white" />
                       </div>
                       {feature.name}
@@ -463,26 +463,26 @@ function LandingPage() {
       </div>
 
       {/* CTA section */}
-      <div className="bg-primary-600">
+      <div className="bg-green-600">
         <div className="px-6 py-24 sm:px-6 sm:py-32 lg:px-8">
           <div className="mx-auto max-w-2xl text-center">
             <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
               Ready to dominate your league?
             </h2>
-            <p className="mx-auto mt-6 max-w-xl text-lg leading-8 text-primary-100">
+            <p className="mx-auto mt-6 max-w-xl text-lg leading-8 text-green-100">
               Join thousands of fantasy players who trust AstralField to give them 
               the competitive edge they need.
             </p>
             <div className="mt-10 flex items-center justify-center gap-x-6">
               <Link
                 href="/login"
-                className="rounded-md bg-white px-3.5 py-2.5 text-sm font-semibold text-primary-600 shadow-sm hover:bg-primary-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                className="rounded-md bg-white px-3.5 py-2.5 text-sm font-semibold text-green-600 shadow-sm hover:bg-green-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
               >
                 Start your journey
               </Link>
               <Link
                 href={"/contact" as any}
-                className="text-sm font-semibold leading-6 text-white hover:text-primary-100"
+                className="text-sm font-semibold leading-6 text-white hover:text-green-100"
               >
                 Contact sales <span aria-hidden="true">→</span>
               </Link>

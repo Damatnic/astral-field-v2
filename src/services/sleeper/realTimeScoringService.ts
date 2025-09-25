@@ -4,7 +4,7 @@
 import { sleeperClient } from './core/sleeperClient';
 import { nflStateService } from './nflStateService';
 import { sleeperCache, SleeperCacheManager } from './core/cacheManager';
-import { prisma as db } from '@/lib/db';
+import { prisma as db } from '@/lib/prisma';
 import { scoringErrorHandler } from '@/services/scoring/errorHandler';
 
 import { handleComponentError } from '@/lib/error-handling';

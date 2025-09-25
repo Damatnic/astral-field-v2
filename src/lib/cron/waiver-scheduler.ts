@@ -1,5 +1,5 @@
 import * as cron from 'node-cron';
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 
 interface WaiverJob {
   leagueId: string;

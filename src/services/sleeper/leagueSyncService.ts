@@ -3,7 +3,7 @@
 
 import { sleeperPlayerService } from './playerService';
 import { nflStateService } from './nflStateService';
-import { prisma as db } from '@/lib/db';
+import { prisma as db } from '@/lib/prisma';
 import { handleComponentError } from '@/lib/error-handling';
 import { Position, PlayerStatus } from '@/types/fantasy';
 import { Position as PrismaPosition } from '@prisma/client';

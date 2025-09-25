@@ -3,7 +3,7 @@
  * Comprehensive user engagement and behavior tracking
  */
 
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { redisCache } from '@/lib/redis-cache';
 import { logger } from '@/lib/logger';
 

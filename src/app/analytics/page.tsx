@@ -54,7 +54,7 @@ const mockTeamStats: TeamStats[] = [
     playoffChance: 85,
     championshipOdds: 15,
     trend: 'up',
-    color: 'bg-field-green-500'
+    color: 'bg-green-500'
   },
   {
     id: '2',
@@ -162,7 +162,7 @@ export default function AnalyticsPage() {
                   onClick={() => setSelectedView(tab.id as any)}
                   className={`py-2 px-1 border-b-2 font-medium text-sm ${
                     selectedView === tab.id
-                      ? 'border-field-green-500 text-field-green-600'
+                      ? 'border-green-500 text-green-600'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
                 >
@@ -180,8 +180,8 @@ export default function AnalyticsPage() {
               <div className="card">
                 <div className="card-body">
                   <div className="flex items-center justify-between mb-2">
-                    <Calculator className="w-5 h-5 text-field-green-600" />
-                    <span className="text-xs text-field-green-600 font-medium">Total</span>
+                    <Calculator className="w-5 h-5 text-green-600" />
+                    <span className="text-xs text-green-600 font-medium">Total</span>
                   </div>
                   <p className="text-2xl font-bold text-gray-900">{mockLeagueStats.totalPoints.toLocaleString()}</p>
                   <p className="text-sm text-gray-600">League Points</p>
@@ -273,7 +273,7 @@ export default function AnalyticsPage() {
                   .map((team, index) => (
                     <div key={team.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                       <div className="flex items-center gap-4">
-                        <div className="w-8 h-8 bg-field-green-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                        <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
                           {index + 1}
                         </div>
                         <div>
@@ -315,7 +315,7 @@ export default function AnalyticsPage() {
             <div className="card">
               <div className="card-body">
                 <div className="flex items-center gap-2 mb-4">
-                  <TrendingUp className="w-5 h-5 text-field-green-600" />
+                  <TrendingUp className="w-5 h-5 text-green-600" />
                   <h3 className="font-medium text-gray-900">Top Scorers (Season)</h3>
                 </div>
                 <div className="space-y-3">

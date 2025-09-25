@@ -3,7 +3,7 @@
  * Advanced player statistical analysis, projection accuracy, and performance insights
  */
 
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { redisCache } from '@/lib/redis-cache';
 import { logger } from '@/lib/logger';
 import { sleeperRealTimeScoringService } from '@/services/sleeper/realTimeScoringService';

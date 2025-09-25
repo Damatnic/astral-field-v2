@@ -125,7 +125,7 @@ export default function RootLayout({
         {/* Skip to main content link for accessibility */}
         <a 
           href="#main-content"
-          className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-primary-600 text-white px-4 py-2 rounded-md z-50"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-green-600 text-white px-4 py-2 rounded-md z-50"
         >
           Skip to main content
         </a>
@@ -162,7 +162,7 @@ export default function RootLayout({
                 {/* Company info - Full width on mobile, spans 2 cols on desktop */}
                 <div className="col-span-1 sm:col-span-2">
                   <div className="flex items-center space-x-2 mb-4">
-                    <div className="h-8 w-8 bg-primary-600 rounded-lg flex items-center justify-center">
+                    <div className="h-8 w-8 bg-green-600 rounded-lg flex items-center justify-center">
                       <span className="text-white font-bold text-sm">AF</span>
                     </div>
                     <span className="text-lg sm:text-xl font-bold text-gray-900">AstralField</span>

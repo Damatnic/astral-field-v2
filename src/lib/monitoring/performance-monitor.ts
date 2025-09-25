@@ -3,7 +3,7 @@
  * Comprehensive performance tracking and alerting
  */
 
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 
 export interface PerformanceMetric {
   id?: string;

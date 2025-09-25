@@ -3,7 +3,7 @@
  * Live metrics, streaming data, and real-time insights
  */
 
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { redisCache } from '@/lib/redis-cache';
 import { logger } from '@/lib/logger';
 import { getWebSocketManager } from '@/lib/websocket-optimized';

@@ -31,7 +31,7 @@ export function Badge({
   };
 
   const variantClasses = {
-    default: 'bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200',
+    default: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
     secondary: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200',
     outline: 'border border-gray-200 text-gray-700 bg-transparent dark:border-gray-700 dark:text-gray-300',
     success: 'bg-success-100 text-success-800 dark:bg-success-900 dark:text-success-200',

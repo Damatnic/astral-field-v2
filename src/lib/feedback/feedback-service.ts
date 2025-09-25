@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { notificationService } from '@/lib/notifications/notification-service';
 
 export interface FeedbackSubmission {

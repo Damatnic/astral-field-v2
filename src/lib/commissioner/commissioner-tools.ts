@@ -3,7 +3,7 @@
  * Advanced league management functionality for commissioners
  */
 
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { broadcastToLeague, broadcastToUser } from '@/lib/socket/server';
 
 export interface LeagueSettings {

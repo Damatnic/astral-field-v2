@@ -3,7 +3,7 @@
  * Handles synchronized draft state across all participants
  */
 
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { AutoPickAlgorithm } from './autopick';
 import { getSocketServer, broadcastToDraft } from '@/lib/socket/server';
 import { notificationService } from '@/lib/notifications/notification-service';

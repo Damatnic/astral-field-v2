@@ -109,7 +109,7 @@ export function TabsTrigger({
 
   const baseClasses = [
     'inline-flex items-center justify-center gap-2 font-medium transition-all duration-200',
-    'focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1',
+    'focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-1',
     disabled && 'opacity-50 cursor-not-allowed pointer-events-none',
     !disabled && 'cursor-pointer'
   ].filter(Boolean).join(' ');
@@ -125,10 +125,10 @@ export function TabsTrigger({
       ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm rounded-md'
       : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md',
     pills: isActive
-      ? 'bg-primary-600 text-white rounded-lg shadow-sm'
+      ? 'bg-green-600 text-white rounded-lg shadow-sm'
       : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg',
     underline: isActive
-      ? 'text-primary-600 border-b-2 border-primary-600 -mb-px'
+      ? 'text-green-600 border-b-2 border-green-600 -mb-px'
       : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 border-b-2 border-transparent hover:border-gray-300 dark:hover:border-gray-600 -mb-px'
   };
 
@@ -157,7 +157,7 @@ export function TabsTrigger({
           inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 
           text-xs font-medium rounded-full
           ${isActive 
-            ? 'bg-primary-100 text-primary-800' 
+            ? 'bg-green-100 text-green-800' 
             : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
           }
         `}>
