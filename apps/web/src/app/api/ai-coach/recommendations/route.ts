@@ -51,7 +51,7 @@ class AICoach {
         const benchProjection = benchPlayer.player.projections[0]?.projectedPoints || 0
         
         // Find starter in same position or FLEX
-        const comparableStarters = starters.filter(sp => 
+        const comparableStarters = starters.filter((sp: any) => 
           sp.player.position === benchPlayer.player.position || sp.position === 'FLEX'
         )
 
