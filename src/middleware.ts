@@ -230,7 +230,7 @@ function generateRequestId(): string {
   return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
-// Configure matcher to include specific routes
+// Configure matcher to include specific routes and disable Edge Runtime
 export const config = {
   matcher: [
     /*
@@ -243,4 +243,5 @@ export const config = {
      */
     '/((?!api/|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js)$).*)',
   ],
+  runtime: 'nodejs',
 };
