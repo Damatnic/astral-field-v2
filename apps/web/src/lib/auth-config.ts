@@ -50,7 +50,7 @@ export const authConfig = {
             name: user.name,
             image: user.image,
             role: user.role,
-            teamName: user.teamName
+            teamName: user.teamName || undefined
           }
         } catch (error) {
           console.error('Auth error:', error)
