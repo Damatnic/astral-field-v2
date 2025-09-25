@@ -1,0 +1,220 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String    @id @default(cuid())
+  email          String    @unique
+  name           String?
+  image          String?
+  hashedPassword String?
+  role           String    @default("USER")
+  teamName       String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Relations
+  teams          Team[]
+  preferences    UserPreferences?
+  chatMessages   ChatMessage[]
+
+  @@map("users")
+}
+
+model UserPreferences {
+  id             String  @id @default(cuid())
+  userId         String  @unique
+  theme          String  @default("system")
+  notifications  String? // JSON stored as string for SQLite
+  emailUpdates   Boolean @default(true)
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_preferences")
+}
+
+model League {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  isActive    Boolean  @default(true)
+  playoffs    Boolean  @default(false)
+  currentWeek Int      @default(1)
+  maxTeams    Int      @default(12)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  teams    Team[]
+  matchups Matchup[]
+
+  @@map("leagues")
+}
+
+model Team {
+  id       String @id @default(cuid())
+  name     String
+  ownerId  String
+  leagueId String
+  wins     Int    @default(0)
+  losses   Int    @default(0)
+  ties     Int    @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  owner             User             @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  league            League           @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  roster            RosterPlayer[]
+  homeMatchups      Matchup[]        @relation("HomeTeam")
+  awayMatchups      Matchup[]        @relation("AwayTeam")
+  proposedTrades    TradeProposal[]  @relation("ProposingTeam")
+  receivedTrades    TradeProposal[]  @relation("ReceivingTeam")
+
+  @@unique([ownerId, leagueId])
+  @@map("teams")
+}
+
+model Player {
+  id                 String    @id @default(cuid())
+  name               String
+  position           String
+  nflTeam            String
+  isFantasyRelevant  Boolean   @default(true)
+  adp                Float?
+  rank               Int?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  // Relations
+  roster       RosterPlayer[]
+  stats        PlayerStats[]
+  projections  PlayerProjection[]
+  news         PlayerNews[]
+
+  @@map("players")
+}
+
+model PlayerStats {
+  id            String @id @default(cuid())
+  playerId      String
+  week          Int
+  season        Int    @default(2025)
+  fantasyPoints Float  @default(0)
+  stats         String // JSON stored as string for SQLite
+
+  // Relations
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, week, season])
+  @@map("player_stats")
+}
+
+model PlayerProjection {
+  id               String @id @default(cuid())
+  playerId         String
+  week             Int?
+  season           Int    @default(2025)
+  projectedPoints  Float
+  confidence       Float  @default(0.5)
+
+  // Relations
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@map("player_projections")
+}
+
+model PlayerNews {
+  id          String   @id @default(cuid())
+  playerId    String
+  title       String
+  content     String
+  source      String
+  severity    String   @default("LOW")
+  publishedAt DateTime @default(now())
+
+  // Relations
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@map("player_news")
+}
+
+model RosterPlayer {
+  id        String  @id @default(cuid())
+  teamId    String
+  playerId  String
+  position  String  @default("BENCH")
+  isStarter Boolean @default(false)
+
+  // Relations
+  team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, playerId])
+  @@map("roster_players")
+}
+
+model Matchup {
+  id         String  @id @default(cuid())
+  week       Int
+  season     Int     @default(2025)
+  homeTeamId String
+  awayTeamId String
+  homeScore  Float   @default(0)
+  awayScore  Float   @default(0)
+  isComplete Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  league   League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  homeTeam Team   @relation("HomeTeam", fields: [homeTeamId], references: [id], onDelete: Cascade)
+  awayTeam Team   @relation("AwayTeam", fields: [awayTeamId], references: [id], onDelete: Cascade)
+  leagueId String
+
+  @@unique([week, season, homeTeamId, awayTeamId])
+  @@map("matchups")
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  userId    String
+  leagueId  String
+  content   String
+  type      String   @default("TEXT") // TEXT, TRADE, ANNOUNCEMENT
+  createdAt DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("chat_messages")
+}
+
+model TradeProposal {
+  id                    String @id @default(cuid())
+  proposingTeamId       String
+  receivingTeamId       String
+  givingPlayerIds       String // JSON array stored as string
+  receivingPlayerIds    String // JSON array stored as string
+  message               String?
+  status                String @default("PENDING") // PENDING, ACCEPTED, REJECTED, EXPIRED
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relations
+  proposingTeam Team @relation("ProposingTeam", fields: [proposingTeamId], references: [id], onDelete: Cascade)
+  receivingTeam Team @relation("ReceivingTeam", fields: [receivingTeamId], references: [id], onDelete: Cascade)
+
+  @@map("trade_proposals")
+}
