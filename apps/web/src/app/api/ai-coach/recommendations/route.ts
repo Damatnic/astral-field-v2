@@ -213,8 +213,8 @@ class AICoach {
     // Find players with upward trend
     for (const player of availablePlayers) {
       if (player.stats.length >= 2) {
-        const recentAvg = player.stats.slice(0, 2).reduce((sum, s) => sum + s.fantasyPoints, 0) / 2
-        const olderAvg = player.stats.slice(1).reduce((sum, s) => sum + s.fantasyPoints, 0) / (player.stats.length - 1)
+        const recentAvg = player.stats.slice(0, 2).reduce((sum: number, s: any) => sum + s.fantasyPoints, 0) / 2
+        const olderAvg = player.stats.slice(1).reduce((sum: number, s: any) => sum + s.fantasyPoints, 0) / (player.stats.length - 1)
         
         if (recentAvg > olderAvg + 3) {
           recommendations.push({
