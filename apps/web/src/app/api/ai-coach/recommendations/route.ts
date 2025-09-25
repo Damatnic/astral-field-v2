@@ -148,7 +148,7 @@ class AICoach {
       // Identify team weaknesses (positions with low projections)
       const positionStrength: Record<string, number> = {}
       
-      for (const rp of team.roster.filter(rp => rp.isStarter)) {
+      for (const rp of team.roster.filter((rp: any) => rp.isStarter)) {
         const projection = rp.player.projections[0]?.projectedPoints || 0
         positionStrength[rp.player.position] = (positionStrength[rp.player.position] || 0) + projection
       }
