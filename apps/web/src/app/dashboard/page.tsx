@@ -149,8 +149,8 @@ export default async function DashboardPage() {
     { 
       name: 'Win Rate', 
       value: data.userTeams.length > 0 
-        ? ((data.userTeams.reduce((sum, team) => sum + team.wins, 0) / 
-           data.userTeams.reduce((sum, team) => sum + (team.wins + team.losses + team.ties), 0)) * 100).toFixed(0) + '%'
+        ? ((data.userTeams.reduce((sum: number, team: any) => sum + team.wins, 0) / 
+           data.userTeams.reduce((sum: number, team: any) => sum + (team.wins + team.losses + team.ties), 0)) * 100).toFixed(0) + '%'
         : '0%', 
       icon: FireIcon,
       color: 'text-orange-400'
