@@ -22,6 +22,8 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
       # Uses community Vercel action. Requires secrets:
       # VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID
