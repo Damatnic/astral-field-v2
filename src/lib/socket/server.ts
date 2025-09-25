@@ -138,7 +138,7 @@ export function initSocketServer(server: HTTPServer): SocketIOServer {
             // Send pick announcement
             io?.to(`draft:${draftId}`).emit('draft:pickMade', {
               pick: result.pick,
-              nextTeam: state?.currentPick?.teamId
+              nextTeam: state?.currentTeamId || null
             });
           } else {
             socket.emit('draft:error', result.error || 'Failed to make pick');

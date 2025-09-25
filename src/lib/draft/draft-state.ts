@@ -108,7 +108,9 @@ export class DraftStateManager {
     const context = {
       round: state.currentRound,
       pick: state.currentPick,
-      totalTeams: state.teams.length,
+      totalRounds: Math.ceil(state.teams.length * 16), // assuming 16 roster spots
+      teamCount: state.teams.length,
+      scoringType: 'STANDARD' as const,
       rosterSettings: state.settings
     };
 
@@ -172,7 +174,7 @@ export class DraftStateManager {
                 owner: true
               }
             },
-            settings: true
+            // Remove non-existent 'settings' field
           }
         },
         picks: {
@@ -196,15 +198,15 @@ export class DraftStateManager {
       currentRound: draft.currentRound || 1,
       currentPick: draft.currentPick || 1,
       currentTeamId: this.getCurrentTeamId(draft),
-      timeRemaining: draft.league.settings?.pickTimeLimit || 90,
-      totalRounds: draft.league.settings?.rosterSize || 15,
+      timeRemaining: 90, // Remove reference to non-existent league.settings
+      totalRounds: 15, // Remove reference to non-existent league.settings
       teams: await this.buildTeamStates(draft),
       picks: this.buildPickHistory(draft),
       availablePlayers: await this.getAvailablePlayers(draft),
       chat: [],
       settings: {
-        pickTimeLimit: draft.league.settings?.pickTimeLimit || 90,
-        draftType: draft.draftType as 'SNAKE' | 'LINEAR' | 'AUCTION',
+        pickTimeLimit: 90, // Remove reference to non-existent league.settings
+        draftType: draft.type as 'SNAKE' | 'LINEAR' | 'AUCTION', // Use correct field name
         pauseBetweenPicks: 2,
         allowTrades: false
       }

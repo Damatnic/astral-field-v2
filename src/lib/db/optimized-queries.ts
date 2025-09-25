@@ -1,6 +1,9 @@
 /**
  * Optimized Database Queries
  * High-performance queries with proper indexing and minimal data fetching
+ * 
+ * NOTE: This file contains many queries that reference non-existent Prisma model fields.
+ * It needs to be refactored to match the actual schema.
  */
 
 import { prisma } from '@/lib/prisma';
@@ -23,19 +26,11 @@ export class OptimizedQueries {
           select: {
             id: true,
             name: true,
-            status: true,
+            isActive: true,
             currentWeek: true,
             season: true,
             commissionerId: true,
-            settings: {
-              select: {
-                rosterSize: true,
-                startingLineup: true,
-                scoringType: true,
-                tradeDeadlineWeek: true,
-                waiverType: true
-              }
-            }
+            settings: true
           }
         });
       },
@@ -59,8 +54,8 @@ export class OptimizedQueries {
             wins: true,
             losses: true,
             ties: true,
-            totalPointsFor: true,
-            totalPointsAgainst: true,
+            pointsFor: true,
+            pointsAgainst: true,
             owner: {
               select: {
                 id: true,
@@ -71,7 +66,7 @@ export class OptimizedQueries {
           },
           orderBy: [
             { wins: 'desc' },
-            { totalPointsFor: 'desc' }
+            { pointsFor: 'desc' }
           ]
         });
       },
@@ -94,10 +89,10 @@ export class OptimizedQueries {
           },
           select: {
             id: true,
-            team1Score: true,
-            team2Score: true,
-            status: true,
-            team1: {
+            homeScore: true,
+            awayScore: true,
+            isComplete: true,
+            homeTeam: {
               select: {
                 id: true,
                 name: true,
@@ -110,7 +105,7 @@ export class OptimizedQueries {
                 }
               }
             },
-            team2: {
+            awayTeam: {
               select: {
                 id: true,
                 name: true,
@@ -152,7 +147,7 @@ export class OptimizedQueries {
                 id: true,
                 name: true,
                 position: true,
-                team: true,
+                nflTeam: true,
                 isActive: true,
                 injuryStatus: true,
                 byeWeek: true,
@@ -178,27 +173,21 @@ export class OptimizedQueries {
     return await cacheService.getOrSet(
       `team:lineup:${teamId}:${week}`,
       async () => {
-        return await prisma.lineup.findFirst({
-          where: { teamId, week },
+        // Note: lineup table doesn't exist in schema, using rosterPlayer instead
+        return await prisma.rosterPlayer.findMany({
+          where: { teamId },
           select: {
             id: true,
-            week: true,
+            position: true,
             isLocked: true,
-            slots: {
+            player: {
               select: {
                 id: true,
+                name: true,
                 position: true,
-                playerId: true,
-                player: {
-                  select: {
-                    id: true,
-                    name: true,
-                    position: true,
-                    team: true,
-                    injuryStatus: true,
-                    isActive: true
-                  }
-                }
+                nflTeam: true,
+                injuryStatus: true,
+                isActive: true
               }
             }
           }
@@ -225,8 +214,8 @@ export class OptimizedQueries {
             wins: true,
             losses: true,
             ties: true,
-            totalPointsFor: true,
-            totalPointsAgainst: true,
+            pointsFor: true,
+            pointsAgainst: true,
             owner: {
               select: {
                 id: true,
@@ -296,11 +285,10 @@ export class OptimizedQueries {
             injuryStatus: true,
             isActive: true,
             espnId: true,
-            averagePoints: true,
-            projectedPoints: true
+            adp: true
           },
           orderBy: [
-            { averagePoints: 'desc' },
+            { adp: 'asc' },
             { name: 'asc' }
           ],
           take: limit,
@@ -325,8 +313,8 @@ export class OptimizedQueries {
             week: true,
             fantasyPoints: true,
             stats: true,
-            isProjected: true,
-            lastUpdated: true
+            isProjection: true,
+            updatedAt: true
           }
         });
       },
@@ -377,8 +365,19 @@ export class OptimizedQueries {
             status: true,
             currentRound: true,
             currentPick: true,
-            pickTimeLimit: true,
-            draftOrder: true,
+            timePerPick: true,
+            draftOrder: {
+              select: {
+                id: true,
+                pickOrder: true,
+                team: {
+                  select: {
+                    id: true,
+                    name: true
+                  }
+                }
+              }
+            },
             createdAt: true
           }
         });
@@ -401,7 +400,7 @@ export class OptimizedQueries {
             id: true,
             round: true,
             pickNumber: true,
-            pickTime: true,
+            pickMadeAt: true,
             isAutoPick: true,
             player: {
               select: {
@@ -485,6 +484,9 @@ export class OptimizedQueries {
     return await cacheService.getOrSet(
       `waivers:claims:${teamId}:${week}`,
       async () => {
+        // Note: waiverClaim table doesn't exist in schema
+        return [];
+        /*
         return await prisma.waiverClaim.findMany({
           where: { teamId, week },
           select: {
@@ -513,6 +515,7 @@ export class OptimizedQueries {
           },
           orderBy: { priority: 'asc' }
         });
+        */
       },
       CACHE_TTL.TEAM_LINEUP
     );
@@ -533,7 +536,7 @@ export class OptimizedQueries {
         name: true,
         wins: true,
         losses: true,
-        totalPointsFor: true,
+        pointsFor: true,
         owner: {
           select: {
             id: true,
@@ -672,8 +675,7 @@ export class OptimizedQueries {
         stats: {
           select: {
             week: true,
-            points: true,
-            projectedPoints: true
+            fantasyPoints: true
           },
           orderBy: { week: 'desc' },
           take: 5

@@ -211,8 +211,8 @@ class SleeperAPI {
   /**
    * Normalize position from Sleeper format to our format
    */
-  private normalizePosition(position: string): string {
-    const positionMap: Record<string, string> = {
+  private normalizePosition(position: string): 'QB' | 'RB' | 'WR' | 'TE' | 'K' | 'DEF' | 'DST' | 'FLEX' | 'SUPER_FLEX' | 'BENCH' {
+    const positionMap: Record<string, 'QB' | 'RB' | 'WR' | 'TE' | 'K' | 'DEF' | 'BENCH'> = {
       'QB': 'QB',
       'RB': 'RB', 
       'FB': 'RB',
