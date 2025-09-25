@@ -35,25 +35,7 @@ const createLogger = () => {
     },
   };
 
-  // Disable pino-pretty in Next.js environments to avoid transport errors
-  // You can enable it by setting ENABLE_PRETTY_LOGS=true, but it may cause issues
-  if (isDevelopment && !isTest && process.env.ENABLE_PRETTY_LOGS === 'true') {
-    try {
-      // Check if pino-pretty is available before using it
-      require.resolve('pino-pretty');
-      loggerConfig.transport = {
-        target: 'pino-pretty',
-        options: {
-          colorize: true,
-          ignore: 'pid,hostname',
-          translateTime: 'HH:MM:ss'
-        }
-      };
-    } catch (error) {
-      // If pino-pretty fails, fall back to standard JSON logging
-      console.warn('pino-pretty not available or failed to load, using standard JSON logging');
-    }
-  }
+  // Use standard pino logging only - no transport dependencies for reliable builds
 
   return pino(loggerConfig);
 };

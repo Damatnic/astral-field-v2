@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth/get-session';
-import { prisma } from '@/lib/prisma';
+import { getPrismaClient } from '@/lib/database';
 
 export const dynamic = 'force-dynamic';
+
+const prisma = getPrismaClient();
 
 export async function GET(request: NextRequest) {
   try {
@@ -35,7 +37,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Team not found or access denied' }, { status: 404 });
     }
     
-    const roster = await prisma.roster.findMany({
+    const roster = await prisma.rosterPlayer.findMany({
       where: { teamId: team.id },
       include: {
         player: {
@@ -124,7 +126,7 @@ export async function PUT(request: NextRequest) {
 
     await prisma.$transaction(async (tx) => {
       for (const move of rosterMoves) {
-        await tx.roster.update({
+        await tx.rosterPlayer.update({
           where: { id: move.rosterId },
           data: { position: move.newPosition }
         });
