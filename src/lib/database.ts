@@ -124,7 +124,7 @@ class DatabaseManager {
       logger.info('Database connection pool initialized successfully');
 
     } catch (error) {
-      logger.error({ error }, 'Failed to initialize database connection pool');
+      logger.error('Failed to initialize database connection pool', { error: error.message });
       throw error;
     }
   }
@@ -138,19 +138,11 @@ class DatabaseManager {
       
       if (duration > this.config.slowQueryThresholdMs) {
         this.stats.slowQueries++;
-        logger.warn('Slow query detected', {
-          query: event.query.substring(0, 200),
-          duration,
-          params: event.params,
-        });
+        logger.warn('Slow query detected', { duration, query: event.query.substring(0, 200) });
       }
 
       if (this.config.logQueries) {
-        logger.debug('Database query', {
-          query: event.query.substring(0, 200),
-          duration,
-          params: event.params,
-        });
+        logger.debug('Database query', { duration, query: event.query.substring(0, 200) });
       }
     });
 
@@ -159,17 +151,11 @@ class DatabaseManager {
       this.stats.lastError = event.message;
       this.stats.lastErrorTime = new Date();
       
-      logger.error('Database error', {
-        message: event.message,
-        target: event.target,
-      });
+      logger.error('Database error', { message: event.message });
     });
 
     this.prisma.$on('warn', (event: any) => {
-      logger.warn('Database warning', {
-        message: event.message,
-        target: event.target,
-      });
+      logger.warn('Database warning', { message: event.message });
     });
   }
 
@@ -195,7 +181,7 @@ class DatabaseManager {
     await this.prisma.$queryRaw`SELECT 1 as test`;
     const responseTime = Date.now() - startTime;
 
-    logger.info('Database connection test successful', { responseTime });
+    logger.info('Database connection test successful');
   }
 
   private startHealthChecking(): void {

@@ -57,7 +57,7 @@ export class AIProjectionEngine {
       include: {
         stats: {
           where: {
-            season,
+            season: season.toString(),
             week: { lte: week - 1 }
           },
           orderBy: { week: 'desc' },

@@ -200,7 +200,7 @@ export class ChatService {
           leagueId: message.leagueId,
           userId: message.userId,
           content: message.message,
-          type: message.type,
+          type: message.type.toUpperCase() as any,
           metadata: message.metadata ? JSON.stringify(message.metadata) : null,
           replyToId: message.replyToId
         }
@@ -455,12 +455,10 @@ export class ChatService {
       // Get recent performance data
       const [userTeam, targetTeam] = await Promise.all([
         prisma.team.findFirst({
-          where: { ownerId: userId, leagueId },
-          include: { wins: true, losses: true }
+          where: { ownerId: userId, leagueId }
         }),
         prisma.team.findFirst({
-          where: { ownerId: targetUserId, leagueId },
-          include: { wins: true, losses: true }
+          where: { ownerId: targetUserId, leagueId }
         })
       ]);
 
@@ -469,7 +467,7 @@ export class ChatService {
       }
 
       // Generate personalized trash talk
-      const winDiff = userTeam.wins.length - targetTeam.wins.length;
+      const winDiff = userTeam.wins - targetTeam.wins;
 
       if (context === 'win') {
         if (winDiff > 3) {
@@ -480,7 +478,7 @@ export class ChatService {
           return `Another one for the highlight reel! ${targetTeam.name} in shambles 💀`;
         }
       } else if (context === 'loss') {
-        if (targetTeam.wins.length === 0) {
+        if (targetTeam.wins === 0) {
           return `Lost to a winless team... time to retire from fantasy football`;
         } else {
           return `Ref must've been paid off! Demanding a recount! 🧐`;

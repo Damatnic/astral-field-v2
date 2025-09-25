@@ -537,7 +537,7 @@ export class CommissionerTools {
     const positionCounts: Record<string, number> = {};
     teams.forEach(team => {
       team.roster.forEach(roster => {
-        const pos = roster.player.position;
+        const pos = roster.playerId;
         positionCounts[pos] = (positionCounts[pos] || 0) + 1;
       });
     });

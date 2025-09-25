@@ -156,11 +156,11 @@ export class AdvancedAnalyticsService {
     const team = await prisma.team.findUnique({
       where: { id: teamId },
       include: {
-        matchupsHome: {
+        homeMatchups: {
           where: { season: season.toString() },
           include: { awayTeam: true }
         },
-        matchupsAway: {
+        awayMatchups: {
           where: { season: season.toString() },
           include: { homeTeam: true }
         },
@@ -423,8 +423,8 @@ export class AdvancedAnalyticsService {
     const allTimeTeams = await prisma.team.findMany({
       where: { leagueId: team.leagueId },
       include: {
-        matchupsHome: true,
-        matchupsAway: true
+        homeMatchups: true,
+        awayMatchups: true
       }
     });
 
