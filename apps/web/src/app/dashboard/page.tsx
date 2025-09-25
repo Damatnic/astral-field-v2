@@ -298,7 +298,7 @@ export default async function DashboardPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {standing.teams.map((team, index) => (
+                        {standing.teams.map((team: any, index: number) => (
                           <tr 
                             key={team.id} 
                             className={`border-b border-slate-700/50 last:border-b-0 ${
