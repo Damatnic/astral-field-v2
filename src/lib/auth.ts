@@ -82,14 +82,37 @@ function generateSessionId(): string {
 }
 
 export async function createSession(userId: string): Promise<AuthSession> {
-  const sessionId = generateSessionId();
   const expiresAt = new Date(Date.now() + SESSION_DURATION);
   
-  // Store session in database
+  // Get user details for JWT
+  const user = await prisma.user.findUnique({
+    where: { id: userId }
+  });
+  
+  if (!user) {
+    throw new Error('User not found');
+  }
+  
+  // Create JWT token for Edge Runtime compatibility
+  const jwtSecret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET || '4wen9bBXoPU6icaBh274VW3JJf84gkbfcR5D/Mo3jis=');
+  const token = await new SignJWT({
+    userId: user.id,
+    email: user.email,
+    name: user.name,
+    role: user.role,
+    avatar: user.avatar || undefined,
+  })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime('7d')
+    .sign(jwtSecret);
+  
+  // Also store session in database for fallback
+  const sessionId = generateSessionId();
   await prisma.userSession.create({
     data: {
       userId,
-      sessionId,
+      sessionId: sessionId,
       expiresAt,
       isActive: true
     }
@@ -97,7 +120,7 @@ export async function createSession(userId: string): Promise<AuthSession> {
   
   const session: AuthSession = {
     userId,
-    sessionId,
+    sessionId: token, // Return JWT token as sessionId
     expiresAt,
     createdAt: new Date()
   };
