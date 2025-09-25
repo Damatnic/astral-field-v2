@@ -161,8 +161,8 @@ class AICoach {
         // Look for teams with strength in that position
         for (const otherTeam of team.league.teams) {
           const strongPlayers = otherTeam.roster
-            .filter(rp => rp.player.position === weakestPosition)
-            .sort((a, b) => (b.player.projections[0]?.projectedPoints || 0) - (a.player.projections[0]?.projectedPoints || 0))
+            .filter((rp: any) => rp.player.position === weakestPosition)
+            .sort((a: any, b: any) => (b.player.projections[0]?.projectedPoints || 0) - (a.player.projections[0]?.projectedPoints || 0))
 
           if (strongPlayers.length > 1) {
             recommendations.push({
