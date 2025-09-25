@@ -142,7 +142,7 @@ export default async function DashboardPage() {
     },
     { 
       name: 'Total Points', 
-      value: data.userTeams.reduce((sum, team) => sum + (team.wins * 100 + team.ties * 50), 0).toString(), 
+      value: data.userTeams.reduce((sum: number, team: any) => sum + (team.wins * 100 + team.ties * 50), 0).toString(), 
       icon: ChartBarIcon,
       color: 'text-green-400'
     },
