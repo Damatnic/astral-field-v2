@@ -77,7 +77,11 @@
       "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_rkDs2yUYZEQ7@ep-proud-pond-adntwlpd-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require\" npx tsc --noEmit --skipLibCheck \"src/app/(dashboard)/dashboard/page.tsx\")",
       "Bash(gh:*)",
       "Bash(npx prisma generate:*)",
-      "Bash(npx prisma db push:*)"
+      "Bash(npx prisma db push:*)",
+      "Bash(/bashes)",
+      "Bash(pkill:*)",
+      "Bash(taskkill:*)",
+      "Bash(npm run type-check:*)"
     ],
     "deny": [],
     "ask": []

@@ -1,60 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { withRateLimit, RATE_LIMIT_CONFIGS } from '@/lib/rate-limiter';
+import { database } from '@/lib/database';
+import { asyncHandler } from '@/lib/error-handling';
 
 export const dynamic = 'force-dynamic';
 
-// Create a singleton prisma instance
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
-const prisma = globalForPrisma.prisma || new PrismaClient();
+const prisma = database.getClient();
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
-
-// Simple in-memory rate limiter
-const requestCounts = new Map<string, { count: number; resetTime: number }>();
-const RATE_LIMIT = 10; // 10 requests
-const WINDOW_MS = 60000; // per minute
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const record = requestCounts.get(ip) || { count: 0, resetTime: now + WINDOW_MS };
-  
-  // Reset if window expired
-  if (now > record.resetTime) {
-    record.count = 1;
-    record.resetTime = now + WINDOW_MS;
-    requestCounts.set(ip, record);
-    return true;
-  }
-  
-  // Check if under limit
-  if (record.count < RATE_LIMIT) {
-    record.count++;
-    requestCounts.set(ip, record);
-    return true;
-  }
-  
-  return false;
-}
-
-export async function GET(request: NextRequest) {
+async function getTeamsHandler(request: NextRequest) {
   try {
-    // Get client IP for rate limiting
-    const ip = request.headers.get('x-forwarded-for') || 
-               request.headers.get('x-real-ip') || 
-               'unknown';
-    
-    // Check rate limit
-    if (!checkRateLimit(ip)) {
-      return NextResponse.json({
-        error: 'Too many requests. Please try again later.'
-      }, { 
-        status: 429,
-        headers: {
-          'Retry-After': '60'
-        }
-      });
-    }
-    
     // Fetch teams with their related data
     const teams = await prisma.team.findMany({
       include: {
@@ -80,38 +34,62 @@ export async function GET(request: NextRequest) {
         { pointsFor: 'desc' }
       ]
     });
-    
-    // Add cache headers to reduce server load
+
+    // Transform data for response
+    const teamsData = teams.map(team => ({
+      id: team.id,
+      name: team.name,
+      logo: team.logo,
+      owner: team.owner,
+      league: team.league,
+      record: {
+        wins: team.wins,
+        losses: team.losses,
+        ties: team.ties
+      },
+      points: {
+        for: team.pointsFor,
+        against: team.pointsAgainst
+      },
+      standing: team.standing,
+      playoffSeed: team.playoffSeed,
+      waiverPriority: team.waiverPriority,
+      faabBudget: team.faabBudget,
+      faabSpent: team.faabSpent
+    }));
+
     return NextResponse.json({
       success: true,
-      teams,
-      count: teams.length,
-      timestamp: new Date().toISOString()
-    }, {
-      headers: {
-        'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
-      }
+      teams: teamsData,
+      total: teamsData.length
     });
-    
-  } catch (error: any) {
-    console.error('Teams API error:', error);
-    
-    // Handle database connection errors gracefully
-    if (error.code === 'P2002' || error.code === 'P2021') {
-      return NextResponse.json({
-        success: false,
-        error: 'Database temporarily unavailable',
-        teams: [],
-        count: 0
-      }, { status: 503 });
-    }
-    
+
+  } catch (error) {
+    console.error('Failed to fetch teams:', error);
     return NextResponse.json({
       success: false,
-      error: 'Failed to fetch teams',
-      message: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
-      teams: [],
-      count: 0
+      error: 'Failed to fetch teams'
     }, { status: 500 });
   }
+}
+
+// Apply rate limiting to the teams endpoint
+export const GET = asyncHandler(async (request: NextRequest) => {
+  return withRateLimit(
+    request,
+    RATE_LIMIT_CONFIGS.read,
+    () => getTeamsHandler(request)
+  );
+});
+
+// Handle OPTIONS for CORS
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    },
+  });
 }

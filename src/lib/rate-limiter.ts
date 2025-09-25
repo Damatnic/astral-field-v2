@@ -126,6 +126,108 @@ export async function withRateLimit(
   return handler();
 }
 
+// Bot protection functionality
+class BotProtection {
+  private suspiciousIps = new Map<string, number>();
+  private blockedIps = new Set<string>();
+
+  constructor(
+    private suspiciousThreshold = 10,
+    private blockThreshold = 50,
+    private blockDuration = 24 * 60 * 60 * 1000 // 24 hours
+  ) {}
+
+  async checkRequest(req: NextRequest): Promise<{ allowed: boolean; reason?: string }> {
+    const ip = this.getClientIp(req);
+    const userAgent = req.headers.get('user-agent') || '';
+
+    // Check if IP is blocked
+    if (this.blockedIps.has(ip)) {
+      return { allowed: false, reason: 'IP blocked' };
+    }
+
+    // Bot detection heuristics
+    const botScore = this.calculateBotScore(req, userAgent);
+    
+    if (botScore > this.blockThreshold) {
+      this.blockIp(ip);
+      return { allowed: false, reason: 'Automated traffic detected' };
+    }
+
+    if (botScore > this.suspiciousThreshold) {
+      this.flagSuspiciousIp(ip);
+    }
+
+    return { allowed: true };
+  }
+
+  private calculateBotScore(req: NextRequest, userAgent: string): number {
+    let score = 0;
+
+    // No user agent
+    if (!userAgent) score += 20;
+
+    // Common bot user agents
+    const botPatterns = [
+      /bot/i, /crawler/i, /spider/i, /scraper/i,
+      /curl/i, /wget/i, /python/i, /axios/i,
+    ];
+    
+    if (botPatterns.some(pattern => pattern.test(userAgent))) {
+      score += 15;
+    }
+
+    // Suspicious headers
+    const referer = req.headers.get('referer');
+    if (!referer) score += 5;
+
+    const acceptLanguage = req.headers.get('accept-language');
+    if (!acceptLanguage) score += 5;
+
+    // High frequency from same IP
+    const ip = this.getClientIp(req);
+    const suspiciousCount = this.suspiciousIps.get(ip) || 0;
+    score += Math.min(suspiciousCount * 2, 30);
+
+    return score;
+  }
+
+  private getClientIp(req: NextRequest): string {
+    const forwarded = req.headers.get('x-forwarded-for');
+    const realIp = req.headers.get('x-real-ip');
+    const cfConnectingIp = req.headers.get('cf-connecting-ip');
+    
+    return forwarded?.split(',')[0] || realIp || cfConnectingIp || 'unknown';
+  }
+
+  private flagSuspiciousIp(ip: string): void {
+    const current = this.suspiciousIps.get(ip) || 0;
+    this.suspiciousIps.set(ip, current + 1);
+  }
+
+  private blockIp(ip: string): void {
+    this.blockedIps.add(ip);
+    
+    // Auto-unblock after duration
+    setTimeout(() => {
+      this.blockedIps.delete(ip);
+      this.suspiciousIps.delete(ip);
+    }, this.blockDuration);
+  }
+
+  unblockIp(ip: string): void {
+    this.blockedIps.delete(ip);
+    this.suspiciousIps.delete(ip);
+  }
+
+  getBlockedIps(): string[] {
+    return Array.from(this.blockedIps);
+  }
+}
+
+// Global bot protection instance
+export const botProtection = new BotProtection();
+
 // Preset configurations
 export const RATE_LIMIT_CONFIGS = {
   // Strict limit for authentication endpoints

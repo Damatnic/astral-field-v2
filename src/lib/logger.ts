@@ -19,24 +19,40 @@ const createLogger = () => {
     };
   }
 
-  // Server-side Pino logger
-  return pino({
+  // Server-side Pino logger with production-safe configuration
+  const loggerConfig: pino.LoggerOptions = {
     level: process.env.LOG_LEVEL || (isDevelopment ? 'debug' : 'info'),
-    transport: isDevelopment && !isTest ? {
-      target: 'pino-pretty',
-      options: {
-        colorize: true,
-        ignore: 'pid,hostname',
-        translateTime: 'HH:MM:ss'
-      }
-    } : undefined,
     enabled: !isTest,
     base: {
       env: process.env.NODE_ENV,
     },
-    redact: ['password', 'token', 'apiKey', 'secret', 'DATABASE_URL'],
+    redact: ['password', 'token', 'apiKey', 'secret', 'DATABASE_URL', 'auth', 'authorization'],
     timestamp: pino.stdTimeFunctions.isoTime,
-  });
+    formatters: {
+      level: (label) => {
+        return { level: label };
+      },
+    },
+  };
+
+  // Only use pino-pretty in development and when explicitly enabled
+  if (isDevelopment && !isTest && process.env.DISABLE_PRETTY_LOGS !== 'true') {
+    try {
+      loggerConfig.transport = {
+        target: 'pino-pretty',
+        options: {
+          colorize: true,
+          ignore: 'pid,hostname',
+          translateTime: 'HH:MM:ss'
+        }
+      };
+    } catch (error) {
+      // If pino-pretty fails, fall back to standard JSON logging
+      console.warn('pino-pretty failed to load, using standard JSON logging');
+    }
+  }
+
+  return pino(loggerConfig);
 };
 
 // Create logger instance

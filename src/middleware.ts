@@ -1,124 +1,233 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateSessionFromRequest } from '@/lib/auth';
+import { applyCors, applySecurityHeaders, validateRequest, InputSanitizer } from '@/lib/security';
+import { RATE_LIMIT_CONFIGS as RATE_LIMITS, botProtection } from '@/lib/rate-limiter';
+import { logger } from '@/lib/logger';
 
-// Rate limiting configuration
-const RATE_LIMIT_MAX = parseInt(process.env.RATE_LIMIT_MAX || '100');
-const RATE_LIMIT_WINDOW = parseInt(process.env.RATE_LIMIT_WINDOW || '900000'); // 15 minutes
-
-// In-memory rate limiting store (use Redis in production for multiple instances)
-const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
-
-// Security configurations
-const CORS_ORIGIN = process.env.CORS_ORIGIN || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3007';
+// Environment configuration
 const isProduction = process.env.NODE_ENV === 'production';
-
-// Rate limiting function
-function rateLimit(ip: string): boolean {
-  const now = Date.now();
-  const windowStart = now - RATE_LIMIT_WINDOW;
-  
-  // Clean up old entries
-  for (const [key, value] of rateLimitStore.entries()) {
-    if (value.resetTime < windowStart) {
-      rateLimitStore.delete(key);
-    }
-  }
-  
-  const current = rateLimitStore.get(ip) || { count: 0, resetTime: now + RATE_LIMIT_WINDOW };
-  
-  if (current.resetTime < now) {
-    current.count = 1;
-    current.resetTime = now + RATE_LIMIT_WINDOW;
-  } else {
-    current.count += 1;
-  }
-  
-  rateLimitStore.set(ip, current);
-  return current.count <= RATE_LIMIT_MAX;
-}
-
-// Security headers function
-function addSecurityHeaders(response: NextResponse): NextResponse {
-  if (isProduction) {
-    response.headers.set('X-Robots-Tag', 'index, follow');
-    response.headers.set('X-DNS-Prefetch-Control', 'on');
-    response.headers.set('X-Download-Options', 'noopen');
-    response.headers.set('X-Permitted-Cross-Domain-Policies', 'none');
-  }
-  
-  return response;
-}
-
-// CORS configuration
-function handleCORS(request: NextRequest, response: NextResponse): NextResponse {
-  const origin = request.headers.get('origin');
-  
-  if (origin && (origin === CORS_ORIGIN || !isProduction)) {
-    response.headers.set('Access-Control-Allow-Origin', origin);
-    response.headers.set('Access-Control-Allow-Credentials', 'true');
-    response.headers.set('Access-Control-Allow-Methods', 'GET,DELETE,PATCH,POST,PUT');
-    response.headers.set('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization');
-  }
-  
-  return response;
-}
+const isDevelopment = process.env.NODE_ENV === 'development';
 
 // Main middleware function
 export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-  const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+  const startTime = Date.now();
+  const { pathname, search } = request.nextUrl;
+  const method = request.method;
+  const userAgent = request.headers.get('user-agent') || '';
   
-  // Create response
-  let response = NextResponse.next();
-  
-  // Apply rate limiting for production
-  if (isProduction && !pathname.startsWith('/_next') && !pathname.startsWith('/api/health')) {
-    if (!rateLimit(ip)) {
-      return new NextResponse('Too Many Requests', {
-        status: 429,
-        headers: {
-          'Retry-After': Math.ceil(RATE_LIMIT_WINDOW / 1000).toString(),
-          'Content-Type': 'text/plain',
-        },
-      });
+  try {
+    // Skip middleware for static assets and internal Next.js routes
+    if (shouldSkipMiddleware(pathname)) {
+      return NextResponse.next();
     }
-  }
-  
-  // Handle preflight requests
-  if (request.method === 'OPTIONS') {
-    response = new NextResponse(null, { status: 200 });
-    return handleCORS(request, response);
-  }
-  
-  // Add security headers
-  response = addSecurityHeaders(response);
-  
-  // Add CORS headers
-  response = handleCORS(request, response);
-  
-  // Protected routes check
-  if (pathname.startsWith('/dashboard') || pathname.startsWith('/admin') || pathname.startsWith('/monitoring')) {
-    try {
-      const user = await validateSessionFromRequest(request);
+
+    // Initial security validation
+    const validation = validateRequest(request);
+    if (!validation.valid) {
+      logger.warn({
+        pathname,
+        errors: validation.errors,
+        ip: getClientIp(request),
+        userAgent,
+      }, 'Request blocked by security validation');
       
-      if (!user) {
-        return NextResponse.redirect(new URL('/login', request.url));
-      }
-      
-      // Additional admin check for admin/monitoring routes
-      if ((pathname.startsWith('/admin') || pathname.startsWith('/monitoring')) && user.role !== 'ADMIN') {
-        return NextResponse.redirect(new URL('/dashboard', request.url));
-      }
-    } catch (error) {
-      console.error('Auth middleware error:', error);
-      return NextResponse.redirect(new URL('/login', request.url));
+      return new NextResponse('Bad Request', { status: 400 });
     }
+
+    // Bot protection
+    const botCheck = await botProtection.checkRequest(request);
+    if (!botCheck.allowed) {
+      logger.warn({
+        pathname,
+        reason: botCheck.reason,
+        ip: getClientIp(request),
+        userAgent,
+      }, 'Request blocked by bot protection');
+      
+      return new NextResponse('Access Denied', { status: 403 });
+    }
+
+    // Handle preflight OPTIONS requests
+    if (method === 'OPTIONS') {
+      const response = new NextResponse(null, { status: 200 });
+      return applySecurityAndCorsHeaders(request, response);
+    }
+
+    // Apply appropriate rate limiting based on route
+    const rateLimitConfig = selectRateLimiter(pathname, method);
+    if (rateLimitConfig) {
+      try {
+        const { withRateLimit } = await import('@/lib/rate-limiter');
+        const rateLimitResult = await withRateLimit(request, rateLimitConfig, async () => {
+          return NextResponse.next();
+        });
+        
+        // If rate limit was hit, withRateLimit returns a 429 response
+        if (rateLimitResult.status === 429) {
+          logger.warn({
+            pathname,
+            ip: getClientIp(request),
+          }, 'Request rate limited');
+          return rateLimitResult;
+        }
+      } catch (error) {
+        logger.error({ error, pathname }, 'Rate limiting check failed');
+        // Fail open - allow request if rate limiting fails
+      }
+    }
+
+    // Authentication and authorization for protected routes
+    const authResult = await handleAuthentication(request, pathname);
+    if (authResult) {
+      return authResult;
+    }
+
+    // Create response
+    let response = NextResponse.next();
+
+    // Apply comprehensive security headers and CORS
+    response = applySecurityAndCorsHeaders(request, response);
+
+    // Add performance and monitoring headers
+    const processingTime = Date.now() - startTime;
+    response.headers.set('X-Response-Time', processingTime.toString());
+    response.headers.set('X-Request-ID', generateRequestId());
+    
+    // Log successful request processing
+    if (isDevelopment) {
+      logger.debug({
+        method,
+        pathname,
+        processingTime,
+        ip: getClientIp(request),
+      }, 'Request processed');
+    }
+
+    return response;
+
+  } catch (error) {
+    // Global error handling for middleware
+    logger.error({
+      error,
+      pathname,
+      method,
+      ip: getClientIp(request),
+    }, 'Middleware error');
+
+    // Return generic error response
+    return new NextResponse('Internal Server Error', { status: 500 });
   }
+}
+
+// Helper functions
+function shouldSkipMiddleware(pathname: string): boolean {
+  const skipPaths = [
+    '/_next/',
+    '/api/health',
+    '/favicon.ico',
+    '/robots.txt',
+    '/sitemap.xml',
+    '/manifest.json',
+    '/sw.js',
+  ];
+
+  const skipExtensions = [
+    '.png', '.jpg', '.jpeg', '.gif', '.ico', '.svg', '.webp',
+    '.css', '.js', '.map', '.woff', '.woff2', '.ttf', '.eot',
+  ];
+
+  return skipPaths.some(path => pathname.startsWith(path)) ||
+         skipExtensions.some(ext => pathname.endsWith(ext));
+}
+
+function getClientIp(request: NextRequest): string {
+  const forwarded = request.headers.get('x-forwarded-for');
+  const realIp = request.headers.get('x-real-ip');
+  const cfConnectingIp = request.headers.get('cf-connecting-ip');
   
-  // Add performance headers
-  response.headers.set('X-Response-Time', Date.now().toString());
+  return forwarded?.split(',')[0] || realIp || cfConnectingIp || 'unknown';
+}
+
+function selectRateLimiter(pathname: string, method: string) {
+  // Authentication endpoints - strict limits
+  if (pathname.includes('/auth/') || pathname.includes('/login') || pathname.includes('/register')) {
+    return RATE_LIMITS.auth;
+  }
+
+  // Password reset endpoints
+  if (pathname.includes('/reset-password') || pathname.includes('/forgot-password')) {
+    return RATE_LIMITS.passwordReset;
+  }
+
+  // General API endpoints
+  if (pathname.startsWith('/api/')) {
+    return RATE_LIMITS.api;
+  }
+
+  // No rate limiting for regular pages
+  return null;
+}
+
+function applySecurityAndCorsHeaders(request: NextRequest, response: NextResponse): NextResponse {
+  // Apply CORS headers
+  response = applyCors(request, response);
+  
+  // Apply security headers
+  response = applySecurityHeaders(response);
   
   return response;
+}
+
+async function handleAuthentication(request: NextRequest, pathname: string): Promise<NextResponse | null> {
+  // Define protected routes
+  const protectedRoutes = ['/dashboard', '/admin', '/monitoring', '/profile', '/settings'];
+  const adminRoutes = ['/admin', '/monitoring'];
+
+  const isProtected = protectedRoutes.some(route => pathname.startsWith(route));
+  if (!isProtected) {
+    return null;
+  }
+
+  try {
+    const user = await validateSessionFromRequest(request);
+    
+    if (!user) {
+      logger.warn({
+        pathname,
+        ip: getClientIp(request),
+      }, 'Unauthenticated access attempt');
+      
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
+
+    // Check admin permissions for admin routes
+    const isAdminRoute = adminRoutes.some(route => pathname.startsWith(route));
+    if (isAdminRoute && user.role !== 'ADMIN') {
+      logger.warn({
+        pathname,
+        userId: user.id,
+        role: user.role,
+        ip: getClientIp(request),
+      }, 'Unauthorized admin access attempt');
+      
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+
+    return null; // Authentication successful
+    
+  } catch (error) {
+    logger.error({
+      error,
+      pathname,
+      ip: getClientIp(request),
+    }, 'Authentication check failed');
+    
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+}
+
+function generateRequestId(): string {
+  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
 // Configure matcher to include specific routes

@@ -58,7 +58,6 @@ export class CommissionerTools {
     const league = await prisma.league.findUnique({
       where: { id: leagueId },
       include: {
-        settings: true,
         teams: {
           include: {
             owner: {
@@ -87,12 +86,7 @@ export class CommissionerTools {
     // Get recent activity
     const recentActivity = await prisma.transaction.findMany({
       where: { leagueId },
-      include: {
-        team: true,
-        player: {
-          select: { id: true, name: true, position: true }
-        }
-      },
+      include: { team: true },
       orderBy: { createdAt: 'desc' },
       take: 10
     });
@@ -104,8 +98,8 @@ export class CommissionerTools {
         week: league.currentWeek || 1
       },
       include: {
-        team1: { include: { owner: true } },
-        team2: { include: { owner: true } }
+        homeTeam: { include: { owner: true } },
+        awayTeam: { include: { owner: true } }
       }
     });
 
@@ -159,9 +153,20 @@ export class CommissionerTools {
     if (settings.isPublic !== undefined) settingsUpdate.isPublic = settings.isPublic;
 
     if (Object.keys(settingsUpdate).length > 0) {
-      await prisma.leagueSettings.update({
-        where: { leagueId },
-        data: settingsUpdate
+      // Get current settings and merge
+      const league = await prisma.league.findUnique({
+        where: { id: leagueId },
+        select: { settings: true }
+      });
+      
+      const currentSettings = league?.settings ? 
+        (typeof league.settings === 'object' ? league.settings : {}) : {};
+      
+      const updatedSettings = { ...currentSettings, ...settingsUpdate };
+      
+      await prisma.league.update({
+        where: { id: leagueId },
+        data: { settings: updatedSettings }
       });
     }
 
@@ -200,8 +205,8 @@ export class CommissionerTools {
         leagueId,
         week: adjustment.week,
         OR: [
-          { team1Id: adjustment.teamId },
-          { team2Id: adjustment.teamId }
+          { homeTeamId: adjustment.teamId },
+          { awayTeamId: adjustment.teamId }
         ]
       }
     });
@@ -211,17 +216,14 @@ export class CommissionerTools {
     }
 
     // Apply the adjustment
-    const isTeam1 = matchup.team1Id === adjustment.teamId;
-    const updateData = isTeam1
-      ? { team1Score: { increment: adjustment.adjustment } }
-      : { team2Score: { increment: adjustment.adjustment } };
+    const isHomeTeam = matchup.homeTeamId === adjustment.teamId;
+    const updateData = isHomeTeam
+      ? { homeScore: { increment: adjustment.adjustment } }
+      : { awayScore: { increment: adjustment.adjustment } };
 
     await prisma.matchup.update({
       where: { id: matchup.id },
-      data: {
-        ...updateData,
-        lastUpdated: new Date()
-      }
+      data: updateData
     });
 
     // Create adjustment record
@@ -237,7 +239,7 @@ export class CommissionerTools {
           adjustment: adjustment.adjustment,
           reason: adjustment.reason,
           commissionerId,
-          originalScore: isTeam1 ? matchup.team1Score : matchup.team2Score
+          originalScore: isHomeTeam ? matchup.homeScore : matchup.awayScore
         }
       }
     });
@@ -265,7 +267,7 @@ export class CommissionerTools {
           type: 'SCORE_ADJUSTMENT',
           title: 'Score Adjustment',
           message: `Commissioner adjusted your Week ${adjustment.week} score by ${adjustment.adjustment} points: ${adjustment.reason}`,
-          relatedId: matchup.id
+          data: { matchupId: matchup.id }
         }
       });
 
@@ -362,16 +364,23 @@ export class CommissionerTools {
     });
 
     if (draft) {
-      await prisma.draft.update({
-        where: { id: draft.id },
-        data: { draftOrder: newOrder }
-      });
-
-      // Update team draft positions
+      // Update draft order using DraftOrder model
       for (let i = 0; i < newOrder.length; i++) {
-        await prisma.team.update({
-          where: { id: newOrder[i] },
-          data: { draftPosition: i + 1 }
+        await prisma.draftOrder.upsert({
+          where: { 
+            draftId_teamId: {
+              draftId: draft.id,
+              teamId: newOrder[i]
+            }
+          },
+          create: {
+            draftId: draft.id,
+            teamId: newOrder[i],
+            pickOrder: i + 1
+          },
+          update: {
+            pickOrder: i + 1
+          }
         });
       }
     }
@@ -414,7 +423,10 @@ export class CommissionerTools {
         teamId: fromTeamId,
         playerId
       },
-      include: { player: true }
+      include: { 
+        team: true,
+        player: true
+      }
     });
 
     if (!currentRoster) {
@@ -428,10 +440,13 @@ export class CommissionerTools {
 
     const league = await prisma.league.findUnique({
       where: { id: leagueId },
-      include: { settings: true }
+      select: { rosterSettings: true }
     });
 
-    const maxRosterSize = league?.settings?.rosterSize || 16;
+    // Parse the rosterSettings JSON to get rosterSize
+    const rosterSettings = league?.rosterSettings ? 
+      (typeof league.rosterSettings === 'object' ? league.rosterSettings as any : {}) : {};
+    const maxRosterSize = rosterSettings?.rosterSize || 16;
     if (toTeamRosterCount >= maxRosterSize) {
       throw new Error('Destination team roster is full');
     }
@@ -474,8 +489,8 @@ export class CommissionerTools {
           userId: fromTeam.owner.id,
           type: 'COMMISSIONER_ACTION',
           title: 'Player Moved by Commissioner',
-          message: `${currentRoster.player.name} has been moved from your team: ${reason}`,
-          relatedId: playerId
+          message: `Player has been moved from your team: ${reason}`,
+          data: { playerId }
         }
       });
     }
@@ -486,8 +501,8 @@ export class CommissionerTools {
           userId: toTeam.owner.id,
           type: 'COMMISSIONER_ACTION',
           title: 'Player Added by Commissioner',
-          message: `${currentRoster.player.name} has been added to your team: ${reason}`,
-          relatedId: playerId
+          message: `Player has been added to your team: ${reason}`,
+          data: { playerId }
         }
       });
     }
@@ -509,7 +524,7 @@ export class CommissionerTools {
       where: { leagueId },
       include: {
         roster: {
-          include: { player: true }
+          include: { team: true }
         }
       }
     });
@@ -683,7 +698,7 @@ export class CommissionerTools {
           type: 'COMMISSIONER_ACTION',
           title: `Roster ${locked ? 'Locked' : 'Unlocked'}`,
           message: `Commissioner has ${locked ? 'locked' : 'unlocked'} your roster`,
-          relatedId: teamId
+          data: { teamId }
         }
       });
     }

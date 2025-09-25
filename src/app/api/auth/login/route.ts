@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { handleComponentError, logError } from '@/lib/error-handling';
 import { login as loginFull } from '@/lib/auth';
 import { createSession } from '@/lib/auth';
+import { withRateLimit, RATE_LIMIT_CONFIGS } from '@/lib/rate-limiter';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,7 +20,7 @@ logError('Auth system selection', {
   }
 });
 
-export async function POST(request: NextRequest) {
+async function loginHandler(request: NextRequest) {
   try {
     // Parse request body with better error handling
     let body;
@@ -87,6 +88,15 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+// Apply rate limiting to the login endpoint
+export async function POST(request: NextRequest) {
+  return withRateLimit(
+    request,
+    RATE_LIMIT_CONFIGS.auth,
+    () => loginHandler(request)
+  );
 }
 
 // Handle OPTIONS for CORS

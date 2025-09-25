@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/auth/get-session';
 import { prisma } from '@/lib/prisma';
+import { withRateLimit, RATE_LIMIT_CONFIGS } from '@/lib/rate-limiter';
+import { asyncHandler } from '@/lib/error-handling';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(request: NextRequest) {
+async function dashboardHandler(request: NextRequest) {
   try {
     const session = await getServerSession();
     
@@ -156,3 +158,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to fetch dashboard data' }, { status: 500 });
   }
 }
+
+// Apply rate limiting to the dashboard endpoint
+export const GET = asyncHandler(async (request: NextRequest) => {
+  return withRateLimit(
+    request,
+    RATE_LIMIT_CONFIGS.api,
+    () => dashboardHandler(request)
+  );
+});

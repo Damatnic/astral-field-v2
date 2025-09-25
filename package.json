@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3007",
+    "dev:prod": "NODE_ENV=production next dev -p 3007",
     "build": "prisma generate && next build",
     "build:analyze": "ANALYZE=true npm run build",
     "start": "next start -p 3007",
