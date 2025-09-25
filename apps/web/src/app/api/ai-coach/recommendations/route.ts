@@ -191,7 +191,7 @@ class AICoach {
 
     const availablePlayers = await prisma.player.findMany({
       where: {
-        id: { notIn: rosteredPlayerIds.map(rp => rp.playerId) },
+        id: { notIn: rosteredPlayerIds.map((rp: any) => rp.playerId) },
         isFantasyRelevant: true
       },
       include: {
