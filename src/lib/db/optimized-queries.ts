@@ -683,6 +683,6 @@ export class OptimizedQueries {
   }
 }
 
-export { OptimizedQueries };
+// Export convenience functions
 export const getPlayersOptimized = OptimizedQueries.getPlayersOptimized;
 export const getPlayerByIdOptimized = OptimizedQueries.getPlayerByIdOptimized;

@@ -16,7 +16,7 @@ interface RosterSlot {
     projectedPoints: number;
     pickNumber?: number;
     position?: string;
-  };
+  } | null;
   required: boolean;
 }
 
@@ -39,22 +39,22 @@ export function TeamRoster({
   isMyTeam = false 
 }: TeamRosterProps) {
   // If roster is not properly structured, create a default roster structure
-  const defaultRosterStructure = [
-    { position: 'QB', required: true },
-    { position: 'RB', required: true },
-    { position: 'RB', required: true },
-    { position: 'WR', required: true },
-    { position: 'WR', required: true },
-    { position: 'TE', required: true },
-    { position: 'FLEX', required: true },
-    { position: 'K', required: true },
-    { position: 'DEF', required: true },
-    { position: 'BENCH', required: false },
-    { position: 'BENCH', required: false },
-    { position: 'BENCH', required: false },
-    { position: 'BENCH', required: false },
-    { position: 'BENCH', required: false },
-    { position: 'BENCH', required: false },
+  const defaultRosterStructure: RosterSlot[] = [
+    { position: 'QB', required: true, player: null },
+    { position: 'RB', required: true, player: null },
+    { position: 'RB', required: true, player: null },
+    { position: 'WR', required: true, player: null },
+    { position: 'WR', required: true, player: null },
+    { position: 'TE', required: true, player: null },
+    { position: 'FLEX', required: true, player: null },
+    { position: 'K', required: true, player: null },
+    { position: 'DEF', required: true, player: null },
+    { position: 'BENCH', required: false, player: null },
+    { position: 'BENCH', required: false, player: null },
+    { position: 'BENCH', required: false, player: null },
+    { position: 'BENCH', required: false, player: null },
+    { position: 'BENCH', required: false, player: null },
+    { position: 'BENCH', required: false, player: null },
   ];
 
   const rosterToUse = roster.length > 0 ? roster : defaultRosterStructure;

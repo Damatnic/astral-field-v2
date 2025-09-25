@@ -223,7 +223,7 @@ export function WaiverAutomationDashboard({ leagueId, leagueName }: WaiverAutoma
         </CardHeader>
         <CardContent className="space-y-6">
           {error && (
-            <Alert variant="danger">
+            <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}

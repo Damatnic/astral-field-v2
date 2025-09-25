@@ -247,7 +247,7 @@ export function PlayerList({
                     {isMyTurn && !player.drafted && (
                       <Button
                         size="sm"
-                        onClick={(e) => handleQuickDraft(player, e)}
+                        onClick={() => handleQuickDraft(player, {} as React.MouseEvent)}
                         className="shrink-0"
                       >
                         Draft

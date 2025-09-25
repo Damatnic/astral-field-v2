@@ -37,10 +37,9 @@ export async function GET(request: NextRequest) {
     // Fetch player data for analytics
     const playerData = await getPlayersOptimized({
       positions: positions || [],
-      team: teams?.[0],
-      leagueId,
+      teams: teams || [],
       limit: 1000, // Get more players for analytics
-      offset: 0
+      page: 1
     });
 
     const analytics = calculatePlayerAnalytics(playerData.players, { positions, teams, timeframe });

@@ -333,3 +333,4 @@ export class CacheService {
 }
 
 export const cacheService = CacheService.getInstance();
+export { redis };

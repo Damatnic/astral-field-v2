@@ -6,6 +6,7 @@
 import { prisma } from '@/lib/prisma';
 import { redisCache } from '@/lib/redis-cache';
 import { logger } from '@/lib/logger';
+import { getPerformanceStats } from '@/lib/db-optimized';
 
 export interface PlatformKPIs {
   userMetrics: {

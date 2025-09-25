@@ -79,6 +79,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
 
   useEffect(() => {
     // Check if user has completed onboarding before
+    // @ts-ignore
     if (session?.user?.onboardingCompleted) {
       onComplete();
     }

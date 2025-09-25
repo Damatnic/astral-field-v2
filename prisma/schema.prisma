@@ -317,6 +317,7 @@ model Transaction {
   type            String    // add, drop, trade, waiver
   status          String    @default("pending") // pending, completed, failed, cancelled
   playerIds       String[]
+  week            Int?      // Week number for transaction
   relatedData     Json?     // Additional transaction data
   processedAt     DateTime?
   createdAt       DateTime  @default(now())
@@ -543,13 +544,16 @@ model Notification {
   type            String
   title           String
   body            String    @default("")
+  message         String?   // Message field
   data            Json?
   priority        String    @default("normal") // high, normal, low
+  userId          String?   // User ID for direct notifications
   createdAt       DateTime  @default(now())
   targets         NotificationTarget[]
   delivery        NotificationDelivery[]
   
   @@index([type])
+  @@index([userId])
   @@index([createdAt])
   @@map("notifications")
 }

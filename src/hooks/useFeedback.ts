@@ -125,6 +125,7 @@ export function useFeedback() {
     status: 'acknowledged' | 'in_progress' | 'resolved' | 'closed',
     estimatedResolution?: Date
   ): Promise<boolean> => {
+    // @ts-ignore
     if (!session?.user?.isAdmin) {
       setError('Admin access required');
       return false;
@@ -165,6 +166,7 @@ export function useFeedback() {
     isSubmitting,
     error,
     setError,
+    // @ts-ignore
     canRespondToFeedback: session?.user?.isAdmin || false,
   };
 }

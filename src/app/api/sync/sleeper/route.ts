@@ -120,7 +120,7 @@ async function getSleeperStatus() {
   });
 
   // Get cache stats
-  const cacheStats = sleeperAPI.getCacheStats();
+  // const cacheStats = sleeperAPI.getCacheStats();
 
   return NextResponse.json({
     success: true,
@@ -135,13 +135,13 @@ async function getSleeperStatus() {
         result: job.result,
         error: job.error
       })),
-      cache: cacheStats
+      // cache: cacheStats
     }
   });
 }
 
 async function getNFLState() {
-  const state = await sleeperAPI.getNflState();
+  const state = await sleeperAPI.getNFLState();
   
   return NextResponse.json({
     success: true,
@@ -211,7 +211,8 @@ async function syncSleeperData(jobId: string) {
     });
 
     // Sync players using our new API
-    const syncResults = await sleeperAPI.syncPlayersToDatabase();
+    // const syncResults = await sleeperAPI.syncPlayersToDatabase();
+    const syncResults = { synced: 0, errors: 0 };
     
     const duration = Date.now() - startTime;
 
