@@ -104,7 +104,7 @@ const fallbackTrades: Trade[] = [
   }
 ];
 
-const TradeCard = ({ trade }: { trade: Trade }) => {
+const TradeCard = ({ trade, onAccept, onReject }: { trade: Trade; onAccept?: (id: string) => void; onReject?: (id: string) => void; }) => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return 'text-orange-600 bg-orange-50 border-orange-200';
@@ -200,7 +200,7 @@ const TradeCard = ({ trade }: { trade: Trade }) => {
             <Button 
               size="sm" 
               className="btn-primary flex-1"
-              onClick={() => handleAcceptTrade(trade.id)}
+              onClick={() => onAccept?.(trade.id)}
             >
               <Check className="w-4 h-4 mr-1" />
               Accept
@@ -209,7 +209,7 @@ const TradeCard = ({ trade }: { trade: Trade }) => {
               size="sm" 
               variant="outline" 
               className="flex-1"
-              onClick={() => handleRejectTrade(trade.id)}
+              onClick={() => onReject?.(trade.id)}
             >
               <X className="w-4 h-4 mr-1" />
               Reject
@@ -456,7 +456,7 @@ export default function TradesPage() {
         ) : filteredTrades.length > 0 ? (
           <div className="space-y-4">
             {filteredTrades.map((trade) => (
-              <TradeCard key={trade.id} trade={trade} />
+              <TradeCard key={trade.id} trade={trade} onAccept={handleAcceptTrade} onReject={handleRejectTrade} />
             ))}
           </div>
         ) : (

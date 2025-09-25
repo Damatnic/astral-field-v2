@@ -158,15 +158,15 @@ export default function LineupManager({ teamId, week, isOwner = true }: LineupMa
         setIsLocked(locked);
         setHasChanges(false);
       } else {
-        toast.error('Failed to load lineup', data.error);
+        toast.error(data.error || 'Failed to load lineup');
       }
     } catch (err) {
       handleComponentError(err as Error, 'LineupManager');
-      toast.error('Failed to load lineup', 'Please try again');
+      toast.error('Failed to load lineup. Please try again.');
     } finally {
       setIsLoading(false);
     }
-  }, [teamId, currentWeek, error, lineup]);
+  }, [teamId, currentWeek]);
   
   useEffect(() => {
     fetchLineup();
@@ -277,13 +277,13 @@ export default function LineupManager({ teamId, week, isOwner = true }: LineupMa
       if (data.success) {
         setHasChanges(false);
         setOriginalLineup(lineupData);
-        toast.success('Lineup saved', `Successfully updated Week ${currentWeek} lineup`);
+        toast.success(`Successfully updated Week ${currentWeek} lineup`);
       } else {
-        toast.error('Failed to save lineup', data.error);
+        toast.error(data.error || 'Failed to save lineup');
       }
     } catch (err) {
       handleComponentError(err as Error, 'LineupManager');
-      toast.error('Failed to save lineup', 'Please try again');
+      toast.error('Failed to save lineup. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -317,7 +317,7 @@ export default function LineupManager({ teamId, week, isOwner = true }: LineupMa
       setLineup(newLineup);
       setBench(newBench);
       setHasChanges(false);
-      toast.info('Lineup reset', 'Changes have been discarded');
+      toast.info('Changes have been discarded');
     }
   };
   

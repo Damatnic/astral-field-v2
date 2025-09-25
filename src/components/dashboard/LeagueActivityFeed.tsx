@@ -104,16 +104,16 @@ export default function LeagueActivityFeed({ leagueId, className = '' }: LeagueA
         setError(null);
         
         if (isRefresh) {
-          toast.success('Activity feed updated', 'Latest league activity loaded');
+          toast.success('Latest league activity loaded');
         }
       } else {
         setError(data.error || 'Failed to load activities');
-        toast.error('Failed to load league activity', data.error);
+        toast.error(data.error || 'Failed to load league activity');
       }
     } catch (err) {
       handleComponentError(err as Error, 'LeagueActivityFeed');
       setError('Failed to load activities');
-      toast.error('Failed to load league activity', 'Please try again');
+      toast.error('Failed to load league activity. Please try again.');
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
