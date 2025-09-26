@@ -60,7 +60,7 @@ export default async function DraftPage() {
               <div>
                 <h2 className="text-lg font-semibold text-white mb-2">Your Leagues</h2>
                 <div className="space-y-2">
-                  {data.userTeams.map(team => (
+                  {data.userTeams.map((team: any) => (
                     <div key={team.id} className="bg-slate-800 rounded p-4 text-left">
                       <p className="font-medium text-white">{team.league.name}</p>
                       <p className="text-sm text-gray-400">
