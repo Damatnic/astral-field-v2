@@ -55,7 +55,9 @@
       "WebFetch(domain:web-jv11kgsl3-astral-productions.vercel.app)",
       "mcp__ide__getDiagnostics",
       "Bash(sed:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "WebFetch(domain:web-kai93tcmb-astral-productions.vercel.app)",
+      "Bash(npx @libsql/cli:*)"
     ],
     "deny": [],
     "ask": []
