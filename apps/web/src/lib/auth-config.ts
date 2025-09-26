@@ -176,34 +176,12 @@ export const authConfig = {
   events: {
     async signIn({ user, account, profile, isNewUser }) {
       // Guardian Security: Log successful sign-ins
-      await prisma.audit_logs.create({
-        data: {
-          id: crypto.randomUUID(),
-          userId: user.id!,
-          action: 'SIGNIN_SUCCESS',
-          details: {
-            provider: account?.provider || 'unknown',
-            isNewUser: isNewUser || false,
-            timestamp: new Date().toISOString()
-          }
-        }
-      }).catch(() => {}) // Fail silently
+      console.log('User signed in:', user.id, account?.provider)
     },
     async signOut({ session, token }) {
       // Guardian Security: Log sign-outs
-      if (session?.user?.id) {
-        await prisma.audit_logs.create({
-          data: {
-            id: crypto.randomUUID(),
-            userId: session.user.id,
-            action: 'SIGNOUT',
-            details: {
-              sessionId: (session as any).sessionId,
-              timestamp: new Date().toISOString()
-            }
-          }
-        }).catch(() => {}) // Fail silently
-      }
+      console.log('User signed out:', session?.user?.id)
+      // Audit logging would go here when audit_logs table is available
     }
   },
   pages: {
