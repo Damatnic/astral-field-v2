@@ -53,7 +53,7 @@ export const authConfig = {
         
         try {
           // Guardian Security: SQL injection protection with parameterized query
-          const user = await prisma.users.findUnique({
+          const user = await prisma.user.findUnique({
             where: {
               email: credentials.email.toLowerCase().trim()
             },
