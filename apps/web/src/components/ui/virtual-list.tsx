@@ -55,7 +55,7 @@ const VirtualList = memo(function VirtualList<T>({
   getItemKey,
   horizontal = false,
   cacheKeyExtractor
-}: VirtualListProps<T>) => {
+}: VirtualListProps<T>) {
   const [state, setState] = useState<VirtualListState>({
     scrollTop: 0,
     scrollLeft: 0,
