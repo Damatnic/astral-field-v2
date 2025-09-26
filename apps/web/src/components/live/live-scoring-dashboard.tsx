@@ -61,6 +61,18 @@ interface Player {
   lastUpdate: Date
 }
 
+// Utility function for game status colors
+const getGameStatusColor = (status: string): string => {
+  switch (status) {
+    case 'playing':
+      return 'bg-green-500 text-white'
+    case 'completed':
+      return 'bg-gray-500 text-white'
+    default:
+      return 'bg-blue-500 text-white'
+  }
+}
+
 // Memoized MatchupCard component
 const MatchupCard = memo(({ 
   matchup, 
@@ -457,14 +469,3 @@ export const LiveScoringDashboard = memo(({ leagueId, week }: LiveScoringDashboa
 }
 
 
-// Optimized utility function
-const getGameStatusColor = (status: string): string => {
-  switch (status) {
-    case 'playing':
-      return 'bg-green-500 text-white'
-    case 'completed':
-      return 'bg-gray-500 text-white'
-    default:
-      return 'bg-blue-500 text-white'
-  }
-}
