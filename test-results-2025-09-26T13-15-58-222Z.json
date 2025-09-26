@@ -1,0 +1,100 @@
+{
+  "timestamp": "2025-09-26T13:15:58.226Z",
+  "deploymentUrl": "https://web-b45unuoxf-astral-productions.vercel.app",
+  "totalTests": 10,
+  "successful": 10,
+  "failed": 0,
+  "dashboardAccess": 10,
+  "results": [
+    {
+      "email": "nicholas@damato-dynasty.com",
+      "name": "Nicholas D'Amato",
+      "team": "D'Amato Dynasty",
+      "role": "COMMISSIONER",
+      "signinSuccess": true,
+      "dashboardAccess": true,
+      "responseTime": 617
+    },
+    {
+      "email": "nick@damato-dynasty.com",
+      "name": "Nick Hartley",
+      "team": "Hartley's Heroes",
+      "role": "PLAYER",
+      "signinSuccess": true,
+      "dashboardAccess": true,
+      "responseTime": 142
+    },
+    {
+      "email": "jack@damato-dynasty.com",
+      "name": "Jack McCaigue",
+      "team": "McCaigue Mayhem",
+      "role": "PLAYER",
+      "signinSuccess": true,
+      "dashboardAccess": true,
+      "responseTime": 183
+    },
+    {
+      "email": "larry@damato-dynasty.com",
+      "name": "Larry McCaigue",
+      "team": "Larry Legends",
+      "role": "PLAYER",
+      "signinSuccess": true,
+      "dashboardAccess": true,
+      "responseTime": 179
+    },
+    {
+      "email": "renee@damato-dynasty.com",
+      "name": "Renee McCaigue",
+      "team": "Renee's Reign",
+      "role": "PLAYER",
+      "signinSuccess": true,
+      "dashboardAccess": true,
+      "responseTime": 132
+    },
+    {
+      "email": "jon@damato-dynasty.com",
+      "name": "Jon Kornbeck",
+      "team": "Kornbeck Crushers",
+      "role": "PLAYER",
+      "signinSuccess": true,
+      "dashboardAccess": true,
+      "responseTime": 136
+    },
+    {
+      "email": "david@damato-dynasty.com",
+      "name": "David Jarvey",
+      "team": "Jarvey's Juggernauts",
+      "role": "PLAYER",
+      "signinSuccess": true,
+      "dashboardAccess": true,
+      "responseTime": 175
+    },
+    {
+      "email": "kaity@damato-dynasty.com",
+      "name": "Kaity Lorbecki",
+      "team": "Lorbecki Lions",
+      "role": "PLAYER",
+      "signinSuccess": true,
+      "dashboardAccess": true,
+      "responseTime": 131
+    },
+    {
+      "email": "cason@damato-dynasty.com",
+      "name": "Cason Minor",
+      "team": "Minor Miracles",
+      "role": "PLAYER",
+      "signinSuccess": true,
+      "dashboardAccess": true,
+      "responseTime": 153
+    },
+    {
+      "email": "brittany@damato-dynasty.com",
+      "name": "Brittany Bergum",
+      "team": "Bergum Blitz",
+      "role": "PLAYER",
+      "signinSuccess": true,
+      "dashboardAccess": true,
+      "responseTime": 116
+    }
+  ]
+}

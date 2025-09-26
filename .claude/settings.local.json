@@ -47,7 +47,8 @@
       "Bash(DATABASE_URL=\"file:./dev.db\" npx tsx scripts/test-quick-signin.ts)",
       "WebFetch(domain:web-7e9k3v3hm-astral-productions.vercel.app)",
       "Bash(DATABASE_URL=\"file:./dev.db\" npx tsx scripts/comprehensive-login-dashboard-test.ts)",
-      "WebFetch(domain:web-ksu192fnz-astral-productions.vercel.app)"
+      "WebFetch(domain:web-ksu192fnz-astral-productions.vercel.app)",
+      "WebFetch(domain:web-b45unuoxf-astral-productions.vercel.app)"
     ],
     "deny": [],
     "ask": []
