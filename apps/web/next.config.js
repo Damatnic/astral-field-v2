@@ -12,6 +12,15 @@ const nextConfig = {
   trailingSlash: false,
   distDir: '.next',
   
+  // Catalyst: Fix asset path resolution for production
+  assetPrefix: process.env.NODE_ENV === 'production' ? '' : '',
+  basePath: '',
+  
+  // Catalyst: Ensure proper static file serving
+  generateBuildId: async () => {
+    return process.env.BUILD_ID || 'catalyst-build'
+  },
+  
   // Catalyst: Experimental performance features
   experimental: {
     optimizePackageImports: [
@@ -59,6 +68,27 @@ const nextConfig = {
       'react/jsx-runtime.js': 'react/jsx-runtime',
       'react/jsx-dev-runtime.js': 'react/jsx-dev-runtime',
     };
+
+    // Catalyst: Ensure consistent chunk naming
+    if (!dev && !isServer) {
+      config.optimization.splitChunks = {
+        ...config.optimization.splitChunks,
+        cacheGroups: {
+          ...config.optimization.splitChunks.cacheGroups,
+          default: {
+            ...config.optimization.splitChunks.cacheGroups.default,
+            enforce: true,
+          },
+          vendor: {
+            test: /[\\/]node_modules[\\/]/,
+            name: 'vendors',
+            chunks: 'all',
+            enforce: true,
+            priority: 20,
+          },
+        },
+      };
+    }
 
     return config;
   },
@@ -190,6 +220,19 @@ const nextConfig = {
         ],
       },
       {
+        source: '/_next/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+          {
+            key: 'Content-Type',
+            value: 'application/javascript; charset=utf-8',
+          },
+        ],
+      },
+      {
         source: '/static/:path*',
         headers: [
           {
@@ -253,7 +296,11 @@ const nextConfig = {
           },
           {
             key: 'Access-Control-Allow-Origin',
-            value: 'same-origin',
+            value: '*',
+          },
+          {
+            key: 'Access-Control-Allow-Methods',
+            value: 'GET, OPTIONS',
           },
         ],
       },
