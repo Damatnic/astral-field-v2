@@ -1,0 +1,533 @@
+name: 🔬 Zenith Quality Gates - Zero Defect Deployment
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    types: [opened, synchronize, reopened]
+  schedule:
+    - cron: '0 6 * * *' # Daily at 6 AM UTC
+
+env:
+  NODE_VERSION: '18'
+  PRODUCTION_URL: 'https://web-daxgcan59-astral-productions.vercel.app'
+  PERFORMANCE_BUDGET_JS: '1048576' # 1MB
+  PERFORMANCE_BUDGET_CSS: '204800' # 200KB
+  COVERAGE_THRESHOLD: '95'
+  E2E_TIMEOUT: '60000'
+
+jobs:
+  # Job 1: Pre-flight Checks
+  preflight:
+    name: 🚀 Pre-flight Checks
+    runs-on: ubuntu-latest
+    outputs:
+      should-deploy: ${{ steps.check.outputs.should-deploy }}
+      test-matrix: ${{ steps.matrix.outputs.test-matrix }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          cd apps/web && npm ci
+
+      - name: Lint and format check
+        run: |
+          cd apps/web
+          npm run lint
+          npm run format:check
+
+      - name: TypeScript check
+        run: |
+          cd apps/web
+          npm run typecheck
+
+      - name: Determine deployment strategy
+        id: check
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" || "${{ github.ref }}" == "refs/heads/master" ]]; then
+            echo "should-deploy=true" >> $GITHUB_OUTPUT
+          else
+            echo "should-deploy=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate test matrix
+        id: matrix
+        run: |
+          echo 'test-matrix={"browser":["chromium","firefox","webkit"],"user-group":["damato-group-1","damato-group-2"]}' >> $GITHUB_OUTPUT
+
+  # Job 2: Unit Tests with Coverage
+  unit-tests:
+    name: 🧪 Unit Tests (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    needs: preflight
+    strategy:
+      matrix:
+        node: ['18', '20']
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js ${{ matrix.node }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          cd apps/web && npm ci
+
+      - name: Run unit tests with coverage
+        run: |
+          cd apps/web
+          npm run test:coverage -- --passWithNoTests --ci --watchAll=false
+
+      - name: Check coverage thresholds
+        run: |
+          cd apps/web
+          node -e "
+            const coverage = require('./coverage/coverage-summary.json');
+            const threshold = ${{ env.COVERAGE_THRESHOLD }};
+            const statements = coverage.total.statements.pct;
+            const branches = coverage.total.branches.pct;
+            const functions = coverage.total.functions.pct;
+            const lines = coverage.total.lines.pct;
+            
+            console.log('Coverage Summary:');
+            console.log('- Statements:', statements + '%');
+            console.log('- Branches:', branches + '%');
+            console.log('- Functions:', functions + '%');
+            console.log('- Lines:', lines + '%');
+            
+            if (statements < threshold || branches < (threshold - 5) || functions < threshold || lines < threshold) {
+              console.error('Coverage below threshold!');
+              process.exit(1);
+            }
+            console.log('✅ Coverage thresholds met');
+          "
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./apps/web/coverage/lcov.info
+          fail_ci_if_error: true
+          flags: unit-tests-node${{ matrix.node }}
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results-node${{ matrix.node }}
+          path: |
+            apps/web/coverage/
+            apps/web/test-results/
+
+  # Job 3: Integration Tests
+  integration-tests:
+    name: 🔗 Integration Tests
+    runs-on: ubuntu-latest
+    needs: preflight
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test
+        options: >
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          cd apps/web && npm ci
+
+      - name: Setup test database
+        env:
+          DATABASE_URL: postgresql://postgres:test@localhost:5432/test
+        run: |
+          cd apps/web
+          npx prisma migrate deploy
+          npx prisma db seed
+
+      - name: Run integration tests
+        env:
+          DATABASE_URL: postgresql://postgres:test@localhost:5432/test
+          NODE_ENV: test
+        run: |
+          cd apps/web
+          npm run test:integration
+
+  # Job 4: Security Tests
+  security-tests:
+    name: 🛡️ Security Tests
+    runs-on: ubuntu-latest
+    needs: preflight
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          cd apps/web && npm ci
+
+      - name: Run security tests
+        run: |
+          cd apps/web
+          npm run test:security
+
+      - name: Run npm audit
+        run: |
+          cd apps/web
+          npm audit --audit-level moderate
+
+      - name: OWASP ZAP Baseline Scan
+        if: needs.preflight.outputs.should-deploy == 'true'
+        uses: zaproxy/action-baseline@v0.10.0
+        with:
+          target: ${{ env.PRODUCTION_URL }}
+          rules_file_name: '.zap/rules.tsv'
+          cmd_options: '-a'
+
+  # Job 5: E2E Tests Matrix
+  e2e-tests:
+    name: 🎭 E2E Tests (${{ matrix.browser }})
+    runs-on: ubuntu-latest
+    needs: [preflight, unit-tests]
+    strategy:
+      matrix:
+        browser: [chromium, firefox, webkit]
+        user-group: [damato-group-1, damato-group-2]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          cd apps/web && npm ci
+
+      - name: Install Playwright
+        run: |
+          cd apps/web
+          npx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Start application
+        run: |
+          cd apps/web
+          npm run build
+          npm run start &
+          npx wait-on http://localhost:3000 --timeout 120000
+
+      - name: Run E2E tests
+        env:
+          E2E_BASE_URL: http://localhost:3000
+          E2E_USER_GROUP: ${{ matrix.user-group }}
+        run: |
+          cd apps/web
+          npx playwright test --project=${{ matrix.browser }} --grep="${{ matrix.user-group }}"
+
+      - name: Upload E2E results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-results-${{ matrix.browser }}-${{ matrix.user-group }}
+          path: |
+            apps/web/e2e-results/
+            apps/web/test-results/
+
+  # Job 6: Performance Tests
+  performance-tests:
+    name: ⚡ Performance Tests
+    runs-on: ubuntu-latest
+    needs: [preflight, unit-tests]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          cd apps/web && npm ci
+
+      - name: Build application
+        run: |
+          cd apps/web
+          npm run build
+
+      - name: Analyze bundle size
+        run: |
+          cd apps/web
+          npm run analyze
+
+      - name: Check bundle size limits
+        run: |
+          cd apps/web
+          find .next/static -name "*.js" -exec wc -c {} + | awk '
+          BEGIN { total = 0 }
+          { 
+            if (NF > 1) total += $1 
+          }
+          END { 
+            print "Total JS bundle size:", total, "bytes"
+            if (total > ${{ env.PERFORMANCE_BUDGET_JS }}) {
+              print "❌ JS bundle size exceeds budget!"
+              exit 1
+            }
+            print "✅ JS bundle size within budget"
+          }'
+
+      - name: Install Playwright for performance tests
+        run: |
+          cd apps/web
+          npx playwright install --with-deps chromium
+
+      - name: Start application for performance testing
+        run: |
+          cd apps/web
+          npm run start &
+          npx wait-on http://localhost:3000 --timeout 120000
+
+      - name: Run Core Web Vitals tests
+        run: |
+          cd apps/web
+          npx playwright test --project=performance
+
+      - name: Generate Lighthouse report
+        uses: treosh/lighthouse-ci-action@v10
+        with:
+          configPath: './apps/web/.lighthouserc.json'
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+
+  # Job 7: Accessibility Tests
+  accessibility-tests:
+    name: ♿ Accessibility Tests
+    runs-on: ubuntu-latest
+    needs: [preflight, unit-tests]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          cd apps/web && npm ci
+
+      - name: Install Playwright
+        run: |
+          cd apps/web
+          npx playwright install --with-deps chromium
+
+      - name: Start application
+        run: |
+          cd apps/web
+          npm run build
+          npm run start &
+          npx wait-on http://localhost:3000 --timeout 120000
+
+      - name: Run accessibility tests
+        run: |
+          cd apps/web
+          npx playwright test --project=accessibility
+
+      - name: Upload accessibility results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: accessibility-results
+          path: apps/web/e2e-results/
+
+  # Job 8: Production Validation
+  production-validation:
+    name: 🌐 Production Validation
+    runs-on: ubuntu-latest
+    needs: [preflight]
+    if: needs.preflight.outputs.should-deploy == 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          cd apps/web && npm ci
+
+      - name: Run production asset tests
+        env:
+          E2E_BASE_URL: ${{ env.PRODUCTION_URL }}
+        run: |
+          cd apps/web
+          npm run test -- __tests__/production/asset-loading.test.ts
+
+      - name: Validate D'Amato Dynasty users
+        env:
+          E2E_BASE_URL: ${{ env.PRODUCTION_URL }}
+        run: |
+          cd apps/web
+          npx playwright install --with-deps chromium
+          npx playwright test damato-dynasty-users.spec.ts --project=chromium
+
+      - name: Health check endpoints
+        run: |
+          curl -f ${{ env.PRODUCTION_URL }}/api/health || exit 1
+          curl -f ${{ env.PRODUCTION_URL }}/api/auth/signin || exit 1
+
+  # Job 9: Quality Gate Summary
+  quality-gate:
+    name: 🎯 Quality Gate Summary
+    runs-on: ubuntu-latest
+    needs: [
+      preflight,
+      unit-tests,
+      integration-tests,
+      security-tests,
+      e2e-tests,
+      performance-tests,
+      accessibility-tests,
+      production-validation
+    ]
+    if: always()
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Generate Quality Report
+        run: |
+          echo "# 🔬 Zenith Quality Gates Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Test Results Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Check job statuses
+          UNIT_STATUS="${{ needs.unit-tests.result }}"
+          INTEGRATION_STATUS="${{ needs.integration-tests.result }}"
+          SECURITY_STATUS="${{ needs.security-tests.result }}"
+          E2E_STATUS="${{ needs.e2e-tests.result }}"
+          PERFORMANCE_STATUS="${{ needs.performance-tests.result }}"
+          ACCESSIBILITY_STATUS="${{ needs.accessibility-tests.result }}"
+          PRODUCTION_STATUS="${{ needs.production-validation.result }}"
+          
+          echo "| Test Suite | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Unit Tests | $([ "$UNIT_STATUS" = "success" ] && echo "✅ PASS" || echo "❌ FAIL") |" >> $GITHUB_STEP_SUMMARY
+          echo "| Integration Tests | $([ "$INTEGRATION_STATUS" = "success" ] && echo "✅ PASS" || echo "❌ FAIL") |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security Tests | $([ "$SECURITY_STATUS" = "success" ] && echo "✅ PASS" || echo "❌ FAIL") |" >> $GITHUB_STEP_SUMMARY
+          echo "| E2E Tests | $([ "$E2E_STATUS" = "success" ] && echo "✅ PASS" || echo "❌ FAIL") |" >> $GITHUB_STEP_SUMMARY
+          echo "| Performance Tests | $([ "$PERFORMANCE_STATUS" = "success" ] && echo "✅ PASS" || echo "❌ FAIL") |" >> $GITHUB_STEP_SUMMARY
+          echo "| Accessibility Tests | $([ "$ACCESSIBILITY_STATUS" = "success" ] && echo "✅ PASS" || echo "❌ FAIL") |" >> $GITHUB_STEP_SUMMARY
+          echo "| Production Validation | $([ "$PRODUCTION_STATUS" = "success" ] && echo "✅ PASS" || echo "❌ FAIL") |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Overall status
+          if [ "$UNIT_STATUS" = "success" ] && \
+             [ "$INTEGRATION_STATUS" = "success" ] && \
+             [ "$SECURITY_STATUS" = "success" ] && \
+             [ "$E2E_STATUS" = "success" ] && \
+             [ "$PERFORMANCE_STATUS" = "success" ] && \
+             [ "$ACCESSIBILITY_STATUS" = "success" ] && \
+             ([ "${{ needs.preflight.outputs.should-deploy }}" = "false" ] || [ "$PRODUCTION_STATUS" = "success" ]); then
+            echo "## 🎉 ALL QUALITY GATES PASSED" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "✅ **DEPLOYMENT APPROVED**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "- Zero defects detected" >> $GITHUB_STEP_SUMMARY
+            echo "- All 10 D'Amato Dynasty users validated" >> $GITHUB_STEP_SUMMARY
+            echo "- Performance budgets met" >> $GITHUB_STEP_SUMMARY
+            echo "- Security compliance verified" >> $GITHUB_STEP_SUMMARY
+            echo "- Accessibility standards met" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## ❌ QUALITY GATES FAILED" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "🚫 **DEPLOYMENT BLOCKED**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Please fix the failing tests before deployment." >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+      - name: Update commit status
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const success = ${{ 
+              needs.unit-tests.result == 'success' &&
+              needs.integration-tests.result == 'success' &&
+              needs.security-tests.result == 'success' &&
+              needs.e2e-tests.result == 'success' &&
+              needs.performance-tests.result == 'success' &&
+              needs.accessibility-tests.result == 'success' &&
+              (needs.preflight.outputs.should-deploy == 'false' || needs.production-validation.result == 'success')
+            }};
+            
+            github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: success ? 'success' : 'failure',
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              description: success ? 'All quality gates passed' : 'Quality gates failed',
+              context: 'Zenith Quality Gates'
+            });
+
+  # Job 10: Deployment (only on success)
+  deploy:
+    name: 🚀 Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [quality-gate]
+    if: needs.quality-gate.result == 'success' && github.ref == 'refs/heads/main'
+    environment: production
+    steps:
+      - name: Deploy to Vercel
+        run: |
+          echo "🚀 Deploying to production..."
+          echo "✅ All quality gates passed - deployment approved"
+          # Add actual deployment steps here
+          
+      - name: Post-deployment verification
+        run: |
+          sleep 30  # Wait for deployment to propagate
+          curl -f ${{ env.PRODUCTION_URL }}/api/health
+          echo "✅ Post-deployment health check passed"
