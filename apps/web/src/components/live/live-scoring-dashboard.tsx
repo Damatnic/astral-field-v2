@@ -456,11 +456,6 @@ export const LiveScoringDashboard = memo(({ leagueId, week }: LiveScoringDashboa
   )
 }
 
-// Add display names for better debugging
-MatchupCard.displayName = 'MatchupCard'
-PlayerRow.displayName = 'PlayerRow'
-StatusCard.displayName = 'StatusCard'
-LiveScoringDashboard.displayName = 'LiveScoringDashboard'
 
 // Optimized utility function
 const getGameStatusColor = (status: string): string => {
