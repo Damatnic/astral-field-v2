@@ -1,6 +1,5 @@
 import { NextAuthConfig } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
-import GoogleProvider from "next-auth/providers/google"
 import { prisma } from "./prisma"
 // Note: bcryptjs is incompatible with Edge Runtime
 // We'll handle password hashing in Node.js-only API routes
@@ -22,20 +21,9 @@ async function verifyPassword(password: string, hashedPassword: string): Promise
   }
 }
 
-// Guardian Security: Enhanced authentication configuration
+// Demo-ready authentication configuration (credentials only)
 export const authConfig = {
   providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      authorization: {
-        params: {
-          prompt: "consent",
-          access_type: "offline",
-          response_type: "code"
-        }
-      }
-    }),
     CredentialsProvider({
       name: "credentials",
       credentials: {

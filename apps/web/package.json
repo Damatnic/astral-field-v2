@@ -34,7 +34,9 @@
     "clean:all": "npm run clean && rimraf node_modules",
     
     "seed:prod": "tsx ../../scripts/seed-production-users.ts",
-    "deploy:prod": "prisma generate && next build && tsx ../../scripts/seed-production-users.ts",
+    "seed:demo": "tsx scripts/create-demo-users.ts",
+    "setup:demo": "prisma db push && npm run seed:demo",
+    "deploy:prod": "prisma generate && next build",
     "postinstall": "prisma generate",
     
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
