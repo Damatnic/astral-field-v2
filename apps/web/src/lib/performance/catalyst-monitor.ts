@@ -194,8 +194,10 @@ class CatalystPerformanceMonitor {
       try {
         const inpObserver = new PerformanceObserver((list) => {
           for (const entry of list.getEntries()) {
-            const inp = entry.processingEnd - entry.startTime
-            this.recordMetric('INP', inp, this.budget.INP)
+            if ('processingEnd' in entry) {
+              const inp = (entry as any).processingEnd - entry.startTime
+              this.recordMetric('INP', inp, this.budget.INP)
+            }
           }
         })
         inpObserver.observe({ entryTypes: ['event'] })
