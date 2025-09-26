@@ -33,7 +33,13 @@
       "Bash(DATABASE_URL=\"file:./dev.db\" npx tsx ../../scripts/seed-damato-users.ts)",
       "Bash(DATABASE_URL=\"file:./dev.db\" npx tsx ../../scripts/create-damato-users.ts)",
       "Bash(DATABASE_URL=\"file:./dev.db\" npx tsx scripts/seed-damato-users.ts)",
-      "Bash(DATABASE_URL=\"file:./dev.db\" npx tsx scripts/create-simple-users.ts)"
+      "Bash(DATABASE_URL=\"file:./dev.db\" npx tsx scripts/create-simple-users.ts)",
+      "WebFetch(domain:web-aguscb2f7-astral-productions.vercel.app)",
+      "WebFetch(domain:web-astral-productions.vercel.app)",
+      "WebFetch(domain:localhost)",
+      "Bash(DATABASE_URL=\"file:./dev.db\" npx prisma studio --browser none --port 5555)",
+      "Bash(DATABASE_URL=\"file:./dev.db\" npx tsx scripts/check-users.ts)",
+      "Bash(DATABASE_URL=\"file:./dev.db\" npx tsx scripts/test-signin.ts)"
     ],
     "deny": [],
     "ask": []

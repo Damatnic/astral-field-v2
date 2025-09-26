@@ -1,16 +1,45 @@
 import { PrismaClient } from '@prisma/client';
-import * as dotenv from 'dotenv';
 
-dotenv.config({ path: '.env.local' });
 const prisma = new PrismaClient();
 
 async function checkUsers() {
-  const users = await prisma.user.findMany({
-    orderBy: { name: 'asc' }
-  });
-  console.log(`Found ${users.length} users in database:`);
-  users.forEach((u, i) => console.log(`${i+1}. ${u.name} (${u.email})`));
-  await prisma.$disconnect();
+  console.log('🔍 Checking D\'Amato Dynasty League Users...\n');
+  
+  try {
+    const users = await prisma.user.findMany({
+      where: {
+        email: {
+          contains: '@damato-dynasty.com'
+        }
+      },
+      select: {
+        email: true,
+        name: true,
+        role: true,
+        teamName: true
+      }
+    });
+    
+    console.log(`Found ${users.length} D'Amato Dynasty League users:\n`);
+    
+    users.forEach((user, index) => {
+      console.log(`${index + 1}. ${user.name}`);
+      console.log(`   Email: ${user.email}`);
+      console.log(`   Team: ${user.teamName}`);
+      console.log(`   Role: ${user.role}\n`);
+    });
+    
+    if (users.length === 10) {
+      console.log('✅ All 10 league members are in the database!');
+    } else {
+      console.log(`⚠️  Only ${users.length} out of 10 members found.`);
+    }
+    
+  } catch (error) {
+    console.error('❌ Error checking users:', error);
+  } finally {
+    await prisma.$disconnect();
+  }
 }
 
 checkUsers().catch(console.error);
