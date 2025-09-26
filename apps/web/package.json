@@ -3,7 +3,7 @@
   "version": "3.0.0",
   "private": true,
   "scripts": {
-    "build": "next build",
+    "build": "prisma generate && next build",
     "dev": "next dev --port 3000",
     "lint": "next lint",
     "start": "next start --port 3000",
@@ -14,7 +14,8 @@
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",
     "test:all": "npm run test && npm run test:e2e",
-    "clean": "rimraf .next .turbo"
+    "clean": "rimraf .next .turbo",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@astralfield/providers": "file:../../providers/sleeper",
