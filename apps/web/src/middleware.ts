@@ -1,16 +1,9 @@
 import { auth } from '@/lib/auth'
 import { NextResponse } from 'next/server'
-import { GuardianSecurity } from './middleware/security'
 
 export default auth(async (req) => {
   const { nextUrl } = req
   const isLoggedIn = !!req.auth
-
-  // Guardian Security: Apply security checks first
-  const securityResponse = await GuardianSecurity.middleware(req)
-  if (securityResponse) {
-    return securityResponse
-  }
 
   // Define protected and auth routes
   const isProtectedRoute = nextUrl.pathname.startsWith('/dashboard') ||
@@ -25,9 +18,16 @@ export default auth(async (req) => {
   const isAuthRoute = nextUrl.pathname.startsWith('/auth/')
   const isApiRoute = nextUrl.pathname.startsWith('/api/')
 
-  // Guardian Security: Add security headers to response
+  // Basic security headers (Edge Runtime compatible)
+  const securityHeaders = {
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'X-XSS-Protection': '1; mode=block',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+  }
+
   const response = NextResponse.next()
-  const securityHeaders = GuardianSecurity.generateSecurityHeaders()
   
   Object.entries(securityHeaders).forEach(([key, value]) => {
     response.headers.set(key, value)
@@ -60,10 +60,9 @@ export default auth(async (req) => {
     return redirectResponse
   }
 
-  // Guardian Security: Enhanced API route protection
-  if (isApiRoute && !isAuthRoute.includes('api/auth') && !nextUrl.pathname.includes('/api/health')) {
-    // Additional API security checks
-    if (!isLoggedIn && !nextUrl.pathname.includes('/api/auth/')) {
+  // Basic API route protection
+  if (isApiRoute && !nextUrl.pathname.includes('/api/auth/') && !nextUrl.pathname.includes('/api/health')) {
+    if (!isLoggedIn) {
       return new NextResponse('Unauthorized', { 
         status: 401,
         headers: securityHeaders

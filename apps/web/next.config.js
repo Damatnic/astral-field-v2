@@ -43,9 +43,10 @@ const nextConfig = {
             vendor: {
               test: /[\\/]node_modules[\\/]/,
               name(module) {
-                const packageName = module.context.match(
+                const match = module.context?.match(
                   /[\\/]node_modules[\\/](.*?)([\\/]|$)/
-                )[1];
+                );
+                const packageName = match ? match[1] : 'vendor';
                 // Create specific chunks for large libraries
                 if (packageName === 'react' || packageName === 'react-dom') {
                   return 'react-vendor';
