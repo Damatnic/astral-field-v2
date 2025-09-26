@@ -267,16 +267,17 @@ class CatalystDatabaseOptimizer {
                 owner: {
                   select: { name: true }
                 },
-                lineups: {
-                  where: { week },
+                roster: {
                   select: {
-                    players: {
+                    id: true,
+                    position: true,
+                    isStarter: true,
+                    player: {
                       select: {
                         id: true,
                         name: true,
                         position: true,
                         nflTeam: true,
-                        isStarting: true,
                         stats: {
                           where: { week },
                           select: {
@@ -303,16 +304,17 @@ class CatalystDatabaseOptimizer {
                 owner: {
                   select: { name: true }
                 },
-                lineups: {
-                  where: { week },
+                roster: {
                   select: {
-                    players: {
+                    id: true,
+                    position: true,
+                    isStarter: true,
+                    player: {
                       select: {
                         id: true,
                         name: true,
                         position: true,
                         nflTeam: true,
-                        isStarting: true,
                         stats: {
                           where: { week },
                           select: {
