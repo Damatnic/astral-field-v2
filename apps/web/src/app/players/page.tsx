@@ -103,14 +103,14 @@ async function getPlayers(params: PlayersPageProps['searchParams']) {
   ])
 
   // Transform players to match the interface
-  const transformedPlayers = players.map(player => ({
+  const transformedPlayers = players.map((player: any) => ({
     ...player,
     status: 'ACTIVE', // Default status
     age: null, // Could be calculated from birthdate if available
     nflTeam: player.nflTeam as string | null,
     stats: player.stats || [],
     projections: player.projections || [],
-    news: (player.news || []).map(newsItem => ({
+    news: (player.news || []).map((newsItem: any) => ({
       id: newsItem.id,
       headline: newsItem.title,
       publishedAt: newsItem.publishedAt
