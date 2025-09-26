@@ -258,7 +258,7 @@ class CatalystDatabaseOptimizer {
             awayTeamId: true,
             homeScore: true,
             awayScore: true,
-            status: true,
+            isComplete: true,
             week: true,
             homeTeam: {
               select: {
