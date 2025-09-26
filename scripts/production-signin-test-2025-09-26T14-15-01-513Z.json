@@ -1,0 +1,50 @@
+{
+  "timestamp": "2025-09-26T14:15:01.513Z",
+  "productionUrl": "https://web-3n61yluzx-astral-productions.vercel.app",
+  "password": "Dynasty2025!",
+  "summary": {
+    "totalUsers": 3,
+    "successfulLogins": 0,
+    "quickSigninWorking": 3,
+    "iconIssues": 0,
+    "allWorking": false
+  },
+  "results": [
+    {
+      "user": "Nicholas D'Amato",
+      "email": "nicholas@damato-dynasty.com",
+      "team": "D'Amato Dynasty",
+      "role": "COMMISSIONER",
+      "loginSuccess": false,
+      "dashboardAccess": false,
+      "quickSigninWorking": true,
+      "iconFilesLoaded": true,
+      "responseTime": 26305,
+      "error": ""
+    },
+    {
+      "user": "Nick Hartley",
+      "email": "nick@damato-dynasty.com",
+      "team": "Hartley's Heroes",
+      "role": "PLAYER",
+      "loginSuccess": false,
+      "dashboardAccess": false,
+      "quickSigninWorking": true,
+      "iconFilesLoaded": true,
+      "responseTime": 23111,
+      "error": ""
+    },
+    {
+      "user": "Jack McCaigue",
+      "email": "jack@damato-dynasty.com",
+      "team": "McCaigue Mayhem",
+      "role": "PLAYER",
+      "loginSuccess": false,
+      "dashboardAccess": false,
+      "quickSigninWorking": true,
+      "iconFilesLoaded": true,
+      "responseTime": 23095,
+      "error": ""
+    }
+  ]
+}

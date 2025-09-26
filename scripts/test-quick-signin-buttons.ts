@@ -5,7 +5,7 @@
  * Validates that the signin page loads with all 10 quick signin buttons
  */
 
-const DEPLOYMENT_URL = "https://web-b45unuoxf-astral-productions.vercel.app"
+const DEPLOYMENT_URL = "https://web-3n61yluzx-astral-productions.vercel.app"
 
 const EXPECTED_USERS = [
   { name: "Nicholas D'Amato", email: "nicholas@damato-dynasty.com", team: "D'Amato Dynasty", role: "Commissioner" },

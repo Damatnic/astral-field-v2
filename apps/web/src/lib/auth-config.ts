@@ -22,12 +22,12 @@ export const authConfig = {
         }
 
         try {
-          const user = await prisma.user.findUnique({
+          const user = await prisma.users.findUnique({
             where: {
               email: credentials.email as string
             },
             include: {
-              preferences: true
+              user_preferences: true
             }
           })
 
@@ -83,5 +83,6 @@ export const authConfig = {
   pages: {
     signIn: '/auth/signin',
     error: '/auth/error'
-  }
+  },
+  debug: process.env.NODE_ENV === 'development'
 } satisfies NextAuthConfig

@@ -1,0 +1,125 @@
+{
+  "timestamp": "2025-09-26T13:21:31.708Z",
+  "deploymentUrl": "https://web-3n61yluzx-astral-productions.vercel.app",
+  "leagueSize": 10,
+  "password": "Dynasty2025!",
+  "results": {
+    "authentication": 10,
+    "dashboardAccess": 10,
+    "personalDataAccess": 0,
+    "completeSuccess": 10
+  },
+  "individualResults": [
+    {
+      "user": "Nicholas D'Amato",
+      "email": "nicholas@damato-dynasty.com",
+      "team": "D'Amato Dynasty",
+      "role": "COMMISSIONER",
+      "databaseSetup": true,
+      "authentication": true,
+      "dashboardAccess": true,
+      "personalData": false,
+      "responseTime": 389
+    },
+    {
+      "user": "Nick Hartley",
+      "email": "nick@damato-dynasty.com",
+      "team": "Hartley's Heroes",
+      "role": "PLAYER",
+      "databaseSetup": true,
+      "authentication": true,
+      "dashboardAccess": true,
+      "personalData": false,
+      "responseTime": 272
+    },
+    {
+      "user": "Jack McCaigue",
+      "email": "jack@damato-dynasty.com",
+      "team": "McCaigue Mayhem",
+      "role": "PLAYER",
+      "databaseSetup": true,
+      "authentication": true,
+      "dashboardAccess": true,
+      "personalData": false,
+      "responseTime": 264
+    },
+    {
+      "user": "Larry McCaigue",
+      "email": "larry@damato-dynasty.com",
+      "team": "Larry Legends",
+      "role": "PLAYER",
+      "databaseSetup": true,
+      "authentication": true,
+      "dashboardAccess": true,
+      "personalData": false,
+      "responseTime": 233
+    },
+    {
+      "user": "Renee McCaigue",
+      "email": "renee@damato-dynasty.com",
+      "team": "Renee's Reign",
+      "role": "PLAYER",
+      "databaseSetup": true,
+      "authentication": true,
+      "dashboardAccess": true,
+      "personalData": false,
+      "responseTime": 258
+    },
+    {
+      "user": "Jon Kornbeck",
+      "email": "jon@damato-dynasty.com",
+      "team": "Kornbeck Crushers",
+      "role": "PLAYER",
+      "databaseSetup": true,
+      "authentication": true,
+      "dashboardAccess": true,
+      "personalData": false,
+      "responseTime": 265
+    },
+    {
+      "user": "David Jarvey",
+      "email": "david@damato-dynasty.com",
+      "team": "Jarvey's Juggernauts",
+      "role": "PLAYER",
+      "databaseSetup": true,
+      "authentication": true,
+      "dashboardAccess": true,
+      "personalData": false,
+      "responseTime": 264
+    },
+    {
+      "user": "Kaity Lorbecki",
+      "email": "kaity@damato-dynasty.com",
+      "team": "Lorbecki Lions",
+      "role": "PLAYER",
+      "databaseSetup": true,
+      "authentication": true,
+      "dashboardAccess": true,
+      "personalData": false,
+      "responseTime": 275
+    },
+    {
+      "user": "Cason Minor",
+      "email": "cason@damato-dynasty.com",
+      "team": "Minor Miracles",
+      "role": "PLAYER",
+      "databaseSetup": true,
+      "authentication": true,
+      "dashboardAccess": true,
+      "personalData": false,
+      "responseTime": 293
+    },
+    {
+      "user": "Brittany Bergum",
+      "email": "brittany@damato-dynasty.com",
+      "team": "Bergum Blitz",
+      "role": "PLAYER",
+      "databaseSetup": true,
+      "authentication": true,
+      "dashboardAccess": true,
+      "personalData": false,
+      "responseTime": 263
+    }
+  ],
+  "ready": true
+}

@@ -29,7 +29,7 @@ const DAMATO_DYNASTY_MEMBERS = [
   { name: "Brittany Bergum", email: "brittany@damato-dynasty.com", teamName: "Bergum Blitz", role: "PLAYER" }
 ]
 
-const DEPLOYMENT_URL = "https://web-b45unuoxf-astral-productions.vercel.app"
+const DEPLOYMENT_URL = "https://web-3n61yluzx-astral-productions.vercel.app"
 const PASSWORD = "Dynasty2025!"
 
 async function testSigninFlow(member: typeof DAMATO_DYNASTY_MEMBERS[0]): Promise<TestResult> {
