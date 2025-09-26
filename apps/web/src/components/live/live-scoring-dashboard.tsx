@@ -84,7 +84,7 @@ const MatchupCard = memo(function MatchupCard({
   viewMode: 'overview' | 'detailed'
   selectedMatchup: string | null
   onToggleDetails: (id: string) => void
-}) => {
+}) {
   const handleToggle = useCallback(() => {
     onToggleDetails(matchup.id)
   }, [matchup.id, onToggleDetails])
