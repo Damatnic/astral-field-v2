@@ -1,0 +1,43 @@
+{
+  "name": "@astralfield/providers",
+  "version": "3.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./espn": {
+      "import": "./dist/espn/index.mjs",
+      "require": "./dist/espn/index.js"
+    },
+    "./sleeper": {
+      "import": "./dist/sleeper/index.mjs",
+      "require": "./dist/sleeper/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts",
+    "dev": "tsup src/index.ts --format esm,cjs --dts --watch",
+    "lint": "eslint \"**/*.ts*\"",
+    "typecheck": "tsc --noEmit",
+    "test": "jest",
+    "clean": "rimraf dist .turbo"
+  },
+  "dependencies": {
+    "axios": "^1.12.2",
+    "ioredis": "^5.7.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.11.17",
+    "eslint": "^8.57.0",
+    "jest": "^29.7.0",
+    "tsup": "^8.0.1",
+    "typescript": "^5.3.3"
+  }
+}

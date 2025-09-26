@@ -1,7 +1,15 @@
-# AstralField v2.1 Comprehensive Test Suite
-# Runs lint, typecheck, unit, integration, e2e, prints coverage summary
+# AstralField v3.0 Comprehensive Test Suite
+# Runs lint, typecheck, unit, integration, and E2E tests with coverage reporting
 
-Write-Host "🧪 AstralField v2.1 Comprehensive Test Suite" -ForegroundColor Cyan
+param(
+    [switch]$SkipE2E = $false,
+    [switch]$Coverage = $true,
+    [switch]$Verbose = $false
+)
+
+$ErrorActionPreference = "Stop"
+
+Write-Host "AstralField v3.0 Test Suite" -ForegroundColor Cyan
 Write-Host "=============================================" -ForegroundColor Cyan
 
 # Initialize test tracking

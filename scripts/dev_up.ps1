@@ -1,7 +1,14 @@
-# AstralField v2.1 Development Environment Startup Script
-# Spins up PostgreSQL and Redis via Docker, runs migrations, seeds data
+# AstralField v3.0 Development Environment Startup Script
+# Starts Postgres, Redis, runs migrations, seeds data, and starts the development server
 
-Write-Host "🚀 AstralField v2.1 Development Environment Startup" -ForegroundColor Cyan
+param(
+    [switch]$SkipSeed = $false,
+    [switch]$Fresh = $false
+)
+
+$ErrorActionPreference = "Stop"
+
+Write-Host "AstralField v3.0 Development Environment" -ForegroundColor Cyan
 Write-Host "====================================================" -ForegroundColor Cyan
 
 # Check for Docker

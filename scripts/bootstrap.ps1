@@ -1,7 +1,13 @@
-# AstralField v2.1 Environment Bootstrap Script
-# Creates .env from .env.example, generates secrets, verifies services
+# AstralField v3.0 Bootstrap Script
+# Creates environment files and generates necessary secrets
 
-Write-Host "🚀 AstralField v2.1 Environment Bootstrap" -ForegroundColor Cyan
+param(
+    [switch]$Force = $false
+)
+
+$ErrorActionPreference = "Stop"
+
+Write-Host "AstralField v3.0 Bootstrap" -ForegroundColor Cyan
 Write-Host "================================================" -ForegroundColor Cyan
 
 # Function to generate random secrets
