@@ -49,7 +49,7 @@ export const authConfig = {
         }
 
         // Guardian Security: Rate limiting check
-        const clientIP = req?.headers?.['x-forwarded-for'] || req?.headers?.['x-real-ip'] || 'unknown'
+        const clientIP = req?.headers?.get?.('x-forwarded-for') || req?.headers?.get?.('x-real-ip') || 'unknown'
         
         try {
           // Guardian Security: SQL injection protection with parameterized query
