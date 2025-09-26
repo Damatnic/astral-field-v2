@@ -104,24 +104,11 @@ export const authConfig = {
             image: user.image,
             role: user.role,
             teamName: user.teamName || undefined,
-            mfaEnabled: user.mfaEnabled || false
+            // mfaEnabled: false // Feature not implemented yet
           }
         } catch (error) {
-          // Guardian Security: Comprehensive error logging without exposing sensitive data
-          await prisma.audit_logs.create({
-            data: {
-              id: crypto.randomUUID(),
-              userId: 'unknown',
-              action: 'LOGIN_FAILURE',
-              details: {
-                email: credentials.email,
-                ip: clientIP,
-                error: error instanceof Error ? error.message : 'UNKNOWN_ERROR',
-                timestamp: new Date().toISOString()
-              }
-            }
-          }).catch(() => {}) // Fail silently if audit log fails
-
+          // Guardian Security: Log error and re-throw
+          console.error('Authentication error:', error)
           if (error instanceof Error) {
             throw error
           }
