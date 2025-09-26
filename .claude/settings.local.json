@@ -75,7 +75,8 @@
       "WebFetch(domain:web-7ts4brd6b-astral-productions.vercel.app)",
       "WebFetch(domain:web-i9ai3picv-astral-productions.vercel.app)",
       "Bash(DATABASE_URL=\"file:./dev.db\" npx tsx ../../scripts/setup-week4-league.ts)",
-      "Bash(dir \"C:\\Users\\damat\\_REPOS\\ASTRAL_FIELD_V1\\apps\\web\\src\\components\\ui\")"
+      "Bash(dir \"C:\\Users\\damat\\_REPOS\\ASTRAL_FIELD_V1\\apps\\web\\src\\components\\ui\")",
+      "WebFetch(domain:astralfield.vercel.app)"
     ],
     "deny": [],
     "ask": []
