@@ -198,8 +198,7 @@ class CatalystDatabaseOptimizer {
             nflTeam: true,
             rank: true,
             adp: true,
-            status: true,
-            age: true,
+            isFantasyRelevant: true,
             stats: {
               select: {
                 week: true,
