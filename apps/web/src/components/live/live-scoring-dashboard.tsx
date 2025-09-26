@@ -466,6 +466,8 @@ export const LiveScoringDashboard = memo(({ leagueId, week }: LiveScoringDashboa
       </div>
     </div>
   )
-}
+})
+
+LiveScoringDashboard.displayName = 'LiveScoringDashboard'
 
 
