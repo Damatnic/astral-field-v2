@@ -425,7 +425,11 @@ const VirtualGrid = memo(<T,>({
   )
 }) as <T>(props: VirtualGridProps<T>) => JSX.Element
 
-VirtualGrid.displayName = 'VirtualGrid'
+// Set display name using Object.defineProperty to satisfy TypeScript
+Object.defineProperty(VirtualGrid, 'displayName', {
+  value: 'VirtualGrid',
+  writable: false
+})
 
 export { VirtualList, VirtualGrid }
 export type { VirtualListProps, VirtualGridProps }
