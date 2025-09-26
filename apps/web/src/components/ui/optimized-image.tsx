@@ -237,8 +237,8 @@ const OptimizedImage = memo(({
         blurDataURL={
           placeholder === 'blur' 
             ? generateBlurDataURL(
-                'width' in dimensions ? dimensions.width : 400,
-                'height' in dimensions ? dimensions.height : 300
+                'width' in dimensions ? dimensions.width! : 400,
+                'height' in dimensions ? dimensions.height! : 300
               )
             : undefined
         }

@@ -2,8 +2,25 @@ import { NextAuthConfig } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import GoogleProvider from "next-auth/providers/google"
 import { prisma } from "./prisma"
-import bcrypt from "bcryptjs"
+// Note: bcryptjs is incompatible with Edge Runtime
+// We'll handle password hashing in Node.js-only API routes
 import crypto from "crypto"
+
+// Edge Runtime compatible password verification
+async function verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
+  // This will be implemented as a Node.js API route call
+  try {
+    const response = await fetch('/api/auth/verify-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password, hashedPassword })
+    })
+    const result = await response.json()
+    return result.valid
+  } catch (error) {
+    return false
+  }
+}
 
 // Guardian Security: Enhanced authentication configuration
 export const authConfig = {
@@ -59,7 +76,8 @@ export const authConfig = {
 
           if (!user || !user.hashedPassword) {
             // Guardian Security: Timing attack prevention
-            await bcrypt.compare(credentials.password, '$2a$12$dummy.hash.to.prevent.timing.attacks')
+            // Use crypto.pbkdf2Sync for Edge Runtime compatibility
+            crypto.pbkdf2Sync(credentials.password, 'dummy-salt', 10000, 64, 'sha512')
             throw new Error('INVALID_CREDENTIALS')
           }
 
@@ -74,7 +92,8 @@ export const authConfig = {
           }
 
           // Guardian Security: Password verification with timing attack protection
-          const isPasswordValid = await bcrypt.compare(
+          // Move bcrypt operations to API routes for Edge Runtime compatibility
+          const isPasswordValid = await verifyPassword(
             credentials.password as string,
             user.hashedPassword
           )
