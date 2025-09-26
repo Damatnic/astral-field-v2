@@ -32,7 +32,7 @@ async function getUserTeamsAndRoster(userId: string, selectedTeamId?: string) {
 
   // Select team (either specified or first available)
   const selectedTeam = selectedTeamId 
-    ? userTeams.find(t => t.id === selectedTeamId) || userTeams[0]
+    ? userTeams.find((t: any) => t.id === selectedTeamId) || userTeams[0]
     : userTeams[0]
 
   // Get roster for selected team
@@ -67,7 +67,7 @@ async function getUserTeamsAndRoster(userId: string, selectedTeamId?: string) {
   })
 
   // Transform teams to match interface
-  const transformedTeams = userTeams.map(team => ({
+  const transformedTeams = userTeams.map((team: any) => ({
     ...team,
     pointsFor: 0, // Default value - would need to calculate from stats
     league: {
@@ -88,7 +88,7 @@ async function getUserTeamsAndRoster(userId: string, selectedTeamId?: string) {
   } : null
 
   // Transform roster to match RosterPlayer interface
-  const transformedRoster = roster.map(rosterPlayer => ({
+  const transformedRoster = roster.map((rosterPlayer: any) => ({
     ...rosterPlayer,
     isLocked: false, // Default value
     player: {

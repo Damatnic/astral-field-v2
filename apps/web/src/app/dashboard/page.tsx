@@ -180,7 +180,7 @@ export default async function DashboardPage() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {stats.map((stat) => (
+          {stats.map((stat: any) => (
             <div key={stat.name} className="bg-slate-800/50 rounded-lg p-6 border border-slate-700">
               <div className="flex items-center">
                 <div className={`flex-shrink-0 ${stat.color}`}>
@@ -287,7 +287,7 @@ export default async function DashboardPage() {
               <h2 className="text-xl font-semibold text-white">League Standings</h2>
             </div>
             <div className="p-6">
-              {data.standings.map((standing) => (
+              {data.standings.map((standing: any) => (
                 <div key={standing.leagueId} className="mb-6 last:mb-0">
                   <h3 className="font-medium text-white mb-4">{standing.leagueName}</h3>
                   <div className="overflow-x-auto">
