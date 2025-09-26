@@ -12,7 +12,6 @@ const PerformanceMonitor = memo(() => {
   const { 
     isSupported, 
     violations, 
-    recommendations,
     markFeatureUsage 
   } = usePerformanceMonitor({
     enabled: true,
@@ -48,13 +47,6 @@ const PerformanceMonitor = memo(() => {
     }
   }, [violations])
 
-  useEffect(() => {
-    if (process.env.NODE_ENV === 'development' && recommendations.length > 0) {
-      console.group('💡 Performance Recommendations')
-      recommendations.forEach(rec => console.info(rec))
-      console.groupEnd()
-    }
-  }, [recommendations])
 
   // Display performance badge in development
   if (process.env.NODE_ENV === 'development' && isSupported && hasData) {
@@ -123,16 +115,6 @@ const PerformanceDebugPanel = memo(() => {
         </div>
       )}
 
-      {recommendations.length > 0 && (
-        <div>
-          <h4 className="font-semibold text-blue-400 mb-1">Recommendations:</h4>
-          <div className="text-xs space-y-1">
-            {recommendations.slice(0, 3).map((rec, i) => (
-              <div key={i} className="text-blue-300">{rec}</div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   )
 })
