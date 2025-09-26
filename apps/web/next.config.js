@@ -5,10 +5,9 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
   enabled: process.env.ANALYZE === 'true',
 })
 
-// Catalyst Performance: Lightning-fast Next.js configuration
+// Catalyst Performance: Lightning-fast Next.js configuration  
 const nextConfig = {
-  // Catalyst: High-performance rendering strategy
-  output: 'standalone',
+  // Atlas: Fixed for Vercel deployment - removed standalone mode
   trailingSlash: false,
   distDir: '.next',
   
@@ -180,16 +179,8 @@ const nextConfig = {
             value: '1; mode=block',
           },
           {
-            key: 'Cross-Origin-Embedder-Policy',
-            value: 'require-corp',
-          },
-          {
-            key: 'Cross-Origin-Opener-Policy',
-            value: 'same-origin',
-          },
-          {
-            key: 'Cross-Origin-Resource-Policy',
-            value: 'same-origin',
+            key: 'Content-Security-Policy',
+            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' vercel.live vercel.com *.vercel.app; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' *.neon.tech wss: https: *.vercel.app; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';",
           },
           {
             key: 'Origin-Agent-Cluster',
