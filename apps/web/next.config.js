@@ -49,9 +49,9 @@ const nextConfig = {
           minSize: 20000,
           maxSize: 244000,
           cacheGroups: {
-            // Catalyst: Vendor chunk optimization
+            // Catalyst: Vendor chunk optimization (exclude server-only packages)
             vendor: {
-              test: /[\/]node_modules[\/]/,
+              test: /[\/]node_modules[\/](?!bcryptjs|bcrypt|crypto|fs|path|os)/,
               name(module) {
                 const match = module.context.match(
                   /[\/]node_modules[\/](.*?)([\/]|$)/
@@ -113,6 +113,14 @@ const nextConfig = {
         stream: false,
         buffer: false,
       };
+
+      // Catalyst: Externalize server-only packages on client
+      config.externals = config.externals || [];
+      config.externals.push({
+        'bcryptjs': 'commonjs bcryptjs',
+        'bcrypt': 'commonjs bcrypt',
+        'crypto': 'commonjs crypto',
+      });
 
       // Catalyst: Preload critical chunks
       config.plugins.push(
