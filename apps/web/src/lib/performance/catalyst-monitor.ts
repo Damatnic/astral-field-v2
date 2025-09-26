@@ -161,8 +161,10 @@ class CatalystPerformanceMonitor {
       try {
         const fidObserver = new PerformanceObserver((list) => {
           for (const entry of list.getEntries()) {
-            const fid = entry.processingStart - entry.startTime
-            this.recordMetric('FID', fid, this.budget.FID)
+            if ('processingStart' in entry) {
+              const fid = (entry as any).processingStart - entry.startTime
+              this.recordMetric('FID', fid, this.budget.FID)
+            }
           }
         })
         fidObserver.observe({ entryTypes: ['first-input'] })
