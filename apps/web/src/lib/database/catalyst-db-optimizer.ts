@@ -391,7 +391,7 @@ class CatalystDatabaseOptimizer {
     return this.executeQuery(
       cacheKey,
       async () => {
-        return this.prisma.playerStat.aggregate({
+        return this.prisma.playerStats.aggregate({
           where: {
             playerId,
             season
