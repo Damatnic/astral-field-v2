@@ -156,7 +156,7 @@ export const authConfig = {
         session.user.id = token.id as string || token.sub!
         session.user.role = token.role as string
         session.user.teamName = token.teamName as string
-        session.user.mfaEnabled = token.mfaEnabled as boolean
+        // session.user.mfaEnabled = false // Feature not implemented
         session.sessionId = token.sessionId as string
         session.expires = new Date(Date.now() + 30 * 60 * 1000).toISOString()
       }
