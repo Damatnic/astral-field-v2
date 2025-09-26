@@ -41,7 +41,7 @@ interface VirtualListState {
   scrollDirection: 'up' | 'down' | 'left' | 'right' | null
 }
 
-const VirtualList = memo(<T,>({
+const VirtualList = memo(function VirtualList<T>({
   items,
   height,
   itemHeight,
