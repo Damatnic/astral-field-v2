@@ -19,7 +19,17 @@ const DAMATO_DYNASTY_MEMBERS = [
 async function createProductionUsers() {
   console.log('🏈 Creating D\'Amato Dynasty League Users for Production...\n');
   
+  // Check if DATABASE_URL is set
+  if (!process.env.DATABASE_URL) {
+    console.log('⚠️  No DATABASE_URL found, skipping user creation');
+    return;
+  }
+  
   try {
+    // Test database connection
+    await prisma.$connect();
+    console.log('✅ Database connected');
+    
     const hashedPassword = await bcrypt.hash('Dynasty2025!', 10);
     
     for (const member of DAMATO_DYNASTY_MEMBERS) {
