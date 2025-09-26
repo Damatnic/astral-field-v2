@@ -74,7 +74,7 @@ const getGameStatusColor = (status: string): string => {
 }
 
 // Memoized MatchupCard component
-const MatchupCard = memo(({ 
+const MatchupCard = memo(function MatchupCard({ 
   matchup, 
   viewMode, 
   selectedMatchup, 
@@ -171,7 +171,8 @@ const MatchupCard = memo(({
 })
 
 // Memoized PlayerRow component
-const PlayerRow = memo(({ player }: { player: Player }) => (
+const PlayerRow = memo(function PlayerRow({ player }: { player: Player }) {
+  return (
   <div className="flex items-center justify-between text-sm">
     <div className="flex items-center space-x-2">
       <span className={`w-8 h-4 rounded text-xs text-center ${getGameStatusColor(player.gameStatus)}`}>
@@ -185,10 +186,11 @@ const PlayerRow = memo(({ player }: { player: Player }) => (
       {player.livePoints.toFixed(1)}
     </span>
   </div>
-))
+  )
+})
 
 // Memoized StatusCard component
-const StatusCard = memo(({ 
+const StatusCard = memo(function StatusCard({ 
   icon: Icon, 
   iconColor, 
   label, 
@@ -198,7 +200,8 @@ const StatusCard = memo(({
   iconColor: string
   label: string
   value: number
-}) => (
+}) {
+  return (
   <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
     <div className="flex items-center">
       <Icon className={`h-8 w-8 ${iconColor} mr-3`} />
@@ -208,7 +211,8 @@ const StatusCard = memo(({
       </div>
     </div>
   </div>
-))
+  )
+})
 
 export const LiveScoringDashboard = memo(({ leagueId, week }: LiveScoringDashboardProps) => {
   const { state, scores, liveEvents } = useLiveScoring(leagueId, week)
