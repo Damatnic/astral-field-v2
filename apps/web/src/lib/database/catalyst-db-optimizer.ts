@@ -218,7 +218,7 @@ class CatalystDatabaseOptimizer {
             },
             news: {
               select: {
-                headline: true,
+                title: true,
                 publishedAt: true
               },
               orderBy: { publishedAt: 'desc' },

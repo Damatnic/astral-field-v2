@@ -178,9 +178,9 @@ export const authConfig = {
       // Guardian Security: Log successful sign-ins
       console.log('User signed in:', user.id, account?.provider)
     },
-    async signOut({ session, token }) {
+    async signOut(message) {
       // Guardian Security: Log sign-outs
-      console.log('User signed out:', session?.user?.id)
+      console.log('User signed out')
       // Audit logging would go here when audit_logs table is available
     }
   },
