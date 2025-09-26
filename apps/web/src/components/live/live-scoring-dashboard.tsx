@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback, memo } from 'react'
 import { useLiveScoring } from '@/hooks/use-websocket'
 import { Button } from '@/components/ui/button'
 import {
@@ -61,7 +61,144 @@ interface Player {
   lastUpdate: Date
 }
 
-export function LiveScoringDashboard({ leagueId, week }: LiveScoringDashboardProps) {
+// Memoized MatchupCard component
+const MatchupCard = memo(({ 
+  matchup, 
+  viewMode, 
+  selectedMatchup, 
+  onToggleDetails 
+}: {
+  matchup: Matchup
+  viewMode: 'overview' | 'detailed'
+  selectedMatchup: string | null
+  onToggleDetails: (id: string) => void
+}) => {
+  const handleToggle = useCallback(() => {
+    onToggleDetails(matchup.id)
+  }, [matchup.id, onToggleDetails])
+
+  return (
+    <div className="bg-slate-700 rounded-lg p-6">
+      <div className="flex items-center justify-between mb-4">
+        <div className="text-sm text-gray-400">
+          Q{matchup.gameInfo?.quarter} • {matchup.gameInfo?.timeRemaining} remaining
+        </div>
+        <div className="text-sm text-gray-400">
+          Updated {matchup.gameInfo?.lastUpdate.toLocaleTimeString()}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-6">
+        {/* Home Team */}
+        <div className="text-center">
+          <h3 className="font-semibold text-white text-lg">{matchup.homeTeam.name}</h3>
+          <p className="text-sm text-gray-400">{matchup.homeTeam.owner.name}</p>
+          <div className="mt-2">
+            <p className="text-3xl font-bold text-green-400">
+              {matchup.homeTeam.liveScore.toFixed(1)}
+            </p>
+            <p className="text-sm text-gray-400">
+              Projected: {matchup.homeTeam.projectedScore.toFixed(1)}
+            </p>
+          </div>
+        </div>
+
+        {/* Away Team */}
+        <div className="text-center">
+          <h3 className="font-semibold text-white text-lg">{matchup.awayTeam.name}</h3>
+          <p className="text-sm text-gray-400">{matchup.awayTeam.owner.name}</p>
+          <div className="mt-2">
+            <p className="text-3xl font-bold text-green-400">
+              {matchup.awayTeam.liveScore.toFixed(1)}
+            </p>
+            <p className="text-sm text-gray-400">
+              Projected: {matchup.awayTeam.projectedScore.toFixed(1)}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {viewMode === 'detailed' && (
+        <div className="mt-6 pt-6 border-t border-slate-600">
+          <div className="grid grid-cols-2 gap-6">
+            {/* Home Team Players */}
+            <div>
+              <h4 className="text-sm font-medium text-gray-400 mb-3">Starting Lineup</h4>
+              <div className="space-y-2">
+                {matchup.homeTeam.players.slice(0, 5).map(player => (
+                  <PlayerRow key={player.id} player={player} />
+                ))}
+              </div>
+            </div>
+
+            {/* Away Team Players */}
+            <div>
+              <h4 className="text-sm font-medium text-gray-400 mb-3">Starting Lineup</h4>
+              <div className="space-y-2">
+                {matchup.awayTeam.players.slice(0, 5).map(player => (
+                  <PlayerRow key={player.id} player={player} />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="mt-4 flex justify-center">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleToggle}
+        >
+          <ChartBarIcon className="h-4 w-4 mr-2" />
+          {selectedMatchup === matchup.id ? 'Hide Details' : 'View Details'}
+        </Button>
+      </div>
+    </div>
+  )
+})
+
+// Memoized PlayerRow component
+const PlayerRow = memo(({ player }: { player: Player }) => (
+  <div className="flex items-center justify-between text-sm">
+    <div className="flex items-center space-x-2">
+      <span className={`w-8 h-4 rounded text-xs text-center ${getGameStatusColor(player.gameStatus)}`}>
+        {player.gameStatus === 'playing' ? 'LIVE' : 
+         player.gameStatus === 'completed' ? 'DONE' : 'WAIT'}
+      </span>
+      <span className="text-white">{player.name}</span>
+      <span className="text-gray-400">({player.position})</span>
+    </div>
+    <span className="text-green-400 font-medium">
+      {player.livePoints.toFixed(1)}
+    </span>
+  </div>
+))
+
+// Memoized StatusCard component
+const StatusCard = memo(({ 
+  icon: Icon, 
+  iconColor, 
+  label, 
+  value 
+}: {
+  icon: any
+  iconColor: string
+  label: string
+  value: number
+}) => (
+  <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
+    <div className="flex items-center">
+      <Icon className={`h-8 w-8 ${iconColor} mr-3`} />
+      <div>
+        <p className="text-sm text-gray-400">{label}</p>
+        <p className="text-2xl font-bold text-white">{value}</p>
+      </div>
+    </div>
+  </div>
+))
+
+export const LiveScoringDashboard = memo(({ leagueId, week }: LiveScoringDashboardProps) => {
   const { state, scores, liveEvents } = useLiveScoring(leagueId, week)
   const [matchups, setMatchups] = useState<Matchup[]>([])
   const [selectedMatchup, setSelectedMatchup] = useState<string | null>(null)
@@ -125,6 +262,19 @@ export function LiveScoringDashboard({ leagueId, week }: LiveScoringDashboardPro
     ])
   }, [])
 
+  // Memoized callbacks
+  const handleToggleDetails = useCallback((matchupId: string) => {
+    setSelectedMatchup(prev => prev === matchupId ? null : matchupId)
+  }, [])
+
+  const handleToggleAutoRefresh = useCallback(() => {
+    setAutoRefresh(prev => !prev)
+  }, [])
+
+  const handleViewModeChange = useCallback((mode: 'overview' | 'detailed') => {
+    setViewMode(mode)
+  }, [])
+
   // Update scores based on live events
   useEffect(() => {
     liveEvents.forEach(event => {
@@ -144,7 +294,8 @@ export function LiveScoringDashboard({ leagueId, week }: LiveScoringDashboardPro
     })
   }, [liveEvents])
 
-  function generateMockPlayers(team: 'home' | 'away'): Player[] {
+  // Memoized mock data generator
+  const generateMockPlayers = useCallback((team: 'home' | 'away'): Player[] => {
     const positions = ['QB', 'RB', 'RB', 'WR', 'WR', 'TE', 'FLEX', 'K', 'DEF']
     return positions.map((pos: any, index: number) => ({
       id: `${team}-player-${index}`,
@@ -164,11 +315,20 @@ export function LiveScoringDashboard({ leagueId, week }: LiveScoringDashboardPro
       gameStatus: ['not_started', 'playing', 'completed'][Math.floor(Math.random() * 3)] as any,
       lastUpdate: new Date()
     }))
-  }
+  }, [])
 
-  const liveMatchups = matchups.filter(m => m.status === 'live')
-  const completedMatchups = matchups.filter(m => m.status === 'completed')
-  const upcomingMatchups = matchups.filter(m => m.status === 'upcoming')
+  // Memoized filtered matchups
+  const { liveMatchups, completedMatchups, upcomingMatchups } = useMemo(() => ({
+    liveMatchups: matchups.filter(m => m.status === 'live'),
+    completedMatchups: matchups.filter(m => m.status === 'completed'),
+    upcomingMatchups: matchups.filter(m => m.status === 'upcoming')
+  }), [matchups])
+
+  // Memoized recent events
+  const recentEvents = useMemo(() => 
+    liveEvents.slice(-10).reverse(), 
+    [liveEvents]
+  )
 
   if (!state.connected) {
     return (
@@ -194,7 +354,7 @@ export function LiveScoringDashboard({ leagueId, week }: LiveScoringDashboardPro
           <div className="flex items-center space-x-2">
             <BoltIcon className={`h-5 w-5 ${autoRefresh ? 'text-green-400' : 'text-gray-400'}`} />
             <button
-              onClick={() => setAutoRefresh(!autoRefresh)}
+              onClick={handleToggleAutoRefresh}
               className={`text-sm font-medium ${
                 autoRefresh ? 'text-green-400' : 'text-gray-400'
               }`}
@@ -207,14 +367,14 @@ export function LiveScoringDashboard({ leagueId, week }: LiveScoringDashboardPro
             <Button
               variant={viewMode === 'overview' ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setViewMode('overview')}
+              onClick={() => handleViewModeChange('overview')}
             >
               Overview
             </Button>
             <Button
               variant={viewMode === 'detailed' ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setViewMode('detailed')}
+              onClick={() => handleViewModeChange('detailed')}
             >
               Detailed
             </Button>
@@ -224,35 +384,24 @@ export function LiveScoringDashboard({ leagueId, week }: LiveScoringDashboardPro
 
       {/* Live Games Status */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
-          <div className="flex items-center">
-            <TvIcon className="h-8 w-8 text-red-400 mr-3" />
-            <div>
-              <p className="text-sm text-gray-400">Live Games</p>
-              <p className="text-2xl font-bold text-white">{liveMatchups.length}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
-          <div className="flex items-center">
-            <ClockIcon className="h-8 w-8 text-blue-400 mr-3" />
-            <div>
-              <p className="text-sm text-gray-400">Upcoming</p>
-              <p className="text-2xl font-bold text-white">{upcomingMatchups.length}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
-          <div className="flex items-center">
-            <TrophyIcon className="h-8 w-8 text-green-400 mr-3" />
-            <div>
-              <p className="text-sm text-gray-400">Completed</p>
-              <p className="text-2xl font-bold text-white">{completedMatchups.length}</p>
-            </div>
-          </div>
-        </div>
+        <StatusCard 
+          icon={TvIcon}
+          iconColor="text-red-400"
+          label="Live Games"
+          value={liveMatchups.length}
+        />
+        <StatusCard 
+          icon={ClockIcon}
+          iconColor="text-blue-400"
+          label="Upcoming"
+          value={upcomingMatchups.length}
+        />
+        <StatusCard 
+          icon={TrophyIcon}
+          iconColor="text-green-400"
+          label="Completed"
+          value={completedMatchups.length}
+        />
       </div>
 
       {/* Live Matchups */}
@@ -266,107 +415,13 @@ export function LiveScoringDashboard({ leagueId, week }: LiveScoringDashboardPro
           </div>
           <div className="p-6 space-y-4">
             {liveMatchups.map(matchup => (
-              <div key={matchup.id} className="bg-slate-700 rounded-lg p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="text-sm text-gray-400">
-                    Q{matchup.gameInfo?.quarter} • {matchup.gameInfo?.timeRemaining} remaining
-                  </div>
-                  <div className="text-sm text-gray-400">
-                    Updated {matchup.gameInfo?.lastUpdate.toLocaleTimeString()}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-6">
-                  {/* Home Team */}
-                  <div className="text-center">
-                    <h3 className="font-semibold text-white text-lg">{matchup.homeTeam.name}</h3>
-                    <p className="text-sm text-gray-400">{matchup.homeTeam.owner.name}</p>
-                    <div className="mt-2">
-                      <p className="text-3xl font-bold text-green-400">
-                        {matchup.homeTeam.liveScore.toFixed(1)}
-                      </p>
-                      <p className="text-sm text-gray-400">
-                        Projected: {matchup.homeTeam.projectedScore.toFixed(1)}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Away Team */}
-                  <div className="text-center">
-                    <h3 className="font-semibold text-white text-lg">{matchup.awayTeam.name}</h3>
-                    <p className="text-sm text-gray-400">{matchup.awayTeam.owner.name}</p>
-                    <div className="mt-2">
-                      <p className="text-3xl font-bold text-green-400">
-                        {matchup.awayTeam.liveScore.toFixed(1)}
-                      </p>
-                      <p className="text-sm text-gray-400">
-                        Projected: {matchup.awayTeam.projectedScore.toFixed(1)}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {viewMode === 'detailed' && (
-                  <div className="mt-6 pt-6 border-t border-slate-600">
-                    <div className="grid grid-cols-2 gap-6">
-                      {/* Home Team Players */}
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-400 mb-3">Starting Lineup</h4>
-                        <div className="space-y-2">
-                          {matchup.homeTeam.players.slice(0, 5).map(player => (
-                            <div key={player.id} className="flex items-center justify-between text-sm">
-                              <div className="flex items-center space-x-2">
-                                <span className={`w-8 h-4 rounded text-xs text-center ${getGameStatusColor(player.gameStatus)}`}>
-                                  {player.gameStatus === 'playing' ? 'LIVE' : 
-                                   player.gameStatus === 'completed' ? 'DONE' : 'WAIT'}
-                                </span>
-                                <span className="text-white">{player.name}</span>
-                                <span className="text-gray-400">({player.position})</span>
-                              </div>
-                              <span className="text-green-400 font-medium">
-                                {player.livePoints.toFixed(1)}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Away Team Players */}
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-400 mb-3">Starting Lineup</h4>
-                        <div className="space-y-2">
-                          {matchup.awayTeam.players.slice(0, 5).map(player => (
-                            <div key={player.id} className="flex items-center justify-between text-sm">
-                              <div className="flex items-center space-x-2">
-                                <span className={`w-8 h-4 rounded text-xs text-center ${getGameStatusColor(player.gameStatus)}`}>
-                                  {player.gameStatus === 'playing' ? 'LIVE' : 
-                                   player.gameStatus === 'completed' ? 'DONE' : 'WAIT'}
-                                </span>
-                                <span className="text-white">{player.name}</span>
-                                <span className="text-gray-400">({player.position})</span>
-                              </div>
-                              <span className="text-green-400 font-medium">
-                                {player.livePoints.toFixed(1)}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div className="mt-4 flex justify-center">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setSelectedMatchup(selectedMatchup === matchup.id ? null : matchup.id)}
-                  >
-                    <ChartBarIcon className="h-4 w-4 mr-2" />
-                    {selectedMatchup === matchup.id ? 'Hide Details' : 'View Details'}
-                  </Button>
-                </div>
-              </div>
+              <MatchupCard
+                key={matchup.id}
+                matchup={matchup}
+                viewMode={viewMode}
+                selectedMatchup={selectedMatchup}
+                onToggleDetails={handleToggleDetails}
+              />
             ))}
           </div>
         </div>
@@ -379,7 +434,7 @@ export function LiveScoringDashboard({ leagueId, week }: LiveScoringDashboardPro
         </div>
         <div className="p-6">
           <div className="space-y-3 max-h-64 overflow-y-auto">
-            {liveEvents.slice(-10).reverse().map((event: any, index: number) => (
+            {recentEvents.map((event: any, index: number) => (
               <div key={index} className="flex items-center space-x-3 p-3 bg-slate-700 rounded-lg">
                 <BoltIcon className="h-5 w-5 text-yellow-400 flex-shrink-0" />
                 <div className="flex-1">
@@ -401,7 +456,14 @@ export function LiveScoringDashboard({ leagueId, week }: LiveScoringDashboardPro
   )
 }
 
-function getGameStatusColor(status: string): string {
+// Add display names for better debugging
+MatchupCard.displayName = 'MatchupCard'
+PlayerRow.displayName = 'PlayerRow'
+StatusCard.displayName = 'StatusCard'
+LiveScoringDashboard.displayName = 'LiveScoringDashboard'
+
+// Optimized utility function
+const getGameStatusColor = (status: string): string => {
   switch (status) {
     case 'playing':
       return 'bg-green-500 text-white'

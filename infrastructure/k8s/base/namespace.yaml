@@ -1,0 +1,30 @@
+# Quantum's Kubernetes Namespace Configuration
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: astralfield
+  labels:
+    name: astralfield
+    managed-by: quantum-devops
+    app.kubernetes.io/name: astralfield
+    app.kubernetes.io/version: "3.0.0"
+  annotations:
+    description: "Astral Field Sports League Application"
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: astralfield-monitoring
+  labels:
+    name: astralfield-monitoring
+    managed-by: quantum-devops
+    app.kubernetes.io/name: monitoring
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: astralfield-system
+  labels:
+    name: astralfield-system
+    managed-by: quantum-devops
+    app.kubernetes.io/name: system

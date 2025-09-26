@@ -51,7 +51,9 @@
       "WebFetch(domain:web-b45unuoxf-astral-productions.vercel.app)",
       "WebFetch(domain:web-3n61yluzx-astral-productions.vercel.app)",
       "Bash(python3:*)",
-      "Bash(cmd /c:*)"
+      "Bash(cmd /c:*)",
+      "WebFetch(domain:web-jv11kgsl3-astral-productions.vercel.app)",
+      "mcp__ide__getDiagnostics"
     ],
     "deny": [],
     "ask": []

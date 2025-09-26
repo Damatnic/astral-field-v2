@@ -1,14 +1,32 @@
-name: CI/CD Pipeline
+# Quantum's Bulletproof CI/CD Pipeline
+name: 🚀 Quantum DevOps Pipeline
 
 on:
   push:
-    branches: [main, master, develop]
+    branches: [main, master, develop, feature/*]
   pull_request:
     branches: [main, master, develop]
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
 
 env:
-  NODE_VERSION: '18.x'
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  NODE_VERSION: '18'
+  POSTGRES_VERSION: '15'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   # Job 1: Code Quality Checks

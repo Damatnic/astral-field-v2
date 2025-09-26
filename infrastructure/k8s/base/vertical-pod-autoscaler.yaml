@@ -1,0 +1,305 @@
+# Quantum's Vertical Pod Autoscaler Configuration
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: astralfield-web-vpa
+  namespace: astralfield
+  labels:
+    app.kubernetes.io/name: astralfield-web
+    app.kubernetes.io/component: autoscaler
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: astralfield-web
+  updatePolicy:
+    updateMode: "Auto"
+  resourcePolicy:
+    containerPolicies:
+    - containerName: web
+      minAllowed:
+        cpu: 100m
+        memory: 256Mi
+      maxAllowed:
+        cpu: 2
+        memory: 4Gi
+      controlledResources: ["cpu", "memory"]
+      controlledValues: RequestsAndLimits
+---
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: astralfield-api-vpa
+  namespace: astralfield
+  labels:
+    app.kubernetes.io/name: astralfield-api
+    app.kubernetes.io/component: autoscaler
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: astralfield-api
+  updatePolicy:
+    updateMode: "Auto"
+  resourcePolicy:
+    containerPolicies:
+    - containerName: api
+      minAllowed:
+        cpu: 100m
+        memory: 256Mi
+      maxAllowed:
+        cpu: 2
+        memory: 4Gi
+      controlledResources: ["cpu", "memory"]
+      controlledValues: RequestsAndLimits
+---
+# Custom Resource for KEDA Horizontal Pod Autoscaler
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: astralfield-web-scaledobject
+  namespace: astralfield
+  labels:
+    app.kubernetes.io/name: astralfield-web
+    app.kubernetes.io/component: autoscaler
+spec:
+  scaleTargetRef:
+    name: astralfield-web
+  pollingInterval: 15
+  cooldownPeriod: 300
+  idleReplicaCount: 3
+  minReplicaCount: 3
+  maxReplicaCount: 100
+  fallback:
+    failureThreshold: 3
+    replicas: 10
+  advanced:
+    restoreToOriginalReplicaCount: true
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleUp:
+          stabilizationWindowSeconds: 60
+          policies:
+          - type: Percent
+            value: 100
+            periodSeconds: 60
+          - type: Pods
+            value: 10
+            periodSeconds: 60
+          selectPolicy: Max
+        scaleDown:
+          stabilizationWindowSeconds: 300
+          policies:
+          - type: Percent
+            value: 10
+            periodSeconds: 60
+  triggers:
+  # CPU-based scaling
+  - type: cpu
+    metricType: Utilization
+    metadata:
+      value: "70"
+  # Memory-based scaling
+  - type: memory
+    metricType: Utilization
+    metadata:
+      value: "80"
+  # Custom metric: HTTP requests per second
+  - type: prometheus
+    metadata:
+      serverAddress: http://prometheus.astralfield-monitoring.svc.cluster.local:9090
+      metricName: http_requests_per_second
+      threshold: '1000'
+      query: sum(rate(http_requests_total{job="astralfield-web"}[2m]))
+  # Queue depth for background processing
+  - type: prometheus
+    metadata:
+      serverAddress: http://prometheus.astralfield-monitoring.svc.cluster.local:9090
+      metricName: queue_depth
+      threshold: '100'
+      query: sum(queue_depth{service="astralfield-web"})
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: astralfield-api-scaledobject
+  namespace: astralfield
+  labels:
+    app.kubernetes.io/name: astralfield-api
+    app.kubernetes.io/component: autoscaler
+spec:
+  scaleTargetRef:
+    name: astralfield-api
+  pollingInterval: 15
+  cooldownPeriod: 300
+  idleReplicaCount: 3
+  minReplicaCount: 3
+  maxReplicaCount: 100
+  fallback:
+    failureThreshold: 3
+    replicas: 15
+  advanced:
+    restoreToOriginalReplicaCount: true
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleUp:
+          stabilizationWindowSeconds: 30
+          policies:
+          - type: Percent
+            value: 200
+            periodSeconds: 30
+          - type: Pods
+            value: 20
+            periodSeconds: 30
+          selectPolicy: Max
+        scaleDown:
+          stabilizationWindowSeconds: 300
+          policies:
+          - type: Percent
+            value: 10
+            periodSeconds: 60
+  triggers:
+  # CPU-based scaling
+  - type: cpu
+    metricType: Utilization
+    metadata:
+      value: "70"
+  # Memory-based scaling
+  - type: memory
+    metricType: Utilization
+    metadata:
+      value: "80"
+  # API requests per second
+  - type: prometheus
+    metadata:
+      serverAddress: http://prometheus.astralfield-monitoring.svc.cluster.local:9090
+      metricName: api_requests_per_second
+      threshold: '500'
+      query: sum(rate(http_requests_total{job="astralfield-api"}[2m]))
+  # Database connection pool utilization
+  - type: prometheus
+    metadata:
+      serverAddress: http://prometheus.astralfield-monitoring.svc.cluster.local:9090
+      metricName: db_connection_pool_utilization
+      threshold: '0.8'
+      query: (pg_stat_database_numbackends / pg_settings_max_connections)
+  # Live event scaling trigger
+  - type: prometheus
+    metadata:
+      serverAddress: http://prometheus.astralfield-monitoring.svc.cluster.local:9090
+      metricName: live_event_load
+      threshold: '50'
+      query: sum(rate(http_requests_total{job="astralfield-api",endpoint=~".*events.*"}[1m]))
+---
+# Cluster Autoscaler configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-autoscaler-status
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/name: cluster-autoscaler
+data:
+  nodes.max: "100"
+  nodes.min: "3"
+  scale-down-enabled: "true"
+  scale-down-delay-after-add: "10m"
+  scale-down-delay-after-delete: "10m"
+  scale-down-delay-after-failure: "3m"
+  scale-down-unneeded-time: "10m"
+  scale-down-utilization-threshold: "0.5"
+  skip-nodes-with-local-storage: "false"
+  skip-nodes-with-system-pods: "false"
+---
+# Pod Disruption Budget for High Availability
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: astralfield-web-pdb
+  namespace: astralfield
+  labels:
+    app.kubernetes.io/name: astralfield-web
+    app.kubernetes.io/component: availability
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: astralfield-web
+      app.kubernetes.io/component: frontend
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: astralfield-api-pdb
+  namespace: astralfield
+  labels:
+    app.kubernetes.io/name: astralfield-api
+    app.kubernetes.io/component: availability
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: astralfield-api
+      app.kubernetes.io/component: backend
+---
+# Network Policy for Load Balancer Security
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: astralfield-ingress-policy
+  namespace: astralfield
+  labels:
+    app.kubernetes.io/name: astralfield
+    app.kubernetes.io/component: network-security
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: astralfield-web
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 3000
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: astralfield-monitoring
+    ports:
+    - protocol: TCP
+      port: 3000
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: astralfield-api
+    ports:
+    - protocol: TCP
+      port: 8080
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: postgres
+    ports:
+    - protocol: TCP
+      port: 5432
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: redis
+    ports:
+    - protocol: TCP
+      port: 6379
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 53
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 443

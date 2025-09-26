@@ -1,0 +1,280 @@
+# Quantum's Prometheus Alert Rules for Astral Field
+groups:
+  - name: astralfield.rules
+    rules:
+      # Application Health Alerts
+      - alert: ApplicationDown
+        expr: up{job=~"astralfield-(web|api)"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: engineering
+          service: "{{ $labels.job }}"
+        annotations:
+          summary: "Astral Field {{ $labels.job }} is down"
+          description: "{{ $labels.job }} has been down for more than 1 minute"
+          runbook_url: "https://runbooks.astralfield.com/application-down"
+
+      - alert: HighErrorRate
+        expr: |
+          (
+            rate(http_requests_total{job=~"astralfield-(web|api)",status=~"5.."}[5m]) /
+            rate(http_requests_total{job=~"astralfield-(web|api)"}[5m])
+          ) * 100 > 5
+        for: 5m
+        labels:
+          severity: warning
+          team: engineering
+          service: "{{ $labels.job }}"
+        annotations:
+          summary: "High error rate for {{ $labels.job }}"
+          description: "Error rate is {{ $value }}% for {{ $labels.job }}"
+          runbook_url: "https://runbooks.astralfield.com/high-error-rate"
+
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.95,
+            rate(http_request_duration_seconds_bucket{job=~"astralfield-(web|api)"}[5m])
+          ) > 1
+        for: 5m
+        labels:
+          severity: warning
+          team: engineering
+          service: "{{ $labels.job }}"
+        annotations:
+          summary: "High latency for {{ $labels.job }}"
+          description: "95th percentile latency is {{ $value }}s for {{ $labels.job }}"
+          runbook_url: "https://runbooks.astralfield.com/high-latency"
+
+      # Infrastructure Alerts
+      - alert: KubernetesPodCrashLooping
+        expr: |
+          rate(kube_pod_container_status_restarts_total[15m]) * 60 * 15 > 5
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+          service: kubernetes
+        annotations:
+          summary: "Pod {{ $labels.namespace }}/{{ $labels.pod }} is crash looping"
+          description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} is restarting {{ $value }} times per 15 minutes"
+          runbook_url: "https://runbooks.astralfield.com/pod-crash-loop"
+
+      - alert: KubernetesPodNotReady
+        expr: |
+          kube_pod_status_ready{condition="false"} == 1
+        for: 15m
+        labels:
+          severity: warning
+          team: platform
+          service: kubernetes
+        annotations:
+          summary: "Pod {{ $labels.namespace }}/{{ $labels.pod }} not ready"
+          description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} has been not ready for more than 15 minutes"
+          runbook_url: "https://runbooks.astralfield.com/pod-not-ready"
+
+      - alert: KubernetesNodeNotReady
+        expr: |
+          kube_node_status_condition{condition="Ready",status="true"} == 0
+        for: 10m
+        labels:
+          severity: critical
+          team: platform
+          service: kubernetes
+        annotations:
+          summary: "Node {{ $labels.node }} not ready"
+          description: "Node {{ $labels.node }} has been not ready for more than 10 minutes"
+          runbook_url: "https://runbooks.astralfield.com/node-not-ready"
+
+      # Resource Usage Alerts
+      - alert: HighCPUUsage
+        expr: |
+          (
+            100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
+          ) > 80
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+          service: infrastructure
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is {{ $value }}% on {{ $labels.instance }}"
+          runbook_url: "https://runbooks.astralfield.com/high-cpu"
+
+      - alert: HighMemoryUsage
+        expr: |
+          (
+            (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / 
+            node_memory_MemTotal_bytes
+          ) * 100 > 85
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+          service: infrastructure
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is {{ $value }}% on {{ $labels.instance }}"
+          runbook_url: "https://runbooks.astralfield.com/high-memory"
+
+      - alert: DiskSpaceLow
+        expr: |
+          (
+            (node_filesystem_size_bytes - node_filesystem_free_bytes) / 
+            node_filesystem_size_bytes
+          ) * 100 > 85
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+          service: infrastructure
+        annotations:
+          summary: "Disk space low on {{ $labels.instance }}"
+          description: "Disk usage is {{ $value }}% on {{ $labels.instance }} for {{ $labels.mountpoint }}"
+          runbook_url: "https://runbooks.astralfield.com/disk-space-low"
+
+      # Database Alerts
+      - alert: PostgreSQLDown
+        expr: pg_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: database
+          service: postgresql
+        annotations:
+          summary: "PostgreSQL is down"
+          description: "PostgreSQL database is down on {{ $labels.instance }}"
+          runbook_url: "https://runbooks.astralfield.com/postgresql-down"
+
+      - alert: PostgreSQLHighConnections
+        expr: |
+          (
+            pg_stat_database_numbackends / 
+            pg_settings_max_connections
+          ) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          team: database
+          service: postgresql
+        annotations:
+          summary: "PostgreSQL high connection usage"
+          description: "PostgreSQL connection usage is {{ $value }}%"
+          runbook_url: "https://runbooks.astralfield.com/postgresql-high-connections"
+
+      - alert: PostgreSQLReplicationLag
+        expr: |
+          pg_replication_lag > 300
+        for: 5m
+        labels:
+          severity: warning
+          team: database
+          service: postgresql
+        annotations:
+          summary: "PostgreSQL replication lag"
+          description: "PostgreSQL replication lag is {{ $value }} seconds"
+          runbook_url: "https://runbooks.astralfield.com/postgresql-replication-lag"
+
+      # Redis Alerts
+      - alert: RedisDown
+        expr: redis_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: cache
+          service: redis
+        annotations:
+          summary: "Redis is down"
+          description: "Redis cache is down on {{ $labels.instance }}"
+          runbook_url: "https://runbooks.astralfield.com/redis-down"
+
+      - alert: RedisHighMemoryUsage
+        expr: |
+          (
+            redis_memory_used_bytes / 
+            redis_memory_max_bytes
+          ) * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+          team: cache
+          service: redis
+        annotations:
+          summary: "Redis high memory usage"
+          description: "Redis memory usage is {{ $value }}%"
+          runbook_url: "https://runbooks.astralfield.com/redis-high-memory"
+
+      # Sports Event Specific Alerts
+      - alert: LiveEventHighLoad
+        expr: |
+          rate(http_requests_total{job="astralfield-api",endpoint=~".*events.*"}[1m]) > 1000
+        for: 2m
+        labels:
+          severity: info
+          team: engineering
+          service: live-events
+        annotations:
+          summary: "High load during live sports event"
+          description: "Live event API receiving {{ $value }} requests per second"
+          runbook_url: "https://runbooks.astralfield.com/live-event-load"
+
+      - alert: WebSocketConnectionsHigh
+        expr: |
+          websocket_connections_total > 10000
+        for: 5m
+        labels:
+          severity: warning
+          team: engineering
+          service: real-time
+        annotations:
+          summary: "High WebSocket connections"
+          description: "{{ $value }} active WebSocket connections"
+          runbook_url: "https://runbooks.astralfield.com/websocket-high"
+
+      # SSL Certificate Expiry
+      - alert: SSLCertificateExpiry
+        expr: |
+          probe_ssl_earliest_cert_expiry - time() < 86400 * 30
+        for: 1h
+        labels:
+          severity: warning
+          team: platform
+          service: ssl
+        annotations:
+          summary: "SSL certificate expiring soon"
+          description: "SSL certificate for {{ $labels.instance }} expires in {{ $value | humanizeDuration }}"
+          runbook_url: "https://runbooks.astralfield.com/ssl-expiry"
+
+      # Backup Alerts
+      - alert: BackupFailed
+        expr: |
+          time() - backup_last_success_timestamp > 86400
+        for: 1h
+        labels:
+          severity: critical
+          team: platform
+          service: backup
+        annotations:
+          summary: "Backup failed"
+          description: "Backup has not completed successfully for more than 24 hours"
+          runbook_url: "https://runbooks.astralfield.com/backup-failed"
+
+  - name: slo.rules
+    rules:
+      # SLI/SLO calculations
+      - record: astralfield:availability:ratio_rate5m
+        expr: |
+          sum(rate(http_requests_total{job=~"astralfield-(web|api)",status!~"5.."}[5m])) /
+          sum(rate(http_requests_total{job=~"astralfield-(web|api)"}[5m]))
+
+      - record: astralfield:latency:p99_5m
+        expr: |
+          histogram_quantile(0.99,
+            sum(rate(http_request_duration_seconds_bucket{job=~"astralfield-(web|api)"}[5m])) by (le)
+          )
+
+      - record: astralfield:error_rate:ratio_rate5m
+        expr: |
+          sum(rate(http_requests_total{job=~"astralfield-(web|api)",status=~"5.."}[5m])) /
+          sum(rate(http_requests_total{job=~"astralfield-(web|api)"}[5m]))

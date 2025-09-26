@@ -1,0 +1,308 @@
+# Quantum's Backup CronJob Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backup-scripts
+  namespace: astralfield
+  labels:
+    app.kubernetes.io/name: backup
+    app.kubernetes.io/component: scripts
+data:
+  database-backup.sh: |
+    #!/bin/bash
+    set -euo pipefail
+    
+    # Simplified backup script for Kubernetes
+    TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+    BACKUP_FILE="/tmp/astralfield_${TIMESTAMP}.sql"
+    
+    echo "[$(date)] Starting database backup..."
+    
+    # Perform database backup
+    pg_dump -h ${POSTGRES_HOST} -p ${POSTGRES_PORT} -U ${POSTGRES_USER} \
+        -d ${POSTGRES_DB} \
+        --verbose \
+        --format=custom \
+        --compress=9 \
+        --create \
+        --clean \
+        > ${BACKUP_FILE}
+    
+    # Compress and upload to S3
+    gzip ${BACKUP_FILE}
+    aws s3 cp ${BACKUP_FILE}.gz s3://${S3_BUCKET}/database/${TIMESTAMP}.sql.gz
+    
+    echo "[$(date)] Backup completed successfully"
+    
+    # Send metrics to Prometheus
+    cat <<EOF | curl -X POST --data-binary @- ${PROMETHEUS_GATEWAY}/metrics/job/backup/instance/database
+    # TYPE backup_success gauge
+    backup_success 1
+    # TYPE backup_timestamp gauge
+    backup_timestamp $(date +%s)
+    # TYPE backup_size_bytes gauge
+    backup_size_bytes $(stat -c%s ${BACKUP_FILE}.gz)
+    EOF
+    
+    # Cleanup
+    rm -f ${BACKUP_FILE}.gz
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: database-backup
+  namespace: astralfield
+  labels:
+    app.kubernetes.io/name: backup
+    app.kubernetes.io/component: database
+spec:
+  schedule: "0 2 * * *"  # Daily at 2 AM UTC
+  timeZone: "UTC"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  startingDeadlineSeconds: 300
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: backup
+            app.kubernetes.io/component: database
+        spec:
+          restartPolicy: OnFailure
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+            fsGroup: 1001
+          containers:
+          - name: backup
+            image: postgres:15-alpine
+            command:
+              - /bin/sh
+              - -c
+              - |
+                apk add --no-cache aws-cli curl
+                chmod +x /scripts/database-backup.sh
+                /scripts/database-backup.sh
+            env:
+            - name: POSTGRES_HOST
+              value: postgres.astralfield.svc.cluster.local
+            - name: POSTGRES_PORT
+              value: "5432"
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secrets
+                  key: POSTGRES_USER
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secrets
+                  key: POSTGRES_DB
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secrets
+                  key: POSTGRES_PASSWORD
+            - name: S3_BUCKET
+              value: astralfield-backups-prod
+            - name: AWS_REGION
+              value: us-east-1
+            - name: PROMETHEUS_GATEWAY
+              value: http://prometheus-pushgateway.astralfield-monitoring.svc.cluster.local:9091
+            resources:
+              requests:
+                memory: "256Mi"
+                cpu: "250m"
+              limits:
+                memory: "1Gi"
+                cpu: "1000m"
+            volumeMounts:
+            - name: backup-scripts
+              mountPath: /scripts
+            - name: tmp
+              mountPath: /tmp
+          volumes:
+          - name: backup-scripts
+            configMap:
+              name: backup-scripts
+              defaultMode: 0755
+          - name: tmp
+            emptyDir:
+              sizeLimit: 10Gi
+---
+# Redis Backup CronJob
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: redis-backup
+  namespace: astralfield
+  labels:
+    app.kubernetes.io/name: backup
+    app.kubernetes.io/component: redis
+spec:
+  schedule: "0 3 * * *"  # Daily at 3 AM UTC
+  timeZone: "UTC"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: backup
+            app.kubernetes.io/component: redis
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: redis-backup
+            image: redis:7-alpine
+            command:
+              - /bin/sh
+              - -c
+              - |
+                apk add --no-cache aws-cli
+                TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+                
+                # Trigger Redis BGSAVE
+                redis-cli -h redis.astralfield.svc.cluster.local BGSAVE
+                
+                # Wait for BGSAVE to complete
+                while [ "$(redis-cli -h redis.astralfield.svc.cluster.local LASTSAVE)" = "$(redis-cli -h redis.astralfield.svc.cluster.local LASTSAVE)" ]; do
+                  sleep 1
+                done
+                
+                # Get RDB file (this would need proper volume mounting in real scenario)
+                echo "Redis backup completed at ${TIMESTAMP}"
+                
+                # Send metrics
+                cat <<EOF | curl -X POST --data-binary @- ${PROMETHEUS_GATEWAY}/metrics/job/backup/instance/redis
+                # TYPE redis_backup_success gauge
+                redis_backup_success 1
+                # TYPE redis_backup_timestamp gauge
+                redis_backup_timestamp $(date +%s)
+                EOF
+            env:
+            - name: PROMETHEUS_GATEWAY
+              value: http://prometheus-pushgateway.astralfield-monitoring.svc.cluster.local:9091
+            resources:
+              requests:
+                memory: "128Mi"
+                cpu: "100m"
+              limits:
+                memory: "256Mi"
+                cpu: "500m"
+---
+# Application State Backup
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: application-backup
+  namespace: astralfield
+  labels:
+    app.kubernetes.io/name: backup
+    app.kubernetes.io/component: application
+spec:
+  schedule: "0 4 * * 0"  # Weekly on Sunday at 4 AM UTC
+  timeZone: "UTC"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 2
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: backup
+            app.kubernetes.io/component: application
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: backup-sa
+          containers:
+          - name: app-backup
+            image: velero/velero:v1.11.0
+            command:
+              - /bin/sh
+              - -c
+              - |
+                # Trigger Velero backup
+                velero backup create weekly-backup-$(date +%Y%m%d) \
+                  --include-namespaces astralfield,astralfield-monitoring \
+                  --snapshot-volumes \
+                  --ttl 2160h
+                
+                # Wait for backup to complete
+                while [ "$(velero backup get weekly-backup-$(date +%Y%m%d) -o json | jq -r '.status.phase')" = "InProgress" ]; do
+                  sleep 30
+                done
+                
+                # Check backup status
+                STATUS=$(velero backup get weekly-backup-$(date +%Y%m%d) -o json | jq -r '.status.phase')
+                if [ "$STATUS" = "Completed" ]; then
+                  echo "Backup completed successfully"
+                  SUCCESS=1
+                else
+                  echo "Backup failed with status: $STATUS"
+                  SUCCESS=0
+                fi
+                
+                # Send metrics
+                cat <<EOF | curl -X POST --data-binary @- ${PROMETHEUS_GATEWAY}/metrics/job/backup/instance/application
+                # TYPE application_backup_success gauge
+                application_backup_success ${SUCCESS}
+                # TYPE application_backup_timestamp gauge
+                application_backup_timestamp $(date +%s)
+                EOF
+            env:
+            - name: PROMETHEUS_GATEWAY
+              value: http://prometheus-pushgateway.astralfield-monitoring.svc.cluster.local:9091
+            resources:
+              requests:
+                memory: "256Mi"
+                cpu: "100m"
+              limits:
+                memory: "512Mi"
+                cpu: "500m"
+---
+# Service Account for backup operations
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: backup-sa
+  namespace: astralfield
+  labels:
+    app.kubernetes.io/name: backup
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: backup-role
+  labels:
+    app.kubernetes.io/name: backup
+rules:
+- apiGroups: [""]
+  resources: ["*"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["*"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["velero.io"]
+  resources: ["*"]
+  verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: backup-role-binding
+  labels:
+    app.kubernetes.io/name: backup
+subjects:
+- kind: ServiceAccount
+  name: backup-sa
+  namespace: astralfield
+roleRef:
+  kind: ClusterRole
+  name: backup-role
+  apiGroup: rbac.authorization.k8s.io

@@ -1,0 +1,341 @@
+# Quantum's Velero Backup Solution for Kubernetes
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: velero
+  labels:
+    app.kubernetes.io/name: velero
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: velero
+  namespace: velero
+  labels:
+    app.kubernetes.io/name: velero
+---
+# AWS IAM Role for Velero (to be created via Terraform)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cloud-credentials
+  namespace: velero
+  labels:
+    app.kubernetes.io/name: velero
+type: Opaque
+data:
+  # AWS credentials will be base64 encoded
+  # This should be populated by external secret management
+  cloud: ""
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: velero
+  namespace: velero
+  labels:
+    app.kubernetes.io/name: velero
+    app.kubernetes.io/component: backup
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: velero
+      app.kubernetes.io/component: backup
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: velero
+        app.kubernetes.io/component: backup
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8085"
+        prometheus.io/path: "/metrics"
+    spec:
+      restartPolicy: Always
+      serviceAccountName: velero
+      containers:
+      - name: velero
+        image: velero/velero:v1.11.0
+        ports:
+        - name: metrics
+          containerPort: 8085
+        command:
+          - /velero
+        args:
+          - server
+          - --log-level=info
+          - --log-format=json
+          - --metrics-address=0.0.0.0:8085
+          - --plugin-dir=/plugins
+          - --backup-location-config=region=us-east-1,s3ForcePathStyle="false"
+          - --volume-snapshot-location-config=region=us-east-1
+        volumeMounts:
+          - name: plugins
+            mountPath: /plugins
+          - name: cloud-credentials
+            mountPath: /credentials
+          - name: scratch
+            mountPath: /scratch
+        env:
+          - name: AWS_SHARED_CREDENTIALS_FILE
+            value: /credentials/cloud
+          - name: VELERO_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: LD_LIBRARY_PATH
+            value: /plugins
+        resources:
+          requests:
+            cpu: 200m
+            memory: 256Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8085
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8085
+          initialDelaySeconds: 10
+          periodSeconds: 10
+      volumes:
+        - name: plugins
+          emptyDir: {}
+        - name: cloud-credentials
+          secret:
+            secretName: cloud-credentials
+        - name: scratch
+          emptyDir: {}
+      dnsPolicy: ClusterFirst
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: velero-metrics
+  namespace: velero
+  labels:
+    app.kubernetes.io/name: velero
+    app.kubernetes.io/component: backup
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8085"
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8085
+    targetPort: 8085
+    protocol: TCP
+    name: metrics
+  selector:
+    app.kubernetes.io/name: velero
+    app.kubernetes.io/component: backup
+---
+# BackupStorageLocation for AWS S3
+apiVersion: velero.io/v1
+kind: BackupStorageLocation
+metadata:
+  name: aws-s3
+  namespace: velero
+  labels:
+    app.kubernetes.io/name: velero
+spec:
+  provider: aws
+  objectStorage:
+    bucket: astralfield-velero-backups
+    prefix: production
+  config:
+    region: us-east-1
+    s3ForcePathStyle: "false"
+---
+# VolumeSnapshotLocation for AWS EBS
+apiVersion: velero.io/v1
+kind: VolumeSnapshotLocation
+metadata:
+  name: aws-ebs
+  namespace: velero
+  labels:
+    app.kubernetes.io/name: velero
+spec:
+  provider: aws
+  config:
+    region: us-east-1
+---
+# Daily backup schedule for application data
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: daily-astralfield-backup
+  namespace: velero
+  labels:
+    app.kubernetes.io/name: velero
+    backup-type: application
+spec:
+  schedule: "0 2 * * *"  # Daily at 2 AM UTC
+  template:
+    metadata:
+      labels:
+        backup-type: daily
+        environment: production
+    spec:
+      includedNamespaces:
+      - astralfield
+      - astralfield-monitoring
+      excludedResources:
+      - events
+      - events.events.k8s.io
+      - backups.velero.io
+      - restores.velero.io
+      - resticrepositories.velero.io
+      snapshotVolumes: true
+      storageLocation: aws-s3
+      volumeSnapshotLocations:
+      - aws-ebs
+      ttl: 720h  # 30 days
+      hooks:
+        resources:
+        - name: postgres-backup-hook
+          includedNamespaces:
+          - astralfield
+          includedResources:
+          - pods
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: postgres
+          pre:
+          - exec:
+              container: postgres
+              command:
+              - /bin/bash
+              - -c
+              - pg_dump -U astralfield astralfield > /tmp/backup.sql
+              timeout: 300s
+          post:
+          - exec:
+              container: postgres
+              command:
+              - /bin/bash
+              - -c
+              - rm -f /tmp/backup.sql
+---
+# Weekly backup with longer retention
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: weekly-astralfield-backup
+  namespace: velero
+  labels:
+    app.kubernetes.io/name: velero
+    backup-type: weekly
+spec:
+  schedule: "0 1 * * 0"  # Weekly on Sunday at 1 AM UTC
+  template:
+    metadata:
+      labels:
+        backup-type: weekly
+        environment: production
+    spec:
+      includedNamespaces:
+      - astralfield
+      - astralfield-monitoring
+      - astralfield-system
+      - kube-system
+      excludedResources:
+      - events
+      - events.events.k8s.io
+      - backups.velero.io
+      - restores.velero.io
+      snapshotVolumes: true
+      storageLocation: aws-s3
+      volumeSnapshotLocations:
+      - aws-ebs
+      ttl: 2160h  # 90 days
+      hooks:
+        resources:
+        - name: full-postgres-backup-hook
+          includedNamespaces:
+          - astralfield
+          includedResources:
+          - pods
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: postgres
+          pre:
+          - exec:
+              container: postgres
+              command:
+              - /bin/bash
+              - -c
+              - |
+                pg_dump -U astralfield astralfield > /tmp/weekly_backup.sql
+                pg_dumpall -U astralfield -g > /tmp/weekly_globals.sql
+              timeout: 600s
+          post:
+          - exec:
+              container: postgres
+              command:
+              - /bin/bash
+              - -c
+              - |
+                rm -f /tmp/weekly_backup.sql
+                rm -f /tmp/weekly_globals.sql
+---
+# RBAC for Velero
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: velero
+  labels:
+    app.kubernetes.io/name: velero
+subjects:
+- kind: ServiceAccount
+  namespace: velero
+  name: velero
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
+---
+# Custom backup for critical data before deployments
+apiVersion: velero.io/v1
+kind: Backup
+metadata:
+  name: pre-deployment-backup-template
+  namespace: velero
+  labels:
+    app.kubernetes.io/name: velero
+    backup-type: pre-deployment
+spec:
+  includedNamespaces:
+  - astralfield
+  excludedResources:
+  - events
+  - events.events.k8s.io
+  snapshotVolumes: true
+  storageLocation: aws-s3
+  volumeSnapshotLocations:
+  - aws-ebs
+  ttl: 168h  # 7 days
+  hooks:
+    resources:
+    - name: redis-backup-hook
+      includedNamespaces:
+      - astralfield
+      includedResources:
+      - pods
+      labelSelector:
+        matchLabels:
+          app.kubernetes.io/name: redis
+      pre:
+      - exec:
+          container: redis
+          command:
+          - redis-cli
+          - BGSAVE
+          timeout: 120s

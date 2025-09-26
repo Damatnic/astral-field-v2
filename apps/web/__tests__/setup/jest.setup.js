@@ -1,5 +1,18 @@
+/**
+ * Zenith Main Jest Setup
+ * Primary test configuration and global mocks
+ */
+
 import '@testing-library/jest-dom'
 import { TextEncoder, TextDecoder } from 'util'
+import { configure } from '@testing-library/react'
+
+// Configure Testing Library
+configure({
+  testIdAttribute: 'data-testid',
+  asyncUtilTimeout: 5000,
+  computedStyleSupportsPseudoElements: true,
+})
 
 // Mock Next.js router
 jest.mock('next/router', () => ({

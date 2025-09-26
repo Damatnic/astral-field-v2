@@ -1,0 +1,398 @@
+# Quantum's Database Migration Automation
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: migration-scripts
+  namespace: astralfield
+  labels:
+    app.kubernetes.io/name: database-migration
+    app.kubernetes.io/component: automation
+data:
+  migrate.sh: |
+    #!/bin/bash
+    set -euo pipefail
+    
+    echo "[$(date)] Starting database migration..."
+    
+    # Wait for database to be ready
+    until pg_isready -h ${POSTGRES_HOST} -p ${POSTGRES_PORT} -U ${POSTGRES_USER}; do
+      echo "Waiting for PostgreSQL to be ready..."
+      sleep 2
+    done
+    
+    echo "Database is ready. Running migrations..."
+    
+    # Run Prisma migrations
+    npx prisma migrate deploy
+    
+    # Check migration status
+    if [ $? -eq 0 ]; then
+      echo "Migrations completed successfully"
+      
+      # Send success metric
+      cat <<EOF | curl -X POST --data-binary @- ${PROMETHEUS_GATEWAY}/metrics/job/migration/instance/database
+    # TYPE migration_success gauge
+    migration_success 1
+    # TYPE migration_timestamp gauge
+    migration_timestamp $(date +%s)
+    EOF
+      
+      # Run database seeding if specified
+      if [ "${RUN_SEED:-false}" = "true" ]; then
+        echo "Running database seed..."
+        npm run db:seed
+      fi
+      
+    else
+      echo "Migration failed"
+      
+      # Send failure metric
+      cat <<EOF | curl -X POST --data-binary @- ${PROMETHEUS_GATEWAY}/metrics/job/migration/instance/database
+    # TYPE migration_success gauge
+    migration_success 0
+    # TYPE migration_timestamp gauge
+    migration_timestamp $(date +%s)
+    EOF
+      
+      exit 1
+    fi
+    
+    echo "[$(date)] Migration process completed"
+
+  rollback.sh: |
+    #!/bin/bash
+    set -euo pipefail
+    
+    echo "[$(date)] Starting database rollback..."
+    
+    # Rollback to previous migration
+    npx prisma migrate reset --force
+    
+    if [ $? -eq 0 ]; then
+      echo "Rollback completed successfully"
+      
+      # Send success metric
+      cat <<EOF | curl -X POST --data-binary @- ${PROMETHEUS_GATEWAY}/metrics/job/rollback/instance/database
+    # TYPE rollback_success gauge
+    rollback_success 1
+    # TYPE rollback_timestamp gauge
+    rollback_timestamp $(date +%s)
+    EOF
+      
+    else
+      echo "Rollback failed"
+      exit 1
+    fi
+
+  health-check.sh: |
+    #!/bin/bash
+    set -euo pipefail
+    
+    echo "[$(date)] Performing post-migration health check..."
+    
+    # Basic connectivity test
+    pg_isready -h ${POSTGRES_HOST} -p ${POSTGRES_PORT} -U ${POSTGRES_USER}
+    
+    # Test basic queries
+    psql -h ${POSTGRES_HOST} -p ${POSTGRES_PORT} -U ${POSTGRES_USER} -d ${POSTGRES_DB} -c "SELECT COUNT(*) FROM users;" > /dev/null
+    psql -h ${POSTGRES_HOST} -p ${POSTGRES_PORT} -U ${POSTGRES_USER} -d ${POSTGRES_DB} -c "SELECT COUNT(*) FROM leagues;" > /dev/null
+    
+    echo "Health check passed"
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: database-migration
+  namespace: astralfield
+  labels:
+    app.kubernetes.io/name: database-migration
+    app.kubernetes.io/component: automation
+  annotations:
+    # This job will be created by CI/CD pipeline with unique names
+    migration.version: "v1.0.0"
+    migration.timestamp: "2024-01-01T00:00:00Z"
+spec:
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: database-migration
+        app.kubernetes.io/component: automation
+    spec:
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 1001
+      initContainers:
+      # Pre-migration backup
+      - name: pre-migration-backup
+        image: postgres:15-alpine
+        command:
+          - /bin/sh
+          - -c
+          - |
+            apk add --no-cache aws-cli
+            TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+            BACKUP_FILE="/tmp/pre_migration_${TIMESTAMP}.sql"
+            
+            echo "Creating pre-migration backup..."
+            pg_dump -h ${POSTGRES_HOST} -p ${POSTGRES_PORT} -U ${POSTGRES_USER} \
+                -d ${POSTGRES_DB} \
+                --format=custom \
+                --compress=9 \
+                > ${BACKUP_FILE}
+            
+            # Upload to S3
+            aws s3 cp ${BACKUP_FILE} s3://${S3_BUCKET}/migrations/pre-migration-${TIMESTAMP}.sql
+            
+            echo "Pre-migration backup completed"
+        env:
+        - name: POSTGRES_HOST
+          value: postgres.astralfield.svc.cluster.local
+        - name: POSTGRES_PORT
+          value: "5432"
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secrets
+              key: POSTGRES_USER
+        - name: POSTGRES_DB
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secrets
+              key: POSTGRES_DB
+        - name: PGPASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secrets
+              key: POSTGRES_PASSWORD
+        - name: S3_BUCKET
+          value: astralfield-backups-prod
+        - name: AWS_REGION
+          value: us-east-1
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+      containers:
+      - name: migration
+        image: node:18-alpine
+        command:
+          - /bin/sh
+          - -c
+          - |
+            # Install dependencies
+            apk add --no-cache postgresql-client curl
+            
+            # Copy application code
+            cp -r /app/* ./
+            
+            # Install npm dependencies
+            npm ci --only=production
+            
+            # Generate Prisma client
+            npx prisma generate
+            
+            # Run migration script
+            chmod +x /scripts/migrate.sh
+            /scripts/migrate.sh
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: astralfield-secrets
+              key: DATABASE_URL
+        - name: POSTGRES_HOST
+          value: postgres.astralfield.svc.cluster.local
+        - name: POSTGRES_PORT
+          value: "5432"
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secrets
+              key: POSTGRES_USER
+        - name: POSTGRES_DB
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secrets
+              key: POSTGRES_DB
+        - name: PROMETHEUS_GATEWAY
+          value: http://prometheus-pushgateway.astralfield-monitoring.svc.cluster.local:9091
+        - name: RUN_SEED
+          value: "false"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        volumeMounts:
+        - name: migration-scripts
+          mountPath: /scripts
+        - name: application-code
+          mountPath: /app
+        - name: tmp
+          mountPath: /tmp
+      # Post-migration health check
+      - name: post-migration-check
+        image: postgres:15-alpine
+        command:
+          - /bin/sh
+          - -c
+          - |
+            chmod +x /scripts/health-check.sh
+            /scripts/health-check.sh
+        env:
+        - name: POSTGRES_HOST
+          value: postgres.astralfield.svc.cluster.local
+        - name: POSTGRES_PORT
+          value: "5432"
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secrets
+              key: POSTGRES_USER
+        - name: POSTGRES_DB
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secrets
+              key: POSTGRES_DB
+        - name: PGPASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secrets
+              key: POSTGRES_PASSWORD
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+        volumeMounts:
+        - name: migration-scripts
+          mountPath: /scripts
+      volumes:
+      - name: migration-scripts
+        configMap:
+          name: migration-scripts
+          defaultMode: 0755
+      - name: application-code
+        emptyDir: {}
+      - name: tmp
+        emptyDir:
+          sizeLimit: 5Gi
+  backoffLimit: 3
+  activeDeadlineSeconds: 1800  # 30 minutes timeout
+---
+# Migration Rollback Job Template
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: database-rollback-template
+  namespace: astralfield
+  labels:
+    app.kubernetes.io/name: database-rollback
+    app.kubernetes.io/component: automation
+spec:
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: database-rollback
+        app.kubernetes.io/component: automation
+    spec:
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 1001
+      containers:
+      - name: rollback
+        image: node:18-alpine
+        command:
+          - /bin/sh
+          - -c
+          - |
+            apk add --no-cache postgresql-client curl
+            cp -r /app/* ./
+            npm ci --only=production
+            npx prisma generate
+            
+            chmod +x /scripts/rollback.sh
+            /scripts/rollback.sh
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: astralfield-secrets
+              key: DATABASE_URL
+        - name: PROMETHEUS_GATEWAY
+          value: http://prometheus-pushgateway.astralfield-monitoring.svc.cluster.local:9091
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        volumeMounts:
+        - name: migration-scripts
+          mountPath: /scripts
+        - name: application-code
+          mountPath: /app
+      volumes:
+      - name: migration-scripts
+        configMap:
+          name: migration-scripts
+          defaultMode: 0755
+      - name: application-code
+        emptyDir: {}
+  backoffLimit: 2
+  activeDeadlineSeconds: 900  # 15 minutes timeout
+---
+# Service Account for migration jobs
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: migration-sa
+  namespace: astralfield
+  labels:
+    app.kubernetes.io/name: database-migration
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: migration-role
+  namespace: astralfield
+  labels:
+    app.kubernetes.io/name: database-migration
+rules:
+- apiGroups: [""]
+  resources: ["pods", "configmaps", "secrets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["batch"]
+  resources: ["jobs"]
+  verbs: ["get", "list", "watch", "create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: migration-role-binding
+  namespace: astralfield
+  labels:
+    app.kubernetes.io/name: database-migration
+subjects:
+- kind: ServiceAccount
+  name: migration-sa
+  namespace: astralfield
+roleRef:
+  kind: Role
+  name: migration-role
+  apiGroup: rbac.authorization.k8s.io

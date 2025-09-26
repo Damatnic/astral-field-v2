@@ -1,0 +1,492 @@
+# Quantum's Database Migration Workflow
+name: 🗄️ Database Migration
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        type: string
+      migration_direction:
+        description: 'Migration direction (up/down)'
+        required: false
+        type: string
+        default: 'up'
+      dry_run:
+        description: 'Perform dry run only'
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      KUBE_CONFIG:
+        required: true
+      DATABASE_URL:
+        required: true
+      SLACK_WEBHOOK:
+        required: false
+
+env:
+  ENVIRONMENT: ${{ inputs.environment }}
+  MIGRATION_DIRECTION: ${{ inputs.migration_direction }}
+  DRY_RUN: ${{ inputs.dry_run }}
+
+jobs:
+  # Pre-migration validation
+  validate-migration:
+    name: 🔍 Validate Migration
+    runs-on: ubuntu-latest
+    outputs:
+      migration-hash: ${{ steps.hash.outputs.hash }}
+      has-changes: ${{ steps.changes.outputs.has-changes }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Check for migration changes
+        id: changes
+        run: |
+          if git diff --name-only HEAD~1 | grep -E "(prisma/|migrations/)" > /dev/null; then
+            echo "has-changes=true" >> $GITHUB_OUTPUT
+            echo "Migration files have changed"
+          else
+            echo "has-changes=false" >> $GITHUB_OUTPUT
+            echo "No migration changes detected"
+          fi
+
+      - name: Validate migration files
+        if: steps.changes.outputs.has-changes == 'true'
+        run: |
+          # Check for migration file syntax
+          npx prisma migrate diff --preview-feature
+          
+          # Validate schema consistency
+          npx prisma validate
+
+      - name: Generate migration hash
+        id: hash
+        run: |
+          HASH=$(find prisma/migrations -name "*.sql" -type f -exec sha256sum {} \; | sha256sum | cut -d' ' -f1)
+          echo "hash=${HASH}" >> $GITHUB_OUTPUT
+          echo "Migration hash: ${HASH}"
+
+      - name: Dry run migration
+        if: inputs.dry_run
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          echo "🧪 Performing dry run migration..."
+          # Create a temporary database for testing
+          npx prisma migrate diff --preview-feature --from-empty --to-schema-datamodel prisma/schema.prisma
+
+  # Database backup before migration
+  backup-database:
+    name: 💾 Backup Database
+    runs-on: ubuntu-latest
+    needs: validate-migration
+    if: needs.validate-migration.outputs.has-changes == 'true' && !inputs.dry_run
+    steps:
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.28.0'
+
+      - name: Configure kubectl
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
+
+      - name: Create pre-migration backup
+        run: |
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          BACKUP_NAME="pre-migration-backup-${TIMESTAMP}"
+          
+          # Create Velero backup
+          kubectl create -f - <<EOF
+          apiVersion: velero.io/v1
+          kind: Backup
+          metadata:
+            name: ${BACKUP_NAME}
+            namespace: velero
+            labels:
+              migration-hash: ${{ needs.validate-migration.outputs.migration-hash }}
+              backup-type: pre-migration
+          spec:
+            includedNamespaces:
+            - astralfield
+            excludedResources:
+            - events
+            snapshotVolumes: true
+            storageLocation: aws-s3
+            ttl: 168h  # 7 days
+          EOF
+          
+          # Wait for backup to complete
+          echo "Waiting for backup to complete..."
+          kubectl wait --for=condition=Complete backup/${BACKUP_NAME} -n velero --timeout=600s
+          
+          # Verify backup status
+          BACKUP_STATUS=$(kubectl get backup ${BACKUP_NAME} -n velero -o jsonpath='{.status.phase}')
+          if [ "$BACKUP_STATUS" != "Completed" ]; then
+            echo "❌ Backup failed with status: $BACKUP_STATUS"
+            exit 1
+          fi
+          
+          echo "✅ Backup completed successfully: $BACKUP_NAME"
+          echo "BACKUP_NAME=${BACKUP_NAME}" >> $GITHUB_ENV
+
+      - name: Notify backup completion
+        if: success()
+        run: |
+          if [ -n "${{ secrets.SLACK_WEBHOOK }}" ]; then
+            curl -X POST -H 'Content-type: application/json' \
+              --data "{
+                \"text\": \"💾 Pre-migration backup completed for ${{ env.ENVIRONMENT }}\",
+                \"attachments\": [{
+                  \"color\": \"good\",
+                  \"fields\": [{
+                    \"title\": \"Backup Name\",
+                    \"value\": \"${{ env.BACKUP_NAME }}\",
+                    \"short\": true
+                  }, {
+                    \"title\": \"Environment\",
+                    \"value\": \"${{ env.ENVIRONMENT }}\",
+                    \"short\": true
+                  }]
+                }]
+              }" ${{ secrets.SLACK_WEBHOOK }}
+          fi
+
+  # Execute migration
+  run-migration:
+    name: 🚀 Execute Migration
+    runs-on: ubuntu-latest
+    needs: [validate-migration, backup-database]
+    if: needs.validate-migration.outputs.has-changes == 'true' && !inputs.dry_run
+    environment:
+      name: ${{ inputs.environment }}-migration
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.28.0'
+
+      - name: Configure kubectl
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
+
+      - name: Create migration job
+        run: |
+          MIGRATION_JOB="migration-$(date +%Y%m%d-%H%M%S)"
+          MIGRATION_HASH="${{ needs.validate-migration.outputs.migration-hash }}"
+          
+          # Create Kubernetes job for migration
+          kubectl create -f - <<EOF
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            name: ${MIGRATION_JOB}
+            namespace: astralfield
+            labels:
+              app.kubernetes.io/name: database-migration
+              migration-hash: ${MIGRATION_HASH}
+              environment: ${{ env.ENVIRONMENT }}
+            annotations:
+              migration.github.sha: ${{ github.sha }}
+              migration.github.run: ${{ github.run_id }}
+          spec:
+            template:
+              metadata:
+                labels:
+                  app.kubernetes.io/name: database-migration
+              spec:
+                restartPolicy: Never
+                securityContext:
+                  runAsNonRoot: true
+                  runAsUser: 1001
+                  fsGroup: 1001
+                containers:
+                - name: migration
+                  image: ghcr.io/${{ github.repository }}-migration:${{ github.sha }}
+                  command:
+                    - /bin/sh
+                    - -c
+                    - |
+                      echo "🚀 Starting database migration..."
+                      echo "Migration hash: ${MIGRATION_HASH}"
+                      echo "Environment: ${{ env.ENVIRONMENT }}"
+                      
+                      # Run Prisma migrations
+                      npx prisma migrate deploy
+                      
+                      if [ \$? -eq 0 ]; then
+                        echo "✅ Migration completed successfully"
+                        
+                        # Send success metric
+                        curl -X POST --data-binary @- \${PROMETHEUS_GATEWAY}/metrics/job/migration/instance/database <<EOF_METRIC
+                      # TYPE migration_success gauge
+                      migration_success 1
+                      # TYPE migration_timestamp gauge
+                      migration_timestamp \$(date +%s)
+                      # TYPE migration_hash info
+                      migration_hash{hash="${MIGRATION_HASH}"} 1
+                      EOF_METRIC
+                      else
+                        echo "❌ Migration failed"
+                        exit 1
+                      fi
+                  env:
+                  - name: DATABASE_URL
+                    valueFrom:
+                      secretKeyRef:
+                        name: astralfield-secrets
+                        key: DATABASE_URL
+                  - name: PROMETHEUS_GATEWAY
+                    value: http://prometheus-pushgateway.astralfield-monitoring.svc.cluster.local:9091
+                  - name: MIGRATION_HASH
+                    value: ${MIGRATION_HASH}
+                  resources:
+                    requests:
+                      memory: "512Mi"
+                      cpu: "250m"
+                    limits:
+                      memory: "1Gi"
+                      cpu: "1000m"
+            backoffLimit: 1
+            activeDeadlineSeconds: 1800
+          EOF
+          
+          echo "MIGRATION_JOB=${MIGRATION_JOB}" >> $GITHUB_ENV
+
+      - name: Wait for migration completion
+        run: |
+          echo "⏳ Waiting for migration job to complete..."
+          
+          # Wait for job completion
+          kubectl wait --for=condition=complete job/${{ env.MIGRATION_JOB }} -n astralfield --timeout=1800s
+          
+          # Check job status
+          JOB_STATUS=$(kubectl get job ${{ env.MIGRATION_JOB }} -n astralfield -o jsonpath='{.status.conditions[0].type}')
+          
+          if [ "$JOB_STATUS" = "Complete" ]; then
+            echo "✅ Migration completed successfully"
+            
+            # Get job logs
+            POD_NAME=$(kubectl get pods -n astralfield -l job-name=${{ env.MIGRATION_JOB }} -o jsonpath='{.items[0].metadata.name}')
+            echo "📋 Migration logs:"
+            kubectl logs ${POD_NAME} -n astralfield
+            
+          else
+            echo "❌ Migration failed"
+            
+            # Get failure logs
+            POD_NAME=$(kubectl get pods -n astralfield -l job-name=${{ env.MIGRATION_JOB }} -o jsonpath='{.items[0].metadata.name}')
+            echo "📋 Migration failure logs:"
+            kubectl logs ${POD_NAME} -n astralfield
+            
+            exit 1
+          fi
+
+      - name: Verify application health
+        run: |
+          echo "🏥 Verifying application health after migration..."
+          
+          # Check if application pods are ready
+          kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=astralfield-api -n astralfield --timeout=300s
+          kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=astralfield-web -n astralfield --timeout=300s
+          
+          # Test API health endpoint
+          API_POD=$(kubectl get pods -n astralfield -l app.kubernetes.io/name=astralfield-api -o jsonpath='{.items[0].metadata.name}')
+          kubectl exec ${API_POD} -n astralfield -- curl -f http://localhost:8080/health
+          
+          echo "✅ Application health verification passed"
+
+      - name: Cleanup migration job
+        if: always()
+        run: |
+          # Keep job for debugging but clean up after 1 hour
+          kubectl patch job ${{ env.MIGRATION_JOB }} -n astralfield -p '{"spec":{"ttlSecondsAfterFinished":3600}}'
+
+  # Post-migration validation
+  validate-post-migration:
+    name: ✅ Post-Migration Validation
+    runs-on: ubuntu-latest
+    needs: [validate-migration, run-migration]
+    if: needs.validate-migration.outputs.has-changes == 'true' && !inputs.dry_run && success()
+    steps:
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.28.0'
+
+      - name: Configure kubectl
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
+
+      - name: Run post-migration tests
+        run: |
+          echo "🧪 Running post-migration validation tests..."
+          
+          # Create validation job
+          VALIDATION_JOB="post-migration-validation-$(date +%Y%m%d-%H%M%S)"
+          
+          kubectl create -f - <<EOF
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            name: ${VALIDATION_JOB}
+            namespace: astralfield
+          spec:
+            template:
+              spec:
+                restartPolicy: Never
+                containers:
+                - name: validation
+                  image: postgres:15-alpine
+                  command:
+                    - /bin/sh
+                    - -c
+                    - |
+                      echo "Running database validation queries..."
+                      
+                      # Test basic connectivity
+                      pg_isready -h postgres.astralfield.svc.cluster.local -p 5432 -U astralfield
+                      
+                      # Test critical tables exist and are accessible
+                      psql -h postgres.astralfield.svc.cluster.local -U astralfield -d astralfield -c "SELECT COUNT(*) FROM users;"
+                      psql -h postgres.astralfield.svc.cluster.local -U astralfield -d astralfield -c "SELECT COUNT(*) FROM leagues;"
+                      psql -h postgres.astralfield.svc.cluster.local -U astralfield -d astralfield -c "SELECT COUNT(*) FROM teams;"
+                      
+                      echo "✅ Database validation passed"
+                  env:
+                  - name: PGPASSWORD
+                    valueFrom:
+                      secretKeyRef:
+                        name: postgres-secrets
+                        key: POSTGRES_PASSWORD
+            backoffLimit: 2
+            activeDeadlineSeconds: 300
+          EOF
+          
+          # Wait for validation to complete
+          kubectl wait --for=condition=complete job/${VALIDATION_JOB} -n astralfield --timeout=300s
+          
+          # Clean up validation job
+          kubectl delete job ${VALIDATION_JOB} -n astralfield
+
+      - name: Send success notification
+        if: success()
+        run: |
+          if [ -n "${{ secrets.SLACK_WEBHOOK }}" ]; then
+            curl -X POST -H 'Content-type: application/json' \
+              --data "{
+                \"text\": \"✅ Database migration completed successfully for ${{ env.ENVIRONMENT }}\",
+                \"attachments\": [{
+                  \"color\": \"good\",
+                  \"fields\": [{
+                    \"title\": \"Migration Hash\",
+                    \"value\": \"${{ needs.validate-migration.outputs.migration-hash }}\",
+                    \"short\": true
+                  }, {
+                    \"title\": \"Environment\",
+                    \"value\": \"${{ env.ENVIRONMENT }}\",
+                    \"short\": true
+                  }, {
+                    \"title\": \"Commit\",
+                    \"value\": \"${{ github.sha }}\",
+                    \"short\": true
+                  }]
+                }]
+              }" ${{ secrets.SLACK_WEBHOOK }}
+          fi
+
+  # Rollback capability
+  rollback-migration:
+    name: ⏪ Rollback Migration
+    runs-on: ubuntu-latest
+    if: failure() && !inputs.dry_run
+    needs: [validate-migration, backup-database, run-migration]
+    steps:
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.28.0'
+
+      - name: Configure kubectl
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
+
+      - name: Restore from backup
+        run: |
+          echo "🔄 Starting rollback process..."
+          
+          # Find the latest pre-migration backup
+          BACKUP_NAME=$(kubectl get backups -n velero -l backup-type=pre-migration -o jsonpath='{.items[0].metadata.name}')
+          
+          if [ -n "$BACKUP_NAME" ]; then
+            echo "📦 Restoring from backup: $BACKUP_NAME"
+            
+            # Create restore job
+            RESTORE_NAME="rollback-restore-$(date +%Y%m%d-%H%M%S)"
+            kubectl create -f - <<EOF
+          apiVersion: velero.io/v1
+          kind: Restore
+          metadata:
+            name: ${RESTORE_NAME}
+            namespace: velero
+          spec:
+            backupName: ${BACKUP_NAME}
+            includedNamespaces:
+            - astralfield
+          EOF
+            
+            # Wait for restore to complete
+            kubectl wait --for=condition=Complete restore/${RESTORE_NAME} -n velero --timeout=600s
+            
+            echo "✅ Rollback completed successfully"
+          else
+            echo "❌ No backup found for rollback"
+            exit 1
+          fi
+
+      - name: Send rollback notification
+        if: always()
+        run: |
+          if [ -n "${{ secrets.SLACK_WEBHOOK }}" ]; then
+            curl -X POST -H 'Content-type: application/json' \
+              --data "{
+                \"text\": \"⏪ Database migration rollback completed for ${{ env.ENVIRONMENT }}\",
+                \"attachments\": [{
+                  \"color\": \"warning\",
+                  \"fields\": [{
+                    \"title\": \"Environment\",
+                    \"value\": \"${{ env.ENVIRONMENT }}\",
+                    \"short\": true
+                  }, {
+                    \"title\": \"Trigger\",
+                    \"value\": \"Migration failure\",
+                    \"short\": true
+                  }]
+                }]
+              }" ${{ secrets.SLACK_WEBHOOK }}
+          fi

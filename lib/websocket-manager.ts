@@ -1,0 +1,804 @@
+/**
+ * Phoenix WebSocket Manager
+ * Real-time communication system for Astral Field sports application
+ * 
+ * Features:
+ * - Sub-second real-time updates for live sports events
+ * - Room-based communication (leagues, drafts, matchups)
+ * - Redis pub/sub for horizontal scaling
+ * - Intelligent message queuing and prioritization
+ * - Connection health monitoring and auto-reconnection
+ * - Rate limiting and abuse prevention
+ * - Performance metrics and monitoring
+ */
+
+import { Server as SocketServer, Socket } from 'socket.io'
+import { Redis } from 'ioredis'
+import { cacheManager } from './cache-manager'
+import { queryOptimizer } from './query-optimizer'
+import pino from 'pino'
+
+interface WebSocketConfig {
+  redis?: {
+    url?: string
+    keyPrefix?: string
+  }
+  rateLimiting?: {
+    enabled?: boolean
+    maxEventsPerSecond?: number
+    maxEventsPerMinute?: number
+  }
+  monitoring?: {
+    enabled?: boolean
+    logInterval?: number
+  }
+  rooms?: {
+    maxClientsPerRoom?: number
+    autoCleanup?: boolean
+  }
+}
+
+interface ConnectionMetrics {
+  totalConnections: number
+  activeConnections: number
+  totalMessages: number
+  messagesPerSecond: number
+  roomCounts: Map<string, number>
+  lastUpdate: Date
+}
+
+interface RateLimitInfo {
+  count: number
+  resetTime: number
+}
+
+interface QueuedMessage {
+  room: string
+  event: string
+  data: any
+  priority: 'high' | 'medium' | 'low'
+  timestamp: number
+  retries?: number
+}
+
+type EventPriority = 'high' | 'medium' | 'low'
+
+class WebSocketManager {
+  private static instance: WebSocketManager
+  private io: SocketServer
+  private redis: Redis
+  private subscriberRedis: Redis
+  private logger: pino.Logger
+  private config: Required<WebSocketConfig>
+  private metrics: ConnectionMetrics
+  private rateLimitMap: Map<string, RateLimitInfo> = new Map()
+  private messageQueue: QueuedMessage[] = []
+  private isProcessingQueue = false
+  private connectedUsers: Map<string, Set<string>> = new Map() // userId -> Set of socketIds
+  private socketToUser: Map<string, string> = new Map() // socketId -> userId
+  private roomMemberships: Map<string, Set<string>> = new Map() // room -> Set of socketIds
+
+  private constructor(io: SocketServer, config: WebSocketConfig = {}) {
+    this.io = io
+    this.logger = pino({
+      name: 'WebSocketManager',
+      level: process.env.LOG_LEVEL || 'info'
+    })
+
+    this.config = {
+      redis: {
+        url: config.redis?.url || process.env.REDIS_URL || 'redis://localhost:6379',
+        keyPrefix: config.redis?.keyPrefix || 'ws:'
+      },
+      rateLimiting: {
+        enabled: config.rateLimiting?.enabled ?? true,
+        maxEventsPerSecond: config.rateLimiting?.maxEventsPerSecond || 10,
+        maxEventsPerMinute: config.rateLimiting?.maxEventsPerMinute || 100
+      },
+      monitoring: {
+        enabled: config.monitoring?.enabled ?? true,
+        logInterval: config.monitoring?.logInterval || 60000 // 1 minute
+      },
+      rooms: {
+        maxClientsPerRoom: config.rooms?.maxClientsPerRoom || 1000,
+        autoCleanup: config.rooms?.autoCleanup ?? true
+      }
+    }
+
+    this.metrics = this.initializeMetrics()
+    this.initializeRedis()
+    this.setupEventHandlers()
+    this.startMessageProcessor()
+    this.setupMonitoring()
+  }
+
+  static getInstance(io?: SocketServer, config?: WebSocketConfig): WebSocketManager {
+    if (!WebSocketManager.instance) {
+      if (!io) {
+        throw new Error('SocketServer instance required for WebSocketManager initialization')
+      }
+      WebSocketManager.instance = new WebSocketManager(io, config)
+    }
+    return WebSocketManager.instance
+  }
+
+  private initializeMetrics(): ConnectionMetrics {
+    return {
+      totalConnections: 0,
+      activeConnections: 0,
+      totalMessages: 0,
+      messagesPerSecond: 0,
+      roomCounts: new Map(),
+      lastUpdate: new Date()
+    }
+  }
+
+  private initializeRedis(): void {
+    // Publisher Redis connection
+    this.redis = new Redis(this.config.redis.url, {
+      retryDelayOnFailure: 100,
+      maxRetriesPerRequest: 3,
+      keyPrefix: this.config.redis.keyPrefix,
+      lazyConnect: true
+    })
+
+    // Subscriber Redis connection (separate for pub/sub)
+    this.subscriberRedis = new Redis(this.config.redis.url, {
+      retryDelayOnFailure: 100,
+      maxRetriesPerRequest: 3,
+      keyPrefix: this.config.redis.keyPrefix,
+      lazyConnect: true
+    })
+
+    // Redis event handlers
+    this.redis.on('error', (error) => {
+      this.logger.error('Redis publisher error:', error)
+    })
+
+    this.subscriberRedis.on('error', (error) => {
+      this.logger.error('Redis subscriber error:', error)
+    })
+
+    // Subscribe to all sports-related events
+    this.subscriberRedis.subscribe(
+      'score_update',
+      'draft_pick',
+      'trade_proposed',
+      'trade_accepted',
+      'trade_rejected',
+      'waiver_processed',
+      'lineup_updated',
+      'chat_message',
+      'league_update',
+      'player_news',
+      'injury_update'
+    )
+
+    // Handle incoming Redis messages
+    this.subscriberRedis.on('message', (channel, message) => {
+      try {
+        const data = JSON.parse(message)
+        this.handleRedisMessage(channel, data)
+      } catch (error) {
+        this.logger.error('Failed to parse Redis message:', { channel, error })
+      }
+    })
+  }
+
+  private setupEventHandlers(): void {
+    this.io.on('connection', (socket: Socket) => {
+      this.handleConnection(socket)
+    })
+  }
+
+  private handleConnection(socket: Socket): void {
+    this.metrics.totalConnections++
+    this.metrics.activeConnections++
+
+    this.logger.info('Client connected', { 
+      socketId: socket.id,
+      userAgent: socket.handshake.headers['user-agent'],
+      ip: socket.handshake.address
+    })
+
+    // Authentication and user association
+    socket.on('authenticate', async (data) => {
+      await this.handleAuthentication(socket, data)
+    })
+
+    // Room management
+    socket.on('join-league', (leagueId: string) => {
+      this.joinRoom(socket, `league:${leagueId}`)
+    })
+
+    socket.on('leave-league', (leagueId: string) => {
+      this.leaveRoom(socket, `league:${leagueId}`)
+    })
+
+    socket.on('join-draft', (draftId: string) => {
+      this.joinRoom(socket, `draft:${draftId}`)
+    })
+
+    socket.on('leave-draft', (draftId: string) => {
+      this.leaveRoom(socket, `draft:${draftId}`)
+    })
+
+    socket.on('join-matchup', (matchupId: string) => {
+      this.joinRoom(socket, `matchup:${matchupId}`)
+    })
+
+    socket.on('leave-matchup', (matchupId: string) => {
+      this.leaveRoom(socket, `matchup:${matchupId}`)
+    })
+
+    // Chat functionality
+    socket.on('send-message', async (data) => {
+      await this.handleChatMessage(socket, data)
+    })
+
+    // Draft functionality
+    socket.on('make-draft-pick', async (data) => {
+      await this.handleDraftPick(socket, data)
+    })
+
+    // Trade functionality
+    socket.on('propose-trade', async (data) => {
+      await this.handleTradeProposal(socket, data)
+    })
+
+    socket.on('respond-trade', async (data) => {
+      await this.handleTradeResponse(socket, data)
+    })
+
+    // Lineup updates
+    socket.on('update-lineup', async (data) => {
+      await this.handleLineupUpdate(socket, data)
+    })
+
+    // Heartbeat for connection health
+    socket.on('ping', () => {
+      socket.emit('pong', { timestamp: Date.now() })
+    })
+
+    // Disconnection handling
+    socket.on('disconnect', (reason) => {
+      this.handleDisconnection(socket, reason)
+    })
+
+    // Error handling
+    socket.on('error', (error) => {
+      this.logger.error('Socket error:', { socketId: socket.id, error })
+    })
+  }
+
+  private async handleAuthentication(socket: Socket, data: { userId: string, token: string }): Promise<void> {
+    try {
+      // Validate token (implement your auth logic here)
+      const isValid = await this.validateAuthToken(data.userId, data.token)
+      
+      if (isValid) {
+        // Associate socket with user
+        this.socketToUser.set(socket.id, data.userId)
+        
+        if (!this.connectedUsers.has(data.userId)) {
+          this.connectedUsers.set(data.userId, new Set())
+        }
+        this.connectedUsers.get(data.userId)!.add(socket.id)
+
+        socket.emit('authenticated', { success: true, userId: data.userId })
+        
+        // Join user to their personal room for direct messaging
+        socket.join(`user:${data.userId}`)
+        
+        this.logger.info('User authenticated', { userId: data.userId, socketId: socket.id })
+      } else {
+        socket.emit('authentication_failed', { reason: 'Invalid token' })
+        socket.disconnect()
+      }
+    } catch (error) {
+      this.logger.error('Authentication error:', error)
+      socket.emit('authentication_failed', { reason: 'Authentication error' })
+      socket.disconnect()
+    }
+  }
+
+  private async validateAuthToken(userId: string, token: string): Promise<boolean> {
+    // Implement your token validation logic here
+    // This could check against your session store, JWT validation, etc.
+    try {
+      const sessionData = await cacheManager.getUserSession(token)
+      return sessionData && sessionData.userId === userId
+    } catch {
+      return false
+    }
+  }
+
+  private joinRoom(socket: Socket, room: string): void {
+    // Check room capacity
+    const currentSize = this.io.sockets.adapter.rooms.get(room)?.size || 0
+    if (currentSize >= this.config.rooms.maxClientsPerRoom) {
+      socket.emit('room_full', { room })
+      return
+    }
+
+    socket.join(room)
+    
+    // Track room membership
+    if (!this.roomMemberships.has(room)) {
+      this.roomMemberships.set(room, new Set())
+    }
+    this.roomMemberships.get(room)!.add(socket.id)
+
+    // Update metrics
+    this.metrics.roomCounts.set(room, currentSize + 1)
+    
+    socket.emit('joined_room', { room })
+    this.logger.debug('User joined room', { 
+      socketId: socket.id, 
+      room, 
+      roomSize: currentSize + 1 
+    })
+  }
+
+  private leaveRoom(socket: Socket, room: string): void {
+    socket.leave(room)
+    
+    // Update room membership tracking
+    this.roomMemberships.get(room)?.delete(socket.id)
+    if (this.roomMemberships.get(room)?.size === 0) {
+      this.roomMemberships.delete(room)
+    }
+
+    // Update metrics
+    const newSize = this.io.sockets.adapter.rooms.get(room)?.size || 0
+    if (newSize === 0) {
+      this.metrics.roomCounts.delete(room)
+    } else {
+      this.metrics.roomCounts.set(room, newSize)
+    }
+    
+    socket.emit('left_room', { room })
+    this.logger.debug('User left room', { socketId: socket.id, room, roomSize: newSize })
+  }
+
+  private handleDisconnection(socket: Socket, reason: string): void {
+    this.metrics.activeConnections--
+    
+    const userId = this.socketToUser.get(socket.id)
+    if (userId) {
+      this.connectedUsers.get(userId)?.delete(socket.id)
+      if (this.connectedUsers.get(userId)?.size === 0) {
+        this.connectedUsers.delete(userId)
+      }
+      this.socketToUser.delete(socket.id)
+    }
+
+    // Clean up room memberships
+    for (const [room, sockets] of this.roomMemberships.entries()) {
+      if (sockets.has(socket.id)) {
+        sockets.delete(socket.id)
+        if (sockets.size === 0) {
+          this.roomMemberships.delete(room)
+          this.metrics.roomCounts.delete(room)
+        } else {
+          this.metrics.roomCounts.set(room, sockets.size)
+        }
+      }
+    }
+
+    this.logger.info('Client disconnected', { 
+      socketId: socket.id, 
+      userId, 
+      reason,
+      activeConnections: this.metrics.activeConnections
+    })
+  }
+
+  // ========================================
+  // MESSAGE HANDLING METHODS
+  // ========================================
+
+  private async handleChatMessage(socket: Socket, data: any): Promise<void> {
+    if (!this.checkRateLimit(socket.id)) {
+      socket.emit('rate_limited', { message: 'Too many messages' })
+      return
+    }
+
+    try {
+      const userId = this.socketToUser.get(socket.id)
+      if (!userId) {
+        socket.emit('error', { message: 'Not authenticated' })
+        return
+      }
+
+      // Validate and save message to database
+      // Implementation depends on your chat system
+      
+      // Broadcast to league room
+      this.queueMessage(`league:${data.leagueId}`, 'chat_message', {
+        id: data.id || `msg-${Date.now()}-${Math.random()}`,
+        userId,
+        content: data.content,
+        type: data.type || 'TEXT',
+        timestamp: new Date().toISOString()
+      }, 'medium')
+
+    } catch (error) {
+      this.logger.error('Chat message error:', error)
+      socket.emit('error', { message: 'Failed to send message' })
+    }
+  }
+
+  private async handleDraftPick(socket: Socket, data: any): Promise<void> {
+    if (!this.checkRateLimit(socket.id)) return
+
+    try {
+      const userId = this.socketToUser.get(socket.id)
+      if (!userId) return
+
+      // Make the draft pick using query optimizer
+      const result = await queryOptimizer.makeDraftPick(
+        data.draftId,
+        data.teamId,
+        data.playerId,
+        data.timeUsed
+      )
+
+      // Broadcast draft pick immediately to all draft participants
+      this.broadcastDraftPick({
+        draftId: data.draftId,
+        pickNumber: result.pick.pickNumber,
+        teamId: data.teamId,
+        playerId: data.playerId,
+        playerName: result.pick.players?.name,
+        teamName: result.pick.teams?.name,
+        nextTeamId: result.nextTeamId,
+        timeRemaining: 90, // Reset timer
+        isComplete: result.isComplete
+      })
+
+      // Also publish to Redis for other server instances
+      await this.redis.publish('draft_pick', JSON.stringify({
+        draftId: data.draftId,
+        pickNumber: result.pick.pickNumber,
+        teamId: data.teamId,
+        playerId: data.playerId,
+        playerName: result.pick.players?.name,
+        nextTeamId: result.nextTeamId,
+        isComplete: result.isComplete
+      }))
+
+    } catch (error) {
+      this.logger.error('Draft pick error:', error)
+      socket.emit('draft_error', { message: 'Failed to make draft pick' })
+    }
+  }
+
+  private async handleTradeProposal(socket: Socket, data: any): Promise<void> {
+    if (!this.checkRateLimit(socket.id)) return
+
+    try {
+      // Process trade proposal
+      // Implementation depends on your trade system
+      
+      // Notify involved parties
+      this.queueMessage(`user:${data.targetUserId}`, 'trade_proposed', {
+        tradeId: data.tradeId,
+        proposingTeam: data.proposingTeam,
+        givingPlayers: data.givingPlayers,
+        receivingPlayers: data.receivingPlayers,
+        message: data.message
+      }, 'high')
+
+    } catch (error) {
+      this.logger.error('Trade proposal error:', error)
+    }
+  }
+
+  private async handleTradeResponse(socket: Socket, data: any): Promise<void> {
+    if (!this.checkRateLimit(socket.id)) return
+
+    try {
+      // Process trade response
+      // Implementation depends on your trade system
+      
+      // Notify league of trade result
+      this.queueMessage(`league:${data.leagueId}`, 'trade_' + data.action, {
+        tradeId: data.tradeId,
+        action: data.action, // 'accepted' or 'rejected'
+        teams: data.teams,
+        players: data.players
+      }, 'high')
+
+    } catch (error) {
+      this.logger.error('Trade response error:', error)
+    }
+  }
+
+  private async handleLineupUpdate(socket: Socket, data: any): Promise<void> {
+    if (!this.checkRateLimit(socket.id)) return
+
+    try {
+      const userId = this.socketToUser.get(socket.id)
+      if (!userId) return
+
+      // Update lineup in database
+      // Implementation depends on your lineup system
+      
+      // Notify league of lineup change
+      this.queueMessage(`league:${data.leagueId}`, 'lineup_updated', {
+        teamId: data.teamId,
+        changes: data.changes,
+        timestamp: new Date().toISOString()
+      }, 'low')
+
+    } catch (error) {
+      this.logger.error('Lineup update error:', error)
+    }
+  }
+
+  // ========================================
+  // REDIS MESSAGE HANDLING
+  // ========================================
+
+  private handleRedisMessage(channel: string, data: any): void {
+    switch (channel) {
+      case 'score_update':
+        this.broadcastScoreUpdate(data)
+        break
+      case 'draft_pick':
+        this.broadcastDraftPick(data)
+        break
+      case 'trade_proposed':
+        this.broadcastTradeProposal(data)
+        break
+      case 'trade_accepted':
+      case 'trade_rejected':
+        this.broadcastTradeResult(data)
+        break
+      case 'player_news':
+        this.broadcastPlayerNews(data)
+        break
+      case 'injury_update':
+        this.broadcastInjuryUpdate(data)
+        break
+      default:
+        this.logger.warn('Unknown Redis message channel:', channel)
+    }
+  }
+
+  // ========================================
+  // BROADCAST METHODS
+  // ========================================
+
+  private broadcastScoreUpdate(data: any): void {
+    this.queueMessage(`league:${data.leagueId}`, 'score_update', {
+      matchupId: data.matchupId,
+      homeTeamId: data.homeTeamId,
+      awayTeamId: data.awayTeamId,
+      homeScore: data.homeScore,
+      awayScore: data.awayScore,
+      week: data.week,
+      timestamp: new Date().toISOString()
+    }, 'high')
+  }
+
+  private broadcastDraftPick(data: any): void {
+    this.queueMessage(`draft:${data.draftId}`, 'draft_pick', {
+      pickNumber: data.pickNumber,
+      teamId: data.teamId,
+      playerId: data.playerId,
+      playerName: data.playerName,
+      teamName: data.teamName,
+      nextTeamId: data.nextTeamId,
+      timeRemaining: data.timeRemaining,
+      isComplete: data.isComplete,
+      timestamp: new Date().toISOString()
+    }, 'high')
+  }
+
+  private broadcastTradeProposal(data: any): void {
+    this.queueMessage(`user:${data.targetUserId}`, 'trade_proposed', data, 'high')
+  }
+
+  private broadcastTradeResult(data: any): void {
+    this.queueMessage(`league:${data.leagueId}`, 'trade_result', data, 'high')
+  }
+
+  private broadcastPlayerNews(data: any): void {
+    // Broadcast to all leagues that might have this player
+    this.io.emit('player_news', data)
+  }
+
+  private broadcastInjuryUpdate(data: any): void {
+    // Broadcast to all leagues that might have this player
+    this.io.emit('injury_update', data)
+  }
+
+  // ========================================
+  // MESSAGE QUEUE SYSTEM
+  // ========================================
+
+  private queueMessage(room: string, event: string, data: any, priority: EventPriority): void {
+    this.messageQueue.push({
+      room,
+      event,
+      data,
+      priority,
+      timestamp: Date.now()
+    })
+
+    // Sort queue by priority (high first)
+    this.messageQueue.sort((a, b) => {
+      const priorityOrder = { high: 0, medium: 1, low: 2 }
+      return priorityOrder[a.priority] - priorityOrder[b.priority]
+    })
+  }
+
+  private startMessageProcessor(): void {
+    setInterval(() => {
+      this.processMessageQueue()
+    }, 10) // Process every 10ms for sub-second latency
+  }
+
+  private processMessageQueue(): void {
+    if (this.isProcessingQueue || this.messageQueue.length === 0) return
+
+    this.isProcessingQueue = true
+
+    try {
+      // Process up to 10 messages per cycle
+      const messagesToProcess = this.messageQueue.splice(0, 10)
+      
+      for (const message of messagesToProcess) {
+        this.io.to(message.room).emit(message.event, message.data)
+        this.metrics.totalMessages++
+      }
+    } catch (error) {
+      this.logger.error('Message processing error:', error)
+    } finally {
+      this.isProcessingQueue = false
+    }
+  }
+
+  // ========================================
+  // RATE LIMITING
+  // ========================================
+
+  private checkRateLimit(socketId: string): boolean {
+    if (!this.config.rateLimiting.enabled) return true
+
+    const now = Date.now()
+    const info = this.rateLimitMap.get(socketId)
+
+    if (!info || now > info.resetTime) {
+      this.rateLimitMap.set(socketId, {
+        count: 1,
+        resetTime: now + 1000 // Reset every second
+      })
+      return true
+    }
+
+    if (info.count >= this.config.rateLimiting.maxEventsPerSecond) {
+      return false
+    }
+
+    info.count++
+    return true
+  }
+
+  // ========================================
+  // MONITORING AND METRICS
+  // ========================================
+
+  private setupMonitoring(): void {
+    if (!this.config.monitoring.enabled) return
+
+    setInterval(() => {
+      this.updateMetrics()
+      this.logMetrics()
+      this.cleanupStaleData()
+    }, this.config.monitoring.logInterval)
+  }
+
+  private updateMetrics(): void {
+    const now = new Date()
+    const timeDiff = (now.getTime() - this.metrics.lastUpdate.getTime()) / 1000
+
+    this.metrics.messagesPerSecond = this.metrics.totalMessages / timeDiff
+    this.metrics.lastUpdate = now
+
+    // Reset message counter
+    this.metrics.totalMessages = 0
+  }
+
+  private logMetrics(): void {
+    this.logger.info('WebSocket metrics', {
+      activeConnections: this.metrics.activeConnections,
+      totalRooms: this.metrics.roomCounts.size,
+      messagesPerSecond: this.metrics.messagesPerSecond.toFixed(2),
+      queueSize: this.messageQueue.length,
+      connectedUsers: this.connectedUsers.size
+    })
+  }
+
+  private cleanupStaleData(): void {
+    const now = Date.now()
+    
+    // Clean up rate limit data older than 1 minute
+    for (const [socketId, info] of this.rateLimitMap.entries()) {
+      if (now > info.resetTime + 60000) {
+        this.rateLimitMap.delete(socketId)
+      }
+    }
+
+    // Clean up old messages from queue (older than 30 seconds)
+    this.messageQueue = this.messageQueue.filter(msg => 
+      now - msg.timestamp < 30000
+    )
+  }
+
+  // ========================================
+  // PUBLIC API METHODS
+  // ========================================
+
+  getMetrics(): ConnectionMetrics {
+    return { ...this.metrics }
+  }
+
+  getRoomInfo(room: string) {
+    const roomSize = this.io.sockets.adapter.rooms.get(room)?.size || 0
+    return {
+      name: room,
+      size: roomSize,
+      sockets: Array.from(this.io.sockets.adapter.rooms.get(room) || [])
+    }
+  }
+
+  getAllRooms() {
+    return Array.from(this.metrics.roomCounts.entries()).map(([room, size]) => ({
+      name: room,
+      size
+    }))
+  }
+
+  async broadcastToUser(userId: string, event: string, data: any): Promise<void> {
+    this.io.to(`user:${userId}`).emit(event, data)
+  }
+
+  async broadcastToLeague(leagueId: string, event: string, data: any): Promise<void> {
+    this.queueMessage(`league:${leagueId}`, event, data, 'medium')
+  }
+
+  async disconnect(): Promise<void> {
+    this.logger.info('Shutting down WebSocket manager...')
+    
+    try {
+      await this.redis.disconnect()
+      await this.subscriberRedis.disconnect()
+      
+      this.logger.info('WebSocket manager disconnected successfully')
+    } catch (error) {
+      this.logger.error('Error during WebSocket manager shutdown:', error)
+      throw error
+    }
+  }
+}
+
+// Export singleton instance
+let wsManager: WebSocketManager | null = null
+
+export function initializeWebSocketManager(io: SocketServer, config?: WebSocketConfig): WebSocketManager {
+  wsManager = WebSocketManager.getInstance(io, config)
+  return wsManager
+}
+
+export function getWebSocketManager(): WebSocketManager | null {
+  return wsManager
+}
+
+// Export for testing and advanced usage
+export { WebSocketManager }
+
+// Export types
+export type { WebSocketConfig, ConnectionMetrics }
