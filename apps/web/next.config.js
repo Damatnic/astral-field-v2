@@ -7,18 +7,10 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
 
 // Catalyst Performance: Lightning-fast Next.js configuration  
 const nextConfig = {
-  // Atlas: Fixed for Vercel deployment - removed standalone mode
+  // Atlas: Fixed for Vercel deployment
+  output: 'standalone',
   trailingSlash: false,
   distDir: '.next',
-  
-  // Catalyst: Fix asset path resolution for production
-  assetPrefix: process.env.NODE_ENV === 'production' ? '' : '',
-  basePath: '',
-  
-  // Catalyst: Ensure proper static file serving
-  generateBuildId: async () => {
-    return process.env.BUILD_ID || 'catalyst-build'
-  },
   
   // Catalyst: Experimental performance features
   experimental: {
@@ -96,6 +88,7 @@ const nextConfig = {
   },
   // Catalyst Performance: Advanced image optimization
   images: {
+    unoptimized: false,
     // Catalyst: Optimized domains for faster loading
     remotePatterns: [
       {

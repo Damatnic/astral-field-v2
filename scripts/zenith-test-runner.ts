@@ -71,8 +71,7 @@ class ZenithTestRunner {
   }
 
   private async runUnitTests(): Promise<void> {
-    console.log('
-🧪 Running Unit Tests...')
+    console.log('\n🧪 Running Unit Tests...')
     
     try {
       const startTime = Date.now()
@@ -122,8 +121,7 @@ class ZenithTestRunner {
   }
 
   private async runIntegrationTests(): Promise<void> {
-    console.log('
-🔗 Running Integration Tests...')
+    console.log('\n🔗 Running Integration Tests...')
     
     try {
       const startTime = Date.now()
@@ -158,8 +156,7 @@ class ZenithTestRunner {
   }
 
   private async runSecurityTests(): Promise<void> {
-    console.log('
-🛡️ Running Security Tests...')
+    console.log('\n🛡️ Running Security Tests...')
     
     try {
       const startTime = Date.now()
@@ -201,8 +198,7 @@ class ZenithTestRunner {
   }
 
   private async runProductionTests(): Promise<void> {
-    console.log('
-🌐 Running Production Asset Tests...')
+    console.log('\n🌐 Running Production Asset Tests...')
     
     try {
       const startTime = Date.now()
@@ -242,8 +238,7 @@ class ZenithTestRunner {
   }
 
   private async runPerformanceTests(): Promise<void> {
-    console.log('
-⚡ Running Performance Tests...')
+    console.log('\n⚡ Running Performance Tests...')
     
     try {
       const startTime = Date.now()
@@ -287,8 +282,7 @@ class ZenithTestRunner {
   }
 
   private async runAccessibilityTests(): Promise<void> {
-    console.log('
-♿ Running Accessibility Tests...')
+    console.log('\n♿ Running Accessibility Tests...')
     
     try {
       const startTime = Date.now()
@@ -323,8 +317,7 @@ class ZenithTestRunner {
   }
 
   private async runE2ETests(): Promise<void> {
-    console.log('
-🎭 Running E2E Tests for D\'Amato Dynasty Users...')
+    console.log('\n🎭 Running E2E Tests for D\'Amato Dynasty Users...')
     
     try {
       const startTime = Date.now()
