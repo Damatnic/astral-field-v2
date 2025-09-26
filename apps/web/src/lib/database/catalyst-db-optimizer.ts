@@ -356,8 +356,7 @@ class CatalystDatabaseOptimizer {
       
       try {
         const result = await this.prisma.player.createMany({
-          data: batch,
-          skipDuplicates: true
+          data: batch
         })
         results.push(result)
       } catch (error) {
