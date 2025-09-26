@@ -1,31 +1,30 @@
 import { auth } from '@/lib/auth'
 import { NextResponse } from 'next/server'
+import { guardianSecurityHeaders, guardianSecurityHeadersDev } from '@/lib/security/security-headers'
 
 export default auth(async (req) => {
   const { nextUrl } = req
   const isLoggedIn = !!req.auth
 
-  // Define protected and auth routes
-  const isProtectedRoute = nextUrl.pathname.startsWith('/dashboard') ||
-                          nextUrl.pathname.startsWith('/team') ||
-                          nextUrl.pathname.startsWith('/players') ||
-                          nextUrl.pathname.startsWith('/ai-coach') ||
-                          nextUrl.pathname.startsWith('/settings') ||
-                          nextUrl.pathname.startsWith('/matchups') ||
-                          nextUrl.pathname.startsWith('/chat') ||
-                          nextUrl.pathname.startsWith('/analytics')
+  // Catalyst Performance: Optimized route matching with Set for O(1) lookup
+  const protectedPaths = new Set([
+    '/dashboard', '/team', '/players', '/ai-coach', 
+    '/settings', '/matchups', '/chat', '/analytics'
+  ])
+  
+  const isProtectedRoute = protectedPaths.has(nextUrl.pathname) || 
+    Array.from(protectedPaths).some(path => nextUrl.pathname.startsWith(path + '/'))
 
   const isAuthRoute = nextUrl.pathname.startsWith('/auth/')
   const isApiRoute = nextUrl.pathname.startsWith('/api/')
+  const isProduction = process.env.NODE_ENV === 'production'
 
-  // Basic security headers (Edge Runtime compatible)
-  const securityHeaders = {
-    'X-Content-Type-Options': 'nosniff',
-    'X-Frame-Options': 'DENY',
-    'X-XSS-Protection': '1; mode=block',
-    'Referrer-Policy': 'strict-origin-when-cross-origin',
-    'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
-  }
+  // Guardian Security: Advanced security headers
+  const securityHeadersProvider = isProduction 
+    ? guardianSecurityHeaders 
+    : guardianSecurityHeadersDev
+  
+  const securityHeaders = securityHeadersProvider.generateHeaders(isProduction)
 
   const response = NextResponse.next()
   

@@ -1,125 +1,117 @@
 /**
- * Performance Monitor Component
- * Real-time performance tracking and Core Web Vitals monitoring
+ * Catalyst Performance Monitor Component
+ * Client-side performance tracking and Core Web Vitals monitoring
  */
 
 'use client'
 
-import { usePerformanceMonitor, useCoreWebVitals, useEngagementTracking } from '@/hooks/use-performance-monitor'
-import { memo, useEffect } from 'react'
+import { useEffect } from 'react'
 
-const PerformanceMonitor = memo(() => {
-  const { 
-    isSupported, 
-    violations, 
-    markFeatureUsage 
-  } = usePerformanceMonitor({
-    enabled: true,
-    reportInterval: 30000, // Report every 30 seconds
-    budget: {
-      FCP: 1800,  // 1.8s
-      LCP: 2500,  // 2.5s
-      FID: 100,   // 100ms
-      CLS: 0.1,   // 0.1
-      TTFB: 600,  // 600ms
-      INP: 200    // 200ms
-    }
-  })
-
-  const { overallScore, hasData } = useCoreWebVitals()
-  
-  // Track engagement
-  useEngagementTracking()
-
-  // Mark that performance monitoring is active
+export function PerformanceMonitor() {
   useEffect(() => {
-    if (isSupported) {
-      markFeatureUsage('performance-monitoring.enabled')
+    // Initialize performance monitoring
+    const initMonitoring = async () => {
+      try {
+        // Only in browser environment
+        if (typeof window === 'undefined') return
+
+        // Track component mount time
+        const mountTime = performance.now()
+        
+        // Initialize Web Vitals tracking (dynamically imported for better bundles)
+        const { getCLS, getFID, getFCP, getLCP, getTTFB } = await import('web-vitals')
+
+        // Track Core Web Vitals
+        getCLS((metric) => {
+          console.log('[Catalyst] CLS:', metric.value)
+          sendToAnalytics('CLS', metric.value)
+        })
+
+        getFID((metric) => {
+          console.log('[Catalyst] FID:', metric.value)
+          sendToAnalytics('FID', metric.value)
+        })
+
+        getFCP((metric) => {
+          console.log('[Catalyst] FCP:', metric.value)
+          sendToAnalytics('FCP', metric.value)
+        })
+
+        getLCP((metric) => {
+          console.log('[Catalyst] LCP:', metric.value)
+          sendToAnalytics('LCP', metric.value)
+        })
+
+        getTTFB((metric) => {
+          console.log('[Catalyst] TTFB:', metric.value)
+          sendToAnalytics('TTFB', metric.value)
+        })
+
+        // Track component initialization time
+        const initTime = performance.now() - mountTime
+        console.log(`[Catalyst] Performance Monitor initialized in ${initTime.toFixed(2)}ms`)
+
+        // Report page load completion
+        if (document.readyState === 'complete') {
+          reportPageLoadComplete()
+        } else {
+          window.addEventListener('load', reportPageLoadComplete)
+        }
+
+      } catch (error) {
+        console.warn('[Catalyst] Performance monitoring failed to initialize:', error)
+      }
     }
-  }, [isSupported, markFeatureUsage])
 
-  // Log performance issues in development
-  useEffect(() => {
-    if (process.env.NODE_ENV === 'development' && violations.length > 0) {
-      console.group('🚨 Performance Budget Violations')
-      violations.forEach(violation => console.warn(violation))
-      console.groupEnd()
+    initMonitoring()
+
+    // Cleanup function
+    return () => {
+      // Any cleanup if needed
     }
-  }, [violations])
+  }, [])
 
+  return null // This component doesn't render anything
+}
 
-  // Display performance badge in development
-  if (process.env.NODE_ENV === 'development' && isSupported && hasData) {
-    return (
-      <div className="fixed bottom-4 right-4 z-50">
-        <div className={`
-          px-3 py-2 rounded-lg text-xs font-medium shadow-lg backdrop-blur-sm
-          ${overallScore === 'good' ? 'bg-green-500/90 text-white' :
-            overallScore === 'needs-improvement' ? 'bg-yellow-500/90 text-black' :
-            'bg-red-500/90 text-white'}
-        `}>
-          Performance: {overallScore || 'monitoring...'}
-          {violations.length > 0 && (
-            <div className="mt-1 text-xs opacity-90">
-              {violations.length} violation{violations.length !== 1 ? 's' : ''}
-            </div>
-          )}
-        </div>
-      </div>
-    )
+function sendToAnalytics(metricName: string, value: number) {
+  // Send to Vercel Analytics if available
+  if (typeof window !== 'undefined' && (window as any).va) {
+    (window as any).va('track', `performance.${metricName}`, { value })
   }
 
-  // Production mode - no visible UI
-  return null
-})
+  // Send to custom analytics endpoint
+  if (navigator.sendBeacon) {
+    const data = JSON.stringify({
+      metric: metricName,
+      value,
+      timestamp: Date.now(),
+      url: window.location.href,
+      userAgent: navigator.userAgent
+    })
+    navigator.sendBeacon('/api/analytics/performance', data)
+  }
+}
 
-PerformanceMonitor.displayName = 'PerformanceMonitor'
+function reportPageLoadComplete() {
+  const loadTime = performance.now()
+  console.log(`[Catalyst] Page load completed in ${loadTime.toFixed(2)}ms`)
+  
+  // Send page load time
+  sendToAnalytics('PAGE_LOAD_TIME', loadTime)
+  
+  // Report to service worker
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.controller.postMessage({
+      type: 'PERFORMANCE_REPORT',
+      data: {
+        loadTime,
+        timestamp: Date.now(),
+        url: window.location.href
+      }
+    })
+  }
+}
 
-// Performance Debug Panel for development
-const PerformanceDebugPanel = memo(() => {
-  const { coreWebVitals, scores, violations } = useCoreWebVitals()
-
-  if (process.env.NODE_ENV !== 'development') return null
-
-  return (
-    <div className="fixed top-4 left-4 z-50 bg-black/90 text-white p-4 rounded-lg text-xs max-w-sm">
-      <h3 className="font-bold mb-2">Core Web Vitals</h3>
-      
-      <div className="space-y-1 mb-3">
-        {Object.entries(coreWebVitals).map(([key, value]) => {
-          const score = scores[key as keyof typeof scores]
-          return (
-            <div key={key} className="flex justify-between">
-              <span>{key}:</span>
-              <span className={`
-                ${score === 'good' ? 'text-green-400' :
-                  score === 'needs-improvement' ? 'text-yellow-400' :
-                  'text-red-400'}
-              `}>
-                {typeof value === 'number' ? value.toFixed(2) : '--'}
-                {key === 'CLS' ? '' : key === 'FID' || key === 'INP' ? 'ms' : key === 'TTFB' ? 'ms' : 'ms'}
-              </span>
-            </div>
-          )
-        })}
-      </div>
-
-      {violations.length > 0 && (
-        <div className="mb-3">
-          <h4 className="font-semibold text-red-400 mb-1">Violations:</h4>
-          <div className="text-xs space-y-1">
-            {violations.map((violation, i) => (
-              <div key={i} className="text-red-300">{violation}</div>
-            ))}
-          </div>
-        </div>
-      )}
-
-    </div>
-  )
-})
-
-PerformanceDebugPanel.displayName = 'PerformanceDebugPanel'
-
-// Export components
-export { PerformanceMonitor, PerformanceDebugPanel }
+// Export for use in other components
+export { sendToAnalytics, reportPageLoadComplete }

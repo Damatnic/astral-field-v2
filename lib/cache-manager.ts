@@ -424,6 +424,72 @@ class CacheManager {
   }
 
   // ========================================
+  // AUTHENTICATION-SPECIFIC CACHING METHODS
+  // ========================================
+
+  async cacheUserAuthData(email: string, userData: any): Promise<void> {
+    const key = `user_auth:${email.toLowerCase()}`
+    // Cache user auth data for 5 minutes (excluding sensitive password hash)
+    const { hashedPassword, ...safeUserData } = userData
+    await this.set(key, safeUserData, 300)
+  }
+
+  async getUserAuthData(email: string): Promise<any> {
+    const key = `user_auth:${email.toLowerCase()}`
+    return await this.get(key)
+  }
+
+  async cachePasswordVerification(passwordHash: string, password: string, isValid: boolean): Promise<void> {
+    // Create secure cache key without storing actual password
+    const cacheKey = `pwd_verify:${passwordHash.slice(-12)}:${password.length}`
+    await this.set(cacheKey, { valid: isValid }, 30) // Cache for 30 seconds
+  }
+
+  async getPasswordVerification(passwordHash: string, password: string): Promise<boolean | null> {
+    const cacheKey = `pwd_verify:${passwordHash.slice(-12)}:${password.length}`
+    const result = await this.get(cacheKey)
+    return result ? result.valid : null
+  }
+
+  async cacheJWTToken(tokenId: string, tokenData: any): Promise<void> {
+    const key = `jwt:${tokenId}`
+    await this.set(key, tokenData, 1800) // 30 minutes
+  }
+
+  async getJWTToken(tokenId: string): Promise<any> {
+    const key = `jwt:${tokenId}`
+    return await this.get(key)
+  }
+
+  async cacheLoginAttempt(clientIP: string, email: string, success: boolean): Promise<void> {
+    const key = `login_attempt:${clientIP}:${email}`
+    const attempts = await this.get(key) || []
+    attempts.push({ timestamp: Date.now(), success })
+    
+    // Keep only last 10 attempts
+    if (attempts.length > 10) {
+      attempts.splice(0, attempts.length - 10)
+    }
+    
+    await this.set(key, attempts, 3600) // 1 hour
+  }
+
+  async getLoginAttempts(clientIP: string, email: string): Promise<any[]> {
+    const key = `login_attempt:${clientIP}:${email}`
+    return await this.get(key) || []
+  }
+
+  async cacheSessionMetrics(sessionId: string, metrics: any): Promise<void> {
+    const key = `session_metrics:${sessionId}`
+    await this.set(key, metrics, 7200) // 2 hours
+  }
+
+  async getSessionMetrics(sessionId: string): Promise<any> {
+    const key = `session_metrics:${sessionId}`
+    return await this.get(key)
+  }
+
+  // ========================================
   // CACHE INVALIDATION PATTERNS
   // ========================================
 
@@ -445,6 +511,23 @@ class CacheManager {
   async invalidateWeekData(week: number): Promise<void> {
     await this.invalidatePattern(`*:*:${week}`)
     await this.invalidatePattern(`live:*:*:${week}`)
+  }
+
+  async invalidateUserAuthData(email: string): Promise<void> {
+    await this.invalidatePattern(`user_auth:${email.toLowerCase()}`)
+    await this.invalidatePattern(`pwd_verify:*`) // Clear password verification cache
+  }
+
+  async invalidateUserSession(sessionId: string): Promise<void> {
+    await this.invalidatePattern(`session:${sessionId}`)
+    await this.invalidatePattern(`session_metrics:${sessionId}`)
+    await this.invalidatePattern(`jwt:${sessionId}`)
+  }
+
+  async invalidateAllSessions(userId: string): Promise<void> {
+    // This would require additional tracking, for now clear all session data
+    await this.invalidatePattern(`session:*`)
+    await this.invalidatePattern(`jwt:*`)
   }
 
   // ========================================

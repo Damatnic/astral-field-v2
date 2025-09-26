@@ -1,22 +1,17 @@
 import { NextAuthConfig } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { prisma } from "./prisma"
-// Note: bcryptjs is incompatible with Edge Runtime
-// We'll handle password hashing in Node.js-only API routes
-// Crypto will be handled in Node.js API routes only
+// Import bcrypt for password verification - use Node.js runtime for auth
+import bcrypt from 'bcryptjs'
+import { guardianSessionManager } from "./security/session-manager"
+import { guardianAuditLogger, SecurityEventType } from "./security/audit-logger"
+import { guardianAccountProtection } from "./security/account-protection"
 
-// Edge Runtime compatible password verification
 async function verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
-  // This will be implemented as a Node.js API route call
   try {
-    const response = await fetch('/api/auth/verify-password', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password, hashedPassword })
-    })
-    const result = await response.json()
-    return result.valid
+    return await bcrypt.compare(password, hashedPassword)
   } catch (error) {
+    console.error('Password verification error:', error)
     return false
   }
 }
@@ -36,15 +31,16 @@ export const authConfig = {
           throw new Error('INVALID_CREDENTIALS')
         }
 
-        // Guardian Security: Rate limiting check
+        // Guardian Security: Rate limiting check and IP extraction
         const clientIP = req?.headers?.get?.('x-forwarded-for') || req?.headers?.get?.('x-real-ip') || 'unknown'
         
         try {
-          // Guardian Security: SQL injection protection with parameterized query
+          // Catalyst Performance: Optimized user lookup
+          const email = (credentials.email as string).toLowerCase().trim()
+          
+          // Fetch from database with optimized query
           const user = await prisma.user.findUnique({
-            where: {
-              email: (credentials.email as string).toLowerCase().trim()
-            },
+            where: { email },
             select: {
               id: true,
               email: true,
@@ -52,7 +48,8 @@ export const authConfig = {
               image: true,
               role: true,
               teamName: true,
-              hashedPassword: true
+              hashedPassword: true,
+              updatedAt: true
             }
           })
 
@@ -61,6 +58,12 @@ export const authConfig = {
             // Simple timing delay for Edge Runtime compatibility
             await new Promise(resolve => setTimeout(resolve, 100))
             throw new Error('INVALID_CREDENTIALS')
+          }
+
+          // Guardian Security: Check account lockout status
+          const lockoutStatus = await guardianAccountProtection.isAccountLocked(user.id)
+          if (lockoutStatus.isLocked) {
+            throw new Error(`ACCOUNT_LOCKED:${lockoutStatus.remainingTime || 0}`)
           }
 
           // Note: User security fields not available in current schema
@@ -74,16 +77,99 @@ export const authConfig = {
           )
 
           if (!isPasswordValid) {
-            throw new Error('INVALID_CREDENTIALS')
+            // Guardian Security: Record failed attempt with account protection
+            const failureResult = await guardianAccountProtection.recordFailedAttempt(
+              user.id,
+              user.email,
+              {
+                ip: clientIP,
+                userAgent: req?.headers?.get?.('user-agent') || 'unknown',
+                location: {
+                  country: req?.headers?.get?.('cf-ipcountry') || req?.headers?.get?.('x-country'),
+                  region: req?.headers?.get?.('cf-region') || req?.headers?.get?.('x-region'),
+                  city: req?.headers?.get?.('cf-city') || req?.headers?.get?.('x-city')
+                },
+                attemptType: 'password_mismatch'
+              }
+            )
+
+            // Throw appropriate error based on account status
+            if (failureResult.shouldLock) {
+              throw new Error(`ACCOUNT_LOCKED:${failureResult.lockoutDuration || 0}`)
+            } else {
+              throw new Error('INVALID_CREDENTIALS')
+            }
           }
 
-          // Guardian Security: Update last login time
-          await prisma.user.update({
-            where: { id: user.id },
-            data: {
-              updatedAt: new Date()
+          // Catalyst Performance: Async last login update (non-blocking)
+          // Use Promise for Edge Runtime compatibility instead of setImmediate
+          Promise.resolve().then(async () => {
+            try {
+              await prisma.user.update({
+                where: { id: user.id },
+                data: { updatedAt: new Date() }
+              })
+            } catch (error) {
+              // Log but don't fail authentication for login tracking
+              console.warn('Failed to update last login time:', error)
             }
           })
+
+          // Guardian Security: Create secure session with context analysis
+          const sessionContext = {
+            userId: user.id,
+            email: user.email,
+            ip: clientIP,
+            userAgent: req?.headers?.get?.('user-agent') || 'unknown',
+            deviceFingerprint: req?.headers?.get?.('x-device-fingerprint') || undefined,
+            location: {
+              country: req?.headers?.get?.('cf-ipcountry') || req?.headers?.get?.('x-country') || undefined,
+              region: req?.headers?.get?.('cf-region') || req?.headers?.get?.('x-region') || undefined,
+              city: req?.headers?.get?.('cf-city') || req?.headers?.get?.('x-city') || undefined
+            },
+            timestamp: Date.now()
+          }
+
+          // Create session with security analysis
+          const sessionData = await guardianSessionManager.createSession(sessionContext)
+
+          // Guardian Security: Record successful authentication with account protection
+          const successResult = await guardianAccountProtection.recordSuccessfulAttempt(
+            user.id,
+            user.email,
+            {
+              ip: clientIP,
+              userAgent: req?.headers?.get?.('user-agent') || 'unknown',
+              location: sessionContext.location,
+              sessionId: sessionData.sessionId
+            }
+          )
+
+          // Guardian Security: Log successful authentication
+          await guardianAuditLogger.logSecurityEvent(
+            SecurityEventType.LOGIN_SUCCESS,
+            user.id,
+            {
+              ip: clientIP,
+              userAgent: req?.headers?.get?.('user-agent') || 'unknown',
+              location: sessionContext.location,
+              deviceFingerprint: sessionContext.deviceFingerprint
+            },
+            {
+              description: 'Successful user authentication',
+              riskScore: Math.max(sessionData.security.riskScore, successResult.riskScore),
+              context: {
+                email: user.email,
+                sessionId: sessionData.sessionId,
+                anomalies: [...sessionData.security.anomalies, ...successResult.anomalies.map(a => a.type)],
+                isDeviceKnown: sessionData.security.isDeviceKnown,
+                isLocationKnown: sessionData.security.isLocationKnown,
+                challengeRequired: !!successResult.challengeRequired
+              }
+            },
+            undefined,
+            sessionData.sessionId
+          )
 
           return {
             id: user.id,
@@ -92,6 +178,10 @@ export const authConfig = {
             image: user.image,
             role: user.role,
             teamName: user.teamName || undefined,
+            sessionId: sessionData.sessionId,
+            securityRisk: sessionData.security.riskScore,
+            requiresMFA: sessionData.security.requiresMFA,
+            sessionExpiresAt: sessionData.expiresAt
             // mfaEnabled: false // Feature not implemented yet
           }
         } catch (error) {
@@ -107,22 +197,25 @@ export const authConfig = {
   ],
   session: {
     strategy: "jwt" as const,
-    maxAge: 30 * 60, // Guardian Security: 30 minutes instead of default 30 days
+    maxAge: 30 * 60, // Guardian Security: Base 30 minutes (adaptive timeout overrides this)
     updateAge: 5 * 60, // Guardian Security: Update session every 5 minutes
   },
   jwt: {
     maxAge: 30 * 60, // Guardian Security: 30 minutes
+    // Catalyst Performance: Optimized JWT processing (using NextAuth's built-in optimizations)
   },
   callbacks: {
     async jwt({ token, user, trigger, session }) {
-      // Guardian Security: Enhanced JWT with security claims
+      // Catalyst Performance: Optimized JWT processing
       if (user) {
+        // Minimal token payload for performance
         token.id = user.id
         token.role = user.role
         token.teamName = user.teamName
-        // token.mfaEnabled = false // Feature not implemented
         token.sessionId = crypto.randomUUID()
         token.iat = Math.floor(Date.now() / 1000)
+        
+        // Session data stored in JWT token for simplicity
       }
 
       // Guardian Security: Token refresh validation
@@ -130,7 +223,7 @@ export const authConfig = {
         return { ...token, ...session }
       }
 
-      // Guardian Security: Token expiration check
+      // Catalyst Performance: Fast token age check
       const tokenAge = Date.now() / 1000 - (token.iat as number || 0)
       if (tokenAge > 30 * 60) { // 30 minutes
         throw new Error('TOKEN_EXPIRED')
@@ -138,15 +231,47 @@ export const authConfig = {
 
       return token
     },
-    async session({ session, token }) {
-      // Guardian Security: Enhanced session with security metadata
+    async session({ session, token, req }) {
+      // Catalyst Performance: Lightning-fast session initialization
       if (token) {
+        // Minimal session data for performance
         session.user.id = token.id as string || token.sub!
         session.user.role = token.role as string
         session.user.teamName = token.teamName as string
-        // session.user.mfaEnabled = false // Feature not implemented
-        // session.sessionId = token.sessionId as string // Custom field
-        // session.expires is handled automatically by NextAuth
+        session.user.sessionId = token.sessionId as string
+        session.user.securityRisk = token.securityRisk as number
+        session.user.requiresMFA = token.requiresMFA as boolean
+
+        // Guardian Security: Validate session with current context
+        if (token.sessionId && req) {
+          const sessionValidation = await guardianSessionManager.validateSession(
+            token.sessionId as string,
+            {
+              ip: req.headers?.get?.('x-forwarded-for')?.split(',')[0] || req.headers?.get?.('x-real-ip') || req.ip,
+              userAgent: req.headers?.get?.('user-agent') || 'unknown',
+              location: {
+                country: req.headers?.get?.('cf-ipcountry') || req.headers?.get?.('x-country')
+              }
+            }
+          )
+
+          if (!sessionValidation.isValid) {
+            // Session is invalid, force logout
+            return null
+          }
+
+          // Update session with new security data
+          if (sessionValidation.security) {
+            session.user.securityRisk = sessionValidation.security.riskScore
+            session.user.requiresMFA = sessionValidation.security.requiresMFA
+            
+            // Store updated security info in token for next request
+            token.securityRisk = sessionValidation.security.riskScore
+            token.requiresMFA = sessionValidation.security.requiresMFA
+          }
+        }
+        
+        // User data available from token for fast access
       }
       return session
     },
@@ -167,9 +292,33 @@ export const authConfig = {
       console.log('User signed in:', user.id, account?.provider)
     },
     async signOut(message) {
-      // Guardian Security: Log sign-outs
-      console.log('User signed out')
-      // Audit logging would go here when audit_logs table is available
+      // Guardian Security: Log sign-outs with audit trail
+      if (message?.token?.sessionId) {
+        // Terminate session in session manager
+        guardianSessionManager.terminateSession(message.token.sessionId, 'user_logout')
+        
+        // Log security event
+        await guardianAuditLogger.logSecurityEvent(
+          SecurityEventType.LOGOUT,
+          message.token.id || message.token.sub,
+          {
+            ip: 'unknown', // Request context not available in signOut event
+            userAgent: 'unknown'
+          },
+          {
+            description: 'User initiated logout',
+            riskScore: 0.1,
+            context: {
+              sessionId: message.token.sessionId,
+              email: message.token.email
+            }
+          },
+          undefined,
+          message.token.sessionId
+        )
+      }
+      
+      console.log('User signed out and session terminated')
     }
   },
   pages: {

@@ -1,6 +1,7 @@
 /**
- * Database performance optimization script
- * Adds indexes and optimizations to improve query performance
+ * Phoenix Database Performance Optimization Script
+ * Architect the perfect database backend for player authentication and management
+ * Focus: Authentication performance, session management, player data relationships
  */
 
 import { PrismaClient } from '@prisma/client';
@@ -8,130 +9,185 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function addPerformanceIndexes() {
-  console.log('Starting database performance optimization');
+  console.log('🔥 Phoenix: Starting elite database performance optimization for player authentication');
 
   try {
-    // Add indexes for commonly queried fields
-    const queries = [
-      // User queries optimization
-      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_users_auth0_id" ON "users" ("auth0Id");`,
-      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_users_email" ON "users" ("email");`,
+    // ===== AUTHENTICATION & USER MANAGEMENT OPTIMIZATION =====
+    const authQueries = [
+      // Primary authentication indexes - optimized for lightning-fast login
+      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_users_email_hash_lookup" ON "users" ("email") INCLUDE ("hashedPassword", "role", "id");`,
+      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_users_auth_active" ON "users" ("email", "updatedAt") WHERE "hashedPassword" IS NOT NULL;`,
       
-      // League queries optimization
+      // Session management optimization - critical for player authentication
+      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_sessions_user_expires" ON "sessions" ("userId", "expires" DESC);`,
+      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_sessions_token_active" ON "sessions" ("sessionToken") WHERE "expires" > NOW();`,
+      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_user_sessions_active" ON "user_sessions" ("userId", "expiresAt", "isActive") WHERE "isActive" = true;`,
+      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_user_sessions_cleanup" ON "user_sessions" ("expiresAt") WHERE "isActive" = true;`,
+      
+      // Account management for OAuth providers
+      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_accounts_user_provider" ON "accounts" ("userId", "provider", "providerAccountId");`,
+      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_accounts_provider_lookup" ON "accounts" ("provider", "providerAccountId") INCLUDE ("userId");`,
+    ];
+
+    // ===== PLAYER DATA & TEAM RELATIONSHIP OPTIMIZATION =====
+    const playerQueries = [
+      // Core player lookup optimization - position-based queries are critical
+      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_players_position_active" ON "players" ("position", "status", "isActive") WHERE "isFantasyRelevant" = true;`,
+      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_players_nfl_team_position" ON "players" ("nflTeam", "position", "status") WHERE "isActive" = true;`,
+      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_players_sleeper_lookup" ON "players" ("sleeperPlayerId") WHERE "sleeperPlayerId" IS NOT NULL;`,
+      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_players_search" ON "players" USING gin(to_tsvector('english', name || ' ' || COALESCE(firstName, '') || ' ' || COALESCE(lastName, '')));`,
+      
+      // Player stats optimization for performance dashboards
+      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_player_stats_week_season_perf" ON "player_stats" ("week", "season", "fantasyPoints" DESC) INCLUDE ("playerId");`,
+      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_player_stats_player_current" ON "player_stats" ("playerId", "season", "week" DESC);`,
+      
+      // Roster management optimization - critical for team operations
+      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_roster_team_position_starter" ON "roster" ("teamId", "position", "isStarter") INCLUDE ("playerId");`,
+      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_roster_players_team_pos" ON "roster_players" ("teamId", "position", "isStarter") INCLUDE ("playerId");`,
+      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_roster_player_teams" ON "roster" ("playerId") INCLUDE ("teamId", "position");`,
+      
+      // League and team optimization
       `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_leagues_season_active" ON "leagues" ("season", "isActive");`,
       
-      // Team queries optimization
-      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_teams_league_owner" ON "teams" ("leagueId", "ownerId");`,
-      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_teams_league_points" ON "teams" ("leagueId", "pointsFor" DESC);`,
-      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_teams_league_wins" ON "teams" ("leagueId", "wins" DESC, "pointsFor" DESC);`,
-      
-      // Roster queries optimization
-      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_roster_players_team_slot" ON "roster_players" ("teamId", "rosterSlot");`,
-      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_roster_players_player" ON "roster_players" ("playerId");`,
-      
-      // Player queries optimization
-      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_players_position_team" ON "players" ("position", "nflTeam");`,
-      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_players_status" ON "players" ("status");`,
-      
-      // Player stats optimization
-      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_player_stats_player_week" ON "player_stats" ("playerId", "week", "season");`,
-      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_player_stats_week_season" ON "player_stats" ("week", "season");`,
-      
-      // Player projections optimization
-      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_player_projections_player_week" ON "player_projections" ("playerId", "week", "season");`,
-      
-      // Trade queries optimization
-      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_trades_league_status" ON "trades" ("leagueId", "status");`,
-      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_trades_league_created" ON "trades" ("leagueId", "createdAt" DESC);`,
-      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_trades_proposer" ON "trades" ("proposerId");`,
-      
-      // Trade items optimization
-      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_trade_items_trade" ON "trade_items" ("tradeId");`,
-      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_trade_items_player" ON "trade_items" ("playerId");`,
-      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_trade_items_teams" ON "trade_items" ("fromTeamId", "toTeamId");`,
-      
-      // Waiver claims optimization
-      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_waiver_claims_league_status" ON "waiver_claims" ("leagueId", "status");`,
-      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_waiver_claims_team_priority" ON "waiver_claims" ("teamId", "priority");`,
-      
-      // Matchup queries optimization
-      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_matchups_league_week" ON "matchups" ("leagueId", "week", "season");`,
-      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_matchups_teams" ON "matchups" ("homeTeamId", "awayTeamId");`,
-      
-      // League members optimization
-      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_league_members_user_league" ON "league_members" ("userId", "leagueId");`,
-      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_league_members_league_role" ON "league_members" ("leagueId", "role");`,
-      
-      // Settings optimization
-      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_settings_league" ON "settings" ("leagueId");`,
-      
-      // Notifications optimization
-      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_notifications_user_read" ON "notifications" ("userId", "isRead");`,
-      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_notifications_created" ON "notifications" ("createdAt" DESC);`,
-      
-      // Messages optimization
-      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_messages_league_created" ON "messages" ("leagueId", "createdAt" DESC);`,
-      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_messages_user" ON "messages" ("userId");`,
-      
-      // Transactions optimization
-      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_transactions_league_type" ON "transactions" ("leagueId", "type");`,
-      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_transactions_processed" ON "transactions" ("processedAt");`,
-      
-      // Audit logs optimization
-      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_audit_logs_league_created" ON "audit_logs" ("leagueId", "createdAt" DESC);`,
-      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_audit_logs_user_action" ON "audit_logs" ("userId", "action");`
+      // Team relationship optimization - critical for player ownership
+      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_teams_league_owner" ON "teams" ("leagueId", "ownerId") INCLUDE ("name", "wins", "pointsFor");`,
+      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_teams_league_standings" ON "teams" ("leagueId", "wins" DESC, "pointsFor" DESC) INCLUDE ("name", "ownerId");`,
+      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_teams_owner_lookup" ON "teams" ("ownerId") INCLUDE ("leagueId", "name");`,
     ];
 
-    // Execute index creation queries
-    for (const query of queries) {
-      try {
-        await prisma.$executeRawUnsafe(query);
-        console.log(`Index created successfully: ${query.substring(0, 100)}`);
-      } catch (error) {
-        // Skip if index already exists
-        if (error instanceof Error && error.message.includes('already exists')) {
-          console.log(`Index already exists, skipping: ${query.substring(0, 100)}`);
-        } else {
-          console.warn(`Failed to create index: ${query.substring(0, 100)}, Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        }
-      }
-    }
-
-    // Add partial indexes for commonly filtered data
-    const partialIndexes = [
-      // Active leagues only
-      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_leagues_active_season" ON "leagues" ("season" DESC) WHERE "isActive" = true;`,
+    // ===== PERFORMANCE & CACHING OPTIMIZATION =====
+    const performanceQueries = [
+      // Matchup optimization for real-time scoring
+      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_matchups_league_week_season" ON "matchups" ("leagueId", "week", "season") INCLUDE ("homeTeamId", "awayTeamId", "homeScore", "awayScore");`,
+      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_matchups_current_week" ON "matchups" ("leagueId", "week") WHERE "isComplete" = false;`,
       
-      // Active players only
-      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_players_active_position" ON "players" ("position", "nflTeam") WHERE "status" = 'ACTIVE';`,
+      // Fantasy tracking optimization
+      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_player_projections_current" ON "player_projections" ("playerId", "week", "season") INCLUDE ("points", "confidence");`,
+      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_player_news_recent" ON "player_news" ("playerId", "publishedAt" DESC) INCLUDE ("headline", "body");`,
       
-      // Pending trades only
-      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_trades_pending_league" ON "trades" ("leagueId", "createdAt" DESC) WHERE "status" = 'PENDING';`,
+      // Transaction and trade optimization
+      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_transactions_league_recent" ON "transactions" ("leagueId", "createdAt" DESC) WHERE "status" = 'processed';`,
+      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_trade_proposals_active" ON "trade_proposals" ("status", "createdAt" DESC) WHERE "status" = 'pending';`,
       
-      // Unread notifications
-      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_notifications_unread_user" ON "notifications" ("userId", "createdAt" DESC) WHERE "isRead" = false;`
+      // Chat and messaging optimization
+      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_chat_messages_league_recent" ON "chat_messages" ("leagueId", "createdAt" DESC) WHERE "deleted" = false;`,
+      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_messages_league_recent" ON "messages" ("leagueId", "createdAt" DESC);`,
+      
+      // Notification optimization for real-time updates
+      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_notifications_user_unread" ON "notifications" ("userId", "createdAt" DESC);`,
+      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "idx_notification_delivery_status" ON "notification_delivery" ("userId", "status", "createdAt" DESC);`,
     ];
 
-    for (const query of partialIndexes) {
-      try {
-        await prisma.$executeRawUnsafe(query);
-        console.log(`Partial index created successfully: ${query.substring(0, 100)}`);
-      } catch (error) {
-        if (error instanceof Error && error.message.includes('already exists')) {
-          console.log(`Partial index already exists, skipping: ${query.substring(0, 100)}`);
-        } else {
-          console.warn(`Failed to create partial index: ${query.substring(0, 100)}, Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        }
-      }
-    }
+    console.log('🔥 Phoenix: Executing authentication optimization queries...');
+    await executeQueries(authQueries, 'Authentication');
+    
+    console.log('🔥 Phoenix: Executing player data optimization queries...');
+    await executeQueries(playerQueries, 'Player Data');
+    
+    console.log('🔥 Phoenix: Executing performance optimization queries...');
+    await executeQueries(performanceQueries, 'Performance');
 
-    console.log('Database performance optimization completed successfully');
+    // ===== MATERIALIZED VIEWS FOR ULTRA-FAST QUERIES =====
+    await createMaterializedViews();
+
+    // ===== DATABASE STATISTICS UPDATE =====
+    await updateDatabaseStatistics();
+
+    console.log('🔥 Phoenix: Elite database optimization completed successfully!');
 
   } catch (error) {
-    console.error('Database performance optimization failed:', error);
+    console.error('❌ Phoenix: Database optimization failed:', error);
     throw error;
   } finally {
     await prisma.$disconnect();
+  }
+}
+
+async function executeQueries(queries: string[], category: string) {
+  console.log(`  📊 Optimizing ${category} indexes...`);
+  for (const query of queries) {
+    try {
+      await prisma.$executeRawUnsafe(query);
+      console.log(`    ✅ ${query.substring(0, 80)}...`);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('already exists')) {
+        console.log(`    ⏭️  Index exists: ${query.substring(50, 100)}...`);
+      } else {
+        console.warn(`    ⚠️  Failed: ${query.substring(0, 80)}, Error: ${error instanceof Error ? error.message : 'Unknown'}`);
+      }
+    }
+  }
+}
+
+async function createMaterializedViews() {
+  console.log('🔥 Phoenix: Creating materialized views for lightning-fast queries...');
+  
+  const views = [
+    // Player performance summary for quick lookups
+    {
+      name: 'player_performance_summary',
+      query: `
+        CREATE MATERIALIZED VIEW IF NOT EXISTS player_performance_summary AS
+        SELECT 
+          p.id,
+          p.name,
+          p.position,
+          p.nflTeam,
+          p.status,
+          COALESCE(AVG(ps.fantasyPoints), 0) as avg_fantasy_points,
+          COALESCE(SUM(ps.fantasyPoints), 0) as total_fantasy_points,
+          COUNT(ps.id) as games_played,
+          MAX(ps.week) as last_game_week
+        FROM players p
+        LEFT JOIN player_stats ps ON p.id = ps.playerId AND ps.season = '2024'
+        WHERE p.isFantasyRelevant = true
+        GROUP BY p.id, p.name, p.position, p.nflTeam, p.status;
+      `
+    },
+    // Team standings for quick dashboard loading
+    {
+      name: 'team_standings_summary',
+      query: `
+        CREATE MATERIALIZED VIEW IF NOT EXISTS team_standings_summary AS
+        SELECT 
+          t.id,
+          t.name,
+          t.leagueId,
+          t.ownerId,
+          u.name as owner_name,
+          t.wins,
+          t.losses,
+          t.ties,
+          t.pointsFor,
+          t.pointsAgainst,
+          (t.pointsFor - t.pointsAgainst) as point_differential,
+          ROW_NUMBER() OVER (PARTITION BY t.leagueId ORDER BY t.wins DESC, t.pointsFor DESC) as standing
+        FROM teams t
+        JOIN users u ON t.ownerId = u.id
+        JOIN leagues l ON t.leagueId = l.id
+        WHERE l.isActive = true;
+      `
+    }
+  ];
+
+  for (const view of views) {
+    try {
+      await prisma.$executeRawUnsafe(view.query);
+      console.log(`    ✅ Created materialized view: ${view.name}`);
+    } catch (error) {
+      console.warn(`    ⚠️  Failed to create view ${view.name}: ${error instanceof Error ? error.message : 'Unknown'}`);
+    }
+  }
+}
+
+async function updateDatabaseStatistics() {
+  console.log('🔥 Phoenix: Updating database statistics for optimal query planning...');
+  
+  try {
+    await prisma.$executeRawUnsafe('ANALYZE;');
+    console.log('    ✅ Database statistics updated successfully');
+  } catch (error) {
+    console.warn(`    ⚠️  Failed to update statistics: ${error instanceof Error ? error.message : 'Unknown'}`);
   }
 }
 

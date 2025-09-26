@@ -64,7 +64,18 @@
       "Bash(set -a)",
       "Bash(source:*)",
       "Bash(set +a)",
-      "WebFetch(domain:web-8jcj9zhx6-astral-productions.vercel.app)"
+      "WebFetch(domain:web-8jcj9zhx6-astral-productions.vercel.app)",
+      "Bash(npm run:*)",
+      "Bash(npx tsc:*)",
+      "Bash(chmod:*)",
+      "Bash(del:*)",
+      "Read(//c/Users/damat/**)",
+      "Bash(npx next build:*)",
+      "WebFetch(domain:web-1v120sfmx-astral-productions.vercel.app)",
+      "WebFetch(domain:web-7ts4brd6b-astral-productions.vercel.app)",
+      "WebFetch(domain:web-i9ai3picv-astral-productions.vercel.app)",
+      "Bash(DATABASE_URL=\"file:./dev.db\" npx tsx ../../scripts/setup-week4-league.ts)",
+      "Bash(dir \"C:\\Users\\damat\\_REPOS\\ASTRAL_FIELD_V1\\apps\\web\\src\\components\\ui\")"
     ],
     "deny": [],
     "ask": []

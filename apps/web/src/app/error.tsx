@@ -1,36 +1,42 @@
 'use client'
 
-export default function Error({
+import { useEffect } from 'react'
+
+export default function ErrorPage({
   error,
   reset,
 }: {
   error: Error & { digest?: string }
   reset: () => void
 }) {
+  useEffect(() => {
+    console.error('Application error:', error)
+  }, [error])
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Something went wrong!
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            An error occurred while loading this page.
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800">
+      <div className="text-center space-y-6 p-8">
+        <div className="space-y-2">
+          <h1 className="text-6xl font-bold text-red-500">500</h1>
+          <h2 className="text-2xl font-semibold text-slate-300">Something went wrong</h2>
+          <p className="text-slate-400 max-w-md mx-auto">
+            An unexpected error occurred. Please try again or contact support if the problem persists.
           </p>
         </div>
-        <div className="space-y-3">
-          <button
-            onClick={() => reset()}
-            className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+        
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <button 
+            onClick={reset}
+            className="inline-flex items-center justify-center rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-600 text-white hover:bg-blue-700 h-10 px-4"
           >
-            Try again
+            Try Again
           </button>
-          <a
-            href="/"
-            className="group relative w-full flex justify-center py-2 px-4 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          <button 
+            onClick={() => window.location.href = '/'}
+            className="inline-flex items-center justify-center rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-slate-600 text-slate-300 hover:bg-slate-700 h-10 px-4"
           >
-            Go back home
-          </a>
+            Return Home
+          </button>
         </div>
       </div>
     </div>

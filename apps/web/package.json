@@ -8,15 +8,17 @@
     "lint": "next lint",
     "start": "next start --port 3000",
     "typecheck": "tsc --noEmit",
-    
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage --watchAll=false",
-    "test:unit": "jest --testPathPattern=\"__tests__/(lib|components|utils)\"",
+    "test:unit": "jest --testPathPattern=\"__tests__/(components|lib|utils)\"",
     "test:integration": "jest --testPathPattern=\"__tests__/integration\"",
+    "test:security": "jest --testPathPattern=\"__tests__/security\"",
+    "test:accessibility": "jest --testPathPattern=\"__tests__/accessibility\"",
     "test:performance": "jest --testPathPattern=\"__tests__/performance\"",
-    "test:all": "npm run test && npm run test:e2e",
-    
+    "test:auth": "jest --testPathPattern=\"__tests__/(components/auth|integration/auth|security/auth)\"",
+    "test:all": "npm run test:unit && npm run test:integration && npm run test:security && npm run test:accessibility && npm run test:e2e",
+    "test:critical": "npm run test:auth && npm run test:security",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",
@@ -25,23 +27,21 @@
     "test:e2e:visual": "playwright test --project=visual",
     "test:e2e:accessibility": "playwright test --project=accessibility",
     "test:e2e:mobile": "playwright test --project=\"Mobile Chrome\"",
-    
     "coverage:report": "npm run test:coverage && open coverage/lcov-report/index.html",
     "coverage:merge": "nyc merge coverage coverage/merged-coverage.json",
     "coverage:summary": "nyc report --reporter=text-summary",
-    
+    "coverage:analysis": "tsx ../../scripts/test-coverage-report.ts",
+    "coverage:badge": "tsx ../../scripts/generate-coverage-badge.ts",
+    "coverage:trend": "tsx ../../scripts/coverage-trend.ts",
     "clean": "rimraf .next .turbo coverage test-results e2e-results mutation-reports",
     "clean:all": "npm run clean && rimraf node_modules",
-    
     "seed:prod": "tsx ../../scripts/seed-production-users.ts",
     "seed:demo": "tsx scripts/create-demo-users.ts",
     "setup:demo": "prisma db push && npm run seed:demo",
     "deploy:prod": "prisma generate && next build",
     "postinstall": "prisma generate",
-    
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
-    
     "analyze": "cross-env ANALYZE=true npm run build",
     "bundle-analyzer": "cross-env BUNDLE_ANALYZE=true npm run build"
   },
@@ -59,6 +59,7 @@
     "bcryptjs": "^3.0.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "critters": "^0.0.23",
     "framer-motion": "^11.18.2",
     "jose": "^5.10.0",
     "js-cookie": "^3.0.5",
@@ -67,6 +68,7 @@
     "next": "^14.0.0",
     "next-auth": "^5.0.0-beta.29",
     "next-themes": "^0.2.1",
+    "otplib": "^12.0.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.50.0",
@@ -79,6 +81,7 @@
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^0.9.0",
+    "web-vitals": "^5.1.0",
     "zod": "^3.23.8",
     "zustand": "^4.5.0"
   },
@@ -114,9 +117,6 @@
     "tailwindcss": "^3.4.1",
     "tsx": "^4.20.6",
     "typescript": "^5.3.3"
-  },
-  "jest": {
-    "preset": "./jest.config.js"
   },
   "engines": {
     "node": ">=18.17.0",
