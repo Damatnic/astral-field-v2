@@ -63,7 +63,7 @@ function SignInForm() {
         </div>
 
         <div className="bg-slate-800/50 rounded-lg p-8 backdrop-blur-sm border border-slate-700">
-          <form className="space-y-6" onSubmit={handleSubmit}>
+          <form id="signin-form" className="space-y-6" onSubmit={handleSubmit}>
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-300">
                 Email address
@@ -164,13 +164,42 @@ function SignInForm() {
           </div>
         </div>
 
-        {/* Demo credentials */}
+        {/* D'Amato Dynasty League Quick Signin */}
         <div className="bg-slate-800/30 rounded-lg p-4 border border-slate-700">
-          <h3 className="text-sm font-medium text-gray-300 mb-2">Demo Accounts:</h3>
-          <div className="space-y-1 text-xs text-gray-400">
-            <p>Admin: admin@astralfield.com / password123</p>
-            <p>Commissioner: commissioner@test.com / password123</p>
-            <p>Player: player1@test.com / password123</p>
+          <h3 className="text-sm font-medium text-gray-300 mb-3">🏈 D'Amato Dynasty League (Password: Dynasty2025!)</h3>
+          <div className="grid grid-cols-1 gap-2">
+            {[
+              { name: "Nicholas D'Amato", email: "nicholas@damato-dynasty.com", team: "D'Amato Dynasty", role: "Commissioner" },
+              { name: "Nick Hartley", email: "nick@damato-dynasty.com", team: "Hartley's Heroes", role: "Player" },
+              { name: "Jack McCaigue", email: "jack@damato-dynasty.com", team: "McCaigue Mayhem", role: "Player" },
+              { name: "Larry McCaigue", email: "larry@damato-dynasty.com", team: "Larry Legends", role: "Player" },
+              { name: "Renee McCaigue", email: "renee@damato-dynasty.com", team: "Renee's Reign", role: "Player" },
+              { name: "Jon Kornbeck", email: "jon@damato-dynasty.com", team: "Kornbeck Crushers", role: "Player" },
+              { name: "David Jarvey", email: "david@damato-dynasty.com", team: "Jarvey's Juggernauts", role: "Player" },
+              { name: "Kaity Lorbecki", email: "kaity@damato-dynasty.com", team: "Lorbecki Lions", role: "Player" },
+              { name: "Cason Minor", email: "cason@damato-dynasty.com", team: "Minor Miracles", role: "Player" },
+              { name: "Brittany Bergum", email: "brittany@damato-dynasty.com", team: "Bergum Blitz", role: "Player" }
+            ].map((account, index) => (
+              <button
+                key={index}
+                onClick={() => {
+                  setEmail(account.email);
+                  setPassword('Dynasty2025!');
+                  // Auto-submit the form
+                  const form = document.getElementById('signin-form') as HTMLFormElement;
+                  if (form) form.requestSubmit();
+                }}
+                className="text-left p-2 bg-slate-700/50 rounded border border-slate-600 hover:border-blue-500 hover:bg-slate-700 transition-colors"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-xs font-medium text-white">{account.name}</div>
+                    <div className="text-xs text-blue-400">{account.team}</div>
+                  </div>
+                  <div className="text-xs text-gray-500">{account.role}</div>
+                </div>
+              </button>
+            ))}
           </div>
         </div>
       </div>

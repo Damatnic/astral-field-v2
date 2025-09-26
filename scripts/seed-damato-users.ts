@@ -1,4 +1,4 @@
-import { PrismaClient, UserRole } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -7,20 +7,20 @@ interface LeagueMember {
   name: string;
   email: string;
   teamName: string;
-  role: UserRole;
+  role: string;
 }
 
 const DAMATO_DYNASTY_MEMBERS: LeagueMember[] = [
-  { name: "Nicholas D'Amato", email: "nicholas@damato-dynasty.com", teamName: "D'Amato Dynasty", role: UserRole.COMMISSIONER },
-  { name: "Nick Hartley", email: "nick@damato-dynasty.com", teamName: "Hartley's Heroes", role: UserRole.PLAYER },
-  { name: "Jack McCaigue", email: "jack@damato-dynasty.com", teamName: "McCaigue Mayhem", role: UserRole.PLAYER },
-  { name: "Larry McCaigue", email: "larry@damato-dynasty.com", teamName: "Larry Legends", role: UserRole.PLAYER },
-  { name: "Renee McCaigue", email: "renee@damato-dynasty.com", teamName: "Renee's Reign", role: UserRole.PLAYER },
-  { name: "Jon Kornbeck", email: "jon@damato-dynasty.com", teamName: "Kornbeck Crushers", role: UserRole.PLAYER },
-  { name: "David Jarvey", email: "david@damato-dynasty.com", teamName: "Jarvey's Juggernauts", role: UserRole.PLAYER },
-  { name: "Kaity Lorbecki", email: "kaity@damato-dynasty.com", teamName: "Lorbecki Lions", role: UserRole.PLAYER },
-  { name: "Cason Minor", email: "cason@damato-dynasty.com", teamName: "Minor Miracles", role: UserRole.PLAYER },
-  { name: "Brittany Bergum", email: "brittany@damato-dynasty.com", teamName: "Bergum Blitz", role: UserRole.PLAYER }
+  { name: "Nicholas D'Amato", email: "nicholas@damato-dynasty.com", teamName: "D'Amato Dynasty", role: "COMMISSIONER" },
+  { name: "Nick Hartley", email: "nick@damato-dynasty.com", teamName: "Hartley's Heroes", role: "PLAYER" },
+  { name: "Jack McCaigue", email: "jack@damato-dynasty.com", teamName: "McCaigue Mayhem", role: "PLAYER" },
+  { name: "Larry McCaigue", email: "larry@damato-dynasty.com", teamName: "Larry Legends", role: "PLAYER" },
+  { name: "Renee McCaigue", email: "renee@damato-dynasty.com", teamName: "Renee's Reign", role: "PLAYER" },
+  { name: "Jon Kornbeck", email: "jon@damato-dynasty.com", teamName: "Kornbeck Crushers", role: "PLAYER" },
+  { name: "David Jarvey", email: "david@damato-dynasty.com", teamName: "Jarvey's Juggernauts", role: "PLAYER" },
+  { name: "Kaity Lorbecki", email: "kaity@damato-dynasty.com", teamName: "Lorbecki Lions", role: "PLAYER" },
+  { name: "Cason Minor", email: "cason@damato-dynasty.com", teamName: "Minor Miracles", role: "PLAYER" },
+  { name: "Brittany Bergum", email: "brittany@damato-dynasty.com", teamName: "Bergum Blitz", role: "PLAYER" }
 ];
 
 async function seedDamatoUsers() {
