@@ -397,18 +397,10 @@ class CatalystDatabaseOptimizer {
             season
           },
           _avg: {
-            fantasyPoints: true,
-            passingYards: true,
-            rushingYards: true,
-            receivingYards: true,
-            touchdowns: true
+            fantasyPoints: true
           },
           _sum: {
-            fantasyPoints: true,
-            passingYards: true,
-            rushingYards: true,
-            receivingYards: true,
-            touchdowns: true
+            fantasyPoints: true
           },
           _count: {
             _all: true
