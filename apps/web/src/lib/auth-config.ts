@@ -64,13 +64,7 @@ export const authConfig = {
               image: true,
               role: true,
               teamName: true,
-              hashedPassword: true,
-              isActive: true,
-              loginAttempts: true,
-              lockedUntil: true,
-              lastLoginAt: true,
-              mfaEnabled: true,
-              mfaSecret: true
+              hashedPassword: true
             }
           })
 
@@ -81,15 +75,8 @@ export const authConfig = {
             throw new Error('INVALID_CREDENTIALS')
           }
 
-          // Guardian Security: Account lockout check
-          if (user.lockedUntil && new Date() < user.lockedUntil) {
-            throw new Error('ACCOUNT_LOCKED')
-          }
-
-          // Guardian Security: Account status check
-          if (!user.isActive) {
-            throw new Error('ACCOUNT_DISABLED')
-          }
+          // Note: User security fields not available in current schema
+          // Future enhancement: Add account lockout and status fields
 
           // Guardian Security: Password verification with timing attack protection
           // Move bcrypt operations to API routes for Edge Runtime compatibility
@@ -99,50 +86,14 @@ export const authConfig = {
           )
 
           if (!isPasswordValid) {
-            // Guardian Security: Increment failed login attempts
-            const attempts = (user.loginAttempts || 0) + 1
-            const updateData: any = { 
-              loginAttempts: attempts,
-              lastFailedLogin: new Date()
-            }
-
-            // Lock account after 5 failed attempts for 30 minutes
-            if (attempts >= 5) {
-              updateData.lockedUntil = new Date(Date.now() + 30 * 60 * 1000)
-            }
-
-            await prisma.users.update({
-              where: { id: user.id },
-              data: updateData
-            })
-
             throw new Error('INVALID_CREDENTIALS')
           }
 
-          // Guardian Security: Reset login attempts on successful login
-          if (user.loginAttempts && user.loginAttempts > 0) {
-            await prisma.users.update({
-              where: { id: user.id },
-              data: {
-                loginAttempts: 0,
-                lockedUntil: null,
-                lastLoginAt: new Date(),
-                lastLoginIP: clientIP as string
-              }
-            })
-          }
-
-          // Guardian Security: Create audit log
-          await prisma.audit_logs.create({
+          // Guardian Security: Update last login time
+          await prisma.user.update({
+            where: { id: user.id },
             data: {
-              id: crypto.randomUUID(),
-              userId: user.id,
-              action: 'LOGIN_SUCCESS',
-              details: {
-                ip: clientIP,
-                userAgent: req?.headers?.['user-agent'] || 'unknown',
-                timestamp: new Date().toISOString()
-              }
+              updatedAt: new Date()
             }
           })
 
