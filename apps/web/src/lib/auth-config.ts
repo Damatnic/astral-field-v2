@@ -157,7 +157,7 @@ export const authConfig = {
         session.user.role = token.role as string
         session.user.teamName = token.teamName as string
         // session.user.mfaEnabled = false // Feature not implemented
-        session.sessionId = token.sessionId as string
+        // session.sessionId = token.sessionId as string // Custom field
         session.expires = new Date(Date.now() + 30 * 60 * 1000).toISOString()
       }
       return session
