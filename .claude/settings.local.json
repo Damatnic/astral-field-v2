@@ -41,7 +41,10 @@
       "Bash(DATABASE_URL=\"file:./dev.db\" npx tsx scripts/check-users.ts)",
       "Bash(DATABASE_URL=\"file:./dev.db\" npx tsx scripts/test-signin.ts)",
       "WebFetch(domain:web-13ddq4j92-astral-productions.vercel.app)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "WebFetch(domain:web-dqu51teye-astral-productions.vercel.app)",
+      "Bash(DATABASE_URL=\"file:./dev.db\" npx tsx scripts/auto-setup-and-test.ts)",
+      "Bash(DATABASE_URL=\"file:./dev.db\" npx tsx scripts/test-quick-signin.ts)"
     ],
     "deny": [],
     "ask": []
