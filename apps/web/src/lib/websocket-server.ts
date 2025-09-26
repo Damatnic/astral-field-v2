@@ -362,7 +362,7 @@ class WebSocketManager {
   private async executeAutoPick(leagueId: string, teamId: string) {
     // Get best available player by ADP
     const availablePlayers = await this.getAvailablePlayers(leagueId)
-    const bestPlayer = availablePlayers.find(p => p.adp) || availablePlayers[0]
+    const bestPlayer = availablePlayers.find((p: any) => p.adp) || availablePlayers[0]
 
     if (bestPlayer) {
       // Execute auto-draft
