@@ -132,7 +132,7 @@ export const authConfig = {
         token.id = user.id
         token.role = user.role
         token.teamName = user.teamName
-        token.mfaEnabled = user.mfaEnabled
+        // token.mfaEnabled = false // Feature not implemented
         token.sessionId = crypto.randomUUID()
         token.iat = Math.floor(Date.now() / 1000)
       }
