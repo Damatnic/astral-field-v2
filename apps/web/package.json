@@ -15,7 +15,6 @@
     "test:unit": "jest --testPathPattern=\"__tests__/(lib|components|utils)\"",
     "test:integration": "jest --testPathPattern=\"__tests__/integration\"",
     "test:performance": "jest --testPathPattern=\"__tests__/performance\"",
-    "test:mutation": "stryker run",
     "test:all": "npm run test && npm run test:e2e",
     
     "test:e2e": "playwright test",
@@ -85,10 +84,6 @@
     "@axe-core/playwright": "^4.8.5",
     "@next/bundle-analyzer": "^14.0.0",
     "@playwright/test": "^1.55.1",
-    "@stryker-mutator/core": "^8.2.6",
-    "@stryker-mutator/jest-runner": "^8.2.6",
-    "@stryker-mutator/html-reporter": "^8.2.6",
-    "@stryker-mutator/json-reporter": "^8.2.6",
     "@tanstack/react-query-devtools": "^5.90.2",
     "@testing-library/jest-dom": "^6.4.2",
     "@testing-library/react": "^14.2.1",
