@@ -202,7 +202,7 @@ export function useCoreWebVitals() {
       }
     })
 
-    const average = scoreValues.reduce((a, b) => a + b, 0) / scoreValues.length
+    const average = scoreValues.reduce((a: number, b: number) => a + b, 0) / scoreValues.length
     
     if (average >= 90) return 'good'
     if (average >= 50) return 'needs-improvement'
