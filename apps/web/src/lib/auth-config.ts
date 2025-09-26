@@ -123,7 +123,6 @@ export const authConfig = {
     updateAge: 5 * 60, // Guardian Security: Update session every 5 minutes
   },
   jwt: {
-    secret: process.env.NEXTAUTH_SECRET,
     maxAge: 30 * 60, // Guardian Security: 30 minutes
   },
   callbacks: {
