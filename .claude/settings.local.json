@@ -58,7 +58,13 @@
       "Bash(git rm:*)",
       "WebFetch(domain:web-kai93tcmb-astral-productions.vercel.app)",
       "Bash(npx @libsql/cli:*)",
-      "WebFetch(domain:web-b2pbzyw24-astral-productions.vercel.app)"
+      "WebFetch(domain:web-b2pbzyw24-astral-productions.vercel.app)",
+      "WebFetch(domain:web-qqxbsvk0l-astral-productions.vercel.app)",
+      "Bash(echo:*)",
+      "Bash(set -a)",
+      "Bash(source:*)",
+      "Bash(set +a)",
+      "WebFetch(domain:web-8jcj9zhx6-astral-productions.vercel.app)"
     ],
     "deny": [],
     "ask": []
