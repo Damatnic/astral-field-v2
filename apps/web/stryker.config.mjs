@@ -70,7 +70,6 @@ export default {
     '@stryker-mutator/jest-runner',
     '@stryker-mutator/html-reporter',
     '@stryker-mutator/json-reporter',
-    '@stryker-mutator/dashboard-reporter',
   ],
   
   // Reporters
@@ -79,7 +78,6 @@ export default {
     'clear-text',
     'html',
     'json',
-    'dashboard',
   ],
   
   // HTML report configuration
@@ -93,13 +91,6 @@ export default {
     fileName: 'mutation-reports/mutation-report.json',
   },
   
-  // Dashboard reporter configuration
-  dashboard: {
-    project: 'github.com/your-org/astral-field',
-    version: process.env.GITHUB_SHA || 'main',
-    module: 'web',
-    baseUrl: 'https://dashboard.stryker-mutator.io/api/reports',
-  },
   
   // Test framework configuration
   jest: {
