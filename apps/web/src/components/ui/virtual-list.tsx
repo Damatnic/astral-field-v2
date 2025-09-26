@@ -322,7 +322,11 @@ const VirtualList = memo(<T,>({
   )
 }) as <T>(props: VirtualListProps<T>) => JSX.Element
 
-VirtualList.displayName = 'VirtualList'
+// Set display name using Object.defineProperty to satisfy TypeScript
+Object.defineProperty(VirtualList, 'displayName', {
+  value: 'VirtualList',
+  writable: false
+})
 
 // Grid virtualization component
 interface VirtualGridProps<T> {
