@@ -116,13 +116,7 @@ export default async function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" crossOrigin="" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         
-        {/* Catalyst: Critical CSS preload */}
-        <link rel="preload" href="/_next/static/css/app/layout.css" as="style" />
-        
-        {/* Catalyst: Critical JS preload */}
-        <link rel="modulepreload" href="/_next/static/chunks/polyfills.js" />
-        <link rel="modulepreload" href="/_next/static/chunks/webpack.js" />
-        <link rel="modulepreload" href="/_next/static/chunks/main.js" />
+        {/* Catalyst: Performance optimizations - dynamic asset loading handled by Next.js */}
         
         {/* Catalyst: Performance optimizations */}
         <meta name="theme-color" content="#3b82f6" />

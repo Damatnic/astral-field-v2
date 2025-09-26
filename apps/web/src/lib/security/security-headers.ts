@@ -77,7 +77,8 @@ export class GuardianSecurityHeaders {
           ],
           font: [
             "'self'",
-            "https://fonts.gstatic.com"
+            "https://fonts.gstatic.com",
+            "data:"
           ],
           connect: [
             "'self'",
@@ -507,7 +508,7 @@ export const guardianSecurityHeadersDev = new GuardianSecurityHeaders({
         "http://localhost:*",
         "https://api.vercel.com"
       ],
-      font: ["'self'", "https://fonts.gstatic.com"],
+      font: ["'self'", "https://fonts.gstatic.com", "data:"],
       media: ["'self'", "data:", "blob:"],
       object: ["'none'"],
       frame: ["'self'"],

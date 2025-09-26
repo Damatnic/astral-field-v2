@@ -8,6 +8,7 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
 // Catalyst Performance: Lightning-fast Next.js configuration
 const nextConfig = {
   // Catalyst: High-performance rendering strategy
+  output: 'standalone',
   trailingSlash: false,
   distDir: '.next',
   
@@ -125,32 +126,12 @@ const nextConfig = {
             value: 'strict-origin-when-cross-origin',
           },
           {
-            key: 'Content-Security-Policy',
-            value: [
-              "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' https://vercel.live",
-              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-              "img-src 'self' data: https: blob:",
-              "font-src 'self' https://fonts.gstatic.com https://r2cdn.perplexity.ai",
-              "connect-src 'self' https: wss: ws:",
-              "media-src 'self'",
-              "object-src 'none'",
-              "child-src 'none'",
-              "worker-src 'self'",
-              "frame-ancestors 'none'",
-              "form-action 'self'",
-              "base-uri 'self'",
-              "manifest-src 'self'",
-              "upgrade-insecure-requests"
-            ].join('; '),
-          },
-          {
             key: 'X-DNS-Prefetch-Control',
             value: 'off',
           },
           {
             key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
+            value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=(), ambient-light-sensor=(), autoplay=(self), fullscreen=(self), picture-in-picture=(), interest-cohort=()',
           },
           {
             key: 'X-Download-Options',
@@ -167,6 +148,22 @@ const nextConfig = {
           {
             key: 'X-XSS-Protection',
             value: '1; mode=block',
+          },
+          {
+            key: 'Cross-Origin-Embedder-Policy',
+            value: 'require-corp',
+          },
+          {
+            key: 'Cross-Origin-Opener-Policy',
+            value: 'same-origin',
+          },
+          {
+            key: 'Cross-Origin-Resource-Policy',
+            value: 'same-origin',
+          },
+          {
+            key: 'Origin-Agent-Cluster',
+            value: '?1',
           },
         ],
       },
@@ -186,6 +183,10 @@ const nextConfig = {
             key: 'Cache-Control',
             value: 'public, max-age=31536000, immutable',
           },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
         ],
       },
       {
@@ -195,6 +196,65 @@ const nextConfig = {
             key: 'Cache-Control',
             value: 'public, max-age=86400, stale-while-revalidate=604800',
           },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+        ],
+      },
+      {
+        source: '/:path*\\.(js|mjs|jsx)',
+        headers: [
+          {
+            key: 'Content-Type',
+            value: 'application/javascript; charset=utf-8',
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        source: '/:path*\\.(css)',
+        headers: [
+          {
+            key: 'Content-Type',
+            value: 'text/css; charset=utf-8',
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        source: '/:path*\\.(woff|woff2|ttf|otf|eot)',
+        headers: [
+          {
+            key: 'Content-Type',
+            value: 'font/woff2',
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: 'same-origin',
+          },
         ],
       },
       {
@@ -203,6 +263,10 @@ const nextConfig = {
           {
             key: 'Cache-Control',
             value: 'public, max-age=604800, stale-while-revalidate=86400',
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
           },
         ],
       },

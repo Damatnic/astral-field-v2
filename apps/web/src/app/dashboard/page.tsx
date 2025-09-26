@@ -4,6 +4,8 @@ import { DashboardLayout } from '@/components/dashboard/layout'
 import { prisma } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+export const revalidate = 0
 import { 
   TrophyIcon, 
   ChartBarIcon, 
@@ -14,8 +16,9 @@ import {
 } from '@heroicons/react/24/outline'
 
 async function getDashboardData(userId: string) {
-  // Get user's teams and leagues
-  const userTeams = await prisma.team.findMany({
+  try {
+    // Get user's teams and leagues
+    const userTeams = await prisma.team.findMany({
     where: { ownerId: userId },
     include: {
       league: {
@@ -107,10 +110,18 @@ async function getDashboardData(userId: string) {
     })
   )
 
-  return {
-    userTeams,
-    recentNews,
-    standings
+    return {
+      userTeams,
+      recentNews,
+      standings
+    }
+  } catch (error) {
+    console.error('Dashboard data fetch error:', error)
+    return {
+      userTeams: [],
+      recentNews: [],
+      standings: []
+    }
   }
 }
 
@@ -133,7 +144,13 @@ export default async function DashboardPage() {
     redirect('/auth/signin')
   }
 
-  const data = await getDashboardData(userId)
+  let data
+  try {
+    data = await getDashboardData(userId)
+  } catch (error) {
+    console.error('Failed to load dashboard data:', error)
+    data = { userTeams: [], recentNews: [], standings: [] }
+  }
 
   const stats = [
     { 

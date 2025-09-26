@@ -1,0 +1,186 @@
+{
+  "timestamp": "2025-09-26T22:44:08.470Z",
+  "overallStatus": "WARN",
+  "totalTests": 23,
+  "passed": 22,
+  "failed": 0,
+  "warnings": 1,
+  "results": [
+    {
+      "component": "Audit Logging",
+      "test": "Event Creation",
+      "status": "PASS",
+      "message": "Successfully created audit event: evt_1758926648462_0bvstnwrs"
+    },
+    {
+      "component": "Audit Logging",
+      "test": "Event Retrieval",
+      "status": "PASS",
+      "message": "Successfully retrieved 1 events"
+    },
+    {
+      "component": "Audit Logging",
+      "test": "Security Metrics",
+      "status": "PASS",
+      "message": "Generated metrics: 1 events today",
+      "details": {
+        "eventsToday": 1,
+        "incidentsToday": 0,
+        "averageRiskScore": 0.2,
+        "topThreatCategories": [
+          {
+            "category": "authentication",
+            "count": 1
+          }
+        ],
+        "severityDistribution": {
+          "low": 1,
+          "medium": 0,
+          "high": 0,
+          "critical": 0
+        }
+      }
+    },
+    {
+      "component": "Session Management",
+      "test": "Session Creation",
+      "status": "PASS",
+      "message": "Created session: 159a119a1eb2bc2367d71eefc6fa77378508aac6e3ad3d7b6630d156985b8027"
+    },
+    {
+      "component": "Session Management",
+      "test": "Session Validation",
+      "status": "PASS",
+      "message": "Session validation successful"
+    },
+    {
+      "component": "Session Management",
+      "test": "Session Statistics",
+      "status": "PASS",
+      "message": "Active sessions: 1, Average risk: 0.00",
+      "details": {
+        "totalSessions": 1,
+        "activeSessions": 1,
+        "averageRiskScore": 0,
+        "highRiskSessions": 0,
+        "deviceTypes": {
+          "Desktop": 1
+        }
+      }
+    },
+    {
+      "component": "Account Protection",
+      "test": "Lockout Check",
+      "status": "PASS",
+      "message": "Lockout status checked: Unlocked"
+    },
+    {
+      "component": "Account Protection",
+      "test": "Failed Attempt Recording",
+      "status": "PASS",
+      "message": "Recorded failed attempt. Risk score: 0.08000000000000002"
+    },
+    {
+      "component": "Account Protection",
+      "test": "Success Attempt Recording",
+      "status": "PASS",
+      "message": "Recorded successful attempt. Anomalies detected: 0"
+    },
+    {
+      "component": "Privacy Protection",
+      "test": "Consent Recording",
+      "status": "PASS",
+      "message": "Recorded 2 consent records"
+    },
+    {
+      "component": "Privacy Protection",
+      "test": "Consent Validation",
+      "status": "PASS",
+      "message": "Consent validation: Valid"
+    },
+    {
+      "component": "Privacy Protection",
+      "test": "Privacy Request",
+      "status": "PASS",
+      "message": "Created privacy request: req_1758926648467_qdamphlk6"
+    },
+    {
+      "component": "MFA System",
+      "test": "Setup Generation",
+      "status": "PASS",
+      "message": "Generated MFA setup with 10 backup codes"
+    },
+    {
+      "component": "MFA System",
+      "test": "TOTP Verification",
+      "status": "WARN",
+      "message": "TOTP verification: Invalid (expected for test code)"
+    },
+    {
+      "component": "MFA System",
+      "test": "Backup Code Verification",
+      "status": "PASS",
+      "message": "Backup code verification: Valid"
+    },
+    {
+      "component": "MFA System",
+      "test": "Status Check",
+      "status": "PASS",
+      "message": "MFA status: Enabled=true, Backup codes=10"
+    },
+    {
+      "component": "Rate Limiting",
+      "test": "First Request",
+      "status": "PASS",
+      "message": "Rate limit check passed. Remaining: 99"
+    },
+    {
+      "component": "Rate Limiting",
+      "test": "Metrics Collection",
+      "status": "PASS",
+      "message": "Collected metrics: 3 total requests, 0 blocked"
+    },
+    {
+      "component": "Rate Limiting",
+      "test": "Active Entries",
+      "status": "PASS",
+      "message": "Found 1 active rate limit entries"
+    },
+    {
+      "component": "Security Headers",
+      "test": "Production Headers",
+      "status": "PASS",
+      "message": "Generated 17 security headers"
+    },
+    {
+      "component": "Security Headers",
+      "test": "CSP Header",
+      "status": "PASS",
+      "message": "Content Security Policy header present"
+    },
+    {
+      "component": "Security Headers",
+      "test": "HSTS Header",
+      "status": "PASS",
+      "message": "HTTP Strict Transport Security header present"
+    },
+    {
+      "component": "Security Headers",
+      "test": "Security Score",
+      "status": "PASS",
+      "message": "Security score: 100/100",
+      "details": {
+        "score": 100,
+        "maxScore": 100,
+        "recommendations": []
+      }
+    }
+  ],
+  "recommendations": [
+    "Review and resolve security warnings",
+    "Conduct regular security assessments",
+    "Keep security dependencies updated",
+    "Monitor security logs for anomalies"
+  ],
+  "securityScore": 96
+}

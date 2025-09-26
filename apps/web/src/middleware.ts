@@ -19,12 +19,35 @@ export default auth(async (req) => {
   const isApiRoute = nextUrl.pathname.startsWith('/api/')
   const isProduction = process.env.NODE_ENV === 'production'
 
-  // Guardian Security: Advanced security headers
+  // Guardian Security: Advanced security headers with production environment detection
   const securityHeadersProvider = isProduction 
     ? guardianSecurityHeaders 
     : guardianSecurityHeadersDev
   
   const securityHeaders = securityHeadersProvider.generateHeaders(isProduction)
+  
+  // Add CSP specifically for production to block unauthorized font sources
+  if (isProduction) {
+    securityHeaders['Content-Security-Policy'] = [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "img-src 'self' data: https: blob:",
+      "font-src 'self' https://fonts.gstatic.com", // CRITICAL: Only allow authorized font sources
+      "connect-src 'self' https: wss: ws:",
+      "media-src 'self'",
+      "object-src 'none'",
+      "child-src 'none'",
+      "worker-src 'self' blob:",
+      "frame-ancestors 'none'",
+      "form-action 'self'",
+      "base-uri 'self'",
+      "manifest-src 'self'",
+      "block-all-mixed-content",
+      "upgrade-insecure-requests",
+      "report-uri /api/security/csp-report"
+    ].join('; ')
+  }
 
   const response = NextResponse.next()
   
