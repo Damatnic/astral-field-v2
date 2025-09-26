@@ -347,7 +347,7 @@ interface VirtualGridProps<T> {
   gap?: number
 }
 
-const VirtualGrid = memo(<T,>({
+const VirtualGrid = memo(function VirtualGrid<T>({
   items,
   width,
   height,
