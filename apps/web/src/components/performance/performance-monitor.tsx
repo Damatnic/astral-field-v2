@@ -85,7 +85,7 @@ PerformanceMonitor.displayName = 'PerformanceMonitor'
 
 // Performance Debug Panel for development
 const PerformanceDebugPanel = memo(() => {
-  const { coreWebVitals, scores, violations, recommendations } = useCoreWebVitals()
+  const { coreWebVitals, scores, violations } = useCoreWebVitals()
 
   if (process.env.NODE_ENV !== 'development') return null
 
