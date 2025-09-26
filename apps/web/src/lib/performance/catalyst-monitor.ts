@@ -178,8 +178,8 @@ class CatalystPerformanceMonitor {
         let clsValue = 0
         const clsObserver = new PerformanceObserver((list) => {
           for (const entry of list.getEntries()) {
-            if (!entry.hadRecentInput) {
-              clsValue += entry.value
+            if ('hadRecentInput' in entry && !(entry as any).hadRecentInput) {
+              clsValue += (entry as any).value
             }
           }
           this.recordMetric('CLS', clsValue, this.budget.CLS)
