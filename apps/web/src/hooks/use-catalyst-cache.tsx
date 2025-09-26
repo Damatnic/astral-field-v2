@@ -161,11 +161,11 @@ export function useCacheMetrics() {
  * Hook for cache operations without automatic fetching
  */
 export function useCache() {
-  const get = useCallback(async <T>(key: string, options?: CacheOptions): Promise<T | null> => {
-    return catalystCache.get<T>(key, options)
+  const get = useCallback(async (key: string, options?: CacheOptions) => {
+    return catalystCache.get(key, options)
   }, [])
 
-  const set = useCallback(async <T>(key: string, value: T, options?: CacheOptions): Promise<void> => {
+  const set = useCallback(async (key: string, value: any, options?: CacheOptions) => {
     return catalystCache.set(key, value, options)
   }, [])
 
