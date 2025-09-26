@@ -39,7 +39,9 @@
       "WebFetch(domain:localhost)",
       "Bash(DATABASE_URL=\"file:./dev.db\" npx prisma studio --browser none --port 5555)",
       "Bash(DATABASE_URL=\"file:./dev.db\" npx tsx scripts/check-users.ts)",
-      "Bash(DATABASE_URL=\"file:./dev.db\" npx tsx scripts/test-signin.ts)"
+      "Bash(DATABASE_URL=\"file:./dev.db\" npx tsx scripts/test-signin.ts)",
+      "WebFetch(domain:web-13ddq4j92-astral-productions.vercel.app)",
+      "Bash(node:*)"
     ],
     "deny": [],
     "ask": []
