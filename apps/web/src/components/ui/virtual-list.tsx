@@ -358,7 +358,7 @@ const VirtualGrid = memo(function VirtualGrid<T>({
   className,
   overscan = 2,
   gap = 0
-}: VirtualGridProps<T>) => {
+}: VirtualGridProps<T>) {
   const [scrollTop, setScrollTop] = useState(0)
   const containerRef = useRef<HTMLDivElement>(null)
 
