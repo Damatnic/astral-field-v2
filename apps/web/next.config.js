@@ -37,73 +37,9 @@ const nextConfig = {
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
   },
-  // Catalyst Performance: Advanced webpack optimizations
+  // Catalyst Performance: Safe webpack optimizations
   webpack: (config, { isServer, dev, webpack }) => {
-    // Catalyst: Enable advanced optimizations in production
-    if (!dev) {
-      config.optimization = {
-        ...config.optimization,
-        // Catalyst: Aggressive bundle splitting for optimal caching
-        splitChunks: {
-          chunks: 'all',
-          minSize: 20000,
-          maxSize: 244000,
-          cacheGroups: {
-            // Catalyst: Vendor chunk optimization (exclude server-only packages)
-            vendor: {
-              test: /[\/]node_modules[\/](?!bcryptjs|bcrypt|crypto|fs|path|os)/,
-              name(module) {
-                const match = module.context.match(
-                  /[\/]node_modules[\/](.*?)([\/]|$)/
-                );
-                if (!match || !match[1]) {
-                  return 'vendor.unknown';
-                }
-                const packageName = match[1];
-                return `vendor.${packageName.replace('@', '')}`;
-              },
-              priority: 10,
-              reuseExistingChunk: true,
-              enforce: true,
-            },
-            // Catalyst: Framework chunk
-            framework: {
-              chunks: 'all',
-              name: 'framework',
-              test: /(?<!node_modules.*)[\\/]node_modules[\\/](react|react-dom|scheduler|prop-types|use-subscription)[\\/]/,
-              priority: 40,
-              enforce: true,
-            },
-            // Catalyst: Common chunks
-            commons: {
-              name: 'commons',
-              minChunks: 2,
-              priority: 5,
-              reuseExistingChunk: true,
-            },
-            // Catalyst: UI library chunk
-            ui: {
-              test: /[\/]@astralfield[\/]ui[\/]/,
-              name: 'ui',
-              priority: 20,
-              reuseExistingChunk: true,
-            },
-          },
-        },
-        // Catalyst: Enable advanced minimization
-        minimize: true,
-        // Catalyst: Module concatenation for better tree shaking
-        concatenateModules: true,
-        // Catalyst: Enable side effects optimization
-        sideEffects: false,
-      };
-
-      // Catalyst: Advanced tree shaking
-      config.optimization.usedExports = true;
-      config.optimization.providedExports = true;
-    }
-
-    // Catalyst: Client-side optimizations
+    // Catalyst: Client-side optimizations only
     if (!isServer) {
       config.resolve.fallback = {
         fs: false,
@@ -113,21 +49,6 @@ const nextConfig = {
         stream: false,
         buffer: false,
       };
-
-      // Catalyst: Externalize server-only packages on client
-      config.externals = config.externals || [];
-      config.externals.push({
-        'bcryptjs': 'commonjs bcryptjs',
-        'bcrypt': 'commonjs bcrypt',
-        'crypto': 'commonjs crypto',
-      });
-
-      // Catalyst: Preload critical chunks
-      config.plugins.push(
-        new webpack.optimize.LimitChunkCountPlugin({
-          maxChunks: 50, // Optimal chunk count for HTTP/2
-        })
-      );
     }
 
     // Catalyst: Enable module resolution improvements
