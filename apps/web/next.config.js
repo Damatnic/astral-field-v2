@@ -8,7 +8,6 @@ const nextConfig = {
   },
   experimental: {
     optimizePackageImports: ['@astralfield/ui', 'lucide-react', '@heroicons/react', 'recharts'],
-    webpackBuildWorker: true,
     optimizeCss: true,
     scrollRestoration: true,
   },
