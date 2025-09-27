@@ -1,10 +1,10 @@
-import { auth } from '@/lib/auth'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { guardianSecurityHeaders, guardianSecurityHeadersDev } from '@/lib/security/security-headers'
 
-export default auth(async (req) => {
+export default async function middleware(req: NextRequest) {
   const { nextUrl } = req
-  const isLoggedIn = !!req.auth
+  // Check for session cookie instead of auth middleware
+  const isLoggedIn = req.cookies.has('next-auth.session-token') || req.cookies.has('__Secure-next-auth.session-token')
 
   // Catalyst Performance: Optimized route matching with Set for O(1) lookup
   const protectedPaths = new Set([
@@ -92,7 +92,7 @@ export default auth(async (req) => {
   }
 
   return response
-})
+}
 
 export const config = {
   matcher: [
