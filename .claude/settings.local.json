@@ -89,7 +89,9 @@
       "Bash(PORT=3002 npm run dev)",
       "Bash(gh run view:*)",
       "WebFetch(domain:web-4883xsjca-astral-productions.vercel.app)",
-      "WebFetch(domain:web-erwjvf0aq-astral-productions.vercel.app)"
+      "WebFetch(domain:web-erwjvf0aq-astral-productions.vercel.app)",
+      "Bash(timeout:*)",
+      "WebFetch(domain:web-m8skxjrlz-astral-productions.vercel.app)"
     ],
     "deny": [],
     "ask": []
