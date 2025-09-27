@@ -392,5 +392,4 @@ export const secureCookieConfig = {
   path: '/'
 }
 
-export { GuardianCSRFProtection }
 export default csrfProtection

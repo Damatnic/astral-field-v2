@@ -324,5 +324,5 @@ export function getGuardianSecurity(): GuardianSecurityManager {
   return securityConfigs[env as keyof typeof securityConfigs] || securityConfigs.development
 }
 
-export { GuardianSecurityManager, defaultSecurityConfig, secureCookieConfig }
+export { defaultSecurityConfig, secureCookieConfig }
 export default guardianSecurity

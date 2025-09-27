@@ -683,6 +683,38 @@ class CacheManager {
     }
   }
 
+  // ========================================
+  // REDIS COMPATIBILITY METHODS FOR SECURITY MIDDLEWARE
+  // ========================================
+
+  async setex(key: string, seconds: number, value: string): Promise<void> {
+    await this.redis.setex(key, seconds, value)
+  }
+
+  async incr(key: string): Promise<number> {
+    return await this.redis.incr(key)
+  }
+
+  async expire(key: string, seconds: number): Promise<number> {
+    return await this.redis.expire(key, seconds)
+  }
+
+  async keys(pattern: string): Promise<string[]> {
+    return await this.redis.keys(pattern)
+  }
+
+  async lpush(key: string, ...values: string[]): Promise<number> {
+    return await this.redis.lpush(key, ...values)
+  }
+
+  async ltrim(key: string, start: number, stop: number): Promise<string> {
+    return await this.redis.ltrim(key, start, stop)
+  }
+
+  async lrange(key: string, start: number, stop: number): Promise<string[]> {
+    return await this.redis.lrange(key, start, stop)
+  }
+
   async disconnect(): Promise<void> {
     this.logger.info('Disconnecting cache manager...')
     

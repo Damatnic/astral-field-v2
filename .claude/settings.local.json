@@ -94,7 +94,9 @@
       "WebFetch(domain:web-m8skxjrlz-astral-productions.vercel.app)",
       "WebFetch(domain:web-ofwlm2umt-astral-productions.vercel.app)",
       "WebFetch(domain:web-j4gr6jrab-astral-productions.vercel.app)",
-      "WebFetch(domain:web-pkrb099g3-astral-productions.vercel.app)"
+      "WebFetch(domain:web-pkrb099g3-astral-productions.vercel.app)",
+      "Bash(gh run list:*)",
+      "WebFetch(domain:web-r40qj4fp6-astral-productions.vercel.app)"
     ],
     "deny": [],
     "ask": []

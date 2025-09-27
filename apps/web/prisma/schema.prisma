@@ -20,6 +20,12 @@ model User {
   teamName       String?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
+  
+  // Security fields for Guardian middleware
+  loginAttempts  Int       @default(0)
+  lockedUntil    DateTime?
+  sessionId      String?
+  lastLoginAt    DateTime?
 
   // Relations
   teams          Team[]
