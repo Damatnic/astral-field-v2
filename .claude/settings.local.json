@@ -91,7 +91,10 @@
       "WebFetch(domain:web-4883xsjca-astral-productions.vercel.app)",
       "WebFetch(domain:web-erwjvf0aq-astral-productions.vercel.app)",
       "Bash(timeout:*)",
-      "WebFetch(domain:web-m8skxjrlz-astral-productions.vercel.app)"
+      "WebFetch(domain:web-m8skxjrlz-astral-productions.vercel.app)",
+      "WebFetch(domain:web-ofwlm2umt-astral-productions.vercel.app)",
+      "WebFetch(domain:web-j4gr6jrab-astral-productions.vercel.app)",
+      "WebFetch(domain:web-pkrb099g3-astral-productions.vercel.app)"
     ],
     "deny": [],
     "ask": []

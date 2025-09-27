@@ -78,6 +78,7 @@ export class GuardianSecurityHeaders {
           font: [
             "'self'",
             "https://fonts.gstatic.com",
+            "https://r2cdn.perplexity.ai",
             "data:"
           ],
           connect: [
@@ -508,7 +509,7 @@ export const guardianSecurityHeadersDev = new GuardianSecurityHeaders({
         "http://localhost:*",
         "https://api.vercel.com"
       ],
-      font: ["'self'", "https://fonts.gstatic.com", "data:"],
+      font: ["'self'", "https://fonts.gstatic.com", "https://r2cdn.perplexity.ai", "data:"],
       media: ["'self'", "data:", "blob:"],
       object: ["'none'"],
       frame: ["'self'"],
