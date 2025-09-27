@@ -230,41 +230,7 @@ const nextConfig = {
         ],
       },
       {
-        source: '/:path*\\.(js|mjs|jsx)',
-        headers: [
-          {
-            key: 'Content-Type',
-            value: 'application/javascript; charset=utf-8',
-          },
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
-      },
-      {
-        source: '/:path*\\.(css)',
-        headers: [
-          {
-            key: 'Content-Type',
-            value: 'text/css; charset=utf-8',
-          },
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
-      },
-      {
-        source: '/:path*\\.(woff|woff2|ttf|otf|eot)',
+        source: '/fonts/:path*',
         headers: [
           {
             key: 'Content-Type',
@@ -285,19 +251,6 @@ const nextConfig = {
           {
             key: 'Access-Control-Allow-Methods',
             value: 'GET, OPTIONS',
-          },
-        ],
-      },
-      {
-        source: '/:path*\\.(jpg|jpeg|png|gif|ico|svg|webp|avif)',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=604800, stale-while-revalidate=86400',
-          },
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
           },
         ],
       },

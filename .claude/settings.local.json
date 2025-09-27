@@ -86,7 +86,9 @@
       "WebFetch(domain:astral-field-v2.vercel.app)",
       "Bash(npx dotenv -e .env -- npx tsx scripts/check-damato-league-setup.ts:*)",
       "Bash(npx dotenv -e .env -- npx tsx scripts/test-damato-dynasty-login.ts:*)",
-      "Bash(PORT=3002 npm run dev)"
+      "Bash(PORT=3002 npm run dev)",
+      "Bash(gh run view:*)",
+      "WebFetch(domain:web-4883xsjca-astral-productions.vercel.app)"
     ],
     "deny": [],
     "ask": []
