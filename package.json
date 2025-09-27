@@ -4,7 +4,7 @@
   "description": "The AI-Powered Fantasy Platform That Serious Leagues Deserve",
   "private": true,
   "workspaces": [
-    "apps/*",
+    "apps/web",
     "packages/*",
     "providers/*"
   ],

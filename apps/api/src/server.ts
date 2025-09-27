@@ -11,13 +11,13 @@ import Redis from 'ioredis'
 // Phoenix optimization imports
 import { dbPool, prisma } from '../../../lib/database-pool'
 import { cacheManager } from '../../../lib/cache-manager'
-import { queryOptimizer } from '../../../lib/query-optimizer'
-import { initializeWebSocketManager } from '../../../lib/websocket-manager'
+// import { queryOptimizer } from '../../../lib/query-optimizer'
+// import { initializeWebSocketManager } from '../../../lib/websocket-manager'
 
 import { authMiddleware } from './middleware/auth'
 import { errorHandler } from './middleware/error'
 import { requestLogger } from './middleware/logger'
-import { validateRequest } from './middleware/validation'
+// import { validateRequest } from './middleware/validation'
 
 import { authRoutes } from './routes/auth'
 import { leagueRoutes } from './routes/leagues'

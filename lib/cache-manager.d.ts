@@ -116,7 +116,7 @@ declare class CacheManager {
         };
         redis: {
             healthy: boolean;
-            status: "wait" | "reconnecting" | "connecting" | "connect" | "ready" | "close" | "end" | "disconnecting";
+            status: "close" | "end" | "connect" | "wait" | "reconnecting" | "connecting" | "ready" | "disconnecting";
         };
         compression: {
             enabled: boolean;
