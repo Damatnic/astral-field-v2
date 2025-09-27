@@ -17,54 +17,149 @@ import {
 
 async function getDashboardData(userId: string) {
   try {
+    console.log('Dashboard: Fetching data for user:', userId)
+    
+    // First, verify the user exists and get their info
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true, name: true }
+    })
+    
+    console.log('Dashboard: User found:', user)
+    
     // Get user's teams and leagues
     const userTeams = await prisma.team.findMany({
-    where: { ownerId: userId },
-    include: {
-      league: {
-        select: {
-          id: true,
-          name: true,
-          currentWeek: true
-        }
-      },
-      homeMatchups: {
-        where: {
-          week: 1, // Current week
-          season: 2024
-        },
-        include: {
-          awayTeam: {
-            select: { name: true, ownerId: true }
+      where: { ownerId: userId },
+      include: {
+        league: {
+          select: {
+            id: true,
+            name: true,
+            currentWeek: true
           }
-        }
-      },
-      awayMatchups: {
-        where: {
-          week: 1,
-          season: 2024
         },
-        include: {
-          homeTeam: {
-            select: { name: true, ownerId: true }
-          }
-        }
-      },
-      roster: {
-        include: {
-          player: {
-            select: {
-              id: true,
-              name: true,
-              position: true,
-              nflTeam: true
+        homeMatchups: {
+          where: {
+            week: 1, // Current week
+            season: 2025
+          },
+          include: {
+            awayTeam: {
+              select: { name: true, ownerId: true }
             }
           }
         },
-        take: 5 // Top 5 players
+        awayMatchups: {
+          where: {
+            week: 1,
+            season: 2025
+          },
+          include: {
+            homeTeam: {
+              select: { name: true, ownerId: true }
+            }
+          }
+        },
+        roster: {
+          include: {
+            player: {
+              select: {
+                id: true,
+                name: true,
+                position: true,
+                nflTeam: true
+              }
+            }
+          },
+          take: 5 // Top 5 players
+        }
       }
+    })
+    
+    console.log('Dashboard: Found teams:', userTeams.length)
+    
+    // If user has no teams, create demo data
+    if (userTeams.length === 0) {
+      console.log('Dashboard: No teams found, creating demo data...')
+      
+      // Create demo data inline to avoid import issues
+      const demoLeague = await prisma.league.create({
+        data: {
+          name: 'Demo Fantasy League',
+          description: 'Your practice league to get started with Astral Field',
+          currentWeek: 4,
+          maxTeams: 12,
+          isActive: true
+        }
+      })
+      
+      const demoTeam = await prisma.team.create({
+        data: {
+          name: user?.name ? `${user.name}'s Team` : 'My Fantasy Team',
+          ownerId: userId,
+          leagueId: demoLeague.id,
+          wins: 2,
+          losses: 1,
+          ties: 0
+        }
+      })
+      
+      console.log('Dashboard: Created demo team and league')
+      
+      // Re-fetch user teams after creating demo data
+      const newUserTeams = await prisma.team.findMany({
+        where: { ownerId: userId },
+        include: {
+          league: {
+            select: {
+              id: true,
+              name: true,
+              currentWeek: true
+            }
+          },
+          homeMatchups: {
+            where: {
+              week: 4, // Current week from demo data
+              season: 2025
+            },
+            include: {
+              awayTeam: {
+                select: { name: true, ownerId: true }
+              }
+            }
+          },
+          awayMatchups: {
+            where: {
+              week: 4,
+              season: 2025
+            },
+            include: {
+              homeTeam: {
+                select: { name: true, ownerId: true }
+              }
+            }
+          },
+          roster: {
+            include: {
+              player: {
+                select: {
+                  id: true,
+                  name: true,
+                  position: true,
+                  nflTeam: true
+                }
+              }
+            },
+            take: 5
+          }
+        }
+      })
+      
+      console.log('Dashboard: Demo data created, found teams:', newUserTeams.length)
+      
+      // Update userTeams with the new data
+      userTeams.splice(0, userTeams.length, ...newUserTeams)
     }
-  })
 
   // Get recent player news
   const recentNews = await prisma.playerNews.findMany({

@@ -1,9 +1,9 @@
 // Catalyst: High-Performance Service Worker
 // Advanced caching strategy for lightning-fast performance
 
-const CACHE_NAME = 'catalyst-cache-v3'
-const RUNTIME_CACHE = 'catalyst-runtime-v3'
-const IMAGE_CACHE = 'catalyst-images-v3'
+const CACHE_NAME = 'catalyst-cache-v4'
+const RUNTIME_CACHE = 'catalyst-runtime-v4'
+const IMAGE_CACHE = 'catalyst-images-v4'
 
 // Catalyst: Critical resources to cache immediately
 const PRECACHE_URLS = [
@@ -93,6 +93,14 @@ self.addEventListener('fetch', (event) => {
   // Skip chrome-extension and other protocols
   if (!url.protocol.startsWith('http')) return
   
+  // Skip authentication and dynamic API routes to prevent infinite loops
+  if (url.pathname.includes('/api/auth/') || 
+      url.pathname.includes('/api/analytics') ||
+      url.pathname.includes('_next/webpack-hmr') ||
+      url.pathname.includes('hot-update')) {
+    return
+  }
+  
   event.respondWith(handleRequest(request))
 })
 
@@ -111,24 +119,25 @@ async function handleRequest(request) {
       return await networkFirstStrategy(request, CACHE_STRATEGIES.api)
     }
     
-    if (url.pathname.match(/\\.(png|jpg|jpeg|gif|webp|avif|svg|ico)$/)) {
+    if (url.pathname.match(/\.(png|jpg|jpeg|gif|webp|avif|svg|ico)$/)) {
       return await cacheFirstStrategy(request, CACHE_STRATEGIES.images)
     }
     
-    // Default: Network first for pages
-    return await networkFirstStrategy(request, CACHE_STRATEGIES.api)
+    // Default: Direct fetch for pages and dynamic content
+    return await fetch(request)
     
   } catch (error) {
     console.error('[Catalyst SW] Request failed:', error)
     
-    // Return offline fallback if available
+    // Return offline fallback only for document requests
     if (request.destination === 'document') {
       const cache = await caches.open(CACHE_NAME)
       const fallback = await cache.match('/')
       if (fallback) return fallback
     }
     
-    throw error
+    // For other requests, return a proper error response
+    return new Response('Network error', { status: 503 })
   }
 }
 

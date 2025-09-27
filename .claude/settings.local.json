@@ -82,7 +82,11 @@
       "Bash(touch:*)",
       "Bash(cat:*)",
       "Bash(npx kill-port:*)",
-      "Bash(netstat:*)"
+      "Bash(netstat:*)",
+      "WebFetch(domain:astral-field-v2.vercel.app)",
+      "Bash(npx dotenv -e .env -- npx tsx scripts/check-damato-league-setup.ts:*)",
+      "Bash(npx dotenv -e .env -- npx tsx scripts/test-damato-dynasty-login.ts:*)",
+      "Bash(PORT=3002 npm run dev)"
     ],
     "deny": [],
     "ask": []

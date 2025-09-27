@@ -30,11 +30,11 @@ export default auth(async (req) => {
   if (isProduction) {
     securityHeaders['Content-Security-Policy'] = [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.live https://va.vercel-scripts.com https://vitals.vercel-insights.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: https: blob:",
-      "font-src 'self' https://fonts.gstatic.com", // CRITICAL: Only allow authorized font sources
-      "connect-src 'self' https: wss: ws:",
+      "font-src 'self' https://fonts.gstatic.com data:", // CRITICAL: Only allow authorized font sources
+      "connect-src 'self' https: wss: ws: *.neon.tech https://vitals.vercel-insights.com",
       "media-src 'self'",
       "object-src 'none'",
       "child-src 'none'",
@@ -43,7 +43,6 @@ export default auth(async (req) => {
       "form-action 'self'",
       "base-uri 'self'",
       "manifest-src 'self'",
-      "block-all-mixed-content",
       "upgrade-insecure-requests",
       "report-uri /api/security/csp-report"
     ].join('; ')

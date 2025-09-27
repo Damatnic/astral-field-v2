@@ -16,12 +16,16 @@ async function checkLeagueSetup() {
     // Check existing leagues
     const leagues = await prisma.league.findMany({
       include: {
-        users: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            teamName: true
+        teams: {
+          include: {
+            owner: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                teamName: true
+              }
+            }
           }
         }
       }
@@ -33,9 +37,9 @@ async function checkLeagueSetup() {
     } else {
       leagues.forEach(league => {
         console.log(`  🏆 ${league.name} (ID: ${league.id})`)
-        console.log(`     Members: ${league.users.length}`)
-        league.users.forEach(user => {
-          console.log(`     - ${user.name} (${user.email}) - Team: ${user.teamName || 'No team'}`)
+        console.log(`     Teams: ${league.teams.length}`)
+        league.teams.forEach(team => {
+          console.log(`     - ${team.name} - Owner: ${team.owner.name} (${team.owner.email})`)
         })
       })
     }
@@ -47,7 +51,16 @@ async function checkLeagueSetup() {
         name: true,
         email: true,
         teamName: true,
-        leagueId: true
+        teams: {
+          include: {
+            league: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
+          }
+        }
       }
     })
     
@@ -56,7 +69,10 @@ async function checkLeagueSetup() {
       console.log('  ❌ No users found!')
     } else {
       allUsers.forEach(user => {
-        console.log(`  - ${user.name} (${user.email}) - Team: ${user.teamName || 'No team'} - League: ${user.leagueId || 'None'}`)
+        const teamInfo = user.teams.length > 0 
+          ? `${user.teams[0].name} in ${user.teams[0].league.name}` 
+          : 'No team'
+        console.log(`  - ${user.name} (${user.email}) - Team: ${teamInfo}`)
       })
     }
     
@@ -69,7 +85,7 @@ async function checkLeagueSetup() {
     console.log('\n🎯 D\'AMATO DYNASTY LEAGUE STATUS:')
     if (damatoLeague) {
       console.log(`  ✅ Found: ${damatoLeague.name}`)
-      console.log(`  👥 Members: ${damatoLeague.users.length}/10`)
+      console.log(`  👥 Teams: ${damatoLeague.teams.length}/10`)
       
       const expectedMembers = [
         'Nicholas D\'Amato', 'Nick Hartley', 'Jack McCaigue', 'Larry McCaigue',
@@ -77,8 +93,9 @@ async function checkLeagueSetup() {
         'Cason Minor', 'Brittany Bergum'
       ]
       
+      const teamOwners = damatoLeague.teams.map(team => team.owner.name)
       const missingMembers = expectedMembers.filter(expected => 
-        !damatoLeague.users.some(user => user.name === expected)
+        !teamOwners.includes(expected)
       )
       
       if (missingMembers.length > 0) {

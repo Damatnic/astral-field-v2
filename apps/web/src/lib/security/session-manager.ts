@@ -1,7 +1,7 @@
 // Guardian Security: Advanced Session Management System
 // Implements adaptive timeouts, session fingerprinting, and anomaly detection
 
-import crypto from 'crypto'
+import { createHash, randomBytes } from 'crypto'
 
 export interface SessionContext {
   userId: string
@@ -469,7 +469,7 @@ export class GuardianSessionManager {
    * Generate secure session ID
    */
   private generateSessionId(): string {
-    return crypto.randomBytes(32).toString('hex')
+    return randomBytes(32).toString('hex')
   }
 
   /**

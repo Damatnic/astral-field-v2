@@ -8,6 +8,7 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
 // Catalyst Performance: Lightning-fast Next.js configuration  
 const nextConfig = {
   // Atlas: Fixed for Vercel deployment
+  output: 'standalone',
   trailingSlash: false,
   distDir: '.next',
   
@@ -152,7 +153,7 @@ const nextConfig = {
           },
           {
             key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=(), ambient-light-sensor=(), autoplay=(self), fullscreen=(self), picture-in-picture=(), interest-cohort=()',
+            value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=(), ambient-light-sensor=(), autoplay=(self), fullscreen=(self), picture-in-picture=()',
           },
           {
             key: 'X-Download-Options',
@@ -172,7 +173,7 @@ const nextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' vercel.live vercel.com *.vercel.app; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob: https:; connect-src 'self' *.neon.tech wss: https: *.vercel.app; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';",
+            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://vercel.live https://va.vercel-scripts.com *.vercel.app; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' *.neon.tech wss: https: *.vercel.app https://vitals.vercel-insights.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';",
           },
           {
             key: 'Origin-Agent-Cluster',
@@ -203,7 +204,7 @@ const nextConfig = {
         ],
       },
       {
-        source: '/_next/:path*',
+        source: '/_next/static/chunks/:path*',
         headers: [
           {
             key: 'Cache-Control',
