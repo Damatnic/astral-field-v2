@@ -8,7 +8,6 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
 // Catalyst Performance: Lightning-fast Next.js configuration  
 const nextConfig = {
   // Atlas: Fixed for Vercel deployment
-  output: 'standalone',
   trailingSlash: false,
   distDir: '.next',
   
