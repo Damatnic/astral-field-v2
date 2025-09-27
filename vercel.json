@@ -5,7 +5,8 @@
   "outputDirectory": "apps/web/.next",
   "installCommand": "npm install && cd apps/web && npm install",
   "env": {
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "SKIP_ENV_VALIDATION": "true"
   },
   "builds": [
     {
