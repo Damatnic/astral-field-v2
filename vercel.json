@@ -1,9 +1,19 @@
 {
-  "buildCommand": "cd apps/web && npm run build",
-  "devCommand": "cd apps/web && npm run dev",
-  "framework": "nextjs",
-  "outputDirectory": "apps/web/.next",
-  "installCommand": "npm install && cd apps/web && npm install",
+  "builds": [
+    {
+      "src": "apps/web/next.config.js",
+      "use": "@vercel/next",
+      "config": {
+        "rootDirectory": "apps/web"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "apps/web/$1"
+    }
+  ],
   "env": {
     "NODE_ENV": "production",
     "SKIP_ENV_VALIDATION": "true",
@@ -14,11 +24,5 @@
     "POSTGRES_URL": "postgresql://neondb_owner:npg_rkDs2yUYZEQ7@ep-proud-pond-adntwlpd-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require",
     "POSTGRES_PRISMA_URL": "postgresql://neondb_owner:npg_rkDs2yUYZEQ7@ep-proud-pond-adntwlpd-pooler.c-2.us-east-1.aws.neon.tech/neondb?connect_timeout=15&sslmode=require",
     "POSTGRES_URL_NON_POOLING": "postgresql://neondb_owner:npg_rkDs2yUYZEQ7@ep-proud-pond-adntwlpd.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require"
-  },
-  "builds": [
-    {
-      "src": "apps/web/package.json",
-      "use": "@vercel/next"
-    }
-  ]
+  }
 }
