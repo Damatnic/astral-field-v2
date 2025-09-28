@@ -57,14 +57,14 @@ export default async function middleware(req: NextRequest) {
   if (isProduction) {
     securityHeaders['Content-Security-Policy'] = [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.live https://va.vercel-scripts.com https://vitals.vercel-insights.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.live https://va.vercel-scripts.com https://vitals.vercel-insights.com *.vercel.app",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: https: blob:",
       "font-src 'self' https://fonts.gstatic.com data:", // CRITICAL: Only allow authorized font sources
-      "connect-src 'self' https: wss: ws: *.neon.tech https://vitals.vercel-insights.com",
-      "media-src 'self'",
+      "connect-src 'self' https: wss: ws: *.neon.tech https://vitals.vercel-insights.com *.vercel.app",
+      "media-src 'self' data: blob:",
       "object-src 'none'",
-      "child-src 'none'",
+      "child-src 'self'",
       "worker-src 'self' blob:",
       "frame-ancestors 'none'",
       "form-action 'self'",
