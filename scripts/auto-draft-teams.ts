@@ -4,7 +4,7 @@
  */
 
 import * as dotenv from 'dotenv';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Position, RosterSlot, AcquisitionType } from '@prisma/client';
 
 // Load environment variables
 dotenv.config({ path: '.env.local' });

@@ -109,20 +109,20 @@ async function generateWeek3Report() {
     console.log('\n👥 Team Roster Analysis:');
     for (const team of league.teams) {
       const starters = team.roster.filter(rp => 
-        !['BENCH', 'IR'].includes(rp.position)
+        !['BENCH', 'IR'].includes(rp.rosterSlot)
       );
       
       const bench = team.roster.filter(rp => 
-        rp.position === 'BENCH'
+        rp.rosterSlot === 'BENCH'
       );
       
       const ir = team.roster.filter(rp => 
-        rp.position === 'IR'
+        rp.rosterSlot === 'IR'
       );
       
       // Check for bye week issues
       const week3ByeWeeks = team.roster.filter(rp => 
-        rp.player.byeWeek === 3 && !['BENCH', 'IR'].includes(rp.position)
+        rp.player.byeWeek === 3 && !['BENCH', 'IR'].includes(rp.rosterSlot)
       );
       
       const roleIcon = team.owner?.role === 'COMMISSIONER' ? '👑' : '🏈';

@@ -1,28 +1,50 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
+    let body;
+    const contentType = request.headers.get('content-type');
     
-    // Log CSP violations for monitoring
-    console.warn('CSP Violation Report:', {
+    // Handle different content types for CSP reports
+    if (contentType?.includes('application/csp-report')) {
+      body = await request.json();
+    } else if (contentType?.includes('application/json')) {
+      body = await request.json();
+    } else {
+      // Some browsers send CSP reports as text
+      const text = await request.text();
+      try {
+        body = JSON.parse(text);
+      } catch {
+        body = { rawReport: text };
+      }
+    }
+    
+    // Enhanced CSP violation logging
+    console.warn('🚨 CSP Violation Report:', {
       timestamp: new Date().toISOString(),
       userAgent: request.headers.get('user-agent'),
-      url: request.url,
-      violation: body
+      referer: request.headers.get('referer'),
+      contentType,
+      violation: body,
+      // Extract key violation details
+      violatedDirective: body?.['csp-report']?.['violated-directive'] || body?.violatedDirective,
+      blockedUri: body?.['csp-report']?.['blocked-uri'] || body?.blockedUri,
+      sourceFile: body?.['csp-report']?.['source-file'] || body?.sourceFile
     })
     
-    // In production, you might want to send this to a monitoring service
-    // like Sentry, DataDog, or your own logging system
+    // In production, send to monitoring service
     if (process.env.NODE_ENV === 'production') {
-      // Example: Send to monitoring service
+      // TODO: Integrate with monitoring service (Sentry, DataDog, etc.)
       // await sendToMonitoringService(body)
     }
     
-    return NextResponse.json({ status: 'received' }, { status: 200 })
+    return NextResponse.json({ status: 'received', timestamp: new Date().toISOString() }, { status: 200 })
   } catch (error) {
-    console.error('Error processing CSP report:', error)
-    return NextResponse.json({ error: 'Invalid report' }, { status: 400 })
+    console.error('❌ Error processing CSP report:', error)
+    return NextResponse.json({ error: 'Invalid report', details: error instanceof Error ? error.message : String(error) }, { status: 400 })
   }
 }
 

@@ -53,14 +53,14 @@ export default async function middleware(req: NextRequest) {
   
   const securityHeaders = securityHeadersProvider.generateHeaders(isProduction)
   
-  // Add CSP specifically for production to block unauthorized font sources
+  // Add enhanced CSP for production with comprehensive font source support
   if (isProduction) {
     securityHeaders['Content-Security-Policy'] = [
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.live https://va.vercel-scripts.com https://vitals.vercel-insights.com *.vercel.app",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: https: blob:",
-      "font-src 'self' https://fonts.gstatic.com data:", // CRITICAL: Only allow authorized font sources
+      "font-src 'self' https://fonts.gstatic.com https://r2cdn.perplexity.ai https://fonts.googleapis.com data:", // COMPREHENSIVE: Allow all font sources
       "connect-src 'self' https: wss: ws: *.neon.tech https://vitals.vercel-insights.com *.vercel.app",
       "media-src 'self' data: blob:",
       "object-src 'none'",
@@ -71,6 +71,19 @@ export default async function middleware(req: NextRequest) {
       "base-uri 'self'",
       "manifest-src 'self'",
       "upgrade-insecure-requests",
+      "report-uri /api/security/csp-report"
+    ].join('; ')
+  } else {
+    // Development CSP - more permissive for debugging
+    securityHeaders['Content-Security-Policy'] = [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "img-src 'self' data: https: blob:",
+      "font-src 'self' https://fonts.gstatic.com https://r2cdn.perplexity.ai data:",
+      "connect-src 'self' https: wss: ws:",
+      "media-src 'self' data: blob:",
+      "object-src 'none'",
       "report-uri /api/security/csp-report"
     ].join('; ')
   }
