@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import type { Viewport } from 'next'
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
@@ -7,7 +8,10 @@ import { LeagueChat } from '@/components/chat/league-chat'
 
 export const metadata = {
   title: 'Live Scoring - AstralField',
-  description: 'Real-time fantasy football scoring and updates',
+  description: 'Real-time fantasy football scoring and updates'
+}
+
+export const viewport: Viewport = {
   themeColor: '#0f172a'
 }
 

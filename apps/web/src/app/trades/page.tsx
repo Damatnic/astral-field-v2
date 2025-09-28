@@ -1,3 +1,4 @@
+import type { Viewport } from 'next'
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { DashboardLayout } from '@/components/dashboard/layout'
@@ -6,7 +7,10 @@ import { prisma } from '@/lib/prisma'
 
 export const metadata = {
   title: 'Trades - AstralField',
-  description: 'Manage fantasy football trades and proposals',
+  description: 'Manage fantasy football trades and proposals'
+}
+
+export const viewport: Viewport = {
   themeColor: '#0f172a'
 }
 

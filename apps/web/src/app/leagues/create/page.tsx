@@ -1,3 +1,4 @@
+import type { Viewport } from 'next'
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { DashboardLayout } from '@/components/dashboard/layout'
@@ -5,7 +6,10 @@ import { CreateLeagueForm } from '@/components/leagues/create-league-form'
 
 export const metadata = {
   title: 'Create League - AstralField',
-  description: 'Create a new fantasy football league',
+  description: 'Create a new fantasy football league'
+}
+
+export const viewport: Viewport = {
   themeColor: '#0f172a'
 }
 

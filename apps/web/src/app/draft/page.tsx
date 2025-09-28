@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import type { Viewport } from 'next'
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
@@ -6,7 +7,10 @@ import { DraftRoom } from '@/components/draft/draft-room'
 
 export const metadata = {
   title: 'Draft Room - AstralField',
-  description: 'Live fantasy football draft room',
+  description: 'Live fantasy football draft room'
+}
+
+export const viewport: Viewport = {
   themeColor: '#0f172a'
 }
 

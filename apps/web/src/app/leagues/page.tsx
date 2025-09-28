@@ -1,3 +1,4 @@
+import type { Viewport } from 'next'
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { DashboardLayout } from '@/components/dashboard/layout'
@@ -6,7 +7,10 @@ import { LeaguesBrowser } from '@/components/leagues/leagues-browser'
 
 export const metadata = {
   title: 'Leagues - AstralField',
-  description: 'Join or create fantasy football leagues',
+  description: 'Join or create fantasy football leagues'
+}
+
+export const viewport: Viewport = {
   themeColor: '#0f172a'
 }
 
