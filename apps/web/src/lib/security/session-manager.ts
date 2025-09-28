@@ -297,7 +297,8 @@ export class GuardianSessionManager {
       anomalies, 
       isDeviceKnown, 
       isLocationKnown,
-      requiresMFA: false
+      requiresMFA: false,
+      recommendedTimeout: this.config.baseTimeout
     })
 
     return {

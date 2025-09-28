@@ -9,7 +9,7 @@ import {
   ArrowsRightLeftIcon,
   BellIcon,
   UserIcon
-} from '@heroicons/react/24/outline'
+} from '@heroicons/react/outline'
 
 interface LeagueChatProps {
   leagueId: string

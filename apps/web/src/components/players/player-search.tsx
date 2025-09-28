@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { MagnifyingGlassIcon } from '@heroicons/react/24/outline'
+import { MagnifyingGlassIcon } from '@heroicons/react/outline'
 import { Button } from '@/components/ui/button'
 
 const positions = ['ALL', 'QB', 'RB', 'WR', 'TE', 'K', 'DEF']

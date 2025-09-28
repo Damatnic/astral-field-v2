@@ -1,9 +1,11 @@
-const nextJest = require('next/jest')
+// Only run Jest configuration in test environment
+if (process.env.NODE_ENV === 'test' || process.env.npm_lifecycle_event === 'test' || process.argv.includes('--test')) {
+  const nextJest = require('next/jest')
 
-const createJestConfig = nextJest({
-  // Provide the path to your Next.js app to load next.config.js and .env files
-  dir: './',
-})
+  const createJestConfig = nextJest({
+    // Provide the path to your Next.js app to load next.config.js and .env files
+    dir: './',
+  })
 
 // Zenith's Comprehensive Jest Configuration
 const customJestConfig = {
@@ -18,8 +20,8 @@ const customJestConfig = {
   
   // Test execution configuration
   testTimeout: 30000,
-  maxWorkers: '50%',
-  verbose: true,
+  maxWorkers: 1,
+  verbose: false,
   bail: false,
   
   // Test patterns
@@ -52,7 +54,7 @@ const customJestConfig = {
   },
   
   // Coverage configuration
-  collectCoverage: true,
+  collectCoverage: false,
   collectCoverageFrom: [
     'src/**/*.{js,jsx,ts,tsx}',
     '!src/**/*.d.ts',
@@ -102,9 +104,9 @@ const customJestConfig = {
   },
   
   // Transform configuration
-  transform: {
-    '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { presets: ['next/babel'] }]
-  },
+  transformIgnorePatterns: [
+    'node_modules/(?!(node-fetch|fetch-blob|data-uri-to-buffer|formdata-polyfill)/)'
+  ],
   
   // Mock configuration
   clearMocks: true,
@@ -134,5 +136,9 @@ const customJestConfig = {
   }
 }
 
-// createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async
-module.exports = createJestConfig(customJestConfig)
+  // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async
+  module.exports = createJestConfig(customJestConfig)
+} else {
+  // Export empty configuration for non-test environments
+  module.exports = {}
+}

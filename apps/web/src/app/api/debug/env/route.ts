@@ -1,16 +1,30 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, NextRequest } from 'next/server'
+import { auth } from '@/lib/auth'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    // Guardian Security: Only allow in development or for authenticated admin users
+    if (process.env.NODE_ENV === 'production') {
+      const session = await auth()
+      
+      if (!session?.user || session.user.role !== 'ADMIN') {
+        return NextResponse.json(
+          { error: 'Forbidden', message: 'Environment debug disabled in production' },
+          { status: 403 }
+        )
+      }
+    }
+    
     console.log('🔍 Environment Variable Debug Check')
     
+    // Guardian Security: Only expose safe environment information
     const envVars = {
       NODE_ENV: process.env.NODE_ENV,
       NEXTAUTH_URL: process.env.NEXTAUTH_URL,
       NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET ? 'SET' : 'NOT SET',
-      DATABASE_URL: process.env.DATABASE_URL ? 'SET' : 'NOT SET',
-      GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID ? 'SET' : 'NOT SET',
-      GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET ? 'SET' : 'NOT SET',
+      DATABASE_URL: process.env.DATABASE_URL ? 'SET (PostgreSQL)' : 'NOT SET',
+      DEMO_MODE: process.env.DEMO_MODE || 'false',
+      // Remove sensitive credential exposure
     }
     
     console.log('Environment variables:', envVars)
@@ -27,8 +41,13 @@ export async function GET() {
       status,
       environment: envVars,
       missing,
+      security: {
+        environment: process.env.NODE_ENV,
+        protection: 'enabled',
+        note: 'Sensitive credentials are masked for security'
+      },
       recommendation: missing.length > 0 
-        ? 'Configure missing environment variables in Vercel dashboard'
+        ? 'Configure missing environment variables in deployment settings'
         : 'Environment appears correctly configured'
     })
     
@@ -36,7 +55,7 @@ export async function GET() {
     console.error('Environment check failed:', error)
     return NextResponse.json({ 
       error: 'Environment check failed', 
-      details: error.message 
+      details: process.env.NODE_ENV === 'development' ? error.message : 'Internal error'
     }, { status: 500 })
   }
 }

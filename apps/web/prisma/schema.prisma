@@ -1,8 +1,10 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// Phoenix: Elite Backend Database Schema
+// Optimized for performance, scalability, and reliability
 
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["fullTextSearch", "postgresqlExtensions", "relationJoins"]
+  binaryTargets = ["native", "rhel-openssl-1.0.x"]
 }
 
 datasource db {
@@ -28,9 +30,12 @@ model User {
   lastLoginAt    DateTime?
 
   // Relations
-  teams          Team[]
-  preferences    UserPreferences?
-  chatMessages   ChatMessage[]
+  teams               Team[]
+  preferences         UserPreferences?
+  chatMessages        ChatMessage[]
+  commissionedLeagues LeagueSettings[]
+  notifications       Notification[]
+  auditLogs           AuditLog[]
 
   @@map("users")
 }
@@ -60,8 +65,13 @@ model League {
   updatedAt   DateTime @updatedAt
 
   // Relations
-  teams    Team[]
-  matchups Matchup[]
+  teams           Team[]
+  matchups        Matchup[]
+  draft           Draft?
+  settings        LeagueSettings?
+  waiverSettings  WaiverSettings?
+  auditLogs       AuditLog[]
+  waiverRecommendations WaiverWireRecommendations[]
 
   @@map("leagues")
 }
@@ -86,8 +96,22 @@ model Team {
   awayMatchups      Matchup[]        @relation("AwayTeam")
   proposedTrades    TradeProposal[]  @relation("ProposingTeam")
   receivedTrades    TradeProposal[]  @relation("ReceivingTeam")
+  draftPicks        DraftPick[]
+  draftOrder        DraftOrder[]
+  waiverClaims      WaiverClaim[]
+  waiverPriority    TeamWaiverPriority[]
+  matchupScores     MatchupLiveScore[]
+  lineupOptimizations LineupOptimization[]
+  proposedTradeAnalyses TradeAnalysis[] @relation("TradeAnalysisProposing")
+  receivedTradeAnalyses TradeAnalysis[] @relation("TradeAnalysisReceiving")
+  homeMatchupAnalyses MatchupAnalysis[] @relation("MatchupAnalysisHome")
+  awayMatchupAnalyses MatchupAnalysis[] @relation("MatchupAnalysisAway")
 
   @@unique([ownerId, leagueId])
+  @@index([leagueId]) // Catalyst: Fast league team lookups
+  @@index([ownerId]) // Catalyst: User team queries
+  @@index([leagueId, wins, losses]) // Phoenix: Optimized standings queries
+  @@index([wins, losses, ties]) // Phoenix: Win percentage calculations
   @@map("teams")
 }
 
@@ -103,11 +127,26 @@ model Player {
   updatedAt          DateTime  @updatedAt
 
   // Relations
-  roster       RosterPlayer[]
-  stats        PlayerStats[]
-  projections  PlayerProjection[]
-  news         PlayerNews[]
+  roster          RosterPlayer[]
+  stats           PlayerStats[]
+  projections     PlayerProjection[]
+  news            PlayerNews[]
+  draftPicks      DraftPick[]
+  waiverClaims    WaiverClaim[] @relation("WaiverClaims")
+  droppedFromWaivers WaiverClaim[] @relation("DroppedFromWaivers")
+  liveUpdates     LivePlayerUpdate[]
+  injuryReports   PlayerInjuryReport[]
+  aiInsights   AIPlayerInsights[]
+  waiverRecommendations WaiverWireRecommendations[]
+  seasonProjections SeasonProjections[]
 
+  // Phoenix: Performance-optimized indexes
+  @@index([position, isFantasyRelevant]) // Fast position filtering
+  @@index([nflTeam, position]) // Team roster lookups
+  @@index([name]) // Player search by name
+  @@index([rank, position]) // Position rankings
+  @@index([adp, position]) // ADP rankings by position
+  @@index([isFantasyRelevant, position, rank]) // Composite ranking index
   @@map("players")
 }
 
@@ -123,6 +162,12 @@ model PlayerStats {
   player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
 
   @@unique([playerId, week, season])
+  @@index([week, season]) // Catalyst: Index for week-based queries
+  @@index([fantasyPoints]) // Catalyst: Index for sorting by points
+  @@index([playerId, week]) // Catalyst: Composite index for player history
+  @@index([season, week, fantasyPoints]) // Phoenix: Leaderboard queries
+  @@index([playerId, season]) // Phoenix: Season totals
+  @@index([week, season, fantasyPoints]) // Phoenix: Weekly top performers
   @@map("player_stats")
 }
 
@@ -137,6 +182,11 @@ model PlayerProjection {
   // Relations
   player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
 
+  // Phoenix: Projection query optimization
+  @@index([playerId, week, season]) // Player weekly projections
+  @@index([week, season, projectedPoints]) // Weekly projection rankings
+  @@index([season, week]) // Season week lookups
+  @@index([playerId, season]) // Player season projections
   @@map("player_projections")
 }
 
@@ -167,6 +217,10 @@ model RosterPlayer {
   player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
 
   @@unique([teamId, playerId])
+  @@index([teamId, isStarter]) // Phoenix: Lineup optimization queries
+  @@index([teamId, position]) // Phoenix: Position-based roster queries
+  @@index([playerId]) // Phoenix: Player roster lookups
+  @@index([isStarter, position]) // Phoenix: Starting lineup by position
   @@map("roster_players")
 }
 
@@ -184,12 +238,16 @@ model Matchup {
   updatedAt DateTime @updatedAt
 
   // Relations
-  league   League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
-  homeTeam Team   @relation("HomeTeam", fields: [homeTeamId], references: [id], onDelete: Cascade)
-  awayTeam Team   @relation("AwayTeam", fields: [awayTeamId], references: [id], onDelete: Cascade)
-  leagueId String
+  league     League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  homeTeam   Team   @relation("HomeTeam", fields: [homeTeamId], references: [id], onDelete: Cascade)
+  awayTeam   Team   @relation("AwayTeam", fields: [awayTeamId], references: [id], onDelete: Cascade)
+  liveScores MatchupLiveScore[]
+  leagueId   String
 
   @@unique([week, season, homeTeamId, awayTeamId])
+  @@index([week, season, leagueId]) // Catalyst: Optimized league matchup queries
+  @@index([isComplete, week]) // Catalyst: Index for completed matchups
+  @@index([leagueId, week]) // Catalyst: League standings queries
   @@map("matchups")
 }
 
@@ -214,13 +272,512 @@ model TradeProposal {
   givingPlayerIds       String // JSON array stored as string
   receivingPlayerIds    String // JSON array stored as string
   message               String?
-  status                String @default("PENDING") // PENDING, ACCEPTED, REJECTED, EXPIRED
+  status                String @default("PENDING") // PENDING, ACCEPTED, REJECTED, EXPIRED, COUNTER_OFFERED
+  reviewedAt            DateTime?
+  reviewedBy            String?
+  commissionerNotes     String?
+  expiresAt             DateTime?
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
   // Relations
   proposingTeam Team @relation("ProposingTeam", fields: [proposingTeamId], references: [id], onDelete: Cascade)
   receivingTeam Team @relation("ReceivingTeam", fields: [receivingTeamId], references: [id], onDelete: Cascade)
+  tradeHistory  TradeHistory[]
 
   @@map("trade_proposals")
+}
+
+model TradeHistory {
+  id          String   @id @default(cuid())
+  tradeId     String
+  action      String   // PROPOSED, ACCEPTED, REJECTED, EXPIRED, VETOED
+  userId      String
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  // Relations
+  trade TradeProposal @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+
+  @@map("trade_history")
+}
+
+model Draft {
+  id               String    @id @default(cuid())
+  leagueId         String    @unique
+  status           String    @default("SCHEDULED") // SCHEDULED, IN_PROGRESS, COMPLETED, PAUSED
+  type             String    @default("SNAKE") // SNAKE, LINEAR, AUCTION
+  startTime        DateTime?
+  endTime          DateTime?
+  currentRound     Int       @default(1)
+  currentPick      Int       @default(1)
+  currentTeamId    String?
+  timePerPick      Int       @default(60) // seconds
+  pickStartTime    DateTime?
+  autoPickEnabled  Boolean   @default(true)
+  settings         String?   // JSON for draft settings
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  // Relations
+  league     League      @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  picks      DraftPick[]
+  order      DraftOrder[]
+
+  @@map("drafts")
+}
+
+model DraftPick {
+  id          String   @id @default(cuid())
+  draftId     String
+  teamId      String
+  playerId    String
+  round       Int
+  pick        Int
+  pickTime    DateTime @default(now())
+  isAutoPick  Boolean  @default(false)
+  pickValue   Float?   // For auction drafts
+
+  // Relations
+  draft  Draft  @relation(fields: [draftId], references: [id], onDelete: Cascade)
+  team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([draftId, round, pick])
+  @@map("draft_picks")
+}
+
+model DraftOrder {
+  id       String @id @default(cuid())
+  draftId  String
+  teamId   String
+  position Int
+  round    Int
+
+  // Relations
+  draft Draft @relation(fields: [draftId], references: [id], onDelete: Cascade)
+  team  Team  @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([draftId, teamId, round])
+  @@map("draft_order")
+}
+
+model WaiverClaim {
+  id               String   @id @default(cuid())
+  teamId           String
+  playerId         String
+  droppedPlayerId  String?
+  priority         Int
+  week             Int
+  season           Int      @default(2025)
+  status           String   @default("PENDING") // PENDING, PROCESSED, FAILED
+  processedAt      DateTime?
+  failureReason    String?
+  amount           Float?   // FAAB amount
+  createdAt        DateTime @default(now())
+
+  // Relations
+  team          Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  player        Player @relation("WaiverClaims", fields: [playerId], references: [id], onDelete: Cascade)
+  droppedPlayer Player? @relation("DroppedFromWaivers", fields: [droppedPlayerId], references: [id], onDelete: SetNull)
+
+  @@map("waiver_claims")
+}
+
+model WaiverSettings {
+  id                String @id @default(cuid())
+  leagueId          String @unique
+  type              String @default("ROLLING") // ROLLING, REVERSE_STANDINGS, FAAB
+  processDay        String @default("WEDNESDAY") // Day of week
+  processTime       String @default("03:00") // 24h format
+  claimPeriodHours  Int    @default(48)
+  freeAgentBudget   Float  @default(1000) // FAAB budget
+  minimumBid        Float  @default(1)
+  
+  // Relations
+  league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+
+  @@map("waiver_settings")
+}
+
+model TeamWaiverPriority {
+  id       String @id @default(cuid())
+  teamId   String
+  week     Int
+  season   Int    @default(2025)
+  priority Int
+  budget   Float  @default(1000) // Remaining FAAB budget
+
+  // Relations
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, week, season])
+  @@map("team_waiver_priority")
+}
+
+model LeagueSettings {
+  id                    String  @id @default(cuid())
+  leagueId              String  @unique
+  commissionerId        String
+  rosterPositions       String  // JSON: QB, RB, WR, TE, FLEX, K, DEF, BENCH counts
+  scoringSettings       String  // JSON: scoring rules
+  playoffSettings       String  // JSON: playoff format
+  tradeSettings         String  // JSON: trade rules and deadlines
+  waiverSettings        String  // JSON: waiver rules
+  draftSettings         String  // JSON: draft configuration
+  seasonSettings        String  // JSON: season dates and rules
+  ruleModifications     String? // JSON: custom rules
+  isLocked              Boolean @default(false)
+  
+  // Relations
+  league       League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  commissioner User   @relation(fields: [commissionerId], references: [id], onDelete: Cascade)
+
+  @@map("league_settings")
+}
+
+model LiveGame {
+  id           String   @id @default(cuid())
+  nflGameId    String   @unique
+  homeTeam     String
+  awayTeam     String
+  week         Int
+  season       Int      @default(2025)
+  gameTime     DateTime
+  status       String   @default("SCHEDULED") // SCHEDULED, IN_PROGRESS, COMPLETED, POSTPONED
+  quarter      Int?
+  timeRemaining String?
+  homeScore    Int      @default(0)
+  awayScore    Int      @default(0)
+  lastUpdated  DateTime @default(now())
+
+  // Relations
+  playerUpdates LivePlayerUpdate[]
+
+  // Phoenix: Live game optimization indexes
+  @@index([week, season, status]) // Active games lookup
+  @@index([gameTime, status]) // Game schedule queries
+  @@index([nflGameId]) // Already unique but helpful for joins
+  @@index([week, season, gameTime]) // Weekly schedule sorting
+  @@map("live_games")
+}
+
+model LivePlayerUpdate {
+  id            String   @id @default(cuid())
+  gameId        String
+  playerId      String
+  statType      String   // PASSING_TD, RUSHING_YDS, etc.
+  statValue     Float
+  timestamp     DateTime @default(now())
+  quarter       Int?
+  timeInQuarter String?
+
+  // Relations
+  game   LiveGame @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  player Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  // Phoenix: Live update optimization indexes
+  @@index([playerId, timestamp]) // Player recent updates
+  @@index([gameId, timestamp]) // Game updates timeline
+  @@index([timestamp]) // Chronological sorting
+  @@index([playerId, statType]) // Player stat aggregation
+  @@index([gameId, quarter]) // Quarter-based updates
+  @@map("live_player_updates")
+}
+
+model MatchupLiveScore {
+  id            String   @id @default(cuid())
+  matchupId     String
+  teamId        String
+  currentScore  Float    @default(0)
+  projectedScore Float   @default(0)
+  activePlayerCount Int  @default(0)
+  lastUpdated   DateTime @default(now())
+
+  // Relations
+  matchup Matchup @relation(fields: [matchupId], references: [id], onDelete: Cascade)
+  team    Team    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([matchupId, teamId])
+  @@map("matchup_live_scores")
+}
+
+model PlayerInjuryReport {
+  id          String   @id @default(cuid())
+  playerId    String
+  status      String   // HEALTHY, QUESTIONABLE, DOUBTFUL, OUT, IR
+  injury      String?
+  description String?
+  week        Int
+  season      Int      @default(2025)
+  updatedAt   DateTime @default(now())
+
+  // Relations
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, week, season])
+  @@map("player_injury_reports")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // TRADE, WAIVER, DRAFT, SCORE_UPDATE, NEWS
+  title     String
+  message   String
+  data      String?  // JSON data for the notification
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  leagueId    String?
+  userId      String?
+  action      String   // TRADE_ACCEPTED, PLAYER_DROPPED, WAIVER_PROCESSED, etc.
+  description String
+  metadata    String?  // JSON metadata
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  // Relations
+  league League? @relation(fields: [leagueId], references: [id], onDelete: SetNull)
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("audit_logs")
+}
+
+// Enhanced AI Analytics Models
+model WeeklyGameData {
+  id             String  @id @default(cuid())
+  week           Int
+  season         Int     @default(2025)
+  nflTeam        String  // Team abbreviation
+  opponent       String  // Opponent abbreviation
+  homeAway       String  // HOME or AWAY
+  gameScript     Float?  // Game script factor (-1 to 1)
+  weather        String? // Weather conditions
+  temperature    Int?    // Temperature in Fahrenheit
+  windSpeed      Int?    // Wind speed in MPH
+  vegas_total    Float?  // Vegas over/under
+  vegas_spread   Float?  // Vegas point spread
+  createdAt      DateTime @default(now())
+
+  @@unique([week, season, nflTeam])
+  @@map("weekly_game_data")
+}
+
+model AIPlayerInsights {
+  id                   String   @id @default(cuid())
+  playerId             String
+  week                 Int
+  season               Int      @default(2025)
+  
+  // AI Predictions
+  projectedPoints      Float
+  projectionConfidence Float    @default(0.5)
+  floorProjection      Float
+  ceilingProjection    Float
+  
+  // Risk Assessments
+  injuryRisk          Float    @default(0.0)
+  bustvRisk           Float    @default(0.0)
+  breakoutPotential   Float    @default(0.0)
+  
+  // Advanced Metrics
+  targetShare         Float?
+  snapShareProjected  Float?
+  redZoneOpportunity  Float?
+  gameScript          Float?
+  
+  // Recommendations
+  startSitRecommendation String? // START, SIT, FLEX
+  confidenceLevel       String? // HIGH, MEDIUM, LOW
+  reasoning            String?  // Text explanation
+  
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // Relations
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, week, season])
+  @@map("ai_player_insights")
+}
+
+model LineupOptimization {
+  id           String   @id @default(cuid())
+  teamId       String
+  week         Int
+  season       Int      @default(2025)
+  
+  // Lineup Strategy
+  strategy     String   // SAFE, BALANCED, AGGRESSIVE
+  reasoning    String?  // Strategy explanation
+  
+  // Optimized Lineup (JSON)
+  lineup       String   // JSON: {QB: playerId, RB1: playerId, etc.}
+  benchPlayers String   // JSON: [playerId, playerId, ...]
+  
+  // Projections
+  projectedScore Float
+  floorScore     Float
+  ceilingScore   Float
+  winProbability Float
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, week, season])
+  @@map("lineup_optimizations")
+}
+
+model WaiverWireRecommendations {
+  id             String   @id @default(cuid())
+  leagueId       String
+  playerId       String
+  week           Int
+  season         Int      @default(2025)
+  
+  // Recommendation Details
+  priority       Int      // 1-10 priority ranking
+  recommendationType String // MUST_ADD, STRONG_ADD, SPECULATIVE, HANDCUFF
+  reasoning      String
+  
+  // Value Analysis
+  projectedValue Float    // Expected value add
+  rosterPercentage Float? // % rostered across leagues
+  addDropConfidence Float @default(0.5)
+  
+  // Risk Assessment
+  riskLevel      String   // LOW, MEDIUM, HIGH
+  upside         String   // LIMITED, MODERATE, HIGH
+  
+  createdAt      DateTime @default(now())
+
+  // Relations
+  league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([leagueId, playerId, week, season])
+  @@map("waiver_wire_recommendations")
+}
+
+model TradeAnalysis {
+  id                String   @id @default(cuid())
+  proposingTeamId   String
+  receivingTeamId   String
+  week              Int
+  season            Int      @default(2025)
+  
+  // Trade Details (JSON)
+  tradeDetails      String   // JSON: {giving: [playerId, ...], receiving: [playerId, ...]}
+  
+  // AI Analysis
+  fairnessScore     Float    // -1 to 1 (negative favors proposing team)
+  winWinProbability Float    // 0 to 1
+  
+  // Team Impact Analysis
+  proposingTeamImpact String // JSON: {scoreChange: number, strengthAreas: [], weakenAreas: []}
+  receivingTeamImpact String // JSON: {scoreChange: number, strengthAreas: [], weakenAreas: []}
+  
+  // Recommendations
+  recommendation    String   // ACCEPT, REJECT, COUNTER, NEEDS_SWEETENER
+  reasoning         String
+  counterSuggestion String?  // JSON suggestion for counter-offer
+  
+  confidenceLevel   Float    @default(0.5)
+  
+  createdAt         DateTime @default(now())
+
+  // Relations
+  proposingTeam Team @relation("TradeAnalysisProposing", fields: [proposingTeamId], references: [id], onDelete: Cascade)
+  receivingTeam Team @relation("TradeAnalysisReceiving", fields: [receivingTeamId], references: [id], onDelete: Cascade)
+
+  @@map("trade_analyses")
+}
+
+model MatchupAnalysis {
+  id              String   @id @default(cuid())
+  week            Int
+  season          Int      @default(2025)
+  homeTeamId      String
+  awayTeamId      String
+  
+  // Matchup Predictions
+  projectedHomeScore Float
+  projectedAwayScore Float
+  winProbability     Float    // Home team win probability
+  
+  // Detailed Analysis
+  keyMatchups        String   // JSON: [{position: string, analysis: string}, ...]
+  weatherImpact      String?  // Analysis of weather impact
+  injuryImpact       String?  // Analysis of injury impact
+  
+  // Strategy Recommendations
+  homeTeamStrategy   String   // JSON: {approach: string, keyPlayers: [], reasoning: string}
+  awayTeamStrategy   String   // JSON: {approach: string, keyPlayers: [], reasoning: string}
+  
+  // Confidence and Notes
+  analysisConfidence Float    @default(0.5)
+  notes             String?
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  homeTeam Team @relation("MatchupAnalysisHome", fields: [homeTeamId], references: [id], onDelete: Cascade)
+  awayTeam Team @relation("MatchupAnalysisAway", fields: [awayTeamId], references: [id], onDelete: Cascade)
+
+  @@unique([week, season, homeTeamId, awayTeamId])
+  @@map("matchup_analyses")
+}
+
+model SeasonProjections {
+  id              String   @id @default(cuid())
+  playerId        String
+  season          Int      @default(2025)
+  
+  // Season Totals
+  projectedGames  Int
+  projectedPoints Float
+  
+  // Positional Rankings
+  preseasonRank   Int?
+  currentRank     Int?
+  projectedRank   Int?
+  
+  // Trend Analysis
+  trendDirection  String   // RISING, STABLE, DECLINING
+  trendStrength   Float    // 0 to 1
+  
+  // Breakout/Regression Analysis
+  breakoutOdds    Float    @default(0.5)
+  regressionRisk  Float    @default(0.5)
+  
+  // Injury Risk
+  injuryRisk      Float    @default(0.0)
+  durabilityScore Float    @default(0.5)
+  
+  // Value Analysis
+  adpVsProjection Float?   // Difference from ADP
+  valueGrade      String?  // A+ to F
+  
+  lastUpdated     DateTime @updatedAt
+  createdAt       DateTime @default(now())
+
+  // Relations
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, season])
+  @@map("season_projections")
 }

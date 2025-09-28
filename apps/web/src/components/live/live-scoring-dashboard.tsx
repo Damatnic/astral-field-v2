@@ -9,7 +9,7 @@ import {
   ClockIcon,
   TrophyIcon,
   ChartBarIcon
-} from '@heroicons/react/24/outline'
+} from '@heroicons/react/outline'
 
 interface LiveScoringDashboardProps {
   leagueId: string

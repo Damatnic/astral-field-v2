@@ -1,7 +1,7 @@
 'use client'
 
 import { Suspense, useState, useEffect, useCallback, useMemo, useTransition, useRef } from 'react'
-import { signIn, getSession } from 'next-auth/react'
+import { signIn, getSession, getCsrfToken } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
@@ -88,12 +88,15 @@ function SignInForm() {
       try {
         const startTime = Date.now()
         
-        // Catalyst Performance: Parallel operations for better performance
+        // Catalyst Performance: Get CSRF token and perform authentication
+        const csrfToken = await getCsrfToken()
+        
         const [authResult] = await Promise.all([
           signIn('credentials', {
             email: email.toLowerCase().trim(),
             password,
             redirect: false,
+            csrfToken,
           }),
           // Preload next page while authenticating
           router.prefetch(memoizedCallbackUrl),
@@ -229,11 +232,14 @@ function SignInForm() {
         setPassword('••••••••••••')
         
         // Perform authentication
+        const csrfToken = await getCsrfToken()
+        
         const [authResult] = await Promise.all([
           signIn('credentials', {
             email: credentials.email,
             password: credentials.password,
             redirect: false,
+            csrfToken,
           }),
           router.prefetch(memoizedCallbackUrl),
         ])

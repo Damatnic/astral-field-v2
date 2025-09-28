@@ -3,6 +3,7 @@
  * Comprehensive testing for lineup management functionality
  */
 
+import React from 'react'
 import { describe, it, expect, jest, beforeEach } from '@jest/globals'
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -20,16 +21,16 @@ const mockDragAndDrop = {
 jest.mock('@hello-pangea/dnd', () => ({
   DragDropContext: ({ children, onDragEnd }: any) => {
     mockDragAndDrop.onDragEnd = onDragEnd
-    return <div data-testid=\"drag-drop-context\">{children}</div>
+    return React.createElement('div', { 'data-testid': 'drag-drop-context' }, children)
   },
   Droppable: ({ children, droppableId }: any) => 
-    <div data-testid={`droppable-${droppableId}`}>
-      {children({ innerRef: jest.fn(), droppableProps: {}, placeholder: null }, {})}
-    </div>,
+    React.createElement('div', { 'data-testid': `droppable-${droppableId}` },
+      children({ innerRef: jest.fn(), droppableProps: {}, placeholder: null }, {})
+    ),
   Draggable: ({ children, draggableId, index }: any) =>
-    <div data-testid={`draggable-${draggableId}`}>
-      {children({ innerRef: jest.fn(), draggableProps: {}, dragHandleProps: {} }, {})}
-    </div>,
+    React.createElement('div', { 'data-testid': `draggable-${draggableId}` },
+      children({ innerRef: jest.fn(), draggableProps: {}, dragHandleProps: {} }, {})
+    ),
 }))
 
 // Mock API calls

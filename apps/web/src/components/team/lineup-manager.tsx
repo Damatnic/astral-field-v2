@@ -8,7 +8,7 @@ import {
   ArrowDownIcon, 
   ChartBarIcon,
   ExclamationTriangleIcon
-} from '@heroicons/react/24/outline'
+} from '@heroicons/react/outline'
 
 interface Player {
   id: string

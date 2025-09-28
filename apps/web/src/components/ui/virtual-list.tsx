@@ -431,5 +431,127 @@ Object.defineProperty(VirtualGrid, 'displayName', {
   writable: false
 })
 
-export { VirtualList, VirtualGrid }
+// Catalyst: Specialized virtual list for league data
+const CatalystVirtualList = memo(function CatalystVirtualList<T>({
+  items,
+  height,
+  itemHeight = 80,
+  renderItem,
+  className,
+  searchTerm = '',
+  sortKey = '',
+  sortDirection = 'asc',
+  groupBy,
+  ...props
+}: VirtualListProps<T> & {
+  searchTerm?: string
+  sortKey?: string
+  sortDirection?: 'asc' | 'desc'
+  groupBy?: (item: T) => string
+}) {
+  // Catalyst: Advanced filtering and sorting
+  const processedItems = useMemo(() => {
+    let filtered = items
+
+    // Apply search filter
+    if (searchTerm) {
+      const lowercaseSearch = searchTerm.toLowerCase()
+      filtered = items.filter(item => {
+        // Generic search that works with any object
+        const searchableText = JSON.stringify(item).toLowerCase()
+        return searchableText.includes(lowercaseSearch)
+      })
+    }
+
+    // Apply sorting
+    if (sortKey) {
+      filtered = [...filtered].sort((a, b) => {
+        const aValue = getNestedValue(a, sortKey)
+        const bValue = getNestedValue(b, sortKey)
+        
+        if (typeof aValue === 'number' && typeof bValue === 'number') {
+          return sortDirection === 'asc' ? aValue - bValue : bValue - aValue
+        }
+        
+        const aStr = String(aValue).toLowerCase()
+        const bStr = String(bValue).toLowerCase()
+        
+        if (sortDirection === 'asc') {
+          return aStr.localeCompare(bStr)
+        } else {
+          return bStr.localeCompare(aStr)
+        }
+      })
+    }
+
+    // Apply grouping
+    if (groupBy) {
+      const grouped = filtered.reduce((acc, item) => {
+        const group = groupBy(item)
+        if (!acc[group]) acc[group] = []
+        acc[group].push(item)
+        return acc
+      }, {} as Record<string, T[]>)
+
+      // Flatten with group headers
+      const result: (T | { isGroupHeader: true; groupName: string })[] = []
+      Object.entries(grouped).forEach(([groupName, groupItems]) => {
+        result.push({ isGroupHeader: true, groupName } as any)
+        result.push(...groupItems)
+      })
+      
+      return result
+    }
+
+    return filtered
+  }, [items, searchTerm, sortKey, sortDirection, groupBy])
+
+  // Catalyst: Custom item renderer with group header support
+  const enhancedRenderItem = useCallback((itemProps: { 
+    item: T | { isGroupHeader: true; groupName: string }
+    index: number
+    style: React.CSSProperties 
+  }) => {
+    const { item, index, style } = itemProps
+    
+    // Render group header
+    if ('isGroupHeader' in item && item.isGroupHeader) {
+      return (
+        <div style={style} className="bg-slate-700 px-4 py-2 font-semibold text-slate-300">
+          {item.groupName}
+        </div>
+      )
+    }
+
+    return renderItem({ item: item as T, index, style })
+  }, [renderItem])
+
+  // Helper function to get nested object values
+  function getNestedValue(obj: any, path: string): any {
+    return path.split('.').reduce((current, key) => current?.[key], obj)
+  }
+
+  return (
+    <VirtualList
+      items={processedItems}
+      height={height}
+      itemHeight={itemHeight}
+      renderItem={enhancedRenderItem}
+      className={className}
+      {...props}
+    />
+  )
+}) as <T>(props: VirtualListProps<T> & {
+  searchTerm?: string
+  sortKey?: string
+  sortDirection?: 'asc' | 'desc'
+  groupBy?: (item: T) => string
+}) => JSX.Element
+
+Object.defineProperty(CatalystVirtualList, 'displayName', {
+  value: 'CatalystVirtualList',
+  writable: false
+})
+
+export { VirtualList, VirtualGrid, CatalystVirtualList }
 export type { VirtualListProps, VirtualGridProps }

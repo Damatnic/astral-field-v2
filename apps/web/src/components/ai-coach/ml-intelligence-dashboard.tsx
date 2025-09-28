@@ -17,7 +17,7 @@ import {
   CpuChipIcon,
   ClockIcon,
   ChartPieIcon
-} from '@heroicons/react/24/outline'
+} from '@heroicons/react/outline'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 

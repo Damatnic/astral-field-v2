@@ -8,6 +8,8 @@ interface CacheOptions {
   revalidate?: boolean // Enable stale-while-revalidate
   tags?: string[] // Cache tags for selective invalidation
   priority?: 'low' | 'normal' | 'high' // Cache priority
+  compress?: boolean // Enable compression for large data
+  namespace?: string // Cache namespace for organization
 }
 
 interface CacheMetrics {
@@ -20,7 +22,14 @@ interface CacheMetrics {
 }
 
 class CatalystCache {
-  private l1Cache = new Map<string, { data: any; expiry: number; tags: string[] }>()
+  private l1Cache = new Map<string, { 
+    data: any; 
+    expiry: number; 
+    tags: string[];
+    compressed: boolean;
+    size: number;
+    lastAccessed: number;
+  }>()
   private metrics: CacheMetrics = {
     l1Hits: 0,
     l2Hits: 0,
@@ -30,13 +39,16 @@ class CatalystCache {
     avgResponseTime: 0
   }
   private responseTimes: number[] = []
+  private compressionThreshold = 10000 // Compress data larger than 10KB
 
   constructor(
-    private maxL1Size = 1000,
+    private maxL1Size = 2000, // Increased for league data
     private defaultTTL = 300 // 5 minutes
   ) {
     // Set up periodic cleanup for L1 cache
-    setInterval(() => this.cleanupL1Cache(), 60000) // Every minute
+    setInterval(() => this.cleanupL1Cache(), 30000) // Every 30 seconds for more aggressive cleanup
+    // Set up memory pressure monitoring
+    setInterval(() => this.monitorMemoryPressure(), 60000) // Every minute
   }
 
   /**
@@ -162,27 +174,62 @@ class CatalystCache {
     const entry = this.l1Cache.get(key)
     if (!entry) return null
 
-    if (Date.now() > entry.expiry) {
+    const now = Date.now()
+    if (now > entry.expiry) {
       this.l1Cache.delete(key)
       return null
+    }
+
+    // Update last accessed time for LRU
+    entry.lastAccessed = now
+    this.l1Cache.set(key, entry)
+
+    // Decompress if needed
+    if (entry.compressed) {
+      try {
+        return this.decompressData(entry.data)
+      } catch (error) {
+        console.error('Decompression failed:', error)
+        this.l1Cache.delete(key)
+        return null
+      }
     }
 
     return entry.data
   }
 
   private setInL1<T>(key: string, value: T, options: CacheOptions): void {
-    // Enforce cache size limit
-    if (this.l1Cache.size >= this.maxL1Size) {
-      // Remove oldest entries (simple LRU)
-      const firstKey = this.l1Cache.keys().next().value
-      if (firstKey) this.l1Cache.delete(firstKey)
+    const serialized = JSON.stringify(value)
+    const dataSize = new Blob([serialized]).size
+    
+    // Enforce cache size limit with LRU eviction
+    while (this.l1Cache.size >= this.maxL1Size) {
+      this.evictLRU()
     }
 
-    const ttl = (options.ttl || this.defaultTTL) * 1000 // Convert to milliseconds
+    // Compress large data
+    const shouldCompress = options.compress !== false && dataSize > this.compressionThreshold
+    let finalData = value
+    
+    if (shouldCompress && typeof window !== 'undefined' && 'CompressionStream' in window) {
+      try {
+        // Use browser compression for large data
+        finalData = this.compressData(serialized)
+      } catch (error) {
+        console.warn('Compression failed, storing uncompressed:', error)
+      }
+    }
+
+    const ttl = (options.ttl || this.defaultTTL) * 1000
+    const now = Date.now()
+    
     this.l1Cache.set(key, {
-      data: value,
-      expiry: Date.now() + ttl,
-      tags: options.tags || []
+      data: finalData,
+      expiry: now + ttl,
+      tags: options.tags || [],
+      compressed: shouldCompress,
+      size: dataSize,
+      lastAccessed: now
     })
   }
 
@@ -300,6 +347,51 @@ class CatalystCache {
     }
   }
 
+  private evictLRU(): void {
+    let oldestKey = ''
+    let oldestTime = Date.now()
+    
+    for (const [key, value] of this.l1Cache.entries()) {
+      if (value.lastAccessed < oldestTime) {
+        oldestTime = value.lastAccessed
+        oldestKey = key
+      }
+    }
+    
+    if (oldestKey) {
+      this.l1Cache.delete(oldestKey)
+    }
+  }
+
+  private monitorMemoryPressure(): void {
+    // Simple memory pressure detection
+    if (this.l1Cache.size > this.maxL1Size * 0.9) {
+      // If cache is 90% full, evict low-priority items
+      const toEvict: string[] = []
+      
+      for (const [key, value] of this.l1Cache.entries()) {
+        if (value.tags.includes('low-priority')) {
+          toEvict.push(key)
+        }
+      }
+      
+      toEvict.forEach(key => this.l1Cache.delete(key))
+    }
+  }
+
+  private compressData(data: string): any {
+    // Simple compression simulation (in real implementation, use CompressionStream)
+    return { compressed: true, data: data }
+  }
+
+  private decompressData(compressed: any): any {
+    // Simple decompression simulation
+    if (compressed.compressed) {
+      return JSON.parse(compressed.data)
+    }
+    return compressed
+  }
+
   private recordResponseTime(time: number): void {
     this.responseTimes.push(time)
     if (this.responseTimes.length > 100) {
@@ -309,8 +401,87 @@ class CatalystCache {
   }
 }
 
-// Export singleton instance
+// League-specific cache configurations
+export const CacheConfigurations = {
+  LEAGUE_DATA: {
+    ttl: 300, // 5 minutes for league standings
+    tags: ['league', 'standings'],
+    priority: 'high' as const,
+    compress: true
+  },
+  PLAYER_STATS: {
+    ttl: 600, // 10 minutes for player stats
+    tags: ['players', 'stats'],
+    priority: 'normal' as const,
+    compress: true
+  },
+  ROSTER_DATA: {
+    ttl: 120, // 2 minutes for roster data
+    tags: ['roster', 'teams'],
+    priority: 'high' as const
+  },
+  MATCHUP_DATA: {
+    ttl: 180, // 3 minutes for matchups
+    tags: ['matchups', 'scores'],
+    priority: 'high' as const
+  },
+  NEWS_DATA: {
+    ttl: 900, // 15 minutes for news
+    tags: ['news'],
+    priority: 'low' as const
+  }
+} as const
+
+// Enhanced cache wrapper for league operations
+export class LeagueDataCache extends CatalystCache {
+  async getLeagueStandings(leagueId: string, week: number) {
+    const key = `league:${leagueId}:standings:week:${week}`
+    return this.get(key, CacheConfigurations.LEAGUE_DATA)
+  }
+
+  async setLeagueStandings(leagueId: string, week: number, data: any) {
+    const key = `league:${leagueId}:standings:week:${week}`
+    return this.set(key, data, CacheConfigurations.LEAGUE_DATA)
+  }
+
+  async getPlayerStats(playerIds: string[], weeks: number[]) {
+    const key = `players:${playerIds.slice(0,5).join(',')}:weeks:${weeks.join(',')}`
+    return this.get(key, CacheConfigurations.PLAYER_STATS)
+  }
+
+  async setPlayerStats(playerIds: string[], weeks: number[], data: any) {
+    const key = `players:${playerIds.slice(0,5).join(',')}:weeks:${weeks.join(',')}`
+    return this.set(key, data, CacheConfigurations.PLAYER_STATS)
+  }
+
+  async getRosterData(teamId: string) {
+    const key = `roster:${teamId}`
+    return this.get(key, CacheConfigurations.ROSTER_DATA)
+  }
+
+  async setRosterData(teamId: string, data: any) {
+    const key = `roster:${teamId}`
+    return this.set(key, data, CacheConfigurations.ROSTER_DATA)
+  }
+
+  async invalidateLeague(leagueId: string) {
+    // Invalidate all league-related data
+    await this.invalidateByTags(['league', 'standings', 'matchups'])
+  }
+
+  async invalidatePlayer(playerId: string) {
+    // Clear specific player data
+    for (const [key] of this.l1Cache.entries()) {
+      if (key.includes(`player:${playerId}`) || key.includes(`:${playerId}:`)) {
+        this.l1Cache.delete(key)
+      }
+    }
+  }
+}
+
+// Export singleton instances
 export const catalystCache = new CatalystCache()
+export const leagueCache = new LeagueDataCache()
 
 // Export class for custom instances
 export { CatalystCache }

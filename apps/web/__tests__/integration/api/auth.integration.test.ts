@@ -10,8 +10,8 @@ import { prisma } from '@/lib/prisma'
 import { createMockUser, mockUserCredentials } from '@/fixtures/users.fixture'
 
 // Import API handlers
-import signinHandler from '@/app/api/auth/signin/route'
-import registerHandler from '@/app/api/auth/register/route'
+import { POST as registerHandler } from '@/app/api/auth/register/route'
+import { GET as authGetHandler, POST as authPostHandler } from '@/app/api/auth/[...nextauth]/route'
 
 describe('Authentication Integration Tests', () => {
   beforeEach(() => {

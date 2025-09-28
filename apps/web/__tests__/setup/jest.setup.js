@@ -65,20 +65,86 @@ jest.mock('next/navigation', () => ({
   useParams: jest.fn(() => ({})),
 }))
 
-// Mock NextAuth v5 
+// Mock NextAuth v5 - Updated for proper v5 structure
 jest.mock('@/lib/auth', () => ({
   auth: jest.fn(() => Promise.resolve({
     user: {
       id: 'test-user-id',
       name: 'Test User',
       email: 'test@example.com',
-    }
+      role: 'user',
+      teamName: 'Test Team'
+    },
+    expires: new Date(Date.now() + 86400000).toISOString() // 24 hours from now
   })),
+  signIn: jest.fn(),
+  signOut: jest.fn(),
   handlers: {
     GET: jest.fn(),
     POST: jest.fn(),
   },
 }))
+
+// Mock NextAuth v5 core for legacy imports
+jest.mock('next-auth', () => ({
+  __esModule: true,
+  default: jest.fn(() => ({
+    handlers: {
+      GET: jest.fn(),
+      POST: jest.fn(),
+    },
+    auth: jest.fn(),
+    signIn: jest.fn(),
+    signOut: jest.fn(),
+  })),
+}))
+
+// Mock NextAuth v5 server functions for API route tests
+jest.mock('next-auth/react', () => ({
+  useSession: jest.fn(() => ({
+    data: {
+      user: {
+        id: 'test-user-id',
+        name: 'Test User',
+        email: 'test@example.com',
+        role: 'user',
+        teamName: 'Test Team'
+      }
+    },
+    status: 'authenticated',
+    update: jest.fn(),
+  })),
+  getSession: jest.fn(() => Promise.resolve({
+    user: {
+      id: 'test-user-id',
+      name: 'Test User',
+      email: 'test@example.com',
+      role: 'user',
+      teamName: 'Test Team'
+    }
+  })),
+  signIn: jest.fn(),
+  signOut: jest.fn(),
+  SessionProvider: ({ children }) => children,
+}))
+
+// Mock getServerSession for API route tests
+const mockGetServerSession = jest.fn(() => Promise.resolve({
+  user: {
+    id: 'test-user-id',
+    name: 'Test User',
+    email: 'test@example.com',
+    role: 'user',
+    teamName: 'Test Team'
+  }
+}))
+
+jest.mock('next-auth/next', () => ({
+  getServerSession: mockGetServerSession,
+}))
+
+// Export the mock for use in tests
+global.mockGetServerSession = mockGetServerSession
 
 // Mock Prisma client
 jest.mock('@/lib/prisma', () => ({
@@ -172,6 +238,85 @@ global.IntersectionObserver = jest.fn().mockImplementation(() => ({
   unobserve: jest.fn(),
   disconnect: jest.fn(),
 }))
+
+// Mock document.fonts API
+Object.defineProperty(document, 'fonts', {
+  writable: true,
+  value: {
+    ready: Promise.resolve(),
+    load: jest.fn().mockResolvedValue(),
+    check: jest.fn().mockReturnValue(true),
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+    clear: jest.fn(),
+    delete: jest.fn(),
+    forEach: jest.fn(),
+    has: jest.fn(),
+    values: jest.fn(),
+    status: 'loaded'
+  },
+})
+
+// Mock getComputedStyle for CSS-related tests
+Object.defineProperty(window, 'getComputedStyle', {
+  writable: true,
+  value: jest.fn().mockImplementation(() => ({
+    pointerEvents: 'auto',
+    getPropertyValue: jest.fn((prop) => {
+      // Return common CSS property values
+      if (prop === 'pointer-events') return 'auto'
+      if (prop === 'display') return 'block'
+      if (prop === 'visibility') return 'visible'
+      if (prop === 'opacity') return '1'
+      return ''
+    }),
+    setProperty: jest.fn(),
+    removeProperty: jest.fn(),
+  })),
+})
+
+// Mock Element.prototype methods for CSS interactions
+Element.prototype.getComputedStyle = Element.prototype.getComputedStyle || function() {
+  return {
+    pointerEvents: 'auto',
+    getPropertyValue: jest.fn((prop) => {
+      if (prop === 'pointer-events') return 'auto'
+      if (prop === 'display') return 'block'
+      if (prop === 'visibility') return 'visible'
+      if (prop === 'opacity') return '1'
+      return ''
+    })
+  }
+}
+
+// Enhanced CSS declarations mock
+Object.defineProperty(Element.prototype, 'style', {
+  writable: true,
+  value: {
+    pointerEvents: 'auto',
+    display: 'block',
+    visibility: 'visible',
+    opacity: '1',
+    getPropertyValue: jest.fn((prop) => {
+      if (prop === 'pointer-events') return 'auto'
+      if (prop === 'display') return 'block'
+      if (prop === 'visibility') return 'visible'
+      if (prop === 'opacity') return '1'
+      return ''
+    }),
+    setProperty: jest.fn(),
+    removeProperty: jest.fn(),
+  },
+})
+
+// Mock HTMLElement getPropertyValue for DOM Accessibility API
+HTMLElement.prototype.getPropertyValue = HTMLElement.prototype.getPropertyValue || function(prop) {
+  if (prop === 'pointer-events') return 'auto'
+  if (prop === 'display') return 'block'
+  if (prop === 'visibility') return 'visible'
+  if (prop === 'opacity') return '1'
+  return ''
+}
 
 // Suppress console errors during tests unless explicitly testing them
 const originalError = console.error

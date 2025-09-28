@@ -1,0 +1,833 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearch", "postgresqlExtensions"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model accounts {
+  id                String  @id
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  users             users   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model audit_logs {
+  id        String   @id
+  userId    String
+  action    String
+  details   Json?
+  createdAt DateTime @default(now())
+  users     users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([action])
+  @@index([createdAt])
+  @@index([userId])
+}
+
+model chat_messages {
+  id                  String              @id
+  leagueId            String
+  userId              String
+  content             String
+  type                ChatMessageType     @default(TEXT)
+  metadata            String?
+  replyToId           String?
+  edited              Boolean             @default(false)
+  editedAt            DateTime?
+  deleted             Boolean             @default(false)
+  deletedAt           DateTime?
+  createdAt           DateTime            @default(now())
+  leagues             leagues             @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  chat_messages       chat_messages?      @relation("chat_messagesTochat_messages", fields: [replyToId], references: [id])
+  other_chat_messages chat_messages[]     @relation("chat_messagesTochat_messages")
+  users               users               @relation(fields: [userId], references: [id])
+  message_reactions   message_reactions[]
+
+  @@index([createdAt])
+  @@index([leagueId])
+  @@index([userId])
+}
+
+model draft_order {
+  id        String @id
+  draftId   String
+  teamId    String
+  pickOrder Int
+  drafts    drafts @relation(fields: [draftId], references: [id], onDelete: Cascade)
+  teams     teams  @relation(fields: [teamId], references: [id])
+
+  @@unique([draftId, pickOrder])
+  @@unique([draftId, teamId])
+  @@index([draftId])
+}
+
+model draft_picks {
+  id             String   @id
+  draftId        String
+  pickNumber     Int
+  round          Int
+  pickInRound    Int
+  teamId         String
+  playerId       String?
+  timeUsed       Int      @default(0)
+  isAutoPick     Boolean  @default(false)
+  autoPickReason String?
+  pickMadeAt     DateTime @default(now())
+  drafts         drafts   @relation(fields: [draftId], references: [id], onDelete: Cascade)
+  players        players? @relation(fields: [playerId], references: [id])
+  teams          teams    @relation(fields: [teamId], references: [id])
+
+  @@unique([draftId, pickNumber])
+  @@index([draftId, round])
+  @@index([playerId])
+  @@index([teamId])
+}
+
+model drafts {
+  id            String        @id
+  leagueId      String
+  status        DraftStatus   @default(SCHEDULED)
+  type          DraftType     @default(SNAKE)
+  settings      Json
+  currentRound  Int           @default(1)
+  currentPick   Int           @default(1)
+  currentTeamId String?
+  timeRemaining Int           @default(90)
+  totalRounds   Int           @default(15)
+  timePerPick   Int           @default(90)
+  startedAt     DateTime?
+  pausedAt      DateTime?
+  completedAt   DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime
+  draft_order   draft_order[]
+  draft_picks   draft_picks[]
+  teams         teams?        @relation(fields: [currentTeamId], references: [id])
+  leagues       leagues       @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+
+  @@index([leagueId, status])
+  @@index([status])
+}
+
+model error_logs {
+  id        String   @id
+  message   String
+  stack     String?
+  url       String?
+  userAgent String?
+  timestamp DateTime
+  category  String
+  severity  String
+  userId    String?
+  sessionId String?
+  metadata  Json?
+  resolved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([category])
+  @@index([createdAt])
+  @@index([resolved])
+  @@index([severity])
+}
+
+model feedback {
+  id                 String               @id
+  userId             String
+  type               FeedbackType         @default(GENERAL)
+  category           FeedbackCategory     @default(GENERAL)
+  title              String
+  description        String
+  priority           FeedbackPriority     @default(MEDIUM)
+  status             FeedbackStatus       @default(OPEN)
+  steps              String?
+  expectedBehavior   String?
+  actualBehavior     String?
+  browserInfo        String?
+  pageUrl            String?
+  screenshot         String?
+  rating             Int?
+  lastResponseAt     DateTime?
+  resolvedAt         DateTime?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime
+  users              users                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  feedback_responses feedback_responses[]
+
+  @@index([category])
+  @@index([createdAt])
+  @@index([priority])
+  @@index([status])
+  @@index([type])
+  @@index([userId])
+}
+
+model feedback_responses {
+  id                  String         @id
+  feedbackId          String
+  respondedBy         String
+  response            String
+  status              FeedbackStatus
+  estimatedResolution DateTime?
+  createdAt           DateTime       @default(now())
+  feedback            feedback       @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+  users               users          @relation(fields: [respondedBy], references: [id])
+
+  @@index([createdAt])
+  @@index([feedbackId])
+  @@index([respondedBy])
+}
+
+model job_executions {
+  id           String    @id
+  jobName      String
+  jobType      String
+  status       String
+  startedAt    DateTime  @default(now())
+  completedAt  DateTime?
+  error        String?
+  metadata     Json?
+  result       Json?
+  duration     Int?
+  retryCount   Int       @default(0)
+  maxRetries   Int       @default(3)
+  scheduledFor DateTime?
+  leagueId     String?
+  leagues      leagues?  @relation(fields: [leagueId], references: [id])
+
+  @@index([jobType, status])
+  @@index([leagueId])
+  @@index([scheduledFor])
+}
+
+model leagues {
+  id              String           @id
+  name            String
+  commissionerId  String
+  settings        Json             @default("{}")
+  scoringSettings Json             @default("{}")
+  rosterSettings  Json             @default("{}")
+  draftSettings   Json             @default("{}")
+  currentWeek     Int              @default(1)
+  season          String           @default("2024")
+  isActive        Boolean          @default(true)
+  draftDate       DateTime?
+  playoffs        Boolean          @default(false)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime
+  chat_messages   chat_messages[]
+  drafts          drafts[]
+  job_executions  job_executions[]
+  users           users            @relation(fields: [commissionerId], references: [id])
+  matchups        matchups[]
+  messages        messages[]
+  teams           teams[]
+  transactions    transactions[]
+
+  @@index([commissionerId])
+  @@index([season, isActive])
+}
+
+model matchups {
+  id                               String   @id
+  leagueId                         String
+  week                             Int
+  season                           String   @default("2024")
+  homeTeamId                       String
+  awayTeamId                       String
+  homeScore                        Float    @default(0)
+  awayScore                        Float    @default(0)
+  isComplete                       Boolean  @default(false)
+  isPlayoff                        Boolean  @default(false)
+  createdAt                        DateTime @default(now())
+  updatedAt                        DateTime
+  teams_matchups_awayTeamIdToteams teams    @relation("matchups_awayTeamIdToteams", fields: [awayTeamId], references: [id])
+  teams_matchups_homeTeamIdToteams teams    @relation("matchups_homeTeamIdToteams", fields: [homeTeamId], references: [id])
+  leagues                          leagues  @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+
+  @@unique([leagueId, week, homeTeamId, awayTeamId])
+  @@index([leagueId, week])
+  @@index([leagueId, week, season])
+  @@index([season, week])
+}
+
+model message_reactions {
+  id            String        @id
+  messageId     String
+  userId        String
+  emoji         String
+  createdAt     DateTime      @default(now())
+  chat_messages chat_messages @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  users         users         @relation(fields: [userId], references: [id])
+
+  @@unique([messageId, userId, emoji])
+  @@index([messageId])
+  @@index([userId])
+}
+
+model messages {
+  id        String   @id
+  leagueId  String
+  userId    String
+  content   String
+  createdAt DateTime @default(now())
+  leagues   leagues  @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  users     users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([leagueId])
+  @@index([userId])
+}
+
+model notification_delivery {
+  id             String        @id
+  notificationId String
+  userId         String
+  status         String
+  deliveredAt    DateTime?
+  readAt         DateTime?
+  error          String?
+  createdAt      DateTime      @default(now())
+  notifications  notifications @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@unique([notificationId, userId])
+  @@index([notificationId])
+  @@index([userId])
+}
+
+model notification_targets {
+  id             String        @id
+  notificationId String
+  userId         String
+  teamId         String?
+  leagueId       String?
+  createdAt      DateTime      @default(now())
+  notifications  notifications @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@index([notificationId])
+  @@index([userId])
+}
+
+model notifications {
+  id                    String                  @id
+  type                  String
+  title                 String
+  data                  Json?
+  createdAt             DateTime                @default(now())
+  body                  String                  @default("")
+  priority              String                  @default("normal")
+  message               String?
+  userId                String?
+  notification_delivery notification_delivery[]
+  notification_targets  notification_targets[]
+
+  @@index([createdAt])
+  @@index([type])
+  @@index([userId])
+}
+
+model performance_metrics {
+  id         String                @id
+  metricName String
+  metricType PerformanceMetricType
+  value      Float
+  metadata   Json?
+  timestamp  DateTime              @default(now())
+
+  @@index([metricName])
+  @@index([metricType])
+  @@index([timestamp])
+}
+
+model player_activities {
+  id        String   @id
+  playerId  String
+  userId    String
+  type      String
+  action    String
+  content   String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+  users     users    @relation(fields: [userId], references: [id])
+
+  @@index([action])
+  @@index([createdAt])
+  @@index([playerId])
+  @@index([type])
+  @@index([userId])
+}
+
+model player_likes {
+  id        String   @id
+  playerId  String
+  userId    String
+  createdAt DateTime @default(now())
+
+  @@unique([playerId, userId])
+  @@index([playerId])
+  @@index([userId])
+}
+
+model player_news {
+  id          String   @id
+  playerId    String
+  headline    String
+  body        String
+  source      String
+  url         String?
+  publishedAt DateTime
+  createdAt   DateTime @default(now())
+  players     players  @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, headline])
+  @@index([playerId])
+  @@index([publishedAt])
+}
+
+model player_notes {
+  id        String   @id
+  playerId  String
+  userId    String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  users     users    @relation(fields: [userId], references: [id])
+
+  @@unique([playerId, userId])
+  @@index([playerId])
+  @@index([userId])
+}
+
+model player_projections {
+  id         String   @id
+  playerId   String
+  week       Int
+  season     Int
+  points     Float
+  source     String
+  confidence Float?
+  stats      Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime
+  players    players  @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, week, season, source])
+  @@index([playerId, week, season])
+  @@index([source])
+}
+
+model player_stats {
+  id            String    @id
+  playerId      String
+  week          Int
+  season        String
+  gameId        String?
+  gameDate      DateTime?
+  opponent      String?
+  stats         Json
+  fantasyPoints Float     @default(0)
+  isProjection  Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime
+  players       players   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, week, season])
+  @@index([playerId, season])
+  @@index([playerId, week, season])
+  @@index([week, season])
+}
+
+model player_watchlist {
+  id        String   @id
+  playerId  String
+  userId    String
+  createdAt DateTime @default(now())
+
+  @@unique([playerId, userId])
+  @@index([playerId])
+  @@index([userId])
+}
+
+model players {
+  id                 String               @id
+  espnId             String               @unique
+  yahooId            String?              @unique
+  sleeperPlayerId    String?              @unique
+  name               String
+  firstName          String?
+  lastName           String?
+  position           Position
+  nflTeam            String?
+  team               String?
+  jerseyNumber       Int?
+  height             String?
+  weight             String?
+  age                Int?
+  experience         Int?
+  college            String?
+  imageUrl           String?
+  status             String               @default("active")
+  injuryStatus       String?
+  injuryDetails      String?
+  byeWeek            Int?
+  adp                Float?
+  rank               Int?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime
+  dynastyRank        Int?
+  isActive           Boolean              @default(true)
+  isDynastyTarget    Boolean              @default(false)
+  isFantasyRelevant  Boolean              @default(true)
+  isRookie           Boolean              @default(false)
+  lastUpdated        DateTime             @default(now())
+  draft_picks        draft_picks[]
+  player_news        player_news[]
+  player_projections player_projections[]
+  player_stats       player_stats[]
+  projections        projections[]
+  roster             roster[]
+  roster_players     roster_players[]
+
+  @@index([name])
+  @@index([nflTeam])
+  @@index([position])
+  @@index([position, status])
+  @@index([sleeperPlayerId])
+  @@index([status])
+}
+
+model projections {
+  id              String   @id
+  playerId        String
+  week            Int
+  season          String
+  source          String   @default("espn")
+  projectedPoints Float
+  confidence      Float?
+  projectedStats  Json
+  createdAt       DateTime @default(now())
+  players         players  @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, week, season, source])
+  @@index([playerId, week, season])
+}
+
+model push_subscriptions {
+  id        String   @id
+  userId    String   @unique
+  endpoint  String
+  p256dh    String
+  auth      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+
+  @@index([userId])
+}
+
+model roster {
+  id              String   @id
+  teamId          String
+  playerId        String
+  position        Position
+  isStarter       Boolean  @default(true)
+  isLocked        Boolean  @default(false)
+  acquisitionDate DateTime @default(now())
+  acquisitionType String   @default("draft")
+  players         players  @relation(fields: [playerId], references: [id])
+  teams           teams    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, playerId])
+  @@index([playerId])
+  @@index([teamId])
+}
+
+model roster_players {
+  id              String   @id
+  teamId          String
+  playerId        String
+  position        Position
+  isStarter       Boolean  @default(true)
+  isLocked        Boolean  @default(false)
+  acquisitionDate DateTime @default(now())
+  acquisitionType String   @default("draft")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime
+  players         players  @relation(fields: [playerId], references: [id])
+  teams           teams    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, playerId])
+  @@index([playerId])
+  @@index([teamId])
+}
+
+model sessions {
+  id           String   @id
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  users        users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model teams {
+  id                                  String            @id
+  name                                String
+  logo                                String?
+  ownerId                             String
+  leagueId                            String
+  wins                                Int               @default(0)
+  losses                              Int               @default(0)
+  ties                                Int               @default(0)
+  pointsFor                           Float             @default(0)
+  pointsAgainst                       Float             @default(0)
+  standing                            Int               @default(0)
+  playoffSeed                         Int?
+  waiverPriority                      Int               @default(10)
+  faabBudget                          Int               @default(1000)
+  faabSpent                           Int               @default(0)
+  createdAt                           DateTime          @default(now())
+  updatedAt                           DateTime
+  draft_order                         draft_order[]
+  draft_picks                         draft_picks[]
+  drafts                              drafts[]
+  matchups_matchups_awayTeamIdToteams matchups[]        @relation("matchups_awayTeamIdToteams")
+  matchups_matchups_homeTeamIdToteams matchups[]        @relation("matchups_homeTeamIdToteams")
+  roster                              roster[]
+  roster_players                      roster_players[]
+  leagues                             leagues           @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  users                               users             @relation(fields: [ownerId], references: [id])
+  trade_proposals                     trade_proposals[]
+  transactions                        transactions[]
+
+  @@unique([leagueId, name])
+  @@index([leagueId])
+  @@index([ownerId])
+}
+
+model trade_proposals {
+  id                 String    @id
+  proposingTeamId    String
+  receivingTeamId    String
+  givingPlayerIds    String[]
+  receivingPlayerIds String[]
+  status             String    @default("pending")
+  message            String?
+  createdAt          DateTime  @default(now())
+  respondedAt        DateTime?
+  teams              teams     @relation(fields: [proposingTeamId], references: [id])
+
+  @@index([proposingTeamId])
+  @@index([status])
+}
+
+model transactions {
+  id          String    @id
+  leagueId    String
+  teamId      String
+  type        String
+  status      String    @default("pending")
+  playerIds   String[]
+  relatedData Json?
+  processedAt DateTime?
+  createdAt   DateTime  @default(now())
+  week        Int?
+  leagues     leagues   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  teams       teams     @relation(fields: [teamId], references: [id])
+
+  @@index([leagueId, status])
+  @@index([teamId])
+}
+
+model user_preferences {
+  id                 String   @id
+  userId             String   @unique
+  emailNotifications Boolean  @default(true)
+  pushNotifications  Boolean  @default(true)
+  theme              String   @default("dark")
+  timezone           String   @default("America/New_York")
+  favoriteTeam       String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime
+  users              users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model user_sessions {
+  id           String   @id
+  sessionId    String   @unique
+  userId       String
+  isActive     Boolean  @default(true)
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime
+  lastActivity DateTime @default(now())
+  users        users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([userId])
+}
+
+model users {
+  id                    String               @id
+  email                 String               @unique
+  name                  String?
+  image                 String?
+  emailVerified         DateTime?
+  role                  UserRole             @default(PLAYER)
+  teamName              String?
+  hashedPassword        String?
+  avatar                String?
+  profileId             String?
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime
+  isAdmin               Boolean              @default(false)
+  lastActiveAt          DateTime?
+  notificationSettings  Json?
+  onboardingCompleted   Boolean              @default(false)
+  onboardingCompletedAt DateTime?
+  onboardingSteps       Json?
+  accounts              accounts[]
+  audit_logs            audit_logs[]
+  chat_messages         chat_messages[]
+  feedback              feedback[]
+  feedback_responses    feedback_responses[]
+  leagues               leagues[]
+  message_reactions     message_reactions[]
+  messages              messages[]
+  player_activities     player_activities[]
+  player_notes          player_notes[]
+  sessions              sessions[]
+  teams                 teams[]
+  user_preferences      user_preferences?
+  user_sessions         user_sessions[]
+
+  @@index([email])
+  @@index([role])
+}
+
+enum AcquisitionType {
+  DRAFT
+  TRADE
+  WAIVER
+  FREE_AGENT
+}
+
+enum ChatMessageType {
+  TEXT
+  TRADE
+  SCORE_UPDATE
+  TRASH_TALK
+  ANNOUNCEMENT
+  POLL
+}
+
+enum DraftStatus {
+  SCHEDULED
+  IN_PROGRESS
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+enum DraftType {
+  SNAKE
+  AUCTION
+  LINEAR
+}
+
+enum FeedbackCategory {
+  DRAFT
+  TRADES
+  SCORING
+  MOBILE
+  GENERAL
+  PERFORMANCE
+}
+
+enum FeedbackPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum FeedbackStatus {
+  OPEN
+  ACKNOWLEDGED
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum FeedbackType {
+  BUG
+  FEATURE_REQUEST
+  GENERAL
+  UI_UX
+  PERFORMANCE
+}
+
+enum PerformanceMetricType {
+  PAGE_LOAD
+  API_RESPONSE
+  DATABASE_QUERY
+  CACHE_HIT
+  ERROR_RATE
+  MEMORY_USAGE
+}
+
+enum Position {
+  QB
+  RB
+  WR
+  TE
+  K
+  DEF
+  DST
+  FLEX
+  SUPER_FLEX
+  BENCH
+  IR
+  LB
+  DB
+  DL
+  CB
+  S
+}
+
+enum RosterSlot {
+  QB
+  RB1
+  RB2
+  WR1
+  WR2
+  WR3
+  TE
+  FLEX
+  SUPER_FLEX
+  K
+  DEF
+  BENCH
+  IR
+}
+
+enum UserRole {
+  ADMIN
+  COMMISSIONER
+  PLAYER
+}

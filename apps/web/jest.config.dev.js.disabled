@@ -1,0 +1,28 @@
+// Development-safe Jest configuration
+// This file prevents Jest from interfering with Next.js development server
+
+module.exports = {
+  testEnvironment: 'node',
+  testMatch: [],
+  setupFiles: [],
+  setupFilesAfterEnv: [],
+  collectCoverage: false,
+  verbose: false,
+  silent: true,
+  testPathIgnorePatterns: ['<rootDir>/.next/', '<rootDir>/node_modules/', '<rootDir>/src/'],
+  modulePathIgnorePatterns: ['<rootDir>/.next/', '<rootDir>/node_modules/'],
+  transform: {},
+  transformIgnorePatterns: ['node_modules/'],
+  moduleNameMapper: {},
+  globals: {},
+  reporters: [],
+  maxWorkers: 1,
+  watchman: false,
+  // Explicitly disable all Jest features
+  automock: false,
+  clearMocks: false,
+  resetMocks: false,
+  restoreMocks: false,
+  bail: true,
+  errorOnDeprecated: false,
+}

@@ -3,12 +3,19 @@
 import { useState, useEffect } from 'react'
 import { useDraftRoom } from '@/hooks/use-websocket'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   ClockIcon,
   UserIcon,
   TrophyIcon,
-  MagnifyingGlassIcon
-} from '@heroicons/react/24/outline'
+  MagnifyingGlassIcon,
+  PlayIcon,
+  PauseIcon,
+  ExclamationTriangleIcon,
+  CheckCircleIcon,
+  ArrowPathIcon
+} from '@heroicons/react/outline'
 
 interface DraftRoomProps {
   leagueId: string
@@ -50,37 +57,117 @@ export function DraftRoom({ leagueId, currentUserId }: DraftRoomProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [positionFilter, setPositionFilter] = useState<string>('ALL')
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null)
+  const [availablePlayers, setAvailablePlayers] = useState<Player[]>([])
+  const [draftStatus, setDraftStatus] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [autoPickEnabled, setAutoPickEnabled] = useState(false)
+  const [viewMode, setViewMode] = useState<'players' | 'board' | 'history'>('players')
 
   const positions = ['ALL', 'QB', 'RB', 'WR', 'TE', 'K', 'DEF']
 
-  const isMyTurn = currentTeamId === getCurrentUserTeamId()
-  const currentTeam = draftState?.league?.teams?.find((t: Team) => t.id === currentTeamId)
-  const currentPick = draftState?.currentPick || 1
-  const currentRound = Math.ceil(currentPick / (draftState?.league?.teams?.length || 12))
+  // Fetch draft data
+  useEffect(() => {
+    const fetchDraftData = async () => {
+      try {
+        // Get draft status
+        const statusResponse = await fetch(`/api/draft?leagueId=${leagueId}&action=status`)
+        const statusData = await statusResponse.json()
+        
+        if (statusData.success) {
+          setDraftStatus(statusData.data)
+        }
 
-  function getCurrentUserTeamId() {
-    return draftState?.league?.teams?.find((t: Team) => 
-      t.owner.name === 'Current User' // This would come from session
-    )?.id
-  }
+        // Get available players
+        const playersResponse = await fetch(`/api/draft?leagueId=${leagueId}&action=available-players&limit=200`)
+        const playersData = await playersResponse.json()
+        
+        if (playersData.success) {
+          setAvailablePlayers(playersData.data)
+        }
+      } catch (error) {
+        console.error('Failed to fetch draft data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
 
-  const filteredPlayers = draftState?.availablePlayers?.filter((player: Player) => {
-    const matchesSearch = player.name.toLowerCase().includes(searchQuery.toLowerCase())
+    fetchDraftData()
+    
+    // Refresh every 10 seconds
+    const interval = setInterval(fetchDraftData, 10000)
+    return () => clearInterval(interval)
+  }, [leagueId])
+
+  const isMyTurn = draftStatus?.currentPick?.team?.owner?.id === currentUserId
+  const currentTeam = draftStatus?.currentPick?.team
+  const currentPick = draftStatus?.currentPick?.pick || 1
+  const currentRound = draftStatus?.currentPick?.round || 1
+
+  const filteredPlayers = availablePlayers.filter((player: Player) => {
+    const matchesSearch = player.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         player.nflTeam?.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesPosition = positionFilter === 'ALL' || player.position === positionFilter
     return matchesSearch && matchesPosition
-  }) || []
+  })
 
-  const handleDraftPlayer = () => {
-    if (!selectedPlayer || !isMyTurn || !currentTeamId) return
+  const handleDraftPlayer = async () => {
+    if (!selectedPlayer || !isMyTurn || !currentTeam?.id) return
 
-    draftPlayer({
-      playerId: selectedPlayer.id,
-      teamId: currentTeamId,
-      pick: currentPick,
-      round: currentRound
-    })
+    try {
+      const response = await fetch('/api/draft', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'draft-player',
+          leagueId,
+          playerId: selectedPlayer.id,
+          teamId: currentTeam.id
+        })
+      })
 
-    setSelectedPlayer(null)
+      const result = await response.json()
+      
+      if (result.success) {
+        setSelectedPlayer(null)
+        // Remove player from available list
+        setAvailablePlayers(prev => prev.filter(p => p.id !== selectedPlayer.id))
+        // Refresh draft status
+        const statusResponse = await fetch(`/api/draft?leagueId=${leagueId}&action=status`)
+        const statusData = await statusResponse.json()
+        if (statusData.success) {
+          setDraftStatus(statusData.data)
+        }
+      } else {
+        alert(result.error || 'Failed to draft player')
+      }
+    } catch (error) {
+      console.error('Draft error:', error)
+      alert('Failed to draft player')
+    }
+  }
+
+  const handleToggleAutoPick = async () => {
+    if (!currentTeam?.id) return
+
+    try {
+      const response = await fetch('/api/draft', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'auto-pick',
+          leagueId,
+          teamId: currentTeam.id
+        })
+      })
+
+      const result = await response.json()
+      
+      if (result.success) {
+        setAutoPickEnabled(!autoPickEnabled)
+      }
+    } catch (error) {
+      console.error('Auto-pick error:', error)
+    }
   }
 
   const formatTime = (seconds: number) => {
@@ -89,15 +176,32 @@ export function DraftRoom({ leagueId, currentUserId }: DraftRoomProps) {
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
-  if (!state.connected) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-slate-900">
         <div className="text-center">
           <div className="loading-spinner h-8 w-8 mx-auto mb-4"></div>
-          <p className="text-white">Connecting to draft room...</p>
+          <p className="text-white">Loading draft room...</p>
           {state.error && (
             <p className="text-red-400 mt-2">Error: {state.error}</p>
           )}
+        </div>
+      </div>
+    )
+  }
+
+  if (!draftStatus?.draft) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-slate-900">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-white mb-4">Draft Not Found</h2>
+          <p className="text-gray-400 mb-6">This league doesn't have a draft set up yet.</p>
+          <a
+            href={`/leagues/${leagueId}`}
+            className="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors"
+          >
+            Back to League
+          </a>
         </div>
       </div>
     )
@@ -108,45 +212,89 @@ export function DraftRoom({ leagueId, currentUserId }: DraftRoomProps) {
       {/* Draft Header */}
       <div className="bg-slate-800 border-b border-slate-700 p-6">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-2xl font-bold">{draftState?.league?.name} Draft</h1>
-              <p className="text-gray-400">Round {currentRound} • Pick {currentPick}</p>
+              <h1 className="text-2xl font-bold">{draftStatus.draft.league.name} Draft</h1>
+              <p className="text-gray-400">Round {currentRound} • Pick {currentPick} of {draftStatus.totalPicks}</p>
+              <div className="flex items-center space-x-4 mt-2">
+                <Badge variant={draftStatus.draft.status === 'IN_PROGRESS' ? 'success' : 'secondary'}>
+                  {draftStatus.draft.status}
+                </Badge>
+                <span className="text-sm text-gray-400">
+                  {draftStatus.picksCompleted} / {draftStatus.totalPicks} picks completed
+                </span>
+              </div>
             </div>
 
             {/* Draft Timer */}
             <div className="text-center">
               <div className={`text-3xl font-mono font-bold ${
-                timeRemaining <= 30 ? 'text-red-400' : 'text-green-400'
+                draftStatus.currentPick.timeRemaining <= 30 ? 'text-red-400' : 'text-green-400'
               }`}>
-                {formatTime(timeRemaining)}
+                {formatTime(draftStatus.currentPick.timeRemaining)}
               </div>
               <div className="text-sm text-gray-400">
                 {currentTeam ? `${currentTeam.name}'s turn` : 'Waiting...'}
+              </div>
+              <div className="text-xs text-gray-500 mt-1">
+                {draftStatus.currentPick.timePerPick}s per pick
               </div>
             </div>
 
             {/* Draft Status */}
             <div className="text-right">
-              <div className="flex items-center space-x-2">
-                <ClockIcon className="h-5 w-5 text-blue-400" />
+              <div className="flex items-center space-x-2 mb-2">
+                {draftStatus.draft.status === 'IN_PROGRESS' ? (
+                  <PlayIcon className="h-5 w-5 text-green-400" />
+                ) : (
+                  <PauseIcon className="h-5 w-5 text-yellow-400" />
+                )}
                 <span className={`font-medium ${
                   isMyTurn ? 'text-blue-400' : 'text-gray-400'
                 }`}>
                   {isMyTurn ? 'YOUR TURN' : 'Waiting for pick'}
                 </span>
               </div>
+              {isMyTurn && (
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleToggleAutoPick}
+                    className="text-xs"
+                  >
+                    {autoPickEnabled ? 'Disable Auto' : 'Enable Auto'}
+                  </Button>
+                </div>
+              )}
             </div>
+          </div>
+
+          {/* View Mode Tabs */}
+          <div className="flex space-x-1 bg-slate-700 p-1 rounded-lg">
+            {(['players', 'board', 'history'] as const).map((mode) => (
+              <button
+                key={mode}
+                onClick={() => setViewMode(mode)}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors capitalize ${
+                  viewMode === mode
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-300 hover:text-white hover:bg-slate-600'
+                }`}
+              >
+                {mode}
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
-          {/* Available Players */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="bg-slate-800 rounded-lg border border-slate-700">
+        {viewMode === 'players' && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Available Players */}
+            <div className="lg:col-span-2 space-y-6">
+              <div className="bg-slate-800 rounded-lg border border-slate-700">
               <div className="p-6 border-b border-slate-700">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-xl font-semibold">Available Players</h2>
@@ -301,6 +449,37 @@ export function DraftRoom({ leagueId, currentUserId }: DraftRoomProps) {
             </div>
           </div>
         </div>
+        )}
+
+        {viewMode === 'board' && (
+          <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
+            <h2 className="text-xl font-semibold mb-4">Draft Board</h2>
+            <div className="text-gray-400">Draft board view coming soon...</div>
+          </div>
+        )}
+
+        {viewMode === 'history' && (
+          <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
+            <h2 className="text-xl font-semibold mb-4">Draft History</h2>
+            <div className="space-y-3">
+              {draftEvents.slice().reverse().map((event: any, index: number) => (
+                <div key={index} className="flex items-center space-x-3 p-3 bg-slate-700 rounded-lg">
+                  <div className="flex-shrink-0">
+                    <TrophyIcon className="h-5 w-5 text-yellow-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-white">
+                      R{event.round} P{event.pick}
+                    </div>
+                    <div className="text-xs text-gray-400">
+                      Player drafted by Team
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

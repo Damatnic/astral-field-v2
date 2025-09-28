@@ -48,6 +48,7 @@
     "e2e/**/*",
     "jest.config.js",
     "jest.setup.js",
-    "playwright.config.ts"
+    "playwright.config.ts",
+    "scripts/**/*"
   ]
 }

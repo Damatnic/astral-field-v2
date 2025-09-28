@@ -101,7 +101,7 @@ const mockPrismaClient = {
   $executeRaw: jest.fn(),
   
   // Extensions
-  $extends: jest.fn().mockReturnValue(mockPrismaClient),
+  $extends: jest.fn(),
 }
 
 // Mock the Prisma module

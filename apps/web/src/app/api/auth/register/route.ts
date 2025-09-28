@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { withRateLimit } from '@/lib/security/rate-limit-middleware'
+import { guardianAuditLogger, SecurityEventType } from '@/lib/security/audit-logger'
 
 const RegisterSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100),
@@ -10,10 +12,17 @@ const RegisterSchema = z.object({
   teamName: z.string().max(100).optional()
 })
 
-export async function POST(request: NextRequest) {
+// Guardian Security: Registration handler with security logging
+const registrationHandler = async (request: NextRequest): Promise<NextResponse> => {
   try {
     const body = await request.json()
     const validatedData = RegisterSchema.parse(body)
+
+    // Guardian Security: Extract client information for logging
+    const clientIP = request.headers.get('x-forwarded-for')?.split(',')[0] || 
+                    request.headers.get('x-real-ip') || 
+                    'unknown'
+    const userAgent = request.headers.get('user-agent') || 'unknown'
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -23,6 +32,18 @@ export async function POST(request: NextRequest) {
     })
 
     if (existingUser) {
+      // Guardian Security: Log failed registration attempt
+      await guardianAuditLogger.logSecurityEvent(
+        SecurityEventType.REGISTRATION_FAILED,
+        undefined,
+        { ip: clientIP, userAgent },
+        {
+          description: 'Registration failed - email already exists',
+          riskScore: 0.2,
+          context: { email: validatedData.email, reason: 'duplicate_email' }
+        }
+      )
+
       return NextResponse.json(
         { message: 'User already exists with this email' },
         { status: 400 }
@@ -42,9 +63,10 @@ export async function POST(request: NextRequest) {
         role: 'PLAYER',
         preferences: {
           create: {
-            emailUpdates: true,
+            emailNotifications: true,
+            pushNotifications: false,
             theme: 'dark',
-            notifications: JSON.stringify({ push: false, email: true })
+            timezone: 'America/New_York'
           }
         }
       },
@@ -57,6 +79,22 @@ export async function POST(request: NextRequest) {
       }
     })
 
+    // Guardian Security: Log successful registration
+    await guardianAuditLogger.logSecurityEvent(
+      SecurityEventType.REGISTRATION_SUCCESS,
+      user.id,
+      { ip: clientIP, userAgent },
+      {
+        description: 'User registration successful',
+        riskScore: 0.1,
+        context: { 
+          email: validatedData.email,
+          name: validatedData.name,
+          hasTeamName: !!validatedData.teamName
+        }
+      }
+    )
+
     return NextResponse.json({
       message: 'User created successfully',
       user
@@ -64,6 +102,19 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Registration error:', error)
+    
+    // Guardian Security: Log registration error
+    const clientIP = request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown'
+    await guardianAuditLogger.logSecurityEvent(
+      SecurityEventType.REGISTRATION_FAILED,
+      undefined,
+      { ip: clientIP, userAgent: request.headers.get('user-agent') || 'unknown' },
+      {
+        description: 'Registration failed - server error',
+        riskScore: 0.3,
+        context: { error: error instanceof Error ? error.message : 'Unknown error' }
+      }
+    )
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -77,4 +128,14 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
+}
+
+// Guardian Security: Apply rate limiting to registration endpoint
+export async function POST(request: NextRequest) {
+  const rateLimitMiddleware = withRateLimit({ 
+    ruleKey: 'auth:register',
+    requests: 5,
+    window: 3600000 // 1 hour window
+  })
+  return rateLimitMiddleware(request, registrationHandler)
 }

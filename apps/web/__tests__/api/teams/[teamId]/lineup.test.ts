@@ -1,7 +1,7 @@
 import { createMocks } from 'node-mocks-http'
-import handler from '@/pages/api/teams/[teamId]/lineup'
+import { GET as getHandler, PUT as putHandler } from '@/app/api/teams/lineup/route'
 import { prisma } from '@/lib/prisma'
-import { getServerSession } from 'next-auth'
+import { auth } from '@/lib/auth'
 
 // Mock dependencies
 jest.mock('@/lib/prisma', () => ({
@@ -17,12 +17,12 @@ jest.mock('@/lib/prisma', () => ({
   },
 }))
 
-jest.mock('next-auth', () => ({
-  getServerSession: jest.fn(),
+jest.mock('@/lib/auth', () => ({
+  auth: jest.fn(),
 }))
 
 const mockPrisma = prisma as jest.Mocked<typeof prisma>
-const mockGetServerSession = getServerSession as jest.MockedFunction<typeof getServerSession>
+const mockAuth = auth as jest.MockedFunction<typeof auth>
 
 describe('/api/teams/[teamId]/lineup API route', () => {
   const mockSession = {

@@ -1,13 +1,23 @@
 /**
- * ESPN Data Synchronization Service
- * Syncs NFL player data, live scores, and news from ESPN APIs
+ * Phoenix: Elite ESPN Data Synchronization Service
+ * High-performance NFL player data, live scores, and news synchronization
  */
 
-import { PrismaClient } from '@prisma/client';
-import { ESPNService } from './espn';
-import { NFLDataService } from './espn';
+import { prisma, withRetry, bulkOperation, timedQuery } from '../prisma'
+import { phoenixDb } from '../optimized-prisma'
+import { ESPNService } from './espn'
+import { NFLDataService } from './espn'
 
-const prisma = new PrismaClient();
+// Phoenix: Performance metrics tracking
+interface SyncMetrics {
+  startTime: number
+  endTime?: number
+  processed: number
+  created: number
+  updated: number
+  errors: number
+  duration?: number
+}
 
 export class ESPNSyncService {
   private espn = new ESPNService();

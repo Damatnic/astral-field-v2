@@ -3,8 +3,35 @@ import { guardianSecurityHeaders, guardianSecurityHeadersDev } from '@/lib/secur
 
 export default async function middleware(req: NextRequest) {
   const { nextUrl } = req
-  // Check for session cookie instead of auth middleware
-  const isLoggedIn = req.cookies.has('next-auth.session-token') || req.cookies.has('__Secure-next-auth.session-token')
+  
+  // Alpha Optimization: Edge-compatible session validation without Prisma dependency
+  let isLoggedIn = false
+  let sessionSource = 'none'
+  
+  // Primary session validation using secure cookies only (Edge Runtime compatible)
+  const sessionToken = req.cookies.get('next-auth.session-token')?.value || 
+                      req.cookies.get('__Secure-next-auth.session-token')?.value
+  
+  if (sessionToken && sessionToken.length > 10) {
+    try {
+      // Basic JWT structure validation for Edge Runtime
+      const tokenParts = sessionToken.split('.')
+      if (tokenParts.length === 3) {
+        isLoggedIn = true
+        sessionSource = 'cookie'
+      }
+    } catch (error) {
+      // Token validation failed, continue as not logged in
+      if (process.env.AUTH_DEBUG === 'true') {
+        console.warn('Session cookie validation failed:', error instanceof Error ? error.message : String(error))
+      }
+    }
+  }
+  
+  // Debug logging for development
+  if (process.env.AUTH_DEBUG === 'true' && process.env.NODE_ENV === 'development') {
+    console.log(`Middleware auth check: ${isLoggedIn ? 'authenticated' : 'not authenticated'} (source: ${sessionSource}) for ${nextUrl.pathname}`)
+  }
 
   // Catalyst Performance: Optimized route matching with Set for O(1) lookup
   const protectedPaths = new Set([
@@ -54,24 +81,36 @@ export default async function middleware(req: NextRequest) {
     response.headers.set(key, value)
   })
 
-  // Redirect to signin if trying to access protected route without auth
+  // Sentinel Authentication: Enhanced route protection with session validation
   if (isProtectedRoute && !isLoggedIn) {
-    const callbackUrl = encodeURIComponent(nextUrl.pathname + nextUrl.search)
-    const redirectResponse = NextResponse.redirect(
-      new URL(`/auth/signin?callbackUrl=${callbackUrl}`, nextUrl)
+    // Clear any invalid session cookies before redirect
+    const response = NextResponse.redirect(
+      new URL(`/auth/signin?callbackUrl=${encodeURIComponent(nextUrl.pathname + nextUrl.search)}`, nextUrl)
     )
+    
+    // Clear invalid session cookies
+    response.cookies.delete('next-auth.session-token')
+    response.cookies.delete('__Secure-next-auth.session-token')
+    response.cookies.delete('next-auth.callback-url')
+    response.cookies.delete('__Secure-next-auth.callback-url')
+    response.cookies.delete('next-auth.csrf-token')
+    response.cookies.delete('__Host-next-auth.csrf-token')
     
     // Add security headers to redirect response
     Object.entries(securityHeaders).forEach(([key, value]) => {
-      redirectResponse.headers.set(key, value)
+      response.headers.set(key, value)
     })
     
-    return redirectResponse
+    return response
   }
 
   // Redirect to dashboard if trying to access auth routes while logged in
   if (isAuthRoute && isLoggedIn) {
-    const redirectResponse = NextResponse.redirect(new URL('/dashboard', nextUrl))
+    // Get callback URL from query params if present
+    const callbackUrl = nextUrl.searchParams.get('callbackUrl')
+    const redirectUrl = callbackUrl && callbackUrl.startsWith('/') ? callbackUrl : '/dashboard'
+    
+    const redirectResponse = NextResponse.redirect(new URL(redirectUrl, nextUrl))
     
     // Add security headers to redirect response
     Object.entries(securityHeaders).forEach(([key, value]) => {
@@ -81,12 +120,19 @@ export default async function middleware(req: NextRequest) {
     return redirectResponse
   }
 
-  // Basic API route protection
-  if (isApiRoute && !nextUrl.pathname.includes('/api/auth/') && !nextUrl.pathname.includes('/api/health')) {
+  // Enhanced API route protection with session validation
+  if (isApiRoute && !nextUrl.pathname.includes('/api/auth/') && !nextUrl.pathname.includes('/api/health') && !nextUrl.pathname.includes('/api/debug/')) {
     if (!isLoggedIn) {
-      return new NextResponse('Unauthorized', { 
+      return new NextResponse(JSON.stringify({ 
+        error: 'Unauthorized', 
+        message: 'Valid session required',
+        code: 'AUTH_REQUIRED'
+      }), { 
         status: 401,
-        headers: securityHeaders
+        headers: {
+          ...securityHeaders,
+          'Content-Type': 'application/json'
+        }
       })
     }
   }

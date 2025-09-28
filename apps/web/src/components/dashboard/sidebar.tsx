@@ -4,32 +4,34 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
-import { 
-  HomeIcon, 
-  UserGroupIcon, 
-  ChartBarIcon, 
-  SparklesIcon,
-  CogIcon,
-  ArrowRightEndOnRectangleIcon,
-  Bars3Icon,
-  XMarkIcon,
-  TrophyIcon,
-  ChatBubbleLeftRightIcon,
-  ClipboardDocumentListIcon,
-  TvIcon,
-  ClockIcon
-} from '@heroicons/react/24/outline'
+// Emoji-based icons to replace heroicons
+const HomeIcon = () => <span className="w-5 h-5 flex items-center justify-center">🏠</span>
+const UserGroupIcon = () => <span className="w-5 h-5 flex items-center justify-center">👥</span>
+const ChartBarIcon = () => <span className="w-5 h-5 flex items-center justify-center">📊</span>
+const SparklesIcon = () => <span className="w-5 h-5 flex items-center justify-center">✨</span>
+const CogIcon = () => <span className="w-5 h-5 flex items-center justify-center">⚙️</span>
+const ArrowRightEndOnRectangleIcon = () => <span className="w-5 h-5 flex items-center justify-center">🚪</span>
+const Bars3Icon = () => <span className="w-5 h-5 flex items-center justify-center">☰</span>
+const XMarkIcon = () => <span className="w-5 h-5 flex items-center justify-center">✖️</span>
+const TrophyIcon = () => <span className="w-5 h-5 flex items-center justify-center">🏆</span>
+const ChatBubbleLeftRightIcon = () => <span className="w-5 h-5 flex items-center justify-center">💬</span>
+const ClipboardDocumentListIcon = () => <span className="w-5 h-5 flex items-center justify-center">📋</span>
+const TvIcon = () => <span className="w-5 h-5 flex items-center justify-center">📺</span>
+const ClockIcon = () => <span className="w-5 h-5 flex items-center justify-center">⏰</span>
+const BuildingOfficeIcon = () => <span className="w-5 h-5 flex items-center justify-center">🏢</span>
+
 import { Button } from '@/components/ui/button'
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
   { name: 'My Team', href: '/team', icon: UserGroupIcon },
+  { name: 'Leagues', href: '/leagues', icon: BuildingOfficeIcon },
   { name: 'Players', href: '/players', icon: ClipboardDocumentListIcon },
   { name: 'Live Scoring', href: '/live', icon: TvIcon },
   { name: 'Draft Room', href: '/draft', icon: ClockIcon },
   { name: 'AI Coach', href: '/ai-coach', icon: SparklesIcon },
-  { name: 'League Chat', href: '/live#chat', icon: ChatBubbleLeftRightIcon },
   { name: 'Analytics', href: '/analytics', icon: ChartBarIcon },
+  { name: 'League Chat', href: '/live#chat', icon: ChatBubbleLeftRightIcon },
   { name: 'Settings', href: '/settings', icon: CogIcon },
 ]
 

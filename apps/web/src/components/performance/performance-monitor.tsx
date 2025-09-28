@@ -31,8 +31,12 @@ export function PerformanceMonitor() {
             const entries = list.getEntries()
             const lastEntry = entries[entries.length - 1] as any
             if (lastEntry) {
-              setMetrics(prev => ({ ...prev, lcp: Math.round(lastEntry.startTime) }))
-              console.log('[Catalyst] LCP:', Math.round(lastEntry.startTime) + 'ms')
+              const lcpValue = Math.round(lastEntry.startTime)
+              setMetrics(prev => ({ ...prev, lcp: lcpValue }))
+              // Only log if performance is poor
+              if (lcpValue > 2500) {
+                console.warn('[Catalyst] Poor LCP:', lcpValue + 'ms (target: <2500ms)')
+              }
             }
           })
           lcpObserver.observe({ type: 'largest-contentful-paint', buffered: true })
@@ -45,8 +49,12 @@ export function PerformanceMonitor() {
           const fcpObserver = new PerformanceObserver((list) => {
             for (const entry of list.getEntries()) {
               if (entry.name === 'first-contentful-paint') {
-                setMetrics(prev => ({ ...prev, fcp: Math.round(entry.startTime) }))
-                console.log('[Catalyst] FCP:', Math.round(entry.startTime) + 'ms')
+                const fcpValue = Math.round(entry.startTime)
+                setMetrics(prev => ({ ...prev, fcp: fcpValue }))
+                // Only log if performance is poor
+                if (fcpValue > 1800) {
+                  console.warn('[Catalyst] Poor FCP:', fcpValue + 'ms (target: <1800ms)')
+                }
               }
             }
           })
@@ -64,8 +72,12 @@ export function PerformanceMonitor() {
                 clsValue += (entry as any).value
               }
             }
-            setMetrics(prev => ({ ...prev, cls: Math.round(clsValue * 1000) / 1000 }))
-            console.log('[Catalyst] CLS:', Math.round(clsValue * 1000) / 1000)
+            const finalCLS = Math.round(clsValue * 1000) / 1000
+            setMetrics(prev => ({ ...prev, cls: finalCLS }))
+            // Only log if performance is poor
+            if (finalCLS > 0.1) {
+              console.warn('[Catalyst] Poor CLS:', finalCLS + ' (target: <0.1)')
+            }
           })
           clsObserver.observe({ type: 'layout-shift', buffered: true })
         } catch (e) {
@@ -77,9 +89,12 @@ export function PerformanceMonitor() {
           const fidObserver = new PerformanceObserver((list) => {
             for (const entry of list.getEntries()) {
               if (entry.entryType === 'first-input') {
-                const fid = (entry as any).processingStart - entry.startTime
-                setMetrics(prev => ({ ...prev, fid: Math.round(fid) }))
-                console.log('[Catalyst] FID:', Math.round(fid) + 'ms')
+                const fid = Math.round((entry as any).processingStart - entry.startTime)
+                setMetrics(prev => ({ ...prev, fid }))
+                // Only log if performance is poor
+                if (fid > 100) {
+                  console.warn('[Catalyst] Poor FID:', fid + 'ms (target: <100ms)')
+                }
               }
             }
           })
@@ -93,9 +108,12 @@ export function PerformanceMonitor() {
       if (window.performance && window.performance.getEntriesByType) {
         const navigation = window.performance.getEntriesByType('navigation')[0] as any
         if (navigation) {
-          const ttfb = navigation.responseStart - navigation.requestStart
-          setMetrics(prev => ({ ...prev, ttfb: Math.round(ttfb) }))
-          console.log('[Catalyst] TTFB:', Math.round(ttfb) + 'ms')
+          const ttfb = Math.round(navigation.responseStart - navigation.requestStart)
+          setMetrics(prev => ({ ...prev, ttfb }))
+          // Only log if performance is poor
+          if (ttfb > 600) {
+            console.warn('[Catalyst] Poor TTFB:', ttfb + 'ms (target: <600ms)')
+          }
         }
       }
     }

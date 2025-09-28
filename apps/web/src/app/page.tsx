@@ -1,6 +1,10 @@
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { ArrowRightIcon, SparklesIcon, ChartBarIcon, BoltIcon } from '@heroicons/react/24/outline'
+// Using emoji icons instead of heroicons for compatibility
+const ArrowRightIcon = () => <span className="w-5 h-5 flex items-center justify-center">→</span>
+const SparklesIcon = () => <span className="w-5 h-5 flex items-center justify-center">✨</span>
+const ChartBarIcon = () => <span className="w-5 h-5 flex items-center justify-center">📊</span>
+const BoltIcon = () => <span className="w-5 h-5 flex items-center justify-center">⚡</span>
 
 export default async function HomePage() {
   // Remove auth check for now to fix NextAuth issues
@@ -20,15 +24,12 @@ export default async function HomePage() {
               </div>
               <div className="hidden md:block">
                 <div className="ml-10 flex items-baseline space-x-4">
-                  <span className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium cursor-pointer">
-                    Features
-                  </span>
-                  <span className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium cursor-pointer">
-                    Pricing
-                  </span>
-                  <span className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium cursor-pointer">
-                    About
-                  </span>
+                  <Link href="/dashboard" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                    Dashboard
+                  </Link>
+                  <Link href="/ai-coach" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                    AI Coach
+                  </Link>
                 </div>
               </div>
             </div>
@@ -65,13 +66,13 @@ export default async function HomePage() {
             <div className="mt-10 flex justify-center gap-4">
               <Link href="/auth/signup">
                 <Button size="lg" className="text-lg px-8 py-4">
-                  Start Your League
+                  Get Started
                   <ArrowRightIcon className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
-              <Link href="/demo">
+              <Link href="/auth/signin">
                 <Button variant="outline" size="lg" className="text-lg px-8 py-4">
-                  Try Demo
+                  Sign In
                 </Button>
               </Link>
             </div>
@@ -161,15 +162,15 @@ export default async function HomePage() {
       <div className="py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            Ready to revolutionize your league?
+            Ready to get started?
           </h2>
           <p className="mt-4 text-lg text-gray-300">
-            Join thousands of fantasy players who have already made the switch.
+            Create your account and experience the AI-powered fantasy platform.
           </p>
           <div className="mt-10">
             <Link href="/auth/signup">
               <Button size="lg" className="text-lg px-8 py-4">
-                Create Your League Now
+                Sign Up Today
                 <ArrowRightIcon className="ml-2 h-5 w-5" />
               </Button>
             </Link>

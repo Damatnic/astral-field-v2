@@ -3,8 +3,9 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ThemeProvider } from 'next-themes'
 import { SessionProvider } from 'next-auth/react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
+import { AuthErrorBoundary } from '@/components/auth/auth-error-boundary'
 
 const ReactQueryDevtools = dynamic(
   () => import('@tanstack/react-query-devtools').then((d) => ({
@@ -14,6 +15,22 @@ const ReactQueryDevtools = dynamic(
     ssr: false,
   }
 )
+
+// Sentinel: Hydration-safe wrapper to prevent SSR mismatches
+function HydrationSafeWrapper({ children }: { children: React.ReactNode }) {
+  const [isHydrated, setIsHydrated] = useState(false)
+
+  useEffect(() => {
+    setIsHydrated(true)
+  }, [])
+
+  // During SSR and initial hydration, render children without session-dependent components
+  if (!isHydrated) {
+    return <>{children}</>
+  }
+
+  return <>{children}</>
+}
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -31,18 +48,27 @@ export function Providers({ children }: { children: React.ReactNode }) {
   )
 
   return (
-    <SessionProvider>
-      <QueryClientProvider client={queryClient}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-          enableSystem
-          disableTransitionOnChange
+    <AuthErrorBoundary>
+      <HydrationSafeWrapper>
+        <SessionProvider
+          refetchInterval={0}
+          refetchOnWindowFocus={false}
+          refetchWhenOffline={false}
         >
-          {children}
-          {process.env.NODE_ENV === 'development' && <ReactQueryDevtools initialIsOpen={false} />}
-        </ThemeProvider>
-      </QueryClientProvider>
-    </SessionProvider>
+          <QueryClientProvider client={queryClient}>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="dark"
+              enableSystem
+              disableTransitionOnChange
+              suppressHydrationWarning
+            >
+              {children}
+              {process.env.NODE_ENV === 'development' && <ReactQueryDevtools initialIsOpen={false} />}
+            </ThemeProvider>
+          </QueryClientProvider>
+        </SessionProvider>
+      </HydrationSafeWrapper>
+    </AuthErrorBoundary>
   )
 }

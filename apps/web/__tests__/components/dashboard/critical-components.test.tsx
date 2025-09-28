@@ -480,16 +480,26 @@ describe('Asset Loading Simulation', () => {
     consoleSpy.mockRestore()
   })
 
-  test('components work without external font loading', () => {
-    // Simulate font loading failure
-    document.fonts = {
-      ready: Promise.reject(new Error('Font loading failed')),
-      load: jest.fn().mockRejectedValue(new Error('Font loading failed'))
-    } as any
+  test('components work without external font loading', async () => {
+    // Simulate font loading failure with proper error handling
+    const originalFonts = document.fonts
+    Object.defineProperty(document, 'fonts', {
+      value: {
+        ready: Promise.reject(new Error('Font loading failed')).catch(() => {}), // Catch to prevent unhandled rejection
+        load: jest.fn().mockRejectedValue(new Error('Font loading failed'))
+      },
+      configurable: true
+    })
     
     render(<MockDashboardHeader />)
     
     // Components should still render
     expect(screen.getByTestId('dashboard-header')).toBeInTheDocument()
+    
+    // Restore original fonts mock
+    Object.defineProperty(document, 'fonts', {
+      value: originalFonts,
+      configurable: true
+    })
   })
 })

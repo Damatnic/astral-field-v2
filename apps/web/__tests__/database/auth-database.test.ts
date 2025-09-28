@@ -382,13 +382,13 @@ describe('Authentication Database Tests', () => {
       const demoPassword = 'Dynasty2025!'
       
       for (const demoUser of demoUsers.slice(0, 3)) { // Test first 3 for performance
-        const mockUser = {
+        const testUser = {
           ...mockUser,
           email: demoUser.email,
           hashedPassword: await bcrypt.hash(demoPassword, 12)
         }
 
-        jest.mocked(prisma.user.findUnique).mockResolvedValue(mockUser)
+        jest.mocked(prisma.user.findUnique).mockResolvedValue(testUser)
 
         const user = await prisma.user.findUnique({
           where: { email: demoUser.email },
@@ -412,13 +412,13 @@ describe('Authentication Database Tests', () => {
       }
 
       for (const [email, expectedRole] of Object.entries(expectedRoles)) {
-        const mockUser = {
+        const testUser = {
           ...mockUser,
           email,
           role: expectedRole
         }
 
-        jest.mocked(prisma.user.findUnique).mockResolvedValue(mockUser)
+        jest.mocked(prisma.user.findUnique).mockResolvedValue(testUser)
 
         const user = await prisma.user.findUnique({
           where: { email },

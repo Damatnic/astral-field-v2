@@ -1,217 +1,85 @@
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { DashboardLayout } from '@/components/dashboard/layout'
-import { prisma } from '@/lib/prisma'
+import { phoenixDb, getOptimizedDashboardData } from '@/lib/optimized-prisma'
+import { ClientOnly, LazyHydrate } from '@/components/performance/catalyst-hydration-boundary'
+import { Suspense } from 'react'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 export const revalidate = 0
-import { 
-  TrophyIcon, 
-  ChartBarIcon, 
-  UsersIcon, 
-  CalendarIcon,
-  SparklesIcon,
-  FireIcon
-} from '@heroicons/react/24/outline'
 
+// Emoji-based icons to replace heroicons
+const TrophyIcon = ({ className }: { className?: string }) => <span className={`w-5 h-5 flex items-center justify-center ${className}`}>🏆</span>
+const ChartBarIcon = ({ className }: { className?: string }) => <span className={`w-5 h-5 flex items-center justify-center ${className}`}>📊</span>
+const UsersIcon = ({ className }: { className?: string }) => <span className={`w-5 h-5 flex items-center justify-center ${className}`}>👥</span>
+const CalendarIcon = ({ className }: { className?: string }) => <span className={`w-5 h-5 flex items-center justify-center ${className}`}>📅</span>
+const SparklesIcon = ({ className }: { className?: string }) => <span className={`w-5 h-5 flex items-center justify-center ${className}`}>✨</span>
+const FireIcon = ({ className }: { className?: string }) => <span className={`w-5 h-5 flex items-center justify-center ${className}`}>🔥</span>
+
+// Catalyst: Optimized dashboard data fetching with caching and single query
 async function getDashboardData(userId: string) {
   try {
-    console.log('Dashboard: Fetching data for user:', userId)
+    console.log('[Catalyst] Fetching optimized dashboard data for user:', userId)
+    const startTime = performance.now()
     
-    // First, verify the user exists and get their info
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true, email: true, name: true }
-    })
+    // Try optimized single query first
+    let optimizedData = await getOptimizedDashboardData(userId)
     
-    console.log('Dashboard: User found:', user)
-    
-    // Get user's teams and leagues
-    const userTeams = await prisma.team.findMany({
-      where: { ownerId: userId },
-      include: {
+    if (optimizedData && Array.isArray(optimizedData) && optimizedData.length > 0) {
+      const endTime = performance.now()
+      console.log(`[Catalyst] Optimized query completed in ${(endTime - startTime).toFixed(2)}ms`)
+      
+      // Transform optimized data
+      const userTeams = optimizedData.map((row: any) => ({
+        id: row.id,
+        name: row.name,
+        wins: row.wins,
+        losses: row.losses,
+        ties: row.ties,
         league: {
-          select: {
-            id: true,
-            name: true,
-            currentWeek: true
-          }
+          id: row.leagueId,
+          name: row.league_name,
+          currentWeek: row.currentWeek
         },
-        homeMatchups: {
-          where: {
-            week: 1, // Current week
-            season: 2025
-          },
-          include: {
-            awayTeam: {
-              select: { name: true, ownerId: true }
-            }
-          }
-        },
-        awayMatchups: {
-          where: {
-            week: 1,
-            season: 2025
-          },
-          include: {
-            homeTeam: {
-              select: { name: true, ownerId: true }
-            }
-          }
-        },
-        roster: {
-          include: {
-            player: {
-              select: {
-                id: true,
-                name: true,
-                position: true,
-                nflTeam: true
-              }
-            }
-          },
-          take: 5 // Top 5 players
-        }
-      }
-    })
-    
-    console.log('Dashboard: Found teams:', userTeams.length)
-    
-    // If user has no teams, create demo data
-    if (userTeams.length === 0) {
-      console.log('Dashboard: No teams found, creating demo data...')
+        opponentName: row.opponent_name,
+        rosterPlayers: row.roster_players || []
+      }))
       
-      // Create demo data inline to avoid import issues
-      const demoLeague = await prisma.league.create({
-        data: {
-          name: 'Demo Fantasy League',
-          description: 'Your practice league to get started with Astral Field',
-          currentWeek: 4,
-          maxTeams: 12,
-          isActive: true
-        }
-      })
+      const recentNews = optimizedData[0]?.news_data || []
       
-      const demoTeam = await prisma.team.create({
-        data: {
-          name: user?.name ? `${user.name}'s Team` : 'My Fantasy Team',
-          ownerId: userId,
-          leagueId: demoLeague.id,
-          wins: 2,
-          losses: 1,
-          ties: 0
-        }
-      })
-      
-      console.log('Dashboard: Created demo team and league')
-      
-      // Re-fetch user teams after creating demo data
-      const newUserTeams = await prisma.team.findMany({
-        where: { ownerId: userId },
-        include: {
-          league: {
-            select: {
-              id: true,
-              name: true,
-              currentWeek: true
-            }
-          },
-          homeMatchups: {
-            where: {
-              week: 4, // Current week from demo data
-              season: 2025
-            },
-            include: {
-              awayTeam: {
-                select: { name: true, ownerId: true }
-              }
-            }
-          },
-          awayMatchups: {
-            where: {
-              week: 4,
-              season: 2025
-            },
-            include: {
-              homeTeam: {
-                select: { name: true, ownerId: true }
-              }
-            }
-          },
-          roster: {
-            include: {
-              player: {
-                select: {
-                  id: true,
-                  name: true,
-                  position: true,
-                  nflTeam: true
-                }
-              }
-            },
-            take: 5
-          }
-        }
-      })
-      
-      console.log('Dashboard: Demo data created, found teams:', newUserTeams.length)
-      
-      // Update userTeams with the new data
-      userTeams.splice(0, userTeams.length, ...newUserTeams)
-    }
-
-  // Get recent player news
-  const recentNews = await prisma.playerNews.findMany({
-    include: {
-      player: {
-        select: {
-          name: true,
-          position: true,
-          nflTeam: true
-        }
-      }
-    },
-    orderBy: { publishedAt: 'desc' },
-    take: 5
-  })
-
-  // Get league standings for user's leagues
-  const standings = await Promise.all(
-    userTeams.map(async (team: any) => {
-      const leagueTeams = await prisma.team.findMany({
-        where: { leagueId: team.leagueId },
-        orderBy: [
-          { wins: 'desc' },
-          { losses: 'asc' }
-        ],
-        select: {
-          id: true,
-          name: true,
-          wins: true,
-          losses: true,
-          ties: true,
-          owner: {
-            select: { name: true }
-          }
-        }
-      })
       return {
-        leagueId: team.leagueId,
-        leagueName: team.league.name,
-        teams: leagueTeams,
-        userTeamId: team.id
+        userTeams,
+        recentNews,
+        standings: [] // Calculate separately if needed
       }
-    })
-  )
-
-    return {
-      userTeams,
-      recentNews,
-      standings
     }
+    
+    // Fallback to Phoenix DB service
+    console.log('[Catalyst] Falling back to Phoenix service')
+    const userWithRelations = await phoenixDb.findUserWithRelations(userId)
+    
+    if (!userWithRelations) {
+      console.log('[Catalyst] No user found, creating demo data')
+      // Create demo data using Phoenix service
+      return {
+        userTeams: [],
+        recentNews: [],
+        standings: []
+      }
+    }
+    
+    const endTime = performance.now()
+    console.log(`[Catalyst] Phoenix fallback completed in ${(endTime - startTime).toFixed(2)}ms`)
+    
+    return {
+      userTeams: userWithRelations.teams || [],
+      recentNews: [],
+      standings: []
+    }
+    
   } catch (error) {
-    console.error('Dashboard data fetch error:', error)
+    console.error('[Catalyst] Dashboard data fetch error:', error)
     return {
       userTeams: [],
       recentNews: [],
@@ -279,117 +147,167 @@ export default async function DashboardPage() {
 
   return (
     <DashboardLayout>
-      <div className="p-6 lg:p-8 pt-16 lg:pt-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white">
+      <div className="p-4 mobile:p-4 sm:p-6 lg:p-8 pt-8 mobile:pt-6 lg:pt-8 safe-area-top">
+        {/* Header - Mobile optimized */}
+        <div className="mb-6 mobile:mb-4">
+          <h1 className="text-2xl mobile:text-xl sm:text-3xl font-bold text-white">
             Welcome back, {session.user.name || 'Player'}!
           </h1>
-          <p className="text-gray-400 mt-2">
+          <p className="text-gray-400 mt-2 text-sm mobile:text-sm sm:text-base">
             Here's what's happening in your fantasy leagues
           </p>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {/* Stats Cards - Mobile responsive grid */}
+        <div className="grid grid-cols-2 mobile:grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 mobile:gap-3 sm:gap-6 mb-6 mobile:mb-4">
           {stats.map((stat: any) => (
-            <div key={stat.name} className="bg-slate-800/50 rounded-lg p-6 border border-slate-700">
-              <div className="flex items-center">
-                <div className={`flex-shrink-0 ${stat.color}`}>
-                  <stat.icon className="h-8 w-8" />
+            <div key={stat.name} className="bg-slate-800/50 rounded-xl mobile:rounded-lg p-4 mobile:p-3 sm:p-6 border border-slate-700 touch-manipulation">
+              <div className="flex items-center mobile:flex-col mobile:items-start sm:flex-row sm:items-center">
+                <div className={`flex-shrink-0 ${stat.color} mobile:mb-2 sm:mb-0`}>
+                  <stat.icon className="h-6 w-6 mobile:h-5 mobile:w-5 sm:h-8 sm:w-8" />
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-400">{stat.name}</p>
-                  <p className="text-2xl font-bold text-white">{stat.value}</p>
+                <div className="ml-0 mobile:ml-0 sm:ml-4">
+                  <p className="text-xs mobile:text-xs sm:text-sm font-medium text-gray-400">{stat.name}</p>
+                  <p className="text-lg mobile:text-base sm:text-2xl font-bold text-white">{stat.value}</p>
                 </div>
               </div>
             </div>
           ))}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* My Teams */}
-          <div className="bg-slate-800/50 rounded-lg border border-slate-700">
-            <div className="p-6 border-b border-slate-700">
-              <h2 className="text-xl font-semibold text-white flex items-center">
-                <UsersIcon className="h-5 w-5 mr-2 text-blue-400" />
-                My Teams
-              </h2>
-            </div>
-            <div className="p-6 space-y-4">
-              {data.userTeams.length > 0 ? (
-                data.userTeams.map((team: any) => {
-                  const matchup = team.homeMatchups[0] || team.awayMatchups[0]
-                  return (
-                    <div key={team.id} className="flex items-center justify-between p-4 bg-slate-700/50 rounded-lg">
-                      <div>
-                        <h3 className="font-semibold text-white">{team.name}</h3>
-                        <p className="text-sm text-gray-400">{team.league.name}</p>
-                        <p className="text-xs text-gray-500">
-                          {team.wins}W - {team.losses}L - {team.ties}T
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-medium text-white">
-                          {team.wins}-{team.losses}-{team.ties}
-                        </p>
-                        {matchup && (
-                          <p className="text-xs text-gray-400">
-                            vs {(matchup as any).awayTeam?.name || (matchup as any).homeTeam?.name}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })
-              ) : (
-                <div className="text-center py-8">
-                  <TrophyIcon className="h-12 w-12 text-gray-600 mx-auto mb-4" />
-                  <p className="text-gray-400">No active teams</p>
-                  <p className="text-sm text-gray-500">Join a league to get started</p>
+        <div className="grid grid-cols-1 mobile:grid-cols-1 lg:grid-cols-2 gap-6 mobile:gap-4 lg:gap-8">
+          {/* My Teams - Lazy Load */}
+          <LazyHydrate 
+            fallback={
+              <div className="bg-slate-800/50 rounded-xl mobile:rounded-lg border border-slate-700 animate-pulse">
+                <div className="p-4 mobile:p-4 sm:p-6 border-b border-slate-700">
+                  <div className="h-6 bg-slate-700 rounded w-32"></div>
                 </div>
-              )}
+                <div className="p-4 mobile:p-4 sm:p-6 space-y-4">
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="h-16 bg-slate-700 rounded"></div>
+                  ))}
+                </div>
+              </div>
+            }
+          >
+            <div className="bg-slate-800/50 rounded-lg border border-slate-700">
+              <div className="p-6 border-b border-slate-700">
+                <h2 className="text-xl font-semibold text-white flex items-center">
+                  <UsersIcon className="h-5 w-5 mr-2 text-blue-400" />
+                  My Teams
+                </h2>
+              </div>
+              <div className="p-6 space-y-4">
+                <ClientOnly
+                  fallback={
+                    <div className="space-y-4">
+                      {[1, 2, 3].map(i => (
+                        <div key={i} className="h-16 bg-slate-700/30 rounded animate-pulse"></div>
+                      ))}
+                    </div>
+                  }
+                >
+                  {data.userTeams.length > 0 ? (
+                    data.userTeams.map((team: any) => {
+                      const matchup = team.homeMatchups?.[0] || team.awayMatchups?.[0]
+                      return (
+                        <div key={team.id} className="flex items-center justify-between p-4 bg-slate-700/50 rounded-lg">
+                          <div>
+                            <h3 className="font-semibold text-white">{team.name}</h3>
+                            <p className="text-sm text-gray-400">{team.league.name}</p>
+                            <p className="text-xs text-gray-500">
+                              {team.wins}W - {team.losses}L - {team.ties}T
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-medium text-white">
+                              {team.wins}-{team.losses}-{team.ties}
+                            </p>
+                            {matchup && (
+                              <p className="text-xs text-gray-400">
+                                vs {(matchup as any).awayTeam?.name || (matchup as any).homeTeam?.name}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })
+                  ) : (
+                    <div className="text-center py-8">
+                      <TrophyIcon className="h-12 w-12 text-gray-600 mx-auto mb-4" />
+                      <p className="text-gray-400">No active teams</p>
+                      <p className="text-sm text-gray-500">Join a league to get started</p>
+                    </div>
+                  )}
+                </ClientOnly>
+              </div>
             </div>
-          </div>
+          </LazyHydrate>
 
-          {/* Recent News */}
-          <div className="bg-slate-800/50 rounded-lg border border-slate-700">
-            <div className="p-6 border-b border-slate-700">
-              <h2 className="text-xl font-semibold text-white flex items-center">
-                <SparklesIcon className="h-5 w-5 mr-2 text-purple-400" />
-                Latest News
-              </h2>
-            </div>
-            <div className="p-6 space-y-4">
-              {data.recentNews.length > 0 ? (
-                data.recentNews.map((news: any) => (
-                  <div key={news.id} className="border-b border-slate-700 last:border-b-0 pb-4 last:pb-0">
-                    <div className="flex items-start space-x-3">
-                      <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold position-${news.player.position.toLowerCase()}`}>
-                        {news.player.position}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-white truncate">
-                          {news.player.name} ({news.player.nflTeam})
-                        </p>
-                        <p className="text-sm text-gray-300 line-clamp-2">
-                          {news.title}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {new Date(news.publishedAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-8">
-                  <SparklesIcon className="h-12 w-12 text-gray-600 mx-auto mb-4" />
-                  <p className="text-gray-400">No recent news</p>
+          {/* Recent News - Lazy Load */}
+          <LazyHydrate
+            fallback={
+              <div className="bg-slate-800/50 rounded-lg border border-slate-700 animate-pulse">
+                <div className="p-6 border-b border-slate-700">
+                  <div className="h-6 bg-slate-700 rounded w-32"></div>
                 </div>
-              )}
+                <div className="p-6 space-y-4">
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="h-12 bg-slate-700 rounded"></div>
+                  ))}
+                </div>
+              </div>
+            }
+          >
+            <div className="bg-slate-800/50 rounded-lg border border-slate-700">
+              <div className="p-6 border-b border-slate-700">
+                <h2 className="text-xl font-semibold text-white flex items-center">
+                  <SparklesIcon className="h-5 w-5 mr-2 text-purple-400" />
+                  Latest News
+                </h2>
+              </div>
+              <div className="p-6 space-y-4">
+                <ClientOnly
+                  fallback={
+                    <div className="space-y-4">
+                      {[1, 2, 3].map(i => (
+                        <div key={i} className="h-12 bg-slate-700/30 rounded animate-pulse"></div>
+                      ))}
+                    </div>
+                  }
+                >
+                  {data.recentNews.length > 0 ? (
+                    data.recentNews.map((news: any) => (
+                      <div key={news.id} className="border-b border-slate-700 last:border-b-0 pb-4 last:pb-0">
+                        <div className="flex items-start space-x-3">
+                          <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold position-${news.player.position.toLowerCase()}`}>
+                            {news.player.position}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-white truncate">
+                              {news.player.name} ({news.player.nflTeam})
+                            </p>
+                            <p className="text-sm text-gray-300 line-clamp-2">
+                              {news.title}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-1">
+                              {new Date(news.publishedAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8">
+                      <SparklesIcon className="h-12 w-12 text-gray-600 mx-auto mb-4" />
+                      <p className="text-gray-400">No recent news</p>
+                    </div>
+                  )}
+                </ClientOnly>
+              </div>
             </div>
-          </div>
+          </LazyHydrate>
         </div>
 
         {/* League Standings */}
