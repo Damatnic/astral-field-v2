@@ -124,7 +124,14 @@
       "Bash(do echo \"Test $i:\")",
       "Bash(time curl:*)",
       "Bash(JEST_DISABLE=true NODE_ENV=development NODE_OPTIONS=\"--max-old-space-size=4096\" PORT=4001 npx next dev --port 4001)",
-      "Bash(npx @next/bundle-analyzer:*)"
+      "Bash(npx @next/bundle-analyzer:*)",
+      "WebFetch(domain:web-724220wit-astral-productions.vercel.app)",
+      "WebFetch(domain:web-67v9s0ipy-astral-productions.vercel.app)",
+      "WebFetch(domain:web-mlkc59tdh-astral-productions.vercel.app)",
+      "WebFetch(domain:web-i0bofjrh5-astral-productions.vercel.app)",
+      "WebFetch(domain:web-d19te6ck7-astral-productions.vercel.app)",
+      "WebFetch(domain:web-5zjwlwmm5-astral-productions.vercel.app)",
+      "WebFetch(domain:web-rfs0pyuw6-astral-productions.vercel.app)"
     ],
     "deny": [],
     "ask": []

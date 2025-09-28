@@ -65,14 +65,7 @@ export const metadata: Metadata = {
 function CriticalResourcePreloader() {
   return (
     <>
-      {/* Catalyst: Preload critical fonts */}
-      <link
-        rel="preload"
-        href="https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiA.woff2"
-        as="font"
-        type="font/woff2"
-        crossOrigin="anonymous"
-      />
+      {/* Catalyst: Font loading handled by Next.js Inter font configuration */}
       
       {/* Catalyst: Preconnect to external domains */}
       <link rel="preconnect" href="https://vitals.vercel-insights.com" />
@@ -115,7 +108,6 @@ function CriticalResourcePreloader() {
       
       {/* Sigma: Security headers */}
       <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
-      <meta httpEquiv="X-Frame-Options" content="DENY" />
       <meta httpEquiv="X-XSS-Protection" content="1; mode=block" />
       
       {/* Sigma: iOS specific splash screens and icons */}
@@ -241,7 +233,8 @@ export default function RootLayout({
               });
             }
             
-            // Catalyst: Web Vitals reporting
+            // Catalyst: Web Vitals reporting - disabled for script tag compatibility
+            // Web vitals will be handled by @vercel/analytics and @vercel/speed-insights
             if (typeof window !== 'undefined' && 'performance' in window) {
               function sendToAnalytics(metric) {
                 // Send to your analytics service
@@ -255,19 +248,46 @@ export default function RootLayout({
                 }
               }
               
-              // Import web-vitals dynamically with proper module resolution
-              (async () => {
+              // Catalyst: Basic performance metrics tracking without ES modules
+              if (typeof PerformanceObserver !== 'undefined') {
                 try {
-                  const webVitals = await import('web-vitals');
-                  webVitals.getFCP(sendToAnalytics);
-                  webVitals.getLCP(sendToAnalytics);
-                  webVitals.getFID(sendToAnalytics);
-                  webVitals.getCLS(sendToAnalytics);
-                  webVitals.getTTFB(sendToAnalytics);
+                  // Track LCP
+                  new PerformanceObserver((list) => {
+                    const entries = list.getEntries();
+                    entries.forEach((entry) => {
+                      if (entry.entryType === 'largest-contentful-paint') {
+                        sendToAnalytics({
+                          name: 'LCP',
+                          value: entry.startTime,
+                          id: 'lcp-' + Date.now(),
+                          delta: entry.startTime
+                        });
+                      }
+                    });
+                  }).observe({ entryTypes: ['largest-contentful-paint'] });
+                  
+                  // Track CLS
+                  new PerformanceObserver((list) => {
+                    let clsValue = 0;
+                    const entries = list.getEntries();
+                    entries.forEach((entry) => {
+                      if (!entry.hadRecentInput) {
+                        clsValue += entry.value;
+                      }
+                    });
+                    if (clsValue > 0) {
+                      sendToAnalytics({
+                        name: 'CLS',
+                        value: clsValue,
+                        id: 'cls-' + Date.now(),
+                        delta: clsValue
+                      });
+                    }
+                  }).observe({ entryTypes: ['layout-shift'] });
                 } catch (error) {
-                  console.warn('Web Vitals could not be loaded:', error);
+                  console.warn('Performance observer setup failed:', error);
                 }
-              })();
+              }
             }
           `
         }} />

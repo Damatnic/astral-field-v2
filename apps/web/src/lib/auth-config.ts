@@ -17,8 +17,8 @@ if (!AUTH_SECRET || AUTH_SECRET.length < 32) {
 // Environment configuration validation
 const AUTH_CONFIG = {
   secret: AUTH_SECRET,
-  url: process.env.NEXTAUTH_URL || 'http://localhost:3000',
-  trustHost: process.env.AUTH_TRUST_HOST === 'true',
+  url: process.env.NEXTAUTH_URL || process.env.VERCEL_URL || 'http://localhost:3000',
+  trustHost: process.env.AUTH_TRUST_HOST === 'true' || process.env.NODE_ENV === 'production',
   debug: process.env.AUTH_DEBUG === 'true' && process.env.NODE_ENV === 'development',
   sessionMaxAge: parseInt(process.env.SESSION_MAX_AGE || '86400', 10), // 24 hours
   jwtMaxAge: parseInt(process.env.JWT_MAX_AGE || '86400', 10), // 24 hours
