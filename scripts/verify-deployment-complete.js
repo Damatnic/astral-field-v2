@@ -29,9 +29,6 @@ const CONFIG = {
     { email: 'tony.damato@test.com', password: 'fantasy2025', name: 'Tony Damato' }
   ],
   
-  // ESPN League ID (from previous verification)
-  espnLeagueId: '1234567890',
-  
   // Test timeouts
   timeout: 10000
 };
@@ -242,40 +239,52 @@ async function testLoginFlow() {
 async function testESPNAPI() {
   logSection('4. ESPN API Integration Test');
   
-  try {
-    const response = await makeRequest(`${CONFIG.baseUrl}/api/espn/league/${CONFIG.espnLeagueId}`);
-    
-    if (response.statusCode === 200) {
-      logTest('ESPN API endpoint', 'pass', `Status: ${response.statusCode}`);
+  const endpoints = [
+    { path: '/api/espn/scoreboard', name: 'Scoreboard' },
+    { path: '/api/espn/news', name: 'News' }
+  ];
+  
+  let passCount = 0;
+  
+  for (const endpoint of endpoints) {
+    try {
+      const response = await makeRequest(`${CONFIG.baseUrl}${endpoint.path}`);
       
-      try {
-        const data = JSON.parse(response.body);
+      if (response.statusCode === 200) {
+        logTest(`ESPN ${endpoint.name}`, 'pass', `Status: ${response.statusCode}`);
         
-        if (data.id === CONFIG.espnLeagueId) {
-          logTest('League data valid', 'pass', `League ID: ${data.id}`);
-        } else {
-          logTest('League data', 'warn', 'League ID mismatch');
+        try {
+          const data = JSON.parse(response.body);
+          
+          // Check if data has expected structure
+          if (endpoint.name === 'Scoreboard' && data.events) {
+            logTest(`ESPN ${endpoint.name} data valid`, 'pass', `Found ${data.events?.length || 0} games`);
+          } else if (endpoint.name === 'News' && data.articles) {
+            logTest(`ESPN ${endpoint.name} data valid`, 'pass', `Found ${data.articles?.length || 0} articles`);
+          } else if (data) {
+            logTest(`ESPN ${endpoint.name} data valid`, 'pass', 'Data received');
+          }
+          
+          passCount++;
+        } catch {
+          logTest(`ESPN ${endpoint.name} JSON`, 'warn', 'Invalid JSON response');
         }
-        
-        return true;
-      } catch {
-        logTest('ESPN API response', 'warn', 'Invalid JSON response');
-        return false;
+      } else if (response.statusCode === 404) {
+        logTest(`ESPN ${endpoint.name}`, 'fail', '404 - Endpoint not found');
+      } else if (response.statusCode === 401) {
+        logTest(`ESPN ${endpoint.name}`, 'warn', 'Requires authentication');
+        passCount++; // This is expected behavior
+      } else {
+        logTest(`ESPN ${endpoint.name}`, 'warn', `Status: ${response.statusCode}`);
       }
-    } else if (response.statusCode === 404) {
-      logTest('ESPN API endpoint', 'fail', '404 - Endpoint not found');
-      return false;
-    } else if (response.statusCode === 401) {
-      logTest('ESPN API endpoint', 'warn', 'Requires authentication');
-      return true; // This is expected behavior
-    } else {
-      logTest('ESPN API endpoint', 'warn', `Status: ${response.statusCode}`);
-      return false;
+    } catch (error) {
+      logTest(`ESPN ${endpoint.name}`, 'fail', error.message);
     }
-  } catch (error) {
-    logTest('ESPN API', 'fail', error.message);
-    return false;
   }
+  
+  console.log(`\n📊 ESPN API: ${passCount}/${endpoints.length} endpoints working\n`);
+  
+  return passCount === endpoints.length;
 }
 
 async function testAllAccounts() {
