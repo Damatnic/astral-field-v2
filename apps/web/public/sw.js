@@ -21,7 +21,7 @@ const CACHE_DURATIONS = {
   IMAGES: 30 * 24 * 60 * 60 * 1000 // 30 days
 }
 
-// Assets to cache immediately
+// Assets to cache immediately (only essential ones that we know exist)
 const STATIC_ASSETS = [
   '/',
   '/manifest.json'
@@ -46,18 +46,32 @@ const OFFLINE_ROUTES = [
 
 // Sigma: Install event - cache static assets
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing service worker...')
+  console.log('[SW] Installing service worker')
   
   event.waitUntil(
     Promise.all([
-      // Cache static assets (excluding CSS to prevent MIME type issues)
-      caches.open(STATIC_CACHE).then((cache) => {
+      // Cache static assets with error handling
+      caches.open(STATIC_CACHE).then(async (cache) => {
         console.log('[SW] Caching static assets')
-        // Only cache page routes, not CSS/JS files during install
-        const safeAssets = STATIC_ASSETS.filter(asset => 
-          !asset.endsWith('.css') && !asset.endsWith('.js')
-        )
-        return cache.addAll(safeAssets)
+        
+        // Cache assets one by one to handle failures gracefully
+        const cachePromises = STATIC_ASSETS.map(async (asset) => {
+          try {
+            const response = await fetch(asset)
+            if (response.ok) {
+              await cache.put(asset, response)
+              console.log('[SW] Cached:', asset)
+            } else {
+              console.warn('[SW] Failed to cache (not found):', asset)
+            }
+          } catch (error) {
+            console.warn('[SW] Failed to cache (error):', asset, error.message)
+          }
+        })
+        
+        await Promise.allSettled(cachePromises)
+      }).catch(error => {
+        console.error('[SW] Failed to cache static assets:', error)
       }),
       
       // Skip waiting to activate immediately
@@ -220,12 +234,16 @@ async function handleStaticAsset(request) {
       const headers = new Headers(responseClone.headers)
       headers.set('sw-cached-at', Date.now().toString())
       
-      // Ensure proper MIME type for CSS files
+      // Ensure proper MIME type for different file types
       const url = new URL(request.url)
       if (url.pathname.endsWith('.css')) {
         headers.set('Content-Type', 'text/css')
       } else if (url.pathname.endsWith('.js')) {
         headers.set('Content-Type', 'application/javascript')
+      } else if (url.pathname.endsWith('.ico')) {
+        headers.set('Content-Type', 'image/x-icon')
+      } else if (url.pathname.endsWith('.png')) {
+        headers.set('Content-Type', 'image/png')
       }
       
       const modifiedResponse = new Response(responseClone.body, {
@@ -239,7 +257,16 @@ async function handleStaticAsset(request) {
     
     return networkResponse
   } catch (error) {
-    console.log('[SW] Network failed for static asset, using cache:', request.url)
+    console.log('[SW] Network failed for static asset:', request.url)
+    
+    // For favicon files, return a minimal fallback instead of the full offline page
+    const url = new URL(request.url)
+    if (url.pathname.includes('favicon') || url.pathname.endsWith('.ico')) {
+      // Return a transparent 1x1 PNG for missing favicon files
+      const transparentPixel = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
+      return fetch(transparentPixel)
+    }
+    
     return cachedResponse || createOfflineResponse()
   }
 }

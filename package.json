@@ -27,6 +27,12 @@
     "setup:env": "scripts/bootstrap.ps1",
     "dev:up": "scripts/dev_up.ps1",
     "test:all": "scripts/test_all.ps1",
+    "validate:env": "node scripts/validate-env.js",
+    "validate:env:example": "node scripts/validate-env.js --generate-example",
+    "audit:console": "node scripts/cleanup-console-statements.js",
+    "audit:full": "npm run audit:console && npm run validate:env",
+    "predev": "npm run validate:env",
+    "prebuild": "npm run validate:env",
     "postinstall": "npm run db:generate"
   },
   "devDependencies": {
