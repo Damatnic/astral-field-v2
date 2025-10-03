@@ -1,0 +1,6 @@
+# robots.txt for AstralField
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://astral-field-v2.vercel.app/sitemap.xml
