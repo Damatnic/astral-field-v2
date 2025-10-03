@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+export const dynamic = 'force-dynamic'
+
+
 /**
  * Zenith Health Monitoring API
  * Provides health metrics for QA monitoring

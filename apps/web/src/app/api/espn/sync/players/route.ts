@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { ESPNSyncService } from '@/lib/services/espn-sync';
 
+export const dynamic = 'force-dynamic'
+
+
 export async function POST() {
   try {
     const syncService = new ESPNSyncService();

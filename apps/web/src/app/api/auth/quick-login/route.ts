@@ -4,6 +4,9 @@ import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import { withRateLimit } from '@/lib/security/rate-limit-middleware'
 
+export const dynamic = 'force-dynamic'
+
+
 // Guardian Security: Force Node.js runtime for secure operations
 export const runtime = 'nodejs'
 

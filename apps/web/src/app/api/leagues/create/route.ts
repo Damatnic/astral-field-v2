@@ -4,6 +4,9 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { logger } from '@/lib/logger'
 
+export const dynamic = 'force-dynamic'
+
+
 const CreateLeagueSchema = z.object({
   name: z.string().min(1, 'League name is required').max(100, 'League name too long'),
   description: z.string().max(500, 'Description too long').optional(),

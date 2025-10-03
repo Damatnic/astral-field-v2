@@ -3,6 +3,9 @@ import { auth } from '@/lib/auth'
 import { guardianMFA } from '@/lib/security/mfa'
 import { withRateLimit } from '@/lib/security/rate-limit-middleware'
 
+export const dynamic = 'force-dynamic'
+
+
 // Guardian Security: Force Node.js runtime
 export const runtime = 'nodejs'
 

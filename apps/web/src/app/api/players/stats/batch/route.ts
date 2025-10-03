@@ -3,6 +3,9 @@ import { phoenixDb } from '@/lib/optimized-prisma'
 import { leagueCache } from '@/lib/cache/catalyst-cache'
 import { z } from 'zod'
 
+export const dynamic = 'force-dynamic'
+
+
 // Catalyst: Batch player stats endpoint for efficient data loading
 const BatchStatsSchema = z.object({
   playerIds: z.array(z.string()).min(1).max(50), // Limit to 50 players per request

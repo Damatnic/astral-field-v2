@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { HealthReport } from '@/lib/qa/health-monitor'
 
+export const dynamic = 'force-dynamic'
+
+
 /**
  * Health Report Storage API
  * Stores health reports from client-side monitoring

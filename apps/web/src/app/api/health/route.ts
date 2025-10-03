@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
 import { prisma, checkDatabaseHealth } from '@/lib/prisma'
 
+export const dynamic = 'force-dynamic'
+
+
 export async function GET() {
   try {
     // Test database connection

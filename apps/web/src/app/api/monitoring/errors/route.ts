@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ZenithError } from '@/lib/monitoring/zenith-qa-monitor'
 
+export const dynamic = 'force-dynamic'
+
+
 /**
  * Zenith Error Monitoring API
  * Collects and stores client-side errors for analysis

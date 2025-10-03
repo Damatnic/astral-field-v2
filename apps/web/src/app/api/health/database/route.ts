@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server'
 import { checkDatabaseHealth, timedQuery } from '@/lib/prisma'
 import { phoenixDb } from '@/lib/optimized-prisma'
 
+export const dynamic = 'force-dynamic'
+
+
 // Phoenix: Comprehensive database health check endpoint
 export async function GET() {
   const startTime = performance.now()

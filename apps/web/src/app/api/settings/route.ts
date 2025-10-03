@@ -3,6 +3,9 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
+export const dynamic = 'force-dynamic'
+
+
 const SettingsUpdateSchema = z.object({
   name: z.string().max(100).optional(),
   teamName: z.string().max(100).optional(),

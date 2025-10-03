@@ -5,6 +5,9 @@ import { z } from 'zod'
 import { withRateLimit } from '@/lib/security/rate-limit-middleware'
 import { guardianAuditLogger, SecurityEventType } from '@/lib/security/audit-logger'
 
+export const dynamic = 'force-dynamic'
+
+
 const RegisterSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100),
   email: z.string().email('Invalid email').max(255),

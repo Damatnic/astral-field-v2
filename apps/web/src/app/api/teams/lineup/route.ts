@@ -5,6 +5,8 @@ import { withRetry, timedQuery } from '@/lib/prisma'
 import { z } from 'zod'
 import { logger } from '@/lib/logger'
 
+export const dynamic = 'force-dynamic'
+
 // Phoenix: Enhanced validation schema
 const LineupUpdateSchema = z.object({
   teamId: z.string().cuid(),

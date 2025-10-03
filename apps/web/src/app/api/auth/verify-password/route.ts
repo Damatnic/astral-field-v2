@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 
+export const dynamic = 'force-dynamic'
+
+
 // Force Node.js runtime for bcrypt compatibility
 export const runtime = 'nodejs'
 

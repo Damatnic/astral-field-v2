@@ -4,6 +4,9 @@ import bcrypt from 'bcryptjs'
 import { exec } from 'child_process'
 import { promisify } from 'util'
 
+export const dynamic = 'force-dynamic'
+
+
 const prisma = new PrismaClient()
 const execAsync = promisify(exec)
 

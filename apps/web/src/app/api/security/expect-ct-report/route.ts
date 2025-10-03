@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { guardianAuditLogger, SecurityEventType, SeverityLevel } from '@/lib/security/audit-logger'
 
+export const dynamic = 'force-dynamic'
+
+
 // Guardian Security: Force Node.js runtime
 export const runtime = 'nodejs'
 

@@ -8,6 +8,7 @@ import { rateLimiter } from '@/lib/security/rate-limiter'
 import { guardianSecurityHeaders } from '@/lib/security/security-headers'
 import { withRateLimit } from '@/lib/security/rate-limit-middleware'
 
+export const dynamic = 'force-dynamic'
 // Guardian Security: Force Node.js runtime
 export const runtime = 'nodejs'
 

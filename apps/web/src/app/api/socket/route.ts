@@ -4,6 +4,9 @@ import { Server as SocketIOServer } from 'socket.io'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
+export const dynamic = 'force-dynamic'
+
+
 // Global variable to store the socket server instance
 let io: SocketIOServer | null = null
 

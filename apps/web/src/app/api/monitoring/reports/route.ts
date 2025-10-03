@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { QAReport } from '@/lib/monitoring/zenith-qa-monitor'
 
+export const dynamic = 'force-dynamic'
+
+
 /**
  * Zenith QA Report API
  * Collects periodic QA reports from clients

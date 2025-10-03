@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { fantasyAI } from '@/lib/ai/fantasy-ai-engine'
 import { fantasyDataGenerator } from '@/lib/ai/fantasy-data-generator'
 
+export const dynamic = 'force-dynamic'
+
+
 /**
  * Nova AI: Player Performance Predictions for Week 4
  * Advanced ML-powered player projections with confidence intervals

@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
 
+export const dynamic = 'force-dynamic'
+
+
 // Trade API - Complete Trade Management System with Approval Workflow
 export async function GET(request: NextRequest) {
   try {
