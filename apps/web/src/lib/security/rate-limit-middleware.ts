@@ -47,14 +47,17 @@ export function withRateLimit(config: RateLimitConfig = {}) {
         }
         
         // Log security event
-        console.warn('Rate limit exceeded', {
+        if (process.env.NODE_ENV === 'development') {
+
+          console.warn('Rate limit exceeded', {
           identifier,
           ruleKey,
           riskScore: result.riskScore,
           retryAfter: result.retryAfter,
           metadata
-        })
-        
+        });
+
+        }
         return new NextResponse(
           JSON.stringify({
             error: 'RATE_LIMITED',
@@ -91,7 +94,11 @@ export function withRateLimit(config: RateLimitConfig = {}) {
       return response
       
     } catch (error) {
-      console.error('Rate limiting middleware error:', error)
+      if (process.env.NODE_ENV === 'development') {
+
+        console.error('Rate limiting middleware error:', error);
+
+      }
       // Don't block requests if rate limiter fails
       return handler(request)
     }

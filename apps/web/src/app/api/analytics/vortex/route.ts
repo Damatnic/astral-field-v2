@@ -14,9 +14,6 @@ export async function GET(request: NextRequest) {
     const endpoint = searchParams.get('endpoint');
     const week = parseInt(searchParams.get('week') || '3');
     const season = parseInt(searchParams.get('season') || '2025');
-    
-    console.log(`📊 Vortex Analytics API: ${endpoint} request for Week ${week}, Season ${season}`);
-    
     switch (endpoint) {
       case 'overview':
         return await handleOverviewRequest(week, season);
@@ -40,7 +37,11 @@ export async function GET(request: NextRequest) {
         );
     }
   } catch (error) {
-    console.error('❌ Vortex Analytics API Error:', error);
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('❌ Vortex Analytics API Error:', error);
+
+    }
     return NextResponse.json(
       { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
@@ -78,7 +79,11 @@ async function handleOverviewRequest(week: number, season: number) {
 
     return NextResponse.json(overview);
   } catch (error) {
-    console.error('Overview request error:', error);
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('Overview request error:', error);
+
+    }
     return NextResponse.json({ error: 'Failed to fetch overview' }, { status: 500 });
   }
 }
@@ -127,7 +132,11 @@ async function handlePlayersRequest(week: number, season: number, searchParams: 
 
     return NextResponse.json(analytics);
   } catch (error) {
-    console.error('Players request error:', error);
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('Players request error:', error);
+
+    }
     return NextResponse.json({ error: 'Failed to fetch player analytics' }, { status: 500 });
   }
 }
@@ -182,7 +191,11 @@ async function handleTeamsRequest(week: number, season: number, searchParams: UR
 
     return NextResponse.json(analytics);
   } catch (error) {
-    console.error('Teams request error:', error);
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('Teams request error:', error);
+
+    }
     return NextResponse.json({ error: 'Failed to fetch team analytics' }, { status: 500 });
   }
 }
@@ -258,7 +271,11 @@ async function handleMatchupsRequest(week: number, season: number) {
 
     return NextResponse.json(analytics);
   } catch (error) {
-    console.error('Matchups request error:', error);
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('Matchups request error:', error);
+
+    }
     return NextResponse.json({ error: 'Failed to fetch matchup analytics' }, { status: 500 });
   }
 }
@@ -315,7 +332,11 @@ async function handleInsightsRequest(week: number, season: number) {
 
     return NextResponse.json(insights);
   } catch (error) {
-    console.error('Insights request error:', error);
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('Insights request error:', error);
+
+    }
     return NextResponse.json({ error: 'Failed to fetch insights' }, { status: 500 });
   }
 }

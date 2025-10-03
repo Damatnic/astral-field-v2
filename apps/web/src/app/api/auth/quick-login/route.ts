@@ -72,9 +72,6 @@ const postHandler = async (request: NextRequest): Promise<NextResponse> => {
     const forwarded = request.headers.get('x-forwarded-for')
     const realIp = request.headers.get('x-real-ip')
     const clientIP = forwarded?.split(',')[0] || realIp || request.ip || 'unknown'
-    
-    console.log(`Quick login attempt for ${normalizedEmail} from IP ${clientIP}`)
-    
     return NextResponse.json({
       success: true,
       user: {
@@ -89,7 +86,11 @@ const postHandler = async (request: NextRequest): Promise<NextResponse> => {
     })
     
   } catch (error) {
-    console.error('Quick login error:', error)
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('Quick login error:', error);
+
+    }
     return NextResponse.json(
       { error: 'INTERNAL_ERROR', message: 'Quick login failed' },
       { status: 500 }

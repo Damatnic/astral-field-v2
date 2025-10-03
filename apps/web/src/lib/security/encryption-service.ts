@@ -72,11 +72,19 @@ export class GuardianEncryptionService {
         // Generate initial encryption key
         this.rotateKey('initial')
       } catch (error) {
-        console.error('Failed to initialize encryption service:', error)
+        if (process.env.NODE_ENV === 'development') {
+
+          console.error('Failed to initialize encryption service:', error);
+
+        }
         throw new Error('ENCRYPTION_INITIALIZATION_FAILED')
       }
     } else {
-      console.warn('ENCRYPTION_MASTER_KEY not found in environment variables')
+      if (process.env.NODE_ENV === 'development') {
+
+        console.warn('ENCRYPTION_MASTER_KEY not found in environment variables');
+
+      }
     }
   }
 

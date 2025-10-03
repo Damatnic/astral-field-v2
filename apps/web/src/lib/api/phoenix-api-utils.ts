@@ -227,7 +227,11 @@ class PhoenixAPIOptimizer {
           
           return { key: req.key, result }
         } catch (error) {
-          console.error(`Batch query failed for ${req.key}:`, error)
+          if (process.env.NODE_ENV === 'development') {
+
+            console.error(`Batch query failed for ${req.key}:`, error);
+
+          }
           return { key: req.key, result: null }
         }
       })

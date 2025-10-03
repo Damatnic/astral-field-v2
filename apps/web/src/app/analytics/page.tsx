@@ -114,7 +114,9 @@ async function getAnalyticsData(userId: string) {
       }
     }
   } catch (error) {
-    console.error('Analytics data fetch error:', error)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Analytics data fetch error:', error);
+    }
     return {
       teams: [],
       summary: {

@@ -11,7 +11,7 @@ import {
   ChartBarIcon,
   BoltIcon,
   TagIcon
-} from '@heroicons/react/outline'
+} from '@heroicons/react/24/outline'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 
@@ -168,7 +168,9 @@ export function EnhancedPlayerSearch({ onPlayerSelect, teamId, leagueId }: Enhan
       setAiInsights(insights)
       
     } catch (error) {
-      console.error('Search failed:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Search failed:', error);
+      }
       toast.error('Search failed')
     } finally {
       setLoading(false)

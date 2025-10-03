@@ -24,8 +24,6 @@ export class ESPNSyncService {
   private nfl = new NFLDataService();
   
   async syncESPNPlayers(): Promise<{ synced: number; errors: number }> {
-    console.log('🏈 Syncing NFL players from ESPN...');
-    
     let syncedCount = 0;
     let errorCount = 0;
     
@@ -70,21 +68,31 @@ export class ESPNSyncService {
               
               syncedCount++;
             } catch (playerError) {
-              console.error(`Failed to sync player ${athlete.fullName}:`, playerError);
+              if (process.env.NODE_ENV === 'development') {
+
+                console.error(`Failed to sync player ${athlete.fullName}:`, playerError);
+
+              }
               errorCount++;
             }
           }
         } catch (teamError) {
-          console.error(`Failed to sync team ${team.team.displayName}:`, teamError);
+          if (process.env.NODE_ENV === 'development') {
+
+            console.error(`Failed to sync team ${team.team.displayName}:`, teamError);
+
+          }
           errorCount++;
         }
       }
-      
-      console.log(`✅ ESPN sync complete: ${syncedCount} synced, ${errorCount} errors`);
       return { synced: syncedCount, errors: errorCount };
       
     } catch (error) {
-      console.error('ESPN player sync failed:', error);
+      if (process.env.NODE_ENV === 'development') {
+
+        console.error('ESPN player sync failed:', error);
+
+      }
       throw error;
     }
   }
@@ -93,9 +101,6 @@ export class ESPNSyncService {
     try {
       const currentWeek = week || await this.espn.getCurrentWeek();
       const scoreboard = await this.espn.getScoreboard();
-      
-      console.log(`📊 Syncing ESPN scores for week ${currentWeek}...`);
-      
       // Update any existing matchups with live scores
       for (const event of scoreboard.events || []) {
         const competition = event.competitions[0];
@@ -104,19 +109,20 @@ export class ESPNSyncService {
         
         if (homeTeam && awayTeam) {
           // Log live NFL game data for reference (no database storage for now)
-          console.log(`NFL Game: ${awayTeam.team.abbreviation} @ ${homeTeam.team.abbreviation} - ${awayTeam.score}-${homeTeam.score}`);
         }
       }
     } catch (error) {
-      console.error('ESPN score sync failed:', error);
+      if (process.env.NODE_ENV === 'development') {
+
+        console.error('ESPN score sync failed:', error);
+
+      }
       throw error;
     }
   }
   
   async syncPlayerNews(): Promise<void> {
     try {
-      console.log('📰 Syncing player news from ESPN...');
-      
       const news = await this.espn.getNews();
       const injuries = await this.espn.getInjuries();
       
@@ -131,7 +137,11 @@ export class ESPNSyncService {
       }
       
     } catch (error) {
-      console.error('ESPN news sync failed:', error);
+      if (process.env.NODE_ENV === 'development') {
+
+        console.error('ESPN news sync failed:', error);
+
+      }
       throw error;
     }
   }

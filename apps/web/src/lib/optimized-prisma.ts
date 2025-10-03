@@ -530,7 +530,11 @@ export async function getOptimizedLeagueData(leagueId: string, currentWeek: numb
 
     return leagueData[0] || null
   } catch (error) {
-    console.error('Optimized league query failed:', error)
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('Optimized league query failed:', error);
+
+    }
     // Fallback to individual queries
     return null
   }
@@ -613,7 +617,11 @@ export async function getOptimizedDashboardData(userId: string) {
 
     return dashboardData
   } catch (error) {
-    console.error('Optimized dashboard query failed:', error)
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('Optimized dashboard query failed:', error);
+
+    }
     // Fallback to original method
     return []
   }
@@ -702,7 +710,11 @@ export async function updateWeeklyScoring(week: number, playerUpdates: Array<{
       timeout: 30000 // 30 second timeout for batch operations
     })
   } catch (error) {
-    console.error('Weekly scoring update failed:', error)
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('Weekly scoring update failed:', error);
+
+    }
     throw error
   }
 }
@@ -739,7 +751,11 @@ if (typeof process !== 'undefined' && process.env && typeof globalThis !== 'unde
       try {
         await prisma.$disconnect()
       } catch (error) {
-        console.error('Error during graceful shutdown:', error)
+        if (process.env.NODE_ENV === 'development') {
+
+          console.error('Error during graceful shutdown:', error);
+
+        }
       }
     }
     

@@ -93,7 +93,11 @@ class GuardianDemoAuth {
         user: safeUser
       }
     } catch (error) {
-      console.error('Demo account validation error:', error)
+      if (process.env.NODE_ENV === 'development') {
+
+        console.error('Demo account validation error:', error);
+
+      }
       return {
         isValid: false,
         reason: 'Validation failed'
@@ -230,7 +234,11 @@ const quickLoginHandler = async (request: NextRequest): Promise<NextResponse> =>
     })
     
   } catch (error) {
-    console.error('Quick login error:', error)
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('Quick login error:', error);
+
+    }
     return NextResponse.json(
       { error: 'INTERNAL_ERROR', message: 'Authentication failed' },
       { status: 500 }

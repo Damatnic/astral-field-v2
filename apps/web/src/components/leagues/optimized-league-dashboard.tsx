@@ -95,7 +95,9 @@ export function OptimizedLeagueDashboard({
       
       setLeagueData(result.data)
     } catch (err) {
-      console.error('League data fetch error:', err)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('League data fetch error:', err);
+      }
       setError(err instanceof Error ? err.message : 'Failed to load league data')
     } finally {
       setLoading(false)

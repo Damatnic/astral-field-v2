@@ -94,8 +94,11 @@ export async function GET(
     })
 
   } catch (error) {
-    console.error('League data fetch error:', error)
-    
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('League data fetch error:', error);
+
+    }
     return NextResponse.json(
       { 
         error: 'Failed to fetch league data',

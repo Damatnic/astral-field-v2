@@ -14,7 +14,7 @@ import {
   EyeIcon,
   HandRaisedIcon,
   CalculatorIcon
-} from '@heroicons/react/outline'
+} from '@heroicons/react/24/outline'
 
 interface TradeCenterProps {
   leagueId: string
@@ -59,7 +59,9 @@ export function TradeCenter({ leagueId, currentUserId, userTeams }: TradeCenterP
           setTrades(data.data)
         }
       } catch (error) {
-        console.error('Failed to fetch trades:', error)
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Failed to fetch trades:', error);
+        }
       } finally {
         setLoading(false)
       }
@@ -93,7 +95,9 @@ export function TradeCenter({ leagueId, currentUserId, userTeams }: TradeCenterP
         alert(data.error || 'Failed to respond to trade')
       }
     } catch (error) {
-      console.error('Trade response error:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Trade response error:', error);
+      }
       alert('Failed to respond to trade')
     }
   }
@@ -119,7 +123,9 @@ export function TradeCenter({ leagueId, currentUserId, userTeams }: TradeCenterP
         alert(data.error || 'Failed to cancel trade')
       }
     } catch (error) {
-      console.error('Trade cancel error:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Trade cancel error:', error);
+      }
       alert('Failed to cancel trade')
     }
   }

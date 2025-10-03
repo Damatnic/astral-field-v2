@@ -5,6 +5,9 @@
 
 import { PrismaClient } from '@prisma/client';
 import { Redis } from 'ioredis';
+import { weatherService } from '../services/weather-service';
+import { injuryService } from '../services/injury-service';
+import { scheduleService } from '../services/schedule-service';
 
 // Types for Analytics Engine
 export interface PlayerPerformanceData {
@@ -81,8 +84,6 @@ export class VortexAnalyticsEngine {
     }
 
     this.isProcessing = true;
-    console.log(`🚀 Vortex Analytics: Processing Week ${week} analytics...`);
-
     try {
       // Process in parallel for maximum performance
       await Promise.all([
@@ -99,10 +100,12 @@ export class VortexAnalyticsEngine {
       
       // Cache results for fast retrieval
       await this.cacheAnalyticsResults(week, season);
-      
-      console.log(`✅ Vortex Analytics: Week ${week} processing complete`);
     } catch (error) {
-      console.error('❌ Analytics processing error:', error);
+      if (process.env.NODE_ENV === 'development') {
+
+        console.error('❌ Analytics processing error:', error);
+
+      }
       throw error;
     } finally {
       this.isProcessing = false;
@@ -113,8 +116,6 @@ export class VortexAnalyticsEngine {
    * Process individual player performance analytics
    */
   async processPlayerAnalytics(week: number, season: number): Promise<void> {
-    console.log(`📊 Processing player analytics for Week ${week}...`);
-    
     const players = await this.prisma.player.findMany({
       where: { isFantasyRelevant: true },
       include: {
@@ -187,16 +188,12 @@ export class VortexAnalyticsEngine {
         });
       }
     }
-
-    console.log(`✅ Processed ${validAnalytics.length} player analytics`);
   }
 
   /**
    * Process team-level analytics and scoring trends
    */
   async processTeamAnalytics(week: number, season: number): Promise<void> {
-    console.log(`🏈 Processing team analytics for Week ${week}...`);
-    
     const teams = await this.prisma.team.findMany({
       include: {
         roster: {
@@ -248,16 +245,12 @@ export class VortexAnalyticsEngine {
         }
       });
     }
-
-    console.log(`✅ Processed ${teams.length} team analytics`);
   }
 
   /**
    * Process matchup predictions and head-to-head analysis
    */
   async processMatchupAnalytics(week: number, season: number): Promise<void> {
-    console.log(`⚔️ Processing matchup analytics for Week ${week}...`);
-    
     const matchups = await this.prisma.matchup.findMany({
       where: { week, season },
       include: {
@@ -302,16 +295,12 @@ export class VortexAnalyticsEngine {
         }
       });
     }
-
-    console.log(`✅ Processed ${matchups.length} matchup analytics`);
   }
 
   /**
    * Process waiver wire recommendations and pickup analytics
    */
   async processWaiverWireAnalytics(week: number, season: number): Promise<void> {
-    console.log(`📈 Processing waiver wire analytics for Week ${week}...`);
-    
     const availablePlayers = await this.getAvailablePlayers();
     
     for (const player of availablePlayers) {
@@ -334,16 +323,12 @@ export class VortexAnalyticsEngine {
         }
       });
     }
-
-    console.log(`✅ Processed waiver wire analytics for ${availablePlayers.length} players`);
   }
 
   /**
    * Process league-wide statistics and power rankings
    */
   async processLeagueAnalytics(week: number, season: number): Promise<void> {
-    console.log(`🏆 Processing league analytics for Week ${week}...`);
-    
     const leagues = await this.prisma.league.findMany({
       include: {
         teams: {
@@ -376,16 +361,12 @@ export class VortexAnalyticsEngine {
         }
       });
     }
-
-    console.log(`✅ Processed ${leagues.length} league analytics`);
   }
 
   /**
    * Calculate advanced player consistency metrics
    */
   async updatePlayerConsistency(season: number): Promise<void> {
-    console.log(`📊 Updating player consistency metrics...`);
-    
     const players = await this.prisma.player.findMany({
       where: { isFantasyRelevant: true },
       include: {
@@ -416,16 +397,12 @@ export class VortexAnalyticsEngine {
         }
       });
     }
-
-    console.log(`✅ Updated consistency metrics for ${players.length} players`);
   }
 
   /**
    * Update strength of schedule calculations
    */
   async updateStrengthOfSchedule(week: number, season: number): Promise<void> {
-    console.log(`📅 Updating strength of schedule...`);
-    
     const teams = await this.prisma.team.findMany();
 
     for (const team of teams) {
@@ -448,16 +425,12 @@ export class VortexAnalyticsEngine {
         }
       });
     }
-
-    console.log(`✅ Updated strength of schedule for ${teams.length} teams`);
   }
 
   /**
    * Cache analytics results for high-performance queries
    */
   async cacheAnalyticsResults(week: number, season: number): Promise<void> {
-    console.log(`💾 Caching analytics results...`);
-    
     try {
       // Cache key analytics data with TTL
       const cacheKeys = {
@@ -487,9 +460,12 @@ export class VortexAnalyticsEngine {
       ];
 
       await Promise.all(cachePromises);
-      console.log(`✅ Cached analytics results for Week ${week}`);
     } catch (error) {
-      console.error('❌ Cache error:', error);
+      if (process.env.NODE_ENV === 'development') {
+
+        console.error('❌ Cache error:', error);
+
+      }
       // Continue without caching if Redis is unavailable
     }
   }
@@ -656,8 +632,8 @@ export class VortexAnalyticsEngine {
       winProbability,
       volatility,
       keyPlayers: JSON.stringify(keyPlayers),
-      weatherImpact: 0, // TODO: Integrate weather API
-      injuryRisk: 0,    // TODO: Integrate injury reports
+      weatherImpact: await this.calculateWeatherImpact(matchup.homeTeam, week, season),
+      injuryRisk: await this.calculateInjuryRisk(matchup.homeTeam, matchup.awayTeam),
       confidenceLevel: Math.max(0.3, 1 - volatility) // Higher volatility = lower confidence
     };
   }
@@ -750,7 +726,7 @@ export class VortexAnalyticsEngine {
       emergingPlayer: isEmerging,
       breakoutCandidate: isBreakout,
       sleeper: player.adp > 150 && isEmerging,
-      injuryReplacement: false, // TODO: Check for injured players
+      injuryReplacement: await injuryService.isInjuryReplacement(player.id, player.nflTeam || ''),
       streamingOption: ['DST', 'K'].includes(player.position),
       priorityLevel: isBreakout ? 5 : isEmerging ? 4 : Math.floor(addPercentage / 5) + 1,
       reasonsToAdd: JSON.stringify([
@@ -759,7 +735,15 @@ export class VortexAnalyticsEngine {
         addPercentage > 15 && 'High add percentage'
       ].filter(Boolean)),
       expectedOwnership: Math.min(100, addPercentage * 3),
-      upcomingSchedule: JSON.stringify([]) // TODO: Add schedule difficulty
+      upcomingSchedule: JSON.stringify(
+        await scheduleService.getUpcomingSchedule(
+          player.id,
+          player.name,
+          player.nflTeam || '',
+          player.position,
+          week
+        )
+      )
     };
   }
 
@@ -800,10 +784,10 @@ export class VortexAnalyticsEngine {
       scoringVariance: variance,
       competitiveBalance,
       parity: competitiveBalance, // Simplified
-      playoffRace: JSON.stringify({}), // TODO: Calculate playoff probabilities
-      strengthOfSchedule: JSON.stringify({}), // TODO: Team-by-team SOS
-      powerRankings: JSON.stringify([]), // TODO: Calculate power rankings
-      trendsAnalysis: JSON.stringify({}) // TODO: Trend analysis
+      playoffRace: JSON.stringify(await this.calculatePlayoffProbabilities(league, week, season)),
+      strengthOfSchedule: JSON.stringify(await this.calculateLeagueSOS(league, week, season)),
+      powerRankings: JSON.stringify(await this.calculatePowerRankings(league, week, season)),
+      trendsAnalysis: JSON.stringify(await this.calculateTrendsAnalysis(league, week, season))
     };
   }
 
@@ -887,8 +871,8 @@ export class VortexAnalyticsEngine {
     return {
       remainingSOS,
       playedSOS,
-      positionSOS: JSON.stringify({}), // TODO: Position-specific SOS
-      fantasyPlayoffs: Math.random() * 0.4 + 0.3, // Weeks 15-17 difficulty
+      positionSOS: JSON.stringify(await scheduleService.getPositionSOS('ALL', week)),
+      fantasyPlayoffs: await this.calculatePlayoffScheduleDifficulty(teamId, season),
       easyMatchups: remainingMatchups.filter(() => Math.random() > 0.7).length,
       hardMatchups: remainingMatchups.filter(() => Math.random() > 0.7).length
     };
@@ -920,7 +904,11 @@ export class VortexAnalyticsEngine {
       const cached = await this.redis.get(cacheKey);
       return cached ? JSON.parse(cached) : null;
     } catch (error) {
-      console.error('Cache retrieval error:', error);
+      if (process.env.NODE_ENV === 'development') {
+
+        console.error('Cache retrieval error:', error);
+
+      }
       return null;
     }
   }
@@ -966,8 +954,254 @@ export class VortexAnalyticsEngine {
 
   private async processHighImpactEvent(eventType: string, entityId: string, data: any) {
     // Trigger immediate analytics refresh for affected entities
-    console.log(`🚨 High impact ${eventType} event for ${entityId}`);
     // Implementation would trigger specific analytics updates
+  }
+
+  /**
+   * Calculate weather impact for matchup
+   */
+  private async calculateWeatherImpact(team: any, week: number, season: number): Promise<number> {
+    let totalImpact = 0;
+    let playerCount = 0;
+
+    for (const rosterPlayer of team.roster) {
+      if (rosterPlayer.isStarter && rosterPlayer.player.nflTeam) {
+        const impact = await weatherService.getWeatherImpact(
+          rosterPlayer.player.nflTeam,
+          week,
+          season
+        );
+        totalImpact += impact;
+        playerCount++;
+      }
+    }
+
+    return playerCount > 0 ? totalImpact / playerCount : 0;
+  }
+
+  /**
+   * Calculate injury risk for matchup
+   */
+  private async calculateInjuryRisk(homeTeam: any, awayTeam: any): Promise<number> {
+    let totalRisk = 0;
+    let playerCount = 0;
+
+    const allPlayers = [...homeTeam.roster, ...awayTeam.roster];
+
+    for (const rosterPlayer of allPlayers) {
+      if (rosterPlayer.isStarter) {
+        const risk = await injuryService.calculateInjuryRisk(
+          rosterPlayer.player.id,
+          rosterPlayer.player.position,
+          rosterPlayer.player.age
+        );
+        totalRisk += risk.overallRisk;
+        playerCount++;
+      }
+    }
+
+    return playerCount > 0 ? totalRisk / playerCount : 0;
+  }
+
+  /**
+   * Calculate playoff probabilities for league
+   */
+  private async calculatePlayoffProbabilities(league: any, week: number, season: number) {
+    const teams = league.teams;
+    const probabilities: Record<string, number> = {};
+
+    for (const team of teams) {
+      // Get team's current record
+      const wins = await this.prisma.matchup.count({
+        where: {
+          season,
+          week: { lt: week },
+          OR: [
+            { homeTeamId: team.id, homeScore: { gt: this.prisma.matchup.fields.awayScore } },
+            { awayTeamId: team.id, awayScore: { gt: this.prisma.matchup.fields.homeScore } }
+          ]
+        }
+      });
+
+      const losses = await this.prisma.matchup.count({
+        where: {
+          season,
+          week: { lt: week },
+          OR: [
+            { homeTeamId: team.id, homeScore: { lt: this.prisma.matchup.fields.awayScore } },
+            { awayTeamId: team.id, awayScore: { lt: this.prisma.matchup.fields.homeScore } }
+          ]
+        }
+      });
+
+      const totalGames = wins + losses;
+      const winPercentage = totalGames > 0 ? wins / totalGames : 0.5;
+
+      // Simple playoff probability based on current record
+      // In production, would simulate remaining games
+      probabilities[team.id] = Math.min(1, Math.max(0, winPercentage * 1.2));
+    }
+
+    return probabilities;
+  }
+
+  /**
+   * Calculate league-wide strength of schedule
+   */
+  private async calculateLeagueSOS(league: any, week: number, season: number) {
+    const sosData: Record<string, any> = {};
+
+    for (const team of league.teams) {
+      const sos = await scheduleService.calculateSOS(team.id, team.name, week);
+      sosData[team.id] = sos;
+    }
+
+    return sosData;
+  }
+
+  /**
+   * Calculate power rankings for league
+   */
+  private async calculatePowerRankings(league: any, week: number, season: number) {
+    const rankings = [];
+
+    for (const team of league.teams) {
+      // Get team stats
+      const stats = await this.prisma.weeklyTeamStats.findMany({
+        where: {
+          teamId: team.id,
+          season,
+          week: { lte: week }
+        }
+      });
+
+      if (stats.length === 0) continue;
+
+      // Calculate power score
+      const avgPoints = stats.reduce((sum, s) => sum + s.totalPoints, 0) / stats.length;
+      const recentForm = stats.slice(-3).reduce((sum, s) => sum + s.totalPoints, 0) / Math.min(3, stats.length);
+      const consistency = this.calculateConsistencyScore(stats.map(s => ({ fantasyPoints: s.totalPoints })));
+
+      const powerScore = (avgPoints * 0.4) + (recentForm * 0.4) + (consistency * 20);
+
+      rankings.push({
+        teamId: team.id,
+        teamName: team.name,
+        powerScore: Math.round(powerScore * 10) / 10,
+        avgPoints: Math.round(avgPoints * 10) / 10,
+        recentForm: Math.round(recentForm * 10) / 10,
+        consistency: Math.round(consistency * 100) / 100
+      });
+    }
+
+    // Sort by power score
+    rankings.sort((a, b) => b.powerScore - a.powerScore);
+
+    // Add rank
+    rankings.forEach((r, i) => {
+      r.rank = i + 1;
+    });
+
+    return rankings;
+  }
+
+  /**
+   * Calculate trends analysis for league
+   */
+  private async calculateTrendsAnalysis(league: any, week: number, season: number) {
+    const trends: any = {
+      hotTeams: [],
+      coldTeams: [],
+      risingPlayers: [],
+      fallingPlayers: [],
+      breakoutCandidates: []
+    };
+
+    // Analyze team trends
+    for (const team of league.teams) {
+      const recentStats = await this.prisma.weeklyTeamStats.findMany({
+        where: {
+          teamId: team.id,
+          season,
+          week: { lte: week }
+        },
+        orderBy: { week: 'desc' },
+        take: 3
+      });
+
+      if (recentStats.length >= 2) {
+        const recentAvg = recentStats.reduce((sum, s) => sum + s.totalPoints, 0) / recentStats.length;
+        const olderStats = await this.prisma.weeklyTeamStats.findMany({
+          where: {
+            teamId: team.id,
+            season,
+            week: { lt: week - 2 }
+          },
+          orderBy: { week: 'desc' },
+          take: 3
+        });
+
+        if (olderStats.length > 0) {
+          const olderAvg = olderStats.reduce((sum, s) => sum + s.totalPoints, 0) / olderStats.length;
+          const trend = (recentAvg - olderAvg) / olderAvg;
+
+          if (trend > 0.15) {
+            trends.hotTeams.push({ teamId: team.id, teamName: team.name, trend });
+          } else if (trend < -0.15) {
+            trends.coldTeams.push({ teamId: team.id, teamName: team.name, trend });
+          }
+        }
+      }
+    }
+
+    return trends;
+  }
+
+  /**
+   * Calculate playoff schedule difficulty
+   */
+  private async calculatePlayoffScheduleDifficulty(teamId: string, season: number): Promise<number> {
+    // Get weeks 15-17 matchups (fantasy playoffs)
+    const playoffMatchups = await this.prisma.matchup.findMany({
+      where: {
+        season,
+        week: { gte: 15, lte: 17 },
+        OR: [
+          { homeTeamId: teamId },
+          { awayTeamId: teamId }
+        ]
+      },
+      include: {
+        homeTeam: true,
+        awayTeam: true
+      }
+    });
+
+    if (playoffMatchups.length === 0) return 0.5;
+
+    let totalDifficulty = 0;
+
+    for (const matchup of playoffMatchups) {
+      // Get opponent
+      const opponent = matchup.homeTeamId === teamId ? matchup.awayTeam : matchup.homeTeam;
+
+      // Calculate opponent strength (simplified)
+      const opponentStats = await this.prisma.weeklyTeamStats.findMany({
+        where: {
+          teamId: opponent.id,
+          season
+        }
+      });
+
+      if (opponentStats.length > 0) {
+        const avgPoints = opponentStats.reduce((sum, s) => sum + s.totalPoints, 0) / opponentStats.length;
+        // Normalize to 0-1 scale (assuming 100-150 points is average)
+        const difficulty = Math.min(1, Math.max(0, (avgPoints - 100) / 50));
+        totalDifficulty += difficulty;
+      }
+    }
+
+    return totalDifficulty / playoffMatchups.length;
   }
 }
 

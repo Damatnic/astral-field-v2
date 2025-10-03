@@ -106,7 +106,9 @@ export function CatalystPerformanceMonitor() {
         })
         observer.observe({ entryTypes: ['largest-contentful-paint'] })
       } catch (error) {
-        console.warn('LCP observer not available:', error)
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('LCP observer not available:', error);
+        }
       }
     }
 

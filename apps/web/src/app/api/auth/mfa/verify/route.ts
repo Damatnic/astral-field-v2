@@ -53,12 +53,15 @@ const postHandler = async (request: NextRequest): Promise<NextResponse> => {
 
     if (!verification.isValid) {
       // Guardian Security: Log failed MFA attempt
-      console.warn(`Failed MFA verification for ${session.user.email}`, {
+      if (process.env.NODE_ENV === 'development') {
+
+        console.warn(`Failed MFA verification for ${session.user.email}`, {
         ip: clientIP,
         riskScore: verification.riskScore,
         purpose
-      })
+      });
 
+      }
       return NextResponse.json(
         { 
           error: 'INVALID_CODE', 
@@ -94,7 +97,11 @@ const postHandler = async (request: NextRequest): Promise<NextResponse> => {
     return NextResponse.json(response)
     
   } catch (error) {
-    console.error('MFA verification error:', error)
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('MFA verification error:', error);
+
+    }
     return NextResponse.json(
       { error: 'INTERNAL_ERROR', message: 'MFA verification failed' },
       { status: 500 }

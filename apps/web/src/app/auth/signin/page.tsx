@@ -152,7 +152,9 @@ function SignInForm() {
       } catch (error) {
         setShowOptimisticSuccess(false)
         toast.error('Connection error. Please check your internet and try again.')
-        console.error('Login error:', error)
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Login error:', error)
+        }
       } finally {
         setLoading(false)
       }
@@ -277,7 +279,9 @@ function SignInForm() {
       } catch (error) {
         setShowOptimisticSuccess(false)
         toast.error('Connection error. Please try manual login.')
-        console.error('Secure quick login error:', error)
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Secure quick login error:', error)
+        }
       } finally {
         setLoading(false)
       }

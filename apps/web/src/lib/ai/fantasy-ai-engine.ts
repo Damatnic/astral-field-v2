@@ -128,9 +128,6 @@ export class FantasyAIEngine {
   private initializeMLModels() {
     // Initialize ensemble models for different prediction tasks
     console.log('🤖 Initializing Nova AI Engine v4.0...')
-    console.log('📊 Loading ensemble prediction models...')
-    console.log('🧠 Neural networks, Random Forests, and XGBoost ready')
-    console.log('⚡ Real-time inference pipeline activated')
   }
 
   /**

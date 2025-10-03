@@ -7,7 +7,11 @@ export async function GET() {
     const data = await espn.getNews();
     return NextResponse.json(data);
   } catch (error) {
-    console.error('ESPN news API failed:', error);
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('ESPN news API failed:', error);
+
+    }
     return NextResponse.json({ error: 'Failed to fetch news' }, { status: 500 });
   }
 }

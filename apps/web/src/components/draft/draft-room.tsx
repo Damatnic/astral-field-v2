@@ -15,7 +15,7 @@ import {
   ExclamationTriangleIcon,
   CheckCircleIcon,
   ArrowPathIcon
-} from '@heroicons/react/outline'
+} from '@heroicons/react/24/outline'
 
 interface DraftRoomProps {
   leagueId: string
@@ -85,7 +85,9 @@ export function DraftRoom({ leagueId, currentUserId }: DraftRoomProps) {
           setAvailablePlayers(playersData.data)
         }
       } catch (error) {
-        console.error('Failed to fetch draft data:', error)
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Failed to fetch draft data:', error);
+        }
       } finally {
         setLoading(false)
       }
@@ -141,7 +143,9 @@ export function DraftRoom({ leagueId, currentUserId }: DraftRoomProps) {
         alert(result.error || 'Failed to draft player')
       }
     } catch (error) {
-      console.error('Draft error:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Draft error:', error);
+      }
       alert('Failed to draft player')
     }
   }
@@ -166,7 +170,9 @@ export function DraftRoom({ leagueId, currentUserId }: DraftRoomProps) {
         setAutoPickEnabled(!autoPickEnabled)
       }
     } catch (error) {
-      console.error('Auto-pick error:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Auto-pick error:', error);
+      }
     }
   }
 

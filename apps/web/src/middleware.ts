@@ -14,17 +14,66 @@ export default async function middleware(req: NextRequest) {
   
   if (sessionToken && sessionToken.length > 10) {
     try {
-      // Basic JWT structure validation for Edge Runtime
+      // NextAuth v5 uses JWE (encrypted tokens), not JWT
+      // For Edge Runtime, we'll do basic validation and trust the token format
       const tokenParts = sessionToken.split('.')
-      if (tokenParts.length === 3) {
-        isLoggedIn = true
-        sessionSource = 'cookie'
+      
+      if (process.env.AUTH_DEBUG === 'true') {
+        console.log(`Session token found: ${tokenParts.length} parts, length: ${sessionToken.length}`)
+      }
+      
+      // JWE tokens have 5 parts: header.encrypted_key.iv.ciphertext.tag
+      // JWT tokens have 3 parts: header.payload.signature
+      if (tokenParts.length === 5 || tokenParts.length === 3) {
+        // For security, we'll validate that this looks like a legitimate NextAuth token
+        // by checking the header (first part)
+        try {
+          const header = JSON.parse(atob(tokenParts[0]))
+          
+          if (process.env.AUTH_DEBUG === 'true') {
+            console.log('Token header:', header)
+          }
+          
+          // NextAuth JWE tokens have "dir" algorithm and A256CBC-HS512 encryption
+          // NextAuth JWT tokens have "HS512" or similar algorithm
+          if (header.alg === 'dir' && header.enc === 'A256CBC-HS512') {
+            // This is a NextAuth JWE token - assume valid if present
+            isLoggedIn = true
+            sessionSource = 'cookie-jwe'
+            if (process.env.AUTH_DEBUG === 'true') {
+              console.log('JWE session token validated successfully')
+            }
+          } else if (header.alg && header.alg.includes('HS')) {
+            // This might be a JWT token - basic validation
+            isLoggedIn = true
+            sessionSource = 'cookie-jwt'
+            if (process.env.AUTH_DEBUG === 'true') {
+              console.log('JWT session token validated successfully')
+            }
+          } else {
+            if (process.env.AUTH_DEBUG === 'true') {
+              console.warn('Unknown token format:', header)
+            }
+          }
+        } catch (headerError) {
+          if (process.env.AUTH_DEBUG === 'true') {
+            console.warn('Failed to decode token header:', headerError)
+          }
+        }
+      } else {
+        if (process.env.AUTH_DEBUG === 'true') {
+          console.warn(`Invalid token structure: ${tokenParts.length} parts`)
+        }
       }
     } catch (error) {
       // Token validation failed, continue as not logged in
       if (process.env.AUTH_DEBUG === 'true') {
         console.warn('Session cookie validation failed:', error instanceof Error ? error.message : String(error))
       }
+    }
+  } else {
+    if (process.env.AUTH_DEBUG === 'true') {
+      console.log('No session token found or token too short')
     }
   }
   
@@ -113,6 +162,33 @@ export default async function middleware(req: NextRequest) {
     Object.entries(securityHeaders).forEach(([key, value]) => {
       response.headers.set(key, value)
     })
+    
+    return response
+  }
+
+  // Clear invalid session cookies if we have a session token but session validation failed
+  if (sessionToken && !isLoggedIn && !isApiRoute) {
+    const response = NextResponse.next()
+    
+    // Clear all session-related cookies
+    response.cookies.delete('next-auth.session-token')
+    response.cookies.delete('__Secure-next-auth.session-token')
+    response.cookies.delete('next-auth.callback-url')
+    response.cookies.delete('__Secure-next-auth.callback-url')
+    response.cookies.delete('next-auth.csrf-token')
+    response.cookies.delete('__Host-next-auth.csrf-token')
+    
+    // Add security headers
+    Object.entries(securityHeaders).forEach(([key, value]) => {
+      response.headers.set(key, value)
+    })
+    
+    // If this is a protected route, redirect to signin
+    if (isProtectedRoute) {
+      return NextResponse.redirect(
+        new URL(`/auth/signin?callbackUrl=${encodeURIComponent(nextUrl.pathname + nextUrl.search)}`, nextUrl)
+      )
+    }
     
     return response
   }

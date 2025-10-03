@@ -90,7 +90,11 @@ export class GuardianMFA {
         secret
       })
     } catch (error) {
-      console.error('TOTP verification error:', error)
+      if (process.env.NODE_ENV === 'development') {
+
+        console.error('TOTP verification error:', error);
+
+      }
       return false
     }
   }

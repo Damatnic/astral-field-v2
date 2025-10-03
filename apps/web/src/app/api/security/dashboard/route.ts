@@ -156,7 +156,11 @@ const dashboardHandler = async (request: NextRequest): Promise<NextResponse> => 
     return NextResponse.json(dashboard)
     
   } catch (error) {
-    console.error('Security dashboard error:', error)
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('Security dashboard error:', error);
+
+    }
     return NextResponse.json(
       { error: 'INTERNAL_ERROR', message: 'Failed to generate security dashboard' },
       { status: 500 }

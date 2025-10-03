@@ -98,9 +98,6 @@ class CatalystPerformanceMonitor {
 
   private initialize() {
     if (this.isInitialized) return
-    
-    console.log('[Catalyst Monitor] Initializing performance monitoring...')
-    
     // Initialize Core Web Vitals tracking
     this.trackCoreWebVitals()
     
@@ -124,7 +121,6 @@ class CatalystPerformanceMonitor {
     })
     
     this.isInitialized = true
-    console.log('[Catalyst Monitor] Performance monitoring initialized')
   }
 
   private trackCoreWebVitals() {
@@ -141,7 +137,11 @@ class CatalystPerformanceMonitor {
         fcpObserver.observe({ entryTypes: ['paint'] })
         this.observers.set('fcp', fcpObserver)
       } catch (e) {
-        console.warn('[Catalyst Monitor] FCP tracking not supported')
+        if (process.env.NODE_ENV === 'development') {
+
+          console.warn('[Catalyst Monitor] FCP tracking not supported');
+
+        }
       }
 
       // Largest Contentful Paint
@@ -154,7 +154,11 @@ class CatalystPerformanceMonitor {
         lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] })
         this.observers.set('lcp', lcpObserver)
       } catch (e) {
-        console.warn('[Catalyst Monitor] LCP tracking not supported')
+        if (process.env.NODE_ENV === 'development') {
+
+          console.warn('[Catalyst Monitor] LCP tracking not supported');
+
+        }
       }
 
       // First Input Delay
@@ -170,7 +174,11 @@ class CatalystPerformanceMonitor {
         fidObserver.observe({ entryTypes: ['first-input'] })
         this.observers.set('fid', fidObserver)
       } catch (e) {
-        console.warn('[Catalyst Monitor] FID tracking not supported')
+        if (process.env.NODE_ENV === 'development') {
+
+          console.warn('[Catalyst Monitor] FID tracking not supported');
+
+        }
       }
 
       // Cumulative Layout Shift
@@ -187,7 +195,11 @@ class CatalystPerformanceMonitor {
         clsObserver.observe({ entryTypes: ['layout-shift'] })
         this.observers.set('cls', clsObserver)
       } catch (e) {
-        console.warn('[Catalyst Monitor] CLS tracking not supported')
+        if (process.env.NODE_ENV === 'development') {
+
+          console.warn('[Catalyst Monitor] CLS tracking not supported');
+
+        }
       }
 
       // Interaction to Next Paint (INP)
@@ -203,7 +215,11 @@ class CatalystPerformanceMonitor {
         inpObserver.observe({ entryTypes: ['event'] })
         this.observers.set('inp', inpObserver)
       } catch (e) {
-        console.warn('[Catalyst Monitor] INP tracking not supported')
+        if (process.env.NODE_ENV === 'development') {
+
+          console.warn('[Catalyst Monitor] INP tracking not supported');
+
+        }
       }
     }
 
@@ -228,7 +244,11 @@ class CatalystPerformanceMonitor {
         resourceObserver.observe({ entryTypes: ['resource'] })
         this.observers.set('resource', resourceObserver)
       } catch (e) {
-        console.warn('[Catalyst Monitor] Resource timing not supported')
+        if (process.env.NODE_ENV === 'development') {
+
+          console.warn('[Catalyst Monitor] Resource timing not supported');
+
+        }
       }
     }
   }
@@ -440,7 +460,11 @@ class CatalystPerformanceMonitor {
         })
       }
     } catch (error) {
-      console.warn('[Catalyst Monitor] Failed to send performance report:', error)
+      if (process.env.NODE_ENV === 'development') {
+
+        console.warn('[Catalyst Monitor] Failed to send performance report:', error);
+
+      }
     }
   }
 
@@ -470,7 +494,11 @@ class CatalystPerformanceMonitor {
   }
 
   public trackError(error: Error, context?: any) {
-    console.error('[Catalyst Monitor] Error tracked:', error)
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('[Catalyst Monitor] Error tracked:', error);
+
+    }
     // Send error report
     if (navigator.sendBeacon) {
       const data = JSON.stringify({ 

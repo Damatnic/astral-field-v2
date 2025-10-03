@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { logger } from '@/lib/logger'
 
 const CreateLeagueSchema = z.object({
   name: z.string().min(1, 'League name is required').max(100, 'League name too long'),
@@ -107,7 +108,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('League creation error:', error)
+    logger.error('League creation error', error as Error)
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(

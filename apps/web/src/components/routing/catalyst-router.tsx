@@ -42,15 +42,17 @@ export function CatalystRouter({ children }: CatalystRouterProps) {
   // Catalyst: Aggressive immediate preloading
   useEffect(() => {
     const preloadImmediate = async () => {
-      console.log('[Catalyst Router] Starting immediate preloading...')
+
       const startTime = performance.now()
       
       for (const route of immediateRoutes) {
         try {
           await router.prefetch(route.path)
-          console.log(`[Catalyst Router] Preloaded ${route.path}`)
+
         } catch (error) {
-          console.warn(`[Catalyst Router] Failed to preload ${route.path}:`, error)
+          if (process.env.NODE_ENV === 'development') {
+            console.warn(`[Catalyst Router] Failed to preload ${route.path}:`, error);
+          }
         }
       }
       
@@ -81,10 +83,12 @@ export function CatalystRouter({ children }: CatalystRouterProps) {
       if (!routeConfig) return
       
       try {
-        console.log(`[Catalyst Router] Intent preloading ${href}`)
+
         await router.prefetch(href)
       } catch (error) {
-        console.warn(`[Catalyst Router] Intent preload failed for ${href}:`, error)
+        if (process.env.NODE_ENV === 'development') {
+          console.warn(`[Catalyst Router] Intent preload failed for ${href}:`, error);
+        }
       }
     }
 
@@ -112,11 +116,13 @@ export function CatalystRouter({ children }: CatalystRouterProps) {
             if (!href || !href.startsWith('/')) return
             
             try {
-              console.log(`[Catalyst Router] Viewport preloading ${href}`)
+
               await router.prefetch(href)
               observer.unobserve(target)
             } catch (error) {
-              console.warn(`[Catalyst Router] Viewport preload failed for ${href}:`, error)
+              if (process.env.NODE_ENV === 'development') {
+                console.warn(`[Catalyst Router] Viewport preload failed for ${href}:`, error);
+              }
             }
           }
         })
@@ -199,7 +205,9 @@ export function CatalystRouter({ children }: CatalystRouterProps) {
         console.log(`[Catalyst Router] Prefetch ${href}: ${(endTime - startTime).toFixed(2)}ms`)
         return result
       } catch (error) {
-        console.warn(`[Catalyst Router] Prefetch failed for ${href}:`, error)
+        if (process.env.NODE_ENV === 'development') {
+          console.warn(`[Catalyst Router] Prefetch failed for ${href}:`, error);
+        }
         throw error
       }
     }
@@ -260,7 +268,7 @@ export function CatalystRouter({ children }: CatalystRouterProps) {
               window.addEventListener('load', () => {
                 if (routeChangeStart > 0) {
                   const routeChangeDuration = performance.now() - routeChangeStart;
-                  console.log('[Catalyst Router] Route change duration:', routeChangeDuration + 'ms');
+
                 }
               });
               

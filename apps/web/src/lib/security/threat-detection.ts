@@ -569,8 +569,6 @@ export class GuardianThreatDetection {
       until: Date.now() + durationMs,
       reason
     })
-
-    console.log(`IP blocked: ${ip} for ${durationMs / 1000}s - ${reason}`)
   }
 
   /**

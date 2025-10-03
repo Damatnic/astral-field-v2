@@ -24,7 +24,11 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (e) {
-    console.error('[Zenith Monitor] Failed to process report:', e)
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('[Zenith Monitor] Failed to process report:', e);
+
+    }
     return NextResponse.json(
       { error: 'Failed to process report' },
       { status: 500 }

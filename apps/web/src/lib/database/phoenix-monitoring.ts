@@ -91,7 +91,11 @@ class PhoenixDatabaseMonitor {
     }
 
     if (!success && error) {
-      console.error(`❌ Query failed: ${queryName}`, error.message)
+      if (process.env.NODE_ENV === 'development') {
+
+        console.error(`❌ Query failed: ${queryName}`, error.message);
+
+      }
       this.counters.failedQueries++
     }
   }
@@ -248,7 +252,11 @@ class PhoenixDatabaseMonitor {
         poolEfficiency: this.calculatePoolEfficiency()
       }
     } catch (error) {
-      console.error('Failed to get connection metrics:', error)
+      if (process.env.NODE_ENV === 'development') {
+
+        console.error('Failed to get connection metrics:', error);
+
+      }
       return null
     }
   }
@@ -510,12 +518,24 @@ class PhoenixDatabaseMonitor {
       try {
         const health = await this.getDatabaseHealth()
         if (health.status === 'critical') {
-          console.error('🚨 Database health critical:', health.recommendations)
+          if (process.env.NODE_ENV === 'development') {
+
+            console.error('🚨 Database health critical:', health.recommendations);
+
+          }
         } else if (health.status === 'warning') {
-          console.warn('⚠️ Database health warning:', health.recommendations)
+          if (process.env.NODE_ENV === 'development') {
+
+            console.warn('⚠️ Database health warning:', health.recommendations);
+
+          }
         }
       } catch (error) {
-        console.error('Health check failed:', error)
+        if (process.env.NODE_ENV === 'development') {
+
+          console.error('Health check failed:', error);
+
+        }
       }
     }, 60 * 1000)
   }

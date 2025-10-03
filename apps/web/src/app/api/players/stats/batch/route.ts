@@ -131,8 +131,11 @@ export async function POST(request: NextRequest) {
     })
     
   } catch (error) {
-    console.error('Batch stats fetch error:', error)
-    
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('Batch stats fetch error:', error);
+
+    }
     return NextResponse.json(
       { 
         error: 'Failed to fetch player stats',

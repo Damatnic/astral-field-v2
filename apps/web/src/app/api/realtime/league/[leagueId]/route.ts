@@ -59,7 +59,11 @@ export async function GET(
           })
 
         } catch (error) {
-          console.error('SSE update error:', error)
+          if (process.env.NODE_ENV === 'development') {
+
+            console.error('SSE update error:', error);
+
+          }
           sendEvent('error', {
             message: 'Update failed',
             timestamp: new Date().toISOString()
@@ -87,7 +91,11 @@ export async function GET(
             }
           }
         } catch (error) {
-          console.error('Live score update error:', error)
+          if (process.env.NODE_ENV === 'development') {
+
+            console.error('Live score update error:', error);
+
+          }
         }
       }, 10000) // 10 seconds during games
 
@@ -142,7 +150,11 @@ async function fetchLiveScores(leagueId: string): Promise<any> {
     
     return liveData
   } catch (error) {
-    console.error('Failed to fetch live scores:', error)
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('Failed to fetch live scores:', error);
+
+    }
     return null
   }
 }

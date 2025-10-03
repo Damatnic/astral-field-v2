@@ -24,8 +24,6 @@ const postHandler = async (request: NextRequest): Promise<NextResponse> => {
     const qrCodeDataUrl = await guardianMFA.generateQRCodeDataUrl(mfaSetup.qrCodeUrl)
 
     // Guardian Security: Log MFA setup initiation
-    console.log(`MFA setup initiated for user ${session.user.email}`)
-
     return NextResponse.json({
       success: true,
       setup: {
@@ -45,7 +43,11 @@ const postHandler = async (request: NextRequest): Promise<NextResponse> => {
     })
     
   } catch (error) {
-    console.error('MFA setup error:', error)
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('MFA setup error:', error);
+
+    }
     return NextResponse.json(
       { error: 'INTERNAL_ERROR', message: 'Failed to setup MFA' },
       { status: 500 }
@@ -80,7 +82,11 @@ const getHandler = async (request: NextRequest): Promise<NextResponse> => {
     })
     
   } catch (error) {
-    console.error('MFA status error:', error)
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('MFA status error:', error);
+
+    }
     return NextResponse.json(
       { error: 'INTERNAL_ERROR', message: 'Failed to get MFA status' },
       { status: 500 }

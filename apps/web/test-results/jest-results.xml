@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Astral Field Unit Tests" tests="37" failures="0" errors="0" time="1.354">
+  <testsuite name="ScheduleService" errors="0" failures="0" skipped="0" timestamp="2025-10-03T00:09:52" time="0.702" tests="37">
+    <testcase classname="ScheduleService Constructor should create a new instance" name="ScheduleService Constructor should create a new instance" time="0.001">
+    </testcase>
+    <testcase classname="ScheduleService Constructor should initialize with empty cache" name="ScheduleService Constructor should initialize with empty cache" time="0">
+    </testcase>
+    <testcase classname="ScheduleService getUpcomingSchedule should return upcoming schedule" name="ScheduleService getUpcomingSchedule should return upcoming schedule" time="0.001">
+    </testcase>
+    <testcase classname="ScheduleService getUpcomingSchedule should include next 3 weeks" name="ScheduleService getUpcomingSchedule should include next 3 weeks" time="0">
+    </testcase>
+    <testcase classname="ScheduleService getUpcomingSchedule should include rest of season" name="ScheduleService getUpcomingSchedule should include rest of season" time="0.001">
+    </testcase>
+    <testcase classname="ScheduleService getUpcomingSchedule should calculate average difficulty" name="ScheduleService getUpcomingSchedule should calculate average difficulty" time="0">
+    </testcase>
+    <testcase classname="ScheduleService getUpcomingSchedule should count favorable matchups" name="ScheduleService getUpcomingSchedule should count favorable matchups" time="0">
+    </testcase>
+    <testcase classname="ScheduleService getUpcomingSchedule should count tough matchups" name="ScheduleService getUpcomingSchedule should count tough matchups" time="0">
+    </testcase>
+    <testcase classname="ScheduleService getUpcomingSchedule should cache schedule data" name="ScheduleService getUpcomingSchedule should cache schedule data" time="0">
+    </testcase>
+    <testcase classname="ScheduleService getUpcomingSchedule should handle different weeks" name="ScheduleService getUpcomingSchedule should handle different weeks" time="0">
+    </testcase>
+    <testcase classname="ScheduleService calculateSOS should calculate strength of schedule" name="ScheduleService calculateSOS should calculate strength of schedule" time="0.003">
+    </testcase>
+    <testcase classname="ScheduleService calculateSOS should have SOS values between 0 and 1" name="ScheduleService calculateSOS should have SOS values between 0 and 1" time="0">
+    </testcase>
+    <testcase classname="ScheduleService calculateSOS should include position-specific SOS" name="ScheduleService calculateSOS should include position-specific SOS" time="0.001">
+    </testcase>
+    <testcase classname="ScheduleService calculateSOS should have ranking between 1 and 32" name="ScheduleService calculateSOS should have ranking between 1 and 32" time="0">
+    </testcase>
+    <testcase classname="ScheduleService calculateSOS should cache SOS data" name="ScheduleService calculateSOS should cache SOS data" time="0">
+    </testcase>
+    <testcase classname="ScheduleService getPositionSOS should return position SOS for all teams" name="ScheduleService getPositionSOS should return position SOS for all teams" time="0">
+    </testcase>
+    <testcase classname="ScheduleService getPositionSOS should have SOS values between 0 and 1" name="ScheduleService getPositionSOS should have SOS values between 0 and 1" time="0.003">
+    </testcase>
+    <testcase classname="ScheduleService getPositionSOS should handle different positions" name="ScheduleService getPositionSOS should handle different positions" time="0">
+    </testcase>
+    <testcase classname="ScheduleService getPositionSOS should include all 32 NFL teams" name="ScheduleService getPositionSOS should include all 32 NFL teams" time="0">
+    </testcase>
+    <testcase classname="ScheduleService Schedule Difficulty should have valid difficulty ratings" name="ScheduleService Schedule Difficulty should have valid difficulty ratings" time="0">
+    </testcase>
+    <testcase classname="ScheduleService Schedule Difficulty should have difficulty between 0 and 1" name="ScheduleService Schedule Difficulty should have difficulty between 0 and 1" time="0">
+    </testcase>
+    <testcase classname="ScheduleService Schedule Difficulty should include opponent information" name="ScheduleService Schedule Difficulty should include opponent information" time="0.001">
+    </testcase>
+    <testcase classname="ScheduleService Schedule Difficulty should include position rankings" name="ScheduleService Schedule Difficulty should include position rankings" time="0.001">
+    </testcase>
+    <testcase classname="ScheduleService clearCache should clear the cache" name="ScheduleService clearCache should clear the cache" time="0">
+    </testcase>
+    <testcase classname="ScheduleService clearCache should allow new data after clearing" name="ScheduleService clearCache should allow new data after clearing" time="0">
+    </testcase>
+    <testcase classname="ScheduleService Singleton Instance should export a singleton instance" name="ScheduleService Singleton Instance should export a singleton instance" time="0.001">
+    </testcase>
+    <testcase classname="ScheduleService Singleton Instance should be usable directly" name="ScheduleService Singleton Instance should be usable directly" time="0.001">
+    </testcase>
+    <testcase classname="ScheduleService Edge Cases should handle week 1" name="ScheduleService Edge Cases should handle week 1" time="0">
+    </testcase>
+    <testcase classname="ScheduleService Edge Cases should handle late season weeks" name="ScheduleService Edge Cases should handle late season weeks" time="0">
+    </testcase>
+    <testcase classname="ScheduleService Edge Cases should handle week 18" name="ScheduleService Edge Cases should handle week 18" time="0">
+    </testcase>
+    <testcase classname="ScheduleService Edge Cases should handle all NFL teams" name="ScheduleService Edge Cases should handle all NFL teams" time="0.001">
+    </testcase>
+    <testcase classname="ScheduleService Edge Cases should handle all positions" name="ScheduleService Edge Cases should handle all positions" time="0.001">
+    </testcase>
+    <testcase classname="ScheduleService Performance should cache results for performance" name="ScheduleService Performance should cache results for performance" time="0">
+    </testcase>
+    <testcase classname="ScheduleService Performance should handle concurrent requests" name="ScheduleService Performance should handle concurrent requests" time="0.001">
+    </testcase>
+    <testcase classname="ScheduleService Data Validation should have consistent data structure" name="ScheduleService Data Validation should have consistent data structure" time="0">
+    </testcase>
+    <testcase classname="ScheduleService Data Validation should have valid matchup counts" name="ScheduleService Data Validation should have valid matchup counts" time="0">
+    </testcase>
+    <testcase classname="ScheduleService Data Validation should have sequential weeks" name="ScheduleService Data Validation should have sequential weeks" time="0.001">
+    </testcase>
+  </testsuite>
+</testsuites>

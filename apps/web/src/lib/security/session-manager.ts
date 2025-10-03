@@ -171,11 +171,15 @@ export class GuardianSessionManager {
       // Check for significant security changes
       if (updatedSecurity.riskScore > session.security.riskScore + 0.3) {
         actions.push('REQUIRE_MFA')
-        console.warn(`Elevated risk detected for session ${sessionId}`, {
+        if (process.env.NODE_ENV === 'development') {
+
+          console.warn(`Elevated risk detected for session ${sessionId}`, {
           oldRisk: session.security.riskScore,
           newRisk: updatedSecurity.riskScore,
           anomalies: updatedSecurity.anomalies
-        })
+        });
+
+        }
       }
     }
 

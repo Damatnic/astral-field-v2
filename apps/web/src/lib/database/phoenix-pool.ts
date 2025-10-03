@@ -350,7 +350,11 @@ export class PhoenixConnectionPool {
       try {
         await connection.client.$disconnect()
       } catch (error) {
-        console.error(`Error disconnecting connection ${connection.id}:`, error)
+        if (process.env.NODE_ENV === 'development') {
+
+          console.error(`Error disconnecting connection ${connection.id}:`, error);
+
+        }
       }
     })
 
@@ -367,7 +371,11 @@ export class PhoenixConnectionPool {
       try {
         await this.createConnection(i % 2 === 0 ? ConnectionType.WRITE : ConnectionType.READ)
       } catch (error) {
-        console.error('Failed to create initial connection:', error)
+        if (process.env.NODE_ENV === 'development') {
+
+          console.error('Failed to create initial connection:', error);
+
+        }
       }
     }
   }
@@ -455,7 +463,11 @@ export class PhoenixConnectionPool {
       try {
         await this.healthCheck()
       } catch (error) {
-        console.error('Health check failed:', error)
+        if (process.env.NODE_ENV === 'development') {
+
+          console.error('Health check failed:', error);
+
+        }
       }
     }, this.config.healthCheckIntervalMs)
   }

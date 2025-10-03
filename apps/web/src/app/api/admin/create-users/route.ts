@@ -58,7 +58,11 @@ export async function POST(request: NextRequest) {
       password: 'Dynasty2025!'
     })
   } catch (error: any) {
-    console.error('Error creating users:', error)
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('Error creating users:', error);
+
+    }
     return NextResponse.json({ error: error.message }, { status: 500 })
   } finally {
     await prisma.$disconnect()

@@ -88,7 +88,11 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Matchup analysis error:', error)
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('Matchup analysis error:', error);
+
+    }
     return NextResponse.json(
       { success: false, error: 'Failed to analyze matchup' },
       { status: 500 }
@@ -156,7 +160,11 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Weekly matchups error:', error)
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('Weekly matchups error:', error);
+
+    }
     return NextResponse.json(
       { success: false, error: 'Failed to generate weekly matchups' },
       { status: 500 }

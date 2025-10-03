@@ -95,8 +95,11 @@ export async function GET() {
     })
 
   } catch (error) {
-    console.error('Phoenix: Database health check failed:', error)
-    
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('Phoenix: Database health check failed:', error);
+
+    }
     return NextResponse.json({
       status: 'unhealthy',
       message: 'Health check failed',
@@ -162,8 +165,11 @@ export async function POST() {
     })
 
   } catch (error) {
-    console.error('Phoenix: Database diagnostics failed:', error)
-    
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('Phoenix: Database diagnostics failed:', error);
+
+    }
     return NextResponse.json({
       status: 'diagnostic_failed',
       error: error instanceof Error ? error.message : 'Unknown error',

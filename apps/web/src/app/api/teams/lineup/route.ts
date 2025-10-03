@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth'
 import { phoenixDb } from '@/lib/optimized-prisma'
 import { withRetry, timedQuery } from '@/lib/prisma'
 import { z } from 'zod'
+import { logger } from '@/lib/logger'
 
 // Phoenix: Enhanced validation schema
 const LineupUpdateSchema = z.object({
@@ -127,7 +128,7 @@ export async function PUT(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Phoenix: Lineup update error:', error)
+    logger.error('Phoenix: Lineup update error', error as Error)
     
     // Phoenix: Enhanced error handling
     if (error instanceof z.ZodError) {
@@ -217,7 +218,7 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Phoenix: Lineup retrieval error:', error)
+    logger.error('Phoenix: Lineup retrieval error', error as Error)
     return NextResponse.json({
       error: 'Internal server error',
       code: 'INTERNAL_ERROR'

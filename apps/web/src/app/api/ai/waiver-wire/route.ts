@@ -76,7 +76,11 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Waiver wire analysis error:', error)
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('Waiver wire analysis error:', error);
+
+    }
     return NextResponse.json(
       { success: false, error: 'Failed to analyze waiver wire' },
       { status: 500 }
@@ -168,7 +172,11 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Waiver wire lookup error:', error)
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('Waiver wire lookup error:', error);
+
+    }
     return NextResponse.json(
       { success: false, error: 'Failed to analyze available players' },
       { status: 500 }

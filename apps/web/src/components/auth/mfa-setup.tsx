@@ -53,7 +53,9 @@ export function MFASetup({ onComplete, onCancel }: MFASetupProps) {
       setSetupData(data.setup)
       
     } catch (error) {
-      console.error('MFA setup initialization error:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('MFA setup initialization error:', error);
+      }
       toast.error('Failed to initialize MFA setup. Please try again.')
     } finally {
       setLoading(false)
@@ -90,7 +92,9 @@ export function MFASetup({ onComplete, onCancel }: MFASetupProps) {
       setStep('backup')
       
     } catch (error) {
-      console.error('MFA verification error:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('MFA verification error:', error);
+      }
       toast.error('Invalid verification code. Please try again.')
     } finally {
       setLoading(false)

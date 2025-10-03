@@ -93,7 +93,11 @@ class CatalystCache {
       this.recordResponseTime(performance.now() - startTime)
       return null
     } catch (error) {
-      console.error('Cache error:', error)
+      if (process.env.NODE_ENV === 'development') {
+
+        console.error('Cache error:', error);
+
+      }
       this.metrics.misses++
       return null
     }
@@ -109,7 +113,11 @@ class CatalystCache {
       await this.setInL2(key, value, options)
       await this.setInL3(key, value, options)
     } catch (error) {
-      console.error('Cache set error:', error)
+      if (process.env.NODE_ENV === 'development') {
+
+        console.error('Cache set error:', error);
+
+      }
     }
   }
 
@@ -122,7 +130,11 @@ class CatalystCache {
       await this.deleteFromL2(key)
       await this.deleteFromL3(key)
     } catch (error) {
-      console.error('Cache delete error:', error)
+      if (process.env.NODE_ENV === 'development') {
+
+        console.error('Cache delete error:', error);
+
+      }
     }
   }
 
@@ -142,7 +154,11 @@ class CatalystCache {
       await this.invalidateL2ByTags(tags)
       await this.invalidateL3ByTags(tags)
     } catch (error) {
-      console.error('Cache invalidation error:', error)
+      if (process.env.NODE_ENV === 'development') {
+
+        console.error('Cache invalidation error:', error);
+
+      }
     }
   }
 
@@ -189,7 +205,11 @@ class CatalystCache {
       try {
         return this.decompressData(entry.data)
       } catch (error) {
-        console.error('Decompression failed:', error)
+        if (process.env.NODE_ENV === 'development') {
+
+          console.error('Decompression failed:', error);
+
+        }
         this.l1Cache.delete(key)
         return null
       }
@@ -216,7 +236,11 @@ class CatalystCache {
         // Use browser compression for large data
         finalData = this.compressData(serialized)
       } catch (error) {
-        console.warn('Compression failed, storing uncompressed:', error)
+        if (process.env.NODE_ENV === 'development') {
+
+          console.warn('Compression failed, storing uncompressed:', error);
+
+        }
       }
     }
 
@@ -248,7 +272,11 @@ class CatalystCache {
           }
         }
       } catch (error) {
-        console.error('L2 cache read error:', error)
+        if (process.env.NODE_ENV === 'development') {
+
+          console.error('L2 cache read error:', error);
+
+        }
       }
     }
     // Server environment would use Redis here
@@ -267,7 +295,11 @@ class CatalystCache {
         }
         localStorage.setItem(`cache_${key}`, JSON.stringify(cacheEntry))
       } catch (error) {
-        console.error('L2 cache write error:', error)
+        if (process.env.NODE_ENV === 'development') {
+
+          console.error('L2 cache write error:', error);
+
+        }
       }
     }
     // Server environment would use Redis here
@@ -295,7 +327,11 @@ class CatalystCache {
           }
         }
       } catch (error) {
-        console.error('L2 tag invalidation error:', error)
+        if (process.env.NODE_ENV === 'development') {
+
+          console.error('L2 tag invalidation error:', error);
+
+        }
       }
     }
   }

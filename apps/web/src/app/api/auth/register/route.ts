@@ -101,8 +101,9 @@ const registrationHandler = async (request: NextRequest): Promise<NextResponse> 
     })
 
   } catch (error) {
-    console.error('Registration error:', error)
-    
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Registration error:', error);
+    }
     // Guardian Security: Log registration error
     const clientIP = request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown'
     await guardianAuditLogger.logSecurityEvent(

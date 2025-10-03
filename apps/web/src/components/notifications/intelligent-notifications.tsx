@@ -15,7 +15,7 @@ import {
   ChatBubbleLeftRightIcon,
   ClockIcon,
   CogIcon
-} from '@heroicons/react/outline'
+} from '@heroicons/react/24/outline'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 
@@ -77,7 +77,9 @@ export function IntelligentNotifications({ userId, onNotificationClick }: Intell
         setUnreadCount(allNotifications.filter(n => !n.readAt).length)
       }
     } catch (error) {
-      console.error('Failed to fetch notifications:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to fetch notifications:', error);
+      }
     } finally {
       setLoading(false)
     }
@@ -96,7 +98,9 @@ export function IntelligentNotifications({ userId, onNotificationClick }: Intell
         setPreferences(data.data)
       }
     } catch (error) {
-      console.error('Failed to fetch preferences:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to fetch preferences:', error);
+      }
     }
   }
 
@@ -122,7 +126,9 @@ export function IntelligentNotifications({ userId, onNotificationClick }: Intell
         setUnreadCount(prev => Math.max(0, prev - 1))
       }
     } catch (error) {
-      console.error('Failed to mark as read:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to mark as read:', error);
+      }
       toast.error('Failed to mark notification as read')
     }
   }
@@ -144,7 +150,9 @@ export function IntelligentNotifications({ userId, onNotificationClick }: Intell
         toast.success('All notifications marked as read')
       }
     } catch (error) {
-      console.error('Failed to mark all as read:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to mark all as read:', error);
+      }
       toast.error('Failed to mark all notifications as read')
     }
   }
@@ -175,7 +183,9 @@ export function IntelligentNotifications({ userId, onNotificationClick }: Intell
         }
       }
     } catch (error) {
-      console.error('Failed to execute action:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to execute action:', error);
+      }
       toast.error(`Failed to execute ${action.label}`)
     }
   }

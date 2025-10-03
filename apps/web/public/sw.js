@@ -1,8 +1,8 @@
 // Sigma: Advanced Service Worker for AstralField PWA
-const CACHE_NAME = 'astralfield-v3-cache'
-const STATIC_CACHE = 'astralfield-static-v3'
-const DYNAMIC_CACHE = 'astralfield-dynamic-v3'
-const API_CACHE = 'astralfield-api-v3'
+const CACHE_NAME = 'astralfield-v4-cache'
+const STATIC_CACHE = 'astralfield-static-v4'
+const DYNAMIC_CACHE = 'astralfield-dynamic-v4'
+const API_CACHE = 'astralfield-api-v4'
 
 // Cache strategies
 const CACHE_STRATEGIES = {
@@ -24,12 +24,7 @@ const CACHE_DURATIONS = {
 // Assets to cache immediately
 const STATIC_ASSETS = [
   '/',
-  '/dashboard',
-  '/manifest.json',
-  '/static/js/bundle.js',
-  '/static/css/main.css',
-  '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png'
+  '/manifest.json'
 ]
 
 // API endpoints that should be cached
@@ -55,10 +50,14 @@ self.addEventListener('install', (event) => {
   
   event.waitUntil(
     Promise.all([
-      // Cache static assets
+      // Cache static assets (excluding CSS to prevent MIME type issues)
       caches.open(STATIC_CACHE).then((cache) => {
         console.log('[SW] Caching static assets')
-        return cache.addAll(STATIC_ASSETS)
+        // Only cache page routes, not CSS/JS files during install
+        const safeAssets = STATIC_ASSETS.filter(asset => 
+          !asset.endsWith('.css') && !asset.endsWith('.js')
+        )
+        return cache.addAll(safeAssets)
       }),
       
       // Skip waiting to activate immediately
@@ -73,18 +72,38 @@ self.addEventListener('activate', (event) => {
   
   event.waitUntil(
     Promise.all([
-      // Cleanup old caches
+      // Aggressive cleanup - delete ALL old caches
       caches.keys().then((cacheNames) => {
         return Promise.all(
           cacheNames
             .filter((cacheName) => 
               cacheName.startsWith('astralfield-') && 
-              !cacheName.includes('v3')
+              !cacheName.includes('v4')
             )
             .map((cacheName) => {
               console.log('[SW] Deleting old cache:', cacheName)
               return caches.delete(cacheName)
             })
+        )
+      }),
+      
+      // Clear any existing cache entries that might cause MIME issues
+      caches.keys().then((cacheNames) => {
+        return Promise.all(
+          cacheNames.map(async (cacheName) => {
+            if (cacheName.startsWith('astralfield-')) {
+              const cache = await caches.open(cacheName)
+              const requests = await cache.keys()
+              return Promise.all(
+                requests
+                  .filter(req => req.url.includes('.css'))
+                  .map(req => {
+                    console.log('[SW] Removing cached CSS:', req.url)
+                    return cache.delete(req)
+                  })
+              )
+            }
+          })
         )
       }),
       
@@ -196,10 +215,18 @@ async function handleStaticAsset(request) {
     const networkResponse = await fetch(request)
     
     if (networkResponse.ok) {
-      // Cache the asset
+      // Cache the asset with proper MIME type preservation
       const responseClone = networkResponse.clone()
       const headers = new Headers(responseClone.headers)
       headers.set('sw-cached-at', Date.now().toString())
+      
+      // Ensure proper MIME type for CSS files
+      const url = new URL(request.url)
+      if (url.pathname.endsWith('.css')) {
+        headers.set('Content-Type', 'text/css')
+      } else if (url.pathname.endsWith('.js')) {
+        headers.set('Content-Type', 'application/javascript')
+      }
       
       const modifiedResponse = new Response(responseClone.body, {
         status: responseClone.status,

@@ -61,7 +61,9 @@ async function getUserTeams(userId: string) {
       isCommissioner: team.league.settings?.commissionerId === userId
     }))
   } catch (error) {
-    console.error('Failed to fetch user teams:', error)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Failed to fetch user teams:', error);
+    }
     return []
   }
 }
@@ -121,7 +123,9 @@ async function getTradeStats(userId: string) {
       successRate: totalTrades > 0 ? ((acceptedTrades / totalTrades) * 100).toFixed(1) : '0'
     }
   } catch (error) {
-    console.error('Failed to fetch trade stats:', error)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Failed to fetch trade stats:', error);
+    }
     return {
       totalTrades: 0,
       pendingTrades: 0,

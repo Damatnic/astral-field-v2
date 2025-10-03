@@ -84,8 +84,6 @@ class ZenithQAMonitor {
     
     // Set up periodic reporting
     this.setupPeriodicReporting()
-    
-    console.log('[Zenith QA] Monitoring initialized for session:', this.sessionId)
   }
 
   /**
@@ -359,7 +357,11 @@ class ZenithQAMonitor {
     if (process.env.NODE_ENV === 'production') {
       this.sendToMonitoringService(error)
     } else {
-      console.warn('[Zenith QA] Error detected:', error)
+      if (process.env.NODE_ENV === 'development') {
+
+        console.warn('[Zenith QA] Error detected:', error);
+
+      }
     }
   }
 
@@ -389,8 +391,11 @@ class ZenithQAMonitor {
     const threshold = this.errorThresholds[error.type]
     
     if (typeErrors.length >= threshold) {
-      console.error(`[Zenith QA] Error threshold exceeded for ${error.type}: ${typeErrors.length}/${threshold}`)
-      
+      if (process.env.NODE_ENV === 'development') {
+
+        console.error(`[Zenith QA] Error threshold exceeded for ${error.type}: ${typeErrors.length}/${threshold}`);
+
+      }
       // Could trigger alerts, disable features, etc.
       if (error.type === 'hydration') {
         this.handleCriticalHydrationIssue()
@@ -426,8 +431,11 @@ class ZenithQAMonitor {
    */
   private handleCriticalHydrationIssue() {
     // Could implement fallback strategies
-    console.error('[Zenith QA] Critical hydration issue detected - implementing fallback strategies')
-    
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('[Zenith QA] Critical hydration issue detected - implementing fallback strategies');
+
+    }
     // Example: Disable SSR for problematic components
     if (typeof window !== 'undefined') {
       window.localStorage.setItem('zenith-disable-ssr', 'true')
@@ -498,7 +506,11 @@ class ZenithQAMonitor {
         body: JSON.stringify(error)
       })
     } catch (e) {
-      console.error('[Zenith QA] Failed to send error to monitoring service:', e)
+      if (process.env.NODE_ENV === 'development') {
+
+        console.error('[Zenith QA] Failed to send error to monitoring service:', e);
+
+      }
     }
   }
 
@@ -507,8 +519,6 @@ class ZenithQAMonitor {
     setInterval(() => {
       if (this.errors.length > 0 || this.metrics.length > 0) {
         const report = this.generateReport()
-        console.log('[Zenith QA] Periodic report:', report.summary)
-        
         if (process.env.NODE_ENV === 'production') {
           this.sendReportToService(report)
         }
@@ -524,7 +534,11 @@ class ZenithQAMonitor {
         body: JSON.stringify(report)
       })
     } catch (e) {
-      console.error('[Zenith QA] Failed to send report to monitoring service:', e)
+      if (process.env.NODE_ENV === 'development') {
+
+        console.error('[Zenith QA] Failed to send report to monitoring service:', e);
+
+      }
     }
   }
 }

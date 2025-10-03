@@ -22,8 +22,6 @@ const initSocketServer = (server: NetServer) => {
 
   // Handle client connections
   io.on('connection', (socket) => {
-    console.log('Client connected:', socket.id)
-    
     let authenticatedUser: any = null
 
     // Authentication
@@ -38,12 +36,15 @@ const initSocketServer = (server: NetServer) => {
           authenticatedUser = user
           socket.join(`user:${user.id}`)
           socket.emit('authenticated', { success: true, user })
-          console.log('User authenticated:', user.id)
         } else {
           socket.emit('authentication_error', { message: 'User not found' })
         }
       } catch (error) {
-        console.error('Authentication error:', error)
+        if (process.env.NODE_ENV === 'development') {
+
+          console.error('Authentication error:', error);
+
+        }
         socket.emit('authentication_error', { message: 'Authentication failed' })
       }
     })
@@ -53,8 +54,6 @@ const initSocketServer = (server: NetServer) => {
       if (!authenticatedUser) return
 
       socket.join(`draft:${data.leagueId}`)
-      console.log(`User ${authenticatedUser.id} joined draft ${data.leagueId}`)
-
       // Send current draft state
       const draftState = {
         leagueId: data.leagueId,
@@ -95,10 +94,12 @@ const initSocketServer = (server: NetServer) => {
         // Broadcast to all clients in the draft room
         socket.to(`draft:${data.leagueId}`).emit('draft_event', draftEvent)
         socket.emit('draft_event', draftEvent)
-
-        console.log('Player drafted:', data)
       } catch (error) {
-        console.error('Draft error:', error)
+        if (process.env.NODE_ENV === 'development') {
+
+          console.error('Draft error:', error);
+
+        }
         socket.emit('draft_error', { message: 'Failed to draft player' })
       }
     })
@@ -108,8 +109,6 @@ const initSocketServer = (server: NetServer) => {
       if (!authenticatedUser) return
 
       socket.join(`scoring:${data.leagueId}:${data.week}`)
-      console.log(`User ${authenticatedUser.id} joined scoring for league ${data.leagueId} week ${data.week}`)
-
       // Send initial scoring data
       const mockScoreUpdate = {
         type: 'SCORE_UPDATE',
@@ -130,8 +129,6 @@ const initSocketServer = (server: NetServer) => {
       if (!authenticatedUser) return
 
       socket.join(`chat:${data.leagueId}`)
-      console.log(`User ${authenticatedUser.id} joined chat for league ${data.leagueId}`)
-
       // Send recent messages (mock data)
       const recentMessages = [
         {
@@ -175,8 +172,6 @@ const initSocketServer = (server: NetServer) => {
       // Broadcast to all clients in the chat room
       socket.to(`chat:${data.leagueId}`).emit('chat_message', chatMessage)
       socket.emit('chat_message', chatMessage)
-
-      console.log('Chat message sent:', chatMessage)
     })
 
     // Handle typing indicators
@@ -219,17 +214,18 @@ const initSocketServer = (server: NetServer) => {
         // Send to the target team owner
         socket.to(`user:${data.toTeamId}`).emit('trade_proposal', tradeProposal)
         socket.emit('trade_proposal', tradeProposal)
-
-        console.log('Trade proposed:', tradeProposal)
       } catch (error) {
-        console.error('Trade proposal error:', error)
+        if (process.env.NODE_ENV === 'development') {
+
+          console.error('Trade proposal error:', error);
+
+        }
         socket.emit('trade_error', { message: 'Failed to propose trade' })
       }
     })
 
     // Handle disconnection
     socket.on('disconnect', (reason) => {
-      console.log('Client disconnected:', socket.id, reason)
       if (authenticatedUser) {
         console.log('User disconnected:', authenticatedUser.id)
       }
@@ -274,7 +270,11 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ message: 'Socket.IO server initialized' })
   } catch (error) {
-    console.error('Socket.IO initialization error:', error)
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('Socket.IO initialization error:', error);
+
+    }
     return NextResponse.json(
       { error: 'Failed to initialize Socket.IO server' },
       { status: 500 }

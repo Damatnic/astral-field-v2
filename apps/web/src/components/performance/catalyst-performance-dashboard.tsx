@@ -113,7 +113,9 @@ export function CatalystPerformanceDashboard() {
           newMetrics.ttfb = navTiming.responseStart - navTiming.requestStart
         }
       } catch (error) {
-        console.warn('Performance Observer not supported:', error)
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('Performance Observer not supported:', error);
+        }
       }
     }
 

@@ -84,7 +84,11 @@ export class MobilePerformanceOptimizer {
       }
       
       tempImg.onerror = () => {
-        console.warn(`Failed to load image: ${src}`)
+        if (process.env.NODE_ENV === 'development') {
+
+          console.warn(`Failed to load image: ${src}`);
+
+        }
         reject(new Error(`Failed to load image: ${src}`))
       }
       
@@ -138,7 +142,11 @@ export class MobilePerformanceOptimizer {
       
       console.log(`[Sigma] Preloaded route ${route} in ${loadTime.toFixed(2)}ms`)
     } catch (error) {
-      console.warn(`Failed to preload route: ${route}`, error)
+      if (process.env.NODE_ENV === 'development') {
+
+        console.warn(`Failed to preload route: ${route}`, error);
+
+      }
     }
   }
 
@@ -190,7 +198,11 @@ export class MobilePerformanceOptimizer {
           dischargingTime: battery.dischargingTime
         }
       } catch (error) {
-        console.warn('Battery API not available:', error)
+        if (process.env.NODE_ENV === 'development') {
+
+          console.warn('Battery API not available:', error);
+
+        }
       }
     }
     return null

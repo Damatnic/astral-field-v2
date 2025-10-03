@@ -21,7 +21,7 @@ import {
   ArrowsRightLeftIcon,
   PlayIcon,
   UserGroupIcon
-} from '@heroicons/react/outline'
+} from '@heroicons/react/24/outline'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 
@@ -106,7 +106,9 @@ export function EnhancedAIDashboard({
       ])
 
     } catch (error) {
-      console.error('Failed to load AI data:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to load AI data:', error);
+      }
       toast.error('Failed to load AI intelligence')
     } finally {
       setLoading(false)
@@ -129,7 +131,9 @@ export function EnhancedAIDashboard({
         })))
       }
     } catch (error) {
-      console.error('Failed to load predictions:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to load predictions:', error);
+      }
     }
   }
 
@@ -159,7 +163,9 @@ export function EnhancedAIDashboard({
         })))
       }
     } catch (error) {
-      console.error('Failed to load waiver analysis:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to load waiver analysis:', error);
+      }
     }
   }
 
@@ -187,7 +193,9 @@ export function EnhancedAIDashboard({
         ])
       }
     } catch (error) {
-      console.error('Failed to load trade opportunities:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to load trade opportunities:', error);
+      }
     }
   }
 
@@ -209,7 +217,9 @@ export function EnhancedAIDashboard({
         setLineupOptimization(data.data.optimization)
       }
     } catch (error) {
-      console.error('Failed to load lineup optimization:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to load lineup optimization:', error);
+      }
     }
   }
 
@@ -229,7 +239,9 @@ export function EnhancedAIDashboard({
         setMatchupAnalysis(data.data.analysis)
       }
     } catch (error) {
-      console.error('Failed to load matchup analysis:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to load matchup analysis:', error);
+      }
     }
   }
 
@@ -311,7 +323,9 @@ export function EnhancedAIDashboard({
 
       setNlpResponse(responses[responseKey])
     } catch (error) {
-      console.error('NLP query failed:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('NLP query failed:', error);
+      }
       toast.error('Failed to process query')
     } finally {
       setNlpLoading(false)

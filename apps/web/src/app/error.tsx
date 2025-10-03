@@ -10,7 +10,9 @@ export default function ErrorPage({
   reset: () => void
 }) {
   useEffect(() => {
-    console.error('Application error:', error)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Application error:', error);
+    }
   }, [error])
 
   return (

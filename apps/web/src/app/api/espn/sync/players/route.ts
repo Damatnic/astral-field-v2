@@ -11,7 +11,11 @@ export async function POST() {
       message: `Synced ${result.synced} players with ${result.errors} errors`
     });
   } catch (error) {
-    console.error('ESPN player sync failed:', error);
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('ESPN player sync failed:', error);
+
+    }
     return NextResponse.json({ 
       success: false, 
       error: 'Failed to sync players' 

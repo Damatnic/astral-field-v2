@@ -91,7 +91,9 @@ export const checkDatabaseHealth = async (): Promise<boolean> => {
       lastCheck: Date.now(),
       errorCount: connectionHealth.errorCount + 1
     }
-    console.error('Database health check failed:', error)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Database health check failed:', error);
+    }
     return false
   }
 }
@@ -164,11 +166,13 @@ if (process.env.NODE_ENV !== 'production') {
 let shutdownHandlersRegistered = false
 
 const gracefulShutdown = async () => {
-  console.log('Gracefully shutting down database connections...')
+
   try {
     await prisma.$disconnect()
   } catch (error) {
-    console.error('Error during database shutdown:', error)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error during database shutdown:', error);
+    }
   }
 }
 

@@ -10,7 +10,11 @@ export async function GET(
     const data = await espn.getPlayerInfo(params.id);
     return NextResponse.json(data);
   } catch (error) {
-    console.error(`ESPN player API failed for ${params.id}:`, error);
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error(`ESPN player API failed for ${params.id}:`, error);
+
+    }
     return NextResponse.json({ error: 'Failed to fetch player' }, { status: 500 });
   }
 }

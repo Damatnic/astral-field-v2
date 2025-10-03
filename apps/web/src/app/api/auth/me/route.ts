@@ -21,7 +21,11 @@ export async function GET(request: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('Auth me endpoint error:', error)
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('Auth me endpoint error:', error);
+
+    }
     return NextResponse.json(
       { error: 'Internal server error', user: null }, 
       { status: 500 }

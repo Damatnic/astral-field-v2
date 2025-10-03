@@ -59,7 +59,9 @@ export class GuardianSecurityHeaders {
             "'unsafe-inline'", // NextJS requires this for development
             "'unsafe-eval'", // NextJS requires this for development
             "https://vercel.live",
-            "https://va.vercel-scripts.com"
+            "https://va.vercel-scripts.com",
+            "https://vitals.vercel-insights.com",
+            "*.vercel.app"
           ],
           style: [
             "'self'",
@@ -82,10 +84,12 @@ export class GuardianSecurityHeaders {
           ],
           connect: [
             "'self'",
-            "https://api.vercel.com",
-            "https://vercel.live",
-            "wss://ws-us3.pusher.com", // For real-time features
-            "https://api.github.com" // If using GitHub integration
+            "https:",
+            "wss:",
+            "ws:",
+            "*.neon.tech",
+            "https://vitals.vercel-insights.com",
+            "*.vercel.app"
           ],
           media: ["'self'", "data:", "blob:"],
           object: ["'none'"],
@@ -142,9 +146,7 @@ export class GuardianSecurityHeaders {
         'X-DNS-Prefetch-Control': 'off',
         'X-Download-Options': 'noopen',
         'X-Permitted-Cross-Domain-Policies': 'none',
-        'Cross-Origin-Embedder-Policy': 'require-corp',
-        'Cross-Origin-Opener-Policy': 'same-origin',
-        'Cross-Origin-Resource-Policy': 'same-origin',
+        'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
         'Origin-Agent-Cluster': '?1',
         ...config.additionalHeaders
       }
@@ -312,8 +314,18 @@ export class GuardianSecurityHeaders {
     const policies: string[] = []
 
     Object.entries(this.config.permissionsPolicy).forEach(([directive, allowlist]) => {
-      const sources = allowlist.length > 0 ? allowlist.join(' ') : '()'
-      policies.push(`${directive}=${sources}`)
+      if (allowlist.length > 0) {
+        // Use proper format with parentheses and quotes for allowlist items
+        const sources = allowlist.map(source => {
+          if (source === '*') return '*'
+          if (source.startsWith("'") && source.endsWith("'")) return source
+          return `"${source}"`
+        }).join(' ')
+        policies.push(`${directive}=(${sources})`)
+      } else {
+        // Empty allowlist means disabled for all origins
+        policies.push(`${directive}=()`)
+      }
     })
 
     return policies.join(', ')

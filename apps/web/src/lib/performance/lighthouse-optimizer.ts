@@ -233,19 +233,31 @@ export class LighthouseOptimizer {
       
       // Flag slow resources
       if (duration > 1000) { // > 1s
-        console.warn(`Slow resource detected: ${entry.name} took ${duration}ms`)
+        if (process.env.NODE_ENV === 'development') {
+
+          console.warn(`Slow resource detected: ${entry.name} took ${duration}ms`);
+
+        }
         this.queueOptimization(() => this.optimizeSlowResource(entry))
       }
 
       // Flag large resources
       if (entry.transferSize && entry.transferSize > 500000) { // > 500KB
-        console.warn(`Large resource detected: ${entry.name} is ${entry.transferSize} bytes`)
+        if (process.env.NODE_ENV === 'development') {
+
+          console.warn(`Large resource detected: ${entry.name} is ${entry.transferSize} bytes`);
+
+        }
         this.queueOptimization(() => this.optimizeLargeResource(entry))
       }
 
       // Flag render-blocking resources
       if (this.isRenderBlocking(entry)) {
-        console.warn(`Render-blocking resource: ${entry.name}`)
+        if (process.env.NODE_ENV === 'development') {
+
+          console.warn(`Render-blocking resource: ${entry.name}`);
+
+        }
         this.queueOptimization(() => this.optimizeRenderBlockingResource(entry))
       }
     })
@@ -302,10 +314,18 @@ export class LighthouseOptimizer {
     const thresholds = LighthouseOptimizer.THRESHOLDS
 
     if (value > thresholds.needsImprovement[metric]) {
-      console.error(`Critical performance issue: ${metric} = ${value}`)
+      if (process.env.NODE_ENV === 'development') {
+
+        console.error(`Critical performance issue: ${metric} = ${value}`);
+
+      }
       this.queueCriticalOptimization(metric, value)
     } else if (value > thresholds.good[metric]) {
-      console.warn(`Performance warning: ${metric} = ${value}`)
+      if (process.env.NODE_ENV === 'development') {
+
+        console.warn(`Performance warning: ${metric} = ${value}`);
+
+      }
       this.queueOptimization(() => this.optimizeMetric(metric, value))
     }
   }
@@ -488,10 +508,8 @@ export class LighthouseOptimizer {
     const scheduler = (window as any).scheduler
     if (scheduler && scheduler.postTask) {
       // Use modern scheduler API for better task scheduling
-      console.log('Using Scheduler API for task optimization')
     } else {
       // Fallback to setTimeout for task yielding
-      console.log('Using setTimeout for task yielding')
     }
   }
 
@@ -547,7 +565,6 @@ export class LighthouseOptimizer {
 
   private inlineCriticalCSS(): void {
     // This would typically be done at build time
-    console.log('Critical CSS should be inlined at build time')
   }
 
   private preconnectToOrigins(): void {
@@ -573,11 +590,9 @@ export class LighthouseOptimizer {
   }
 
   private enableCDNCaching(): void {
-    console.log('CDN caching should be configured at infrastructure level')
   }
 
   private optimizeServerResponse(): void {
-    console.log('Server response optimization should be implemented server-side')
   }
 
   private enableServiceWorkerCaching(): void {
@@ -590,17 +605,14 @@ export class LighthouseOptimizer {
 
   // Optimization for slow/large/render-blocking resources
   private async optimizeSlowResource(entry: any): Promise<void> {
-    console.log(`Optimizing slow resource: ${entry.name}`)
     // Implementation would vary based on resource type
   }
 
   private async optimizeLargeResource(entry: any): Promise<void> {
-    console.log(`Optimizing large resource: ${entry.name}`)
     // Implementation would vary based on resource type
   }
 
   private async optimizeRenderBlockingResource(entry: any): Promise<void> {
-    console.log(`Optimizing render-blocking resource: ${entry.name}`)
     // Implementation would vary based on resource type
   }
 

@@ -31,7 +31,11 @@ export async function GET(request: NextRequest) {
         return await getDraftStatus(leagueId)
     }
   } catch (error) {
-    console.error('Draft API error:', error)
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('Draft API error:', error);
+
+    }
     return NextResponse.json(
       { error: 'Failed to fetch draft data' },
       { status: 500 }
@@ -66,7 +70,11 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
     }
   } catch (error) {
-    console.error('Draft API error:', error)
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('Draft API error:', error);
+
+    }
     return NextResponse.json(
       { error: 'Failed to process draft action' },
       { status: 500 }

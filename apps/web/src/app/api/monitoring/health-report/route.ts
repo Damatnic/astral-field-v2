@@ -11,9 +11,6 @@ export async function POST(request: NextRequest) {
     const report: HealthReport = await request.json()
     
     // Log the health report
-    console.log(`[Zenith Health Report] Status: ${report.overall}`)
-    console.log(`[Zenith Health Report] Summary:`, report.summary)
-    
     // Log any failed checks
     const failedChecks = report.checks.filter(c => c.status === 'fail')
     if (failedChecks.length > 0) {
@@ -39,7 +36,11 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, reportId: generateReportId() })
   } catch (error) {
-    console.error('[Zenith Health Report] Failed to process report:', error)
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('[Zenith Health Report] Failed to process report:', error);
+
+    }
     return NextResponse.json(
       { error: 'Failed to process health report' },
       { status: 500 }

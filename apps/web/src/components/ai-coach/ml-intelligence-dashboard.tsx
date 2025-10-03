@@ -17,7 +17,7 @@ import {
   CpuChipIcon,
   ClockIcon,
   ChartPieIcon
-} from '@heroicons/react/outline'
+} from '@heroicons/react/24/outline'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 
@@ -131,7 +131,9 @@ export function MLIntelligenceDashboard({ userId, leagueId, teamId }: MLIntellig
         })
       }
     } catch (error) {
-      console.error('Failed to fetch intelligence data:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to fetch intelligence data:', error);
+      }
       toast.error('Failed to load AI intelligence data')
     } finally {
       setLoading(false)
@@ -151,7 +153,9 @@ export function MLIntelligenceDashboard({ userId, leagueId, teamId }: MLIntellig
         setMetrics(data.data.models)
       }
     } catch (error) {
-      console.error('Failed to fetch ML metrics:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to fetch ML metrics:', error);
+      }
     }
   }
 
@@ -179,7 +183,9 @@ export function MLIntelligenceDashboard({ userId, leagueId, teamId }: MLIntellig
         toast.error('Failed to process natural language query')
       }
     } catch (error) {
-      console.error('NLP query failed:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('NLP query failed:', error);
+      }
       toast.error('Failed to process query')
     } finally {
       setNlpLoading(false)
@@ -226,7 +232,9 @@ export function MLIntelligenceDashboard({ userId, leagueId, teamId }: MLIntellig
         toast.error(`Failed to execute ${analysisType} analysis`)
       }
     } catch (error) {
-      console.error(`${analysisType} analysis failed:`, error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error(`${analysisType} analysis failed:`, error);
+      }
       toast.error(`${analysisType} analysis failed`)
     }
   }

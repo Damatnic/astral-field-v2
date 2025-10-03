@@ -19,8 +19,6 @@ const DAMATO_DYNASTY_MEMBERS = [
 
 export async function GET() {
   try {
-    console.log('🌱 Starting database seeding...')
-    
     const hashedPassword = await bcrypt.hash('Dynasty2025!', 10)
     const results = []
 
@@ -50,7 +48,11 @@ export async function GET() {
           role: member.role
         })
       } catch (userError: any) {
-        console.error(`Failed to create ${member.name}:`, userError)
+        if (process.env.NODE_ENV === 'development') {
+
+          console.error(`Failed to create ${member.name}:`, userError);
+
+        }
         results.push({ 
           success: false, 
           email: member.email, 
@@ -62,10 +64,6 @@ export async function GET() {
 
     const successful = results.filter(r => r.success)
     const failed = results.filter(r => !r.success)
-
-    console.log(`✅ Successfully created: ${successful.length}/${DAMATO_DYNASTY_MEMBERS.length} users`)
-    console.log(`❌ Failed: ${failed.length} users`)
-
     return NextResponse.json({ 
       message: 'Database seeding completed',
       successful: successful.length,
@@ -75,7 +73,11 @@ export async function GET() {
       password: 'Dynasty2025!'
     })
   } catch (error: any) {
-    console.error('💥 Database seeding failed:', error)
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('💥 Database seeding failed:', error);
+
+    }
     return NextResponse.json({ 
       error: 'Database seeding failed', 
       details: error.message 

@@ -10,7 +10,9 @@ import { guardianAccountProtection } from "./security/account-protection"
 // Sentinel Security: Enhanced environment validation
 const AUTH_SECRET = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET
 if (!AUTH_SECRET || AUTH_SECRET.length < 32) {
-  console.error('🚨 CRITICAL: AUTH_SECRET must be at least 32 characters long')
+  if (process.env.NODE_ENV === 'development') {
+    console.error('🚨 CRITICAL: AUTH_SECRET must be at least 32 characters long');
+  }
   throw new Error('Invalid AUTH_SECRET: Must be at least 32 characters for security')
 }
 
@@ -18,8 +20,8 @@ if (!AUTH_SECRET || AUTH_SECRET.length < 32) {
 const AUTH_CONFIG = {
   secret: AUTH_SECRET,
   url: process.env.NEXTAUTH_URL || process.env.VERCEL_URL || 'http://localhost:3000',
-  trustHost: process.env.AUTH_TRUST_HOST === 'true' || process.env.NODE_ENV === 'production',
-  debug: process.env.AUTH_DEBUG === 'true' && process.env.NODE_ENV === 'development',
+  trustHost: true, // Always trust host for Vercel deployments
+  debug: process.env.AUTH_DEBUG === 'true',
   sessionMaxAge: parseInt(process.env.SESSION_MAX_AGE || '86400', 10), // 24 hours
   jwtMaxAge: parseInt(process.env.JWT_MAX_AGE || '86400', 10), // 24 hours
 }
@@ -28,7 +30,9 @@ async function verifyPassword(password: string, hashedPassword: string): Promise
   try {
     return await bcrypt.compare(password, hashedPassword)
   } catch (error) {
-    console.error('Password verification error:', error)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Password verification error:', error);
+    }
     return false
   }
 }
@@ -129,7 +133,9 @@ export const authConfig = {
               })
             } catch (error) {
               // Log but don't fail authentication for login tracking
-              console.warn('Failed to update last login time:', error)
+              if (process.env.NODE_ENV === 'development') {
+                console.warn('Failed to update last login time:', error);
+              }
             }
           })
 
@@ -204,7 +210,9 @@ export const authConfig = {
           }
         } catch (error) {
           // Guardian Security: Log error and re-throw
-          console.error('Authentication error:', error)
+          if (process.env.NODE_ENV === 'development') {
+            console.error('Authentication error:', error);
+          }
           if (error instanceof Error) {
             throw error
           }
@@ -244,15 +252,27 @@ export const authConfig = {
       }
 
       // Sentinel Security: Enhanced token age check with graceful handling
-      const tokenAge = Date.now() / 1000 - (token.iat as number || 0)
+      const currentTime = Math.floor(Date.now() / 1000)
+      const tokenIat = token.iat as number || currentTime
+      const tokenAge = currentTime - tokenIat
+      
+      // Be more lenient with token validation to prevent premature expiration
       if (tokenAge > AUTH_CONFIG.jwtMaxAge) {
-        console.warn(`Token expired after ${tokenAge}s (max: ${AUTH_CONFIG.jwtMaxAge}s), requiring refresh`)
-        // Only force re-authentication if token is significantly expired
-        if (tokenAge > AUTH_CONFIG.jwtMaxAge * 1.1) {
+        if (process.env.AUTH_DEBUG === 'true') {
+          console.warn(`Token expired after ${tokenAge}s (max: ${AUTH_CONFIG.jwtMaxAge}s)`)
+        }
+        
+        // Only force re-authentication if token is significantly expired (25% grace period)
+        if (tokenAge > AUTH_CONFIG.jwtMaxAge * 1.25) {
+          if (process.env.AUTH_DEBUG === 'true') {
+            if (process.env.NODE_ENV === 'development') {
+              console.warn('Token too old, forcing re-authentication');
+            }
+          }
           return null // Return null to force re-authentication
         }
         // Otherwise, refresh the token's timestamp for grace period
-        token.iat = Math.floor(Date.now() / 1000)
+        token.iat = currentTime
       }
 
       return token
@@ -289,7 +309,7 @@ export const authConfig = {
   events: {
     async signIn({ user, account, profile, isNewUser }) {
       // Guardian Security: Log successful sign-ins
-      console.log('User signed in:', user.id, account?.provider)
+
     },
     async signOut(message) {
       // Guardian Security: Log sign-outs with audit trail
@@ -317,8 +337,7 @@ export const authConfig = {
           message.token.sessionId
         )
       }
-      
-      console.log('User signed out and session terminated')
+
     }
   },
   pages: {
@@ -333,31 +352,27 @@ export const authConfig = {
       name: process.env.NODE_ENV === 'production' ? '__Secure-next-auth.session-token' : 'next-auth.session-token',
       options: {
         httpOnly: true,
-        sameSite: 'lax', // Changed from 'strict' to 'lax' for better compatibility
+        sameSite: 'lax',
         path: '/',
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: AUTH_CONFIG.sessionMaxAge,
-        domain: process.env.NODE_ENV === 'development' ? 'localhost' : undefined
+        secure: process.env.NODE_ENV === 'production'
       }
     },
     callbackUrl: {
       name: process.env.NODE_ENV === 'production' ? '__Secure-next-auth.callback-url' : 'next-auth.callback-url',
       options: {
         httpOnly: true,
-        sameSite: 'lax', // Changed from 'strict' to 'lax'
+        sameSite: 'lax',
         path: '/',
-        secure: process.env.NODE_ENV === 'production',
-        domain: process.env.NODE_ENV === 'development' ? 'localhost' : undefined
+        secure: process.env.NODE_ENV === 'production'
       }
     },
     csrfToken: {
-      name: process.env.NODE_ENV === 'production' ? '__Host-next-auth.csrf-token' : 'next-auth.csrf-token',
+      name: process.env.NODE_ENV === 'production' ? '__Secure-next-auth.csrf-token' : 'next-auth.csrf-token',
       options: {
         httpOnly: true,
-        sameSite: 'lax', // Changed from 'strict' to 'lax' to fix CSRF issues
+        sameSite: 'lax',
         path: '/',
-        secure: process.env.NODE_ENV === 'production',
-        domain: process.env.NODE_ENV === 'development' ? 'localhost' : undefined
+        secure: process.env.NODE_ENV === 'production'
       }
     }
   }

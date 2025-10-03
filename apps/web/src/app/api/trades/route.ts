@@ -27,7 +27,11 @@ export async function GET(request: NextRequest) {
         return await getTradeProposals(session.user.id, leagueId, teamId, status)
     }
   } catch (error) {
-    console.error('Trade API error:', error)
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('Trade API error:', error);
+
+    }
     return NextResponse.json(
       { error: 'Failed to fetch trade data' },
       { status: 500 }
@@ -60,7 +64,11 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
     }
   } catch (error) {
-    console.error('Trade API error:', error)
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('Trade API error:', error);
+
+    }
     return NextResponse.json(
       { error: 'Failed to process trade action' },
       { status: 500 }

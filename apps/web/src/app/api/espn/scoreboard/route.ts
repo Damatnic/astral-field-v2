@@ -7,7 +7,11 @@ export async function GET() {
     const data = await espn.getScoreboard();
     return NextResponse.json(data);
   } catch (error) {
-    console.error('ESPN scoreboard API failed:', error);
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('ESPN scoreboard API failed:', error);
+
+    }
     return NextResponse.json({ error: 'Failed to fetch scoreboard' }, { status: 500 });
   }
 }

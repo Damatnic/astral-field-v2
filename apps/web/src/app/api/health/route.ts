@@ -25,7 +25,11 @@ export async function GET() {
       
       userCount = await prisma.user.count()
     } catch (error) {
-      console.error('Database query test failed:', error)
+      if (process.env.NODE_ENV === 'development') {
+
+        console.error('Database query test failed:', error);
+
+      }
     }
     
     const healthStatus = {
@@ -52,7 +56,11 @@ export async function GET() {
     })
     
   } catch (error) {
-    console.error('Health check failed:', error)
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('Health check failed:', error);
+
+    }
     return NextResponse.json({
       status: 'error',
       timestamp: new Date().toISOString(),

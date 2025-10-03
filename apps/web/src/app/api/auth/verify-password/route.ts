@@ -70,8 +70,11 @@ export async function POST(request: NextRequest) {
     
   } catch (error) {
     const responseTime = Date.now() - startTime
-    console.error('Password verification error:', error)
-    
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('Password verification error:', error);
+
+    }
     return NextResponse.json({ 
       valid: false, 
       error: 'Verification failed',

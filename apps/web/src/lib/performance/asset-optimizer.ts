@@ -364,14 +364,15 @@ export class ServiceWorkerManager {
 
     try {
       this.registration = await navigator.serviceWorker.register(swPath)
-      console.log('Service Worker registered successfully')
-      
       // Listen for updates
       this.registration.addEventListener('updatefound', () => {
-        console.log('Service Worker update found')
       })
     } catch (error) {
-      console.error('Service Worker registration failed:', error)
+      if (process.env.NODE_ENV === 'development') {
+
+        console.error('Service Worker registration failed:', error);
+
+      }
     }
   }
 

@@ -155,7 +155,11 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Live scoring API error:', error)
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('Live scoring API error:', error);
+
+    }
     return NextResponse.json(
       { error: 'Failed to fetch live scoring data' },
       { status: 500 }
@@ -191,7 +195,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true })
 
   } catch (error) {
-    console.error('Live scoring update error:', error)
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('Live scoring update error:', error);
+
+    }
     return NextResponse.json(
       { error: 'Failed to update live scoring data' },
       { status: 500 }

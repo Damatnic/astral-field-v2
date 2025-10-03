@@ -491,8 +491,6 @@ export class GuardianAccountProtection {
     status.lockoutReason = undefined
     status.lockoutUntil = undefined
     status.failedAttempts = 0
-
-    console.log(`Account unlocked: ${userId}`, { reason })
   }
 
   /**
@@ -543,13 +541,18 @@ export class GuardianAccountProtection {
 
     this.securityChallenges.set(challengeId, challenge)
 
-    console.warn(`Security challenge created for user ${userId}`, {
+    if (process.env.NODE_ENV === 'development') {
+
+
+      console.warn(`Security challenge created for user ${userId}`, {
       challengeId,
       type: challengeType,
       reason: challenge.reason,
       riskScore
-    })
+    });
 
+
+    }
     return challenge
   }
 

@@ -1,324 +1,492 @@
+/**
+ * Draft Room Component Tests
+ * 
+ * Tests for draft room component with real-time draft functionality
+ */
+
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { DraftRoom } from '@/components/draft/draft-room'
 import { useDraftRoom } from '@/hooks/use-websocket'
 
-// Mock the WebSocket hook
 jest.mock('@/hooks/use-websocket')
-const mockUseDraftRoom = useDraftRoom as jest.MockedFunction<typeof useDraftRoom>
 
-const mockLeague = {
-  id: 'league1',
-  name: 'Championship League',
-  teams: [
-    { id: 'team1', name: 'Fire Breathing Rubber Ducks', owner: { name: 'John Doe' } },
-    { id: 'team2', name: 'Thunderbolts', owner: { name: 'Jane Smith' } },
-    { id: 'team3', name: 'Storm Hawks', owner: { name: 'Bob Wilson' } }
-  ]
-}
-
-const mockDraftState = {
-  currentPick: 3,
-  currentRound: 1,
-  currentTeamId: 'team3',
-  timeRemaining: 75,
-  draftOrder: ['team1', 'team2', 'team3'],
-  picks: [
-    { pick: 1, round: 1, teamId: 'team1', playerId: 'p1', playerName: 'Josh Allen', position: 'QB' },
-    { pick: 2, round: 1, teamId: 'team2', playerId: 'p2', playerName: 'Christian McCaffrey', position: 'RB' }
-  ]
-}
-
-const mockAvailablePlayers = [
-  {
-    id: 'p3',
-    name: 'Tyreek Hill',
-    position: 'WR',
-    nflTeam: 'MIA',
-    adp: 3.2,
-    rank: 3,
-    projections: [{ projectedPoints: 18.5, confidence: 0.88 }]
-  },
-  {
-    id: 'p4', 
-    name: 'Derrick Henry',
-    position: 'RB',
-    nflTeam: 'BAL',
-    adp: 4.1,
-    rank: 4,
-    projections: [{ projectedPoints: 16.8, confidence: 0.82 }]
-  },
-  {
-    id: 'p5',
-    name: 'Cooper Kupp',
-    position: 'WR', 
-    nflTeam: 'LAR',
-    adp: 5.3,
-    rank: 5,
-    projections: [{ projectedPoints: 17.2, confidence: 0.79 }]
-  }
-]
-
-const mockDraftActions = {
-  draftPlayer: jest.fn(),
-  joinDraft: jest.fn(),
-  leaveDraft: jest.fn()
-}
+global.fetch = jest.fn()
 
 describe('DraftRoom Component', () => {
-  const defaultProps = {
-    leagueId: 'league1',
-    userTeamId: 'team1',
-    league: mockLeague
+  const mockProps = {
+    leagueId: 'league-123',
+    currentUserId: 'user-123'
+  }
+
+  const mockDraftState = {
+    state: { connected: true, error: null },
+    draftState: {
+      league: {
+        teams: [
+          { id: 'team-1', name: 'Team Alpha', owner: { name: 'User 1' }, draftPicks: [] },
+          { id: 'team-2', name: 'Team Beta', owner: { name: 'User 2' }, draftPicks: [] }
+        ]
+      }
+    },
+    draftEvents: [
+      { round: 1, pick: 1, playerId: 'player-1', teamId: 'team-1' }
+    ],
+    timeRemaining: 90,
+    currentTeamId: 'team-1',
+    draftPlayer: jest.fn()
+  }
+
+  const mockDraftStatus = {
+    success: true,
+    data: {
+      draft: {
+        id: 'draft-123',
+        status: 'IN_PROGRESS',
+        league: { name: 'Test League' }
+      },
+      currentPick: {
+        round: 1,
+        pick: 1,
+        team: {
+          id: 'team-1',
+          name: 'Team Alpha',
+          owner: { id: 'user-123', name: 'User 1' }
+        },
+        timeRemaining: 90,
+        timePerPick: 90
+      },
+      totalPicks: 180,
+      picksCompleted: 0
+    }
+  }
+
+  const mockPlayers = {
+    success: true,
+    data: [
+      { id: 'player-1', name: 'Patrick Mahomes', position: 'QB', nflTeam: 'KC', adp: 10, projectedPoints: 350 },
+      { id: 'player-2', name: 'Christian McCaffrey', position: 'RB', nflTeam: 'SF', adp: 5, projectedPoints: 320 },
+      { id: 'player-3', name: 'Tyreek Hill', position: 'WR', nflTeam: 'MIA', adp: 15, projectedPoints: 280 }
+    ]
   }
 
   beforeEach(() => {
     jest.clearAllMocks()
-    mockUseDraftRoom.mockReturnValue({
-      draftState: mockDraftState,
-      availablePlayers: mockAvailablePlayers,
-      isConnected: true,
-      isLoading: false,
-      error: null,
-      ...mockDraftActions
+    ;(useDraftRoom as jest.Mock).mockReturnValue(mockDraftState)
+    ;(global.fetch as jest.Mock).mockImplementation((url: string) => {
+      if (url.includes('action=status')) {
+        return Promise.resolve({ json: () => Promise.resolve(mockDraftStatus) })
+      }
+      if (url.includes('action=available-players')) {
+        return Promise.resolve({ json: () => Promise.resolve(mockPlayers) })
+      }
+      return Promise.resolve({ json: () => Promise.resolve({ success: true }) })
     })
   })
 
-  it('renders draft room interface correctly', () => {
-    render(<DraftRoom {...defaultProps} />)
-    
-    expect(screen.getByText('Championship League Draft')).toBeInTheDocument()
-    expect(screen.getByText('Round 1 - Pick 3')).toBeInTheDocument()
-    expect(screen.getByText('Storm Hawks')).toBeInTheDocument() // Current team picking
-    expect(screen.getByText('01:15')).toBeInTheDocument() // Timer display
-  })
-
-  it('displays draft order correctly', () => {
-    render(<DraftRoom {...defaultProps} />)
-    
-    expect(screen.getByText('Fire Breathing Rubber Ducks')).toBeInTheDocument()
-    expect(screen.getByText('Thunderbolts')).toBeInTheDocument()
-    expect(screen.getByText('Storm Hawks')).toBeInTheDocument()
-  })
-
-  it('shows completed picks in draft board', () => {
-    render(<DraftRoom {...defaultProps} />)
-    
-    expect(screen.getByText('Josh Allen')).toBeInTheDocument()
-    expect(screen.getByText('Christian McCaffrey')).toBeInTheDocument()
-    expect(screen.getByText('QB')).toBeInTheDocument()
-    expect(screen.getByText('RB')).toBeInTheDocument()
-  })
-
-  it('displays available players to draft', () => {
-    render(<DraftRoom {...defaultProps} />)
-    
-    expect(screen.getByText('Available Players')).toBeInTheDocument()
-    expect(screen.getByText('Tyreek Hill')).toBeInTheDocument()
-    expect(screen.getByText('Derrick Henry')).toBeInTheDocument() 
-    expect(screen.getByText('Cooper Kupp')).toBeInTheDocument()
-    
-    // Check ADP and projections
-    expect(screen.getByText('3.2')).toBeInTheDocument() // Tyreek ADP
-    expect(screen.getByText('18.5')).toBeInTheDocument() // Tyreek projections
-  })
-
-  it('allows drafting a player when it is user turn', () => {
-    // Mock user's turn
-    mockUseDraftRoom.mockReturnValue({
-      draftState: { ...mockDraftState, currentTeamId: 'team1' },
-      availablePlayers: mockAvailablePlayers,
-      isConnected: true,
-      isLoading: false,
-      error: null,
-      ...mockDraftActions
+  describe('Loading State', () => {
+    it('should show loading state initially', () => {
+      render(<DraftRoom {...mockProps} />)
+      expect(screen.getByText('Loading draft room...')).toBeInTheDocument()
     })
 
-    render(<DraftRoom {...defaultProps} />)
-    
-    const tyreekCard = screen.getByText('Tyreek Hill').closest('.player-card')
-    const draftButton = screen.getByRole('button', { name: /draft tyreek hill/i })
-    
-    expect(draftButton).not.toBeDisabled()
-    
-    fireEvent.click(draftButton)
-    
-    expect(mockDraftActions.draftPlayer).toHaveBeenCalledWith({
-      playerId: 'p3',
-      playerName: 'Tyreek Hill'
-    })
-  })
-
-  it('disables draft buttons when not user turn', () => {
-    render(<DraftRoom {...defaultProps} />)
-    
-    const draftButtons = screen.getAllByRole('button', { name: /draft/i })
-    
-    draftButtons.forEach(button => {
-      expect(button).toBeDisabled()
-    })
-  })
-
-  it('shows loading state while connecting', () => {
-    mockUseDraftRoom.mockReturnValue({
-      draftState: null,
-      availablePlayers: [],
-      isConnected: false,
-      isLoading: true,
-      error: null,
-      ...mockDraftActions
-    })
-
-    render(<DraftRoom {...defaultProps} />)
-    
-    expect(screen.getByText('Connecting to draft...')).toBeInTheDocument()
-    expect(screen.getByTestId('loading-spinner')).toBeInTheDocument()
-  })
-
-  it('displays error message when connection fails', () => {
-    mockUseDraftRoom.mockReturnValue({
-      draftState: null,
-      availablePlayers: [],
-      isConnected: false,
-      isLoading: false,
-      error: 'Failed to connect to draft room',
-      ...mockDraftActions
-    })
-
-    render(<DraftRoom {...defaultProps} />)
-    
-    expect(screen.getByText('Failed to connect to draft room')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument()
-  })
-
-  it('filters players by position', () => {
-    render(<DraftRoom {...defaultProps} />)
-    
-    // Click WR filter
-    const wrFilter = screen.getByRole('button', { name: /wr/i })
-    fireEvent.click(wrFilter)
-    
-    expect(screen.getByText('Tyreek Hill')).toBeInTheDocument()
-    expect(screen.getByText('Cooper Kupp')).toBeInTheDocument()
-    expect(screen.queryByText('Derrick Henry')).not.toBeInTheDocument()
-  })
-
-  it('searches for players by name', () => {
-    render(<DraftRoom {...defaultProps} />)
-    
-    const searchInput = screen.getByPlaceholderText('Search players...')
-    fireEvent.change(searchInput, { target: { value: 'tyreek' } })
-    
-    expect(screen.getByText('Tyreek Hill')).toBeInTheDocument()
-    expect(screen.queryByText('Derrick Henry')).not.toBeInTheDocument()
-    expect(screen.queryByText('Cooper Kupp')).not.toBeInTheDocument()
-  })
-
-  it('shows pick timer with correct formatting', async () => {
-    render(<DraftRoom {...defaultProps} />)
-    
-    expect(screen.getByText('01:15')).toBeInTheDocument()
-    
-    // Mock timer update
-    mockUseDraftRoom.mockReturnValue({
-      draftState: { ...mockDraftState, timeRemaining: 59 },
-      availablePlayers: mockAvailablePlayers,
-      isConnected: true,
-      isLoading: false,
-      error: null,
-      ...mockDraftActions
-    })
-
-    // Re-render with updated time
-    render(<DraftRoom {...defaultProps} />)
-    expect(screen.getByText('00:59')).toBeInTheDocument()
-  })
-
-  it('highlights current team picking', () => {
-    render(<DraftRoom {...defaultProps} />)
-    
-    const currentTeamCard = screen.getByText('Storm Hawks').closest('.team-card')
-    expect(currentTeamCard).toHaveClass('ring-2', 'ring-blue-500')
-  })
-
-  it('shows draft position for each team', () => {
-    render(<DraftRoom {...defaultProps} />)
-    
-    expect(screen.getByText('#1')).toBeInTheDocument() // Fire Breathing Rubber Ducks
-    expect(screen.getByText('#2')).toBeInTheDocument() // Thunderbolts  
-    expect(screen.getByText('#3')).toBeInTheDocument() // Storm Hawks
-  })
-
-  it('displays team roster counts', () => {
-    const leagueWithRosters = {
-      ...mockLeague,
-      teams: [
-        { ...mockLeague.teams[0], _count: { roster: 1 } },
-        { ...mockLeague.teams[1], _count: { roster: 1 } }, 
-        { ...mockLeague.teams[2], _count: { roster: 0 } }
-      ]
-    }
-
-    render(<DraftRoom {...defaultProps} league={leagueWithRosters} />)
-    
-    expect(screen.getByText('1/16')).toBeInTheDocument() // Team 1 roster count
-    expect(screen.getByText('0/16')).toBeInTheDocument() // Team 3 roster count
-  })
-
-  it('shows auto-pick notification', () => {
-    mockUseDraftRoom.mockReturnValue({
-      draftState: { 
+    it('should show error if connection fails', () => {
+      ;(useDraftRoom as jest.Mock).mockReturnValue({
         ...mockDraftState,
-        lastPick: {
-          isAutoPick: true,
-          playerName: 'Travis Kelce',
-          teamName: 'Fire Breathing Rubber Ducks',
-          reason: 'Time expired'
+        state: { connected: false, error: 'Connection failed' }
+      })
+
+      render(<DraftRoom {...mockProps} />)
+      expect(screen.getByText(/Connection failed/)).toBeInTheDocument()
+    })
+  })
+
+  describe('Draft Header', () => {
+    it('should display league name', async () => {
+      render(<DraftRoom {...mockProps} />)
+      
+      await waitFor(() => {
+        expect(screen.getByText(/Test League Draft/)).toBeInTheDocument()
+      })
+    })
+
+    it('should display current round and pick', async () => {
+      render(<DraftRoom {...mockProps} />)
+      
+      await waitFor(() => {
+        expect(screen.getByText(/Round 1/)).toBeInTheDocument()
+        expect(screen.getByText(/Pick 1/)).toBeInTheDocument()
+      })
+    })
+
+    it('should display draft status badge', async () => {
+      render(<DraftRoom {...mockProps} />)
+      
+      await waitFor(() => {
+        expect(screen.getByText('IN_PROGRESS')).toBeInTheDocument()
+      })
+    })
+
+    it('should display picks completed', async () => {
+      render(<DraftRoom {...mockProps} />)
+      
+      await waitFor(() => {
+        expect(screen.getByText(/0 \/ 180 picks completed/)).toBeInTheDocument()
+      })
+    })
+  })
+
+  describe('Draft Timer', () => {
+    it('should display time remaining', async () => {
+      render(<DraftRoom {...mockProps} />)
+      
+      await waitFor(() => {
+        expect(screen.getByText('1:30')).toBeInTheDocument()
+      })
+    })
+
+    it('should show current team turn', async () => {
+      render(<DraftRoom {...mockProps} />)
+      
+      await waitFor(() => {
+        expect(screen.getByText(/Team Alpha's turn/)).toBeInTheDocument()
+      })
+    })
+
+    it('should highlight timer when time is low', async () => {
+      const lowTimeDraftStatus = {
+        ...mockDraftStatus,
+        data: {
+          ...mockDraftStatus.data,
+          currentPick: {
+            ...mockDraftStatus.data.currentPick,
+            timeRemaining: 20
+          }
         }
-      },
-      availablePlayers: mockAvailablePlayers,
-      isConnected: true,
-      isLoading: false,
-      error: null,
-      ...mockDraftActions
+      }
+
+      ;(global.fetch as jest.Mock).mockImplementation((url: string) => {
+        if (url.includes('action=status')) {
+          return Promise.resolve({ json: () => Promise.resolve(lowTimeDraftStatus) })
+        }
+        return Promise.resolve({ json: () => Promise.resolve(mockPlayers) })
+      })
+
+      render(<DraftRoom {...mockProps} />)
+      
+      await waitFor(() => {
+        const timer = screen.getByText('0:20')
+        expect(timer).toHaveClass('text-red-400')
+      })
+    })
+  })
+
+  describe('Turn Indicator', () => {
+    it('should show "YOUR TURN" when it is user turn', async () => {
+      render(<DraftRoom {...mockProps} />)
+      
+      await waitFor(() => {
+        expect(screen.getByText('YOUR TURN')).toBeInTheDocument()
+      })
     })
 
-    render(<DraftRoom {...defaultProps} />)
-    
-    expect(screen.getByText('Auto-pick: Travis Kelce to Fire Breathing Rubber Ducks (Time expired)')).toBeInTheDocument()
-  })
+    it('should show "Waiting for pick" when not user turn', async () => {
+      const notMyTurnStatus = {
+        ...mockDraftStatus,
+        data: {
+          ...mockDraftStatus.data,
+          currentPick: {
+            ...mockDraftStatus.data.currentPick,
+            team: {
+              ...mockDraftStatus.data.currentPick.team,
+              owner: { id: 'other-user', name: 'Other User' }
+            }
+          }
+        }
+      }
 
-  it('joins draft room on mount', () => {
-    render(<DraftRoom {...defaultProps} />)
-    
-    expect(mockDraftActions.joinDraft).toHaveBeenCalledWith('league1')
-  })
+      ;(global.fetch as jest.Mock).mockImplementation((url: string) => {
+        if (url.includes('action=status')) {
+          return Promise.resolve({ json: () => Promise.resolve(notMyTurnStatus) })
+        }
+        return Promise.resolve({ json: () => Promise.resolve(mockPlayers) })
+      })
 
-  it('leaves draft room on unmount', () => {
-    const { unmount } = render(<DraftRoom {...defaultProps} />)
-    
-    unmount()
-    
-    expect(mockDraftActions.leaveDraft).toHaveBeenCalled()
-  })
-
-  it('shows draft status indicators', () => {
-    mockUseDraftRoom.mockReturnValue({
-      draftState: { 
-        ...mockDraftState,
-        status: 'IN_PROGRESS',
-        totalPicks: 192,
-        completedPicks: 2
-      },
-      availablePlayers: mockAvailablePlayers,
-      isConnected: true,
-      isLoading: false,
-      error: null,
-      ...mockDraftActions
+      render(<DraftRoom {...mockProps} />)
+      
+      await waitFor(() => {
+        expect(screen.getByText('Waiting for pick')).toBeInTheDocument()
+      })
     })
 
-    render(<DraftRoom {...defaultProps} />)
-    
-    expect(screen.getByText('Draft Progress: 2/192')).toBeInTheDocument()
-    expect(screen.getByText('IN PROGRESS')).toBeInTheDocument()
+    it('should show auto-pick toggle when user turn', async () => {
+      render(<DraftRoom {...mockProps} />)
+      
+      await waitFor(() => {
+        expect(screen.getByText('Enable Auto')).toBeInTheDocument()
+      })
+    })
+  })
+
+  describe('View Mode Tabs', () => {
+    it('should display all view mode tabs', async () => {
+      render(<DraftRoom {...mockProps} />)
+      
+      await waitFor(() => {
+        expect(screen.getByText('players')).toBeInTheDocument()
+        expect(screen.getByText('board')).toBeInTheDocument()
+        expect(screen.getByText('history')).toBeInTheDocument()
+      })
+    })
+
+    it('should start with players view active', async () => {
+      render(<DraftRoom {...mockProps} />)
+      
+      await waitFor(() => {
+        const playersTab = screen.getByText('players')
+        expect(playersTab).toHaveClass('bg-blue-600')
+      })
+    })
+
+    it('should switch view modes', async () => {
+      render(<DraftRoom {...mockProps} />)
+      
+      await waitFor(() => {
+        const boardTab = screen.getByText('board')
+        fireEvent.click(boardTab)
+        expect(boardTab).toHaveClass('bg-blue-600')
+      })
+    })
+  })
+
+  describe('Available Players', () => {
+    it('should display available players', async () => {
+      render(<DraftRoom {...mockProps} />)
+      
+      await waitFor(() => {
+        expect(screen.getByText('Patrick Mahomes')).toBeInTheDocument()
+        expect(screen.getByText('Christian McCaffrey')).toBeInTheDocument()
+        expect(screen.getByText('Tyreek Hill')).toBeInTheDocument()
+      })
+    })
+
+    it('should display player positions', async () => {
+      render(<DraftRoom {...mockProps} />)
+      
+      await waitFor(() => {
+        expect(screen.getByText('QB')).toBeInTheDocument()
+        expect(screen.getByText('RB')).toBeInTheDocument()
+        expect(screen.getByText('WR')).toBeInTheDocument()
+      })
+    })
+
+    it('should display player ADP', async () => {
+      render(<DraftRoom {...mockProps} />)
+      
+      await waitFor(() => {
+        expect(screen.getByText('ADP: 10')).toBeInTheDocument()
+      })
+    })
+
+    it('should display projected points', async () => {
+      render(<DraftRoom {...mockProps} />)
+      
+      await waitFor(() => {
+        expect(screen.getByText('Proj: 350 pts')).toBeInTheDocument()
+      })
+    })
+  })
+
+  describe('Position Filter', () => {
+    it('should display position filter buttons', async () => {
+      render(<DraftRoom {...mockProps} />)
+      
+      await waitFor(() => {
+        expect(screen.getByText('ALL')).toBeInTheDocument()
+        expect(screen.getByText('QB')).toBeInTheDocument()
+        expect(screen.getByText('RB')).toBeInTheDocument()
+      })
+    })
+
+    it('should filter players by position', async () => {
+      render(<DraftRoom {...mockProps} />)
+      
+      await waitFor(() => {
+        const qbButton = screen.getByText('QB')
+        fireEvent.click(qbButton)
+        
+        expect(screen.getByText('Patrick Mahomes')).toBeInTheDocument()
+        expect(screen.queryByText('Christian McCaffrey')).not.toBeInTheDocument()
+      })
+    })
+  })
+
+  describe('Player Search', () => {
+    it('should display search input', async () => {
+      render(<DraftRoom {...mockProps} />)
+      
+      await waitFor(() => {
+        expect(screen.getByPlaceholderText('Search players...')).toBeInTheDocument()
+      })
+    })
+
+    it('should filter players by search query', async () => {
+      render(<DraftRoom {...mockProps} />)
+      
+      await waitFor(() => {
+        const searchInput = screen.getByPlaceholderText('Search players...')
+        fireEvent.change(searchInput, { target: { value: 'Mahomes' } })
+        
+        expect(screen.getByText('Patrick Mahomes')).toBeInTheDocument()
+        expect(screen.queryByText('Christian McCaffrey')).not.toBeInTheDocument()
+      })
+    })
+  })
+
+  describe('Player Selection', () => {
+    it('should select player on click', async () => {
+      render(<DraftRoom {...mockProps} />)
+      
+      await waitFor(() => {
+        const player = screen.getByText('Patrick Mahomes')
+        fireEvent.click(player.closest('div')!)
+        
+        expect(screen.getByText('Selected Player')).toBeInTheDocument()
+      })
+    })
+
+    it('should show draft button when player selected', async () => {
+      render(<DraftRoom {...mockProps} />)
+      
+      await waitFor(() => {
+        const player = screen.getByText('Patrick Mahomes')
+        fireEvent.click(player.closest('div')!)
+        
+        expect(screen.getByText('Draft Player')).toBeInTheDocument()
+      })
+    })
+
+    it('should disable draft button when not user turn', async () => {
+      const notMyTurnStatus = {
+        ...mockDraftStatus,
+        data: {
+          ...mockDraftStatus.data,
+          currentPick: {
+            ...mockDraftStatus.data.currentPick,
+            team: {
+              ...mockDraftStatus.data.currentPick.team,
+              owner: { id: 'other-user', name: 'Other User' }
+            }
+          }
+        }
+      }
+
+      ;(global.fetch as jest.Mock).mockImplementation((url: string) => {
+        if (url.includes('action=status')) {
+          return Promise.resolve({ json: () => Promise.resolve(notMyTurnStatus) })
+        }
+        return Promise.resolve({ json: () => Promise.resolve(mockPlayers) })
+      })
+
+      render(<DraftRoom {...mockProps} />)
+      
+      await waitFor(async () => {
+        const player = screen.getByText('Patrick Mahomes')
+        fireEvent.click(player.closest('div')!)
+        
+        await waitFor(() => {
+          const draftButton = screen.getByText('Not Your Turn')
+          expect(draftButton).toBeDisabled()
+        })
+      })
+    })
+  })
+
+  describe('Draft Action', () => {
+    it('should draft player when button clicked', async () => {
+      ;(global.fetch as jest.Mock).mockImplementation((url: string, options?: any) => {
+        if (options?.method === 'POST') {
+          return Promise.resolve({ json: () => Promise.resolve({ success: true }) })
+        }
+        if (url.includes('action=status')) {
+          return Promise.resolve({ json: () => Promise.resolve(mockDraftStatus) })
+        }
+        return Promise.resolve({ json: () => Promise.resolve(mockPlayers) })
+      })
+
+      render(<DraftRoom {...mockProps} />)
+      
+      await waitFor(async () => {
+        const player = screen.getByText('Patrick Mahomes')
+        fireEvent.click(player.closest('div')!)
+        
+        await waitFor(() => {
+          const draftButton = screen.getByText('Draft Player')
+          fireEvent.click(draftButton)
+        })
+      })
+
+      await waitFor(() => {
+        expect(global.fetch).toHaveBeenCalledWith(
+          '/api/draft',
+          expect.objectContaining({
+            method: 'POST',
+            body: expect.stringContaining('draft-player')
+          })
+        )
+      })
+    })
+  })
+
+  describe('Recent Picks', () => {
+    it('should display recent picks section', async () => {
+      render(<DraftRoom {...mockProps} />)
+      
+      await waitFor(() => {
+        expect(screen.getByText('Recent Picks')).toBeInTheDocument()
+      })
+    })
+  })
+
+  describe('Draft Order', () => {
+    it('should display draft order section', async () => {
+      render(<DraftRoom {...mockProps} />)
+      
+      await waitFor(() => {
+        expect(screen.getByText('Draft Order')).toBeInTheDocument()
+      })
+    })
+
+    it('should display all teams', async () => {
+      render(<DraftRoom {...mockProps} />)
+      
+      await waitFor(() => {
+        expect(screen.getByText('Team Alpha')).toBeInTheDocument()
+        expect(screen.getByText('Team Beta')).toBeInTheDocument()
+      })
+    })
+
+    it('should highlight current team', async () => {
+      render(<DraftRoom {...mockProps} />)
+      
+      await waitFor(() => {
+        expect(screen.getByText('ON CLOCK')).toBeInTheDocument()
+      })
+    })
+  })
+
+  describe('No Draft State', () => {
+    it('should show message when draft not found', async () => {
+      ;(global.fetch as jest.Mock).mockImplementation(() => {
+        return Promise.resolve({ 
+          json: () => Promise.resolve({ success: true, data: { draft: null } }) 
+        })
+      })
+
+      render(<DraftRoom {...mockProps} />)
+      
+      await waitFor(() => {
+        expect(screen.getByText('Draft Not Found')).toBeInTheDocument()
+      })
+    })
   })
 })

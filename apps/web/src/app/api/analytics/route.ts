@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { logger } from '@/lib/logger'
 
 export const runtime = 'nodejs'
 
@@ -55,7 +56,7 @@ export async function POST(req: NextRequest) {
     })
     
   } catch (error) {
-    console.error('[Analytics] Error processing event:', error)
+    logger.error('[Analytics] Error processing event', error as Error)
     return NextResponse.json(
       { error: 'Failed to process analytics event' },
       { status: 500 }

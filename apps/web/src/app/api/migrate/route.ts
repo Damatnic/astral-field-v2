@@ -6,16 +6,14 @@ const execAsync = promisify(exec)
 
 export async function GET() {
   try {
-    console.log('🔄 Running Prisma database migration...')
-    
     // Run prisma db push to create tables
     const { stdout, stderr } = await execAsync('npx prisma db push --accept-data-loss')
-    
-    console.log('✅ Migration completed successfully')
-    console.log('STDOUT:', stdout)
-    
     if (stderr) {
-      console.warn('STDERR:', stderr)
+      if (process.env.NODE_ENV === 'development') {
+
+        console.warn('STDERR:', stderr);
+
+      }
     }
 
     return NextResponse.json({ 
@@ -24,7 +22,11 @@ export async function GET() {
       warnings: stderr || null
     })
   } catch (error: any) {
-    console.error('💥 Migration failed:', error)
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('💥 Migration failed:', error);
+
+    }
     return NextResponse.json({ 
       error: 'Database migration failed', 
       details: error.message,

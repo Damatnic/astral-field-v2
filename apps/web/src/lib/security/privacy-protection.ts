@@ -469,8 +469,6 @@ export class GuardianPrivacyProtection {
         }
       }
     )
-
-    console.log(`Deleted expired data: ${record.dataType} for user ${userId}`)
   }
 
   /**

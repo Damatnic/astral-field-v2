@@ -72,24 +72,24 @@ export class RealTimeStreamProcessor extends EventEmitter {
     this.wsServer = new WebSocket.Server({ port });
     
     this.wsServer.on('connection', (ws: WebSocket) => {
-      console.log('📡 New client connected to analytics stream');
       this.clients.add(ws);
       
       // Send initial analytics data
       this.sendInitialData(ws);
       
       ws.on('close', () => {
-        console.log('📡 Client disconnected from analytics stream');
         this.clients.delete(ws);
       });
 
       ws.on('error', (error) => {
-        console.error('WebSocket error:', error);
+        if (process.env.NODE_ENV === 'development') {
+
+          console.error('WebSocket error:', error);
+
+        }
         this.clients.delete(ws);
       });
     });
-
-    console.log(`🚀 Real-time analytics stream server running on port ${port}`);
   }
 
   /**
@@ -198,10 +198,12 @@ export class RealTimeStreamProcessor extends EventEmitter {
         const batch = this.eventQueue.splice(0, batchSize);
         
         await this.processBatchEvents(batch);
-        
-        console.log(`⚡ Processed ${batch.length} real-time events`);
       } catch (error) {
-        console.error('❌ Event processing error:', error);
+        if (process.env.NODE_ENV === 'development') {
+
+          console.error('❌ Event processing error:', error);
+
+        }
       } finally {
         this.isProcessing = false;
       }
@@ -384,7 +386,11 @@ export class RealTimeStreamProcessor extends EventEmitter {
         try {
           client.send(message);
         } catch (error) {
-          console.error('Error sending to client:', error);
+          if (process.env.NODE_ENV === 'development') {
+
+            console.error('Error sending to client:', error);
+
+          }
           this.clients.delete(client);
         }
       }
@@ -407,7 +413,11 @@ export class RealTimeStreamProcessor extends EventEmitter {
         try {
           client.send(message);
         } catch (error) {
-          console.error('Error sending batch update:', error);
+          if (process.env.NODE_ENV === 'development') {
+
+            console.error('Error sending batch update:', error);
+
+          }
           this.clients.delete(client);
         }
       }
@@ -438,7 +448,11 @@ export class RealTimeStreamProcessor extends EventEmitter {
 
       ws.send(JSON.stringify(initialData));
     } catch (error) {
-      console.error('Error sending initial data:', error);
+      if (process.env.NODE_ENV === 'development') {
+
+        console.error('Error sending initial data:', error);
+
+      }
     }
   }
 
@@ -470,8 +484,6 @@ export class RealTimeStreamProcessor extends EventEmitter {
    * Simulate live game events for testing
    */
   async simulateLiveEvents(): Promise<void> {
-    console.log('🎮 Starting live event simulation...');
-    
     const players = ['player1', 'player2', 'player3', 'player4', 'player5'];
     
     // Simulate score updates every 30 seconds

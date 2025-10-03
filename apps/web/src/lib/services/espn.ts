@@ -27,7 +27,11 @@ export class ESPNService {
       this.cache.set(url, { data, timestamp: Date.now() });
       return data;
     } catch (error) {
-      console.error(`ESPN API fetch failed for ${url}:`, error);
+      if (process.env.NODE_ENV === 'development') {
+
+        console.error(`ESPN API fetch failed for ${url}:`, error);
+
+      }
       throw error;
     }
   }
@@ -79,7 +83,11 @@ export class ESPNService {
           teamAbbr: team.team.abbreviation
         })));
       } catch (error) {
-        console.error(`Failed to get injuries for team ${team.team.id}:`, error);
+        if (process.env.NODE_ENV === 'development') {
+
+          console.error(`Failed to get injuries for team ${team.team.id}:`, error);
+
+        }
       }
     }
     
@@ -167,7 +175,11 @@ export class NFLDataService {
       
       return await response.json();
     } catch (error) {
-      console.error('NFL Data API failed, falling back to ESPN:', error);
+      if (process.env.NODE_ENV === 'development') {
+
+        console.error('NFL Data API failed, falling back to ESPN:', error);
+
+      }
       const espn = new ESPNService();
       return await espn.getWeeklySchedule(week);
     }
@@ -178,7 +190,11 @@ export class NFLDataService {
       const response = await fetch(`${this.baseURL}/live-scores`);
       return await response.json();
     } catch (error) {
-      console.error('NFL live scores failed:', error);
+      if (process.env.NODE_ENV === 'development') {
+
+        console.error('NFL live scores failed:', error);
+
+      }
       const espn = new ESPNService();
       return await espn.getScoreboard();
     }

@@ -57,7 +57,9 @@ export const OptimizedNavigation = memo(({ user }: OptimizedNavigationProps) => 
         try {
           await router.prefetch(route.href)
         } catch (error) {
-          console.warn(`Failed to preload ${route.href}:`, error)
+          if (process.env.NODE_ENV === 'development') {
+            console.warn(`Failed to preload ${route.href}:`, error);
+          }
         }
       }
     }
@@ -92,7 +94,9 @@ export const OptimizedNavigation = memo(({ user }: OptimizedNavigationProps) => 
         })
       }
     } catch (error) {
-      console.error(`Navigation to ${href} failed:`, error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error(`Navigation to ${href} failed:`, error);
+      }
     } finally {
       setLoadingStates(prev => ({ ...prev, [href]: false }))
     }
@@ -107,7 +111,9 @@ export const OptimizedNavigation = memo(({ user }: OptimizedNavigationProps) => 
       
       console.log(`[Catalyst] Sign out completed: ${(endTime - startTime).toFixed(2)}ms`)
     } catch (error) {
-      console.error('Sign out failed:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Sign out failed:', error);
+      }
     }
   }, [])
 

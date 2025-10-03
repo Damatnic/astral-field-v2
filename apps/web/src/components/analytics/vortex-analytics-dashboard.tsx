@@ -240,7 +240,7 @@ const VortexAnalyticsDashboard: React.FC = () => {
       ws = new WebSocket('ws://localhost:8080');
       
       ws.onopen = () => {
-        console.log('Connected to analytics stream');
+
       };
       
       ws.onmessage = (event) => {
@@ -252,7 +252,7 @@ const VortexAnalyticsDashboard: React.FC = () => {
       };
       
       ws.onclose = () => {
-        console.log('Disconnected from analytics stream');
+
       };
     }
     

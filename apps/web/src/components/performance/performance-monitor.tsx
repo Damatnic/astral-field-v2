@@ -41,7 +41,9 @@ export function PerformanceMonitor() {
           })
           lcpObserver.observe({ type: 'largest-contentful-paint', buffered: true })
         } catch (e) {
-          console.warn('[Catalyst] LCP observer failed:', e)
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('[Catalyst] LCP observer failed:', e);
+          }
         }
 
         // FCP - First Contentful Paint
@@ -60,7 +62,9 @@ export function PerformanceMonitor() {
           })
           fcpObserver.observe({ type: 'paint', buffered: true })
         } catch (e) {
-          console.warn('[Catalyst] FCP observer failed:', e)
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('[Catalyst] FCP observer failed:', e);
+          }
         }
 
         // CLS - Cumulative Layout Shift
@@ -81,7 +85,9 @@ export function PerformanceMonitor() {
           })
           clsObserver.observe({ type: 'layout-shift', buffered: true })
         } catch (e) {
-          console.warn('[Catalyst] CLS observer failed:', e)
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('[Catalyst] CLS observer failed:', e);
+          }
         }
 
         // FID - First Input Delay (using INP as fallback)
@@ -100,7 +106,9 @@ export function PerformanceMonitor() {
           })
           fidObserver.observe({ type: 'first-input', buffered: true })
         } catch (e) {
-          console.warn('[Catalyst] FID observer failed:', e)
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('[Catalyst] FID observer failed:', e);
+          }
         }
       }
 

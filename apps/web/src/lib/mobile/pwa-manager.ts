@@ -19,13 +19,15 @@ export class PWAManager {
   // Sigma: Register service worker
   async registerServiceWorker(): Promise<boolean> {
     if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
-      console.warn('[PWA] Service Workers not supported')
+      if (process.env.NODE_ENV === 'development') {
+
+        console.warn('[PWA] Service Workers not supported');
+
+      }
       return false
     }
 
     try {
-      console.log('[PWA] Registering service worker...')
-      
       const registration = await navigator.serviceWorker.register('/sw.js', {
         scope: '/',
         updateViaCache: 'none'
@@ -49,14 +51,15 @@ export class PWAManager {
 
       // Listen for controlling service worker change
       navigator.serviceWorker.addEventListener('controllerchange', () => {
-        console.log('[PWA] Service worker controller changed, reloading...')
         window.location.reload()
       })
-
-      console.log('[PWA] Service worker registered successfully')
       return true
     } catch (error) {
-      console.error('[PWA] Service worker registration failed:', error)
+      if (process.env.NODE_ENV === 'development') {
+
+        console.error('[PWA] Service worker registration failed:', error);
+
+      }
       return false
     }
   }
@@ -64,7 +67,11 @@ export class PWAManager {
   // Sigma: Update service worker
   async updateServiceWorker(): Promise<void> {
     if (!this.registration) {
-      console.warn('[PWA] No service worker registration found')
+      if (process.env.NODE_ENV === 'development') {
+
+        console.warn('[PWA] No service worker registration found');
+
+      }
       return
     }
 
@@ -76,23 +83,28 @@ export class PWAManager {
         this.registration.waiting.postMessage({ type: 'SKIP_WAITING' })
       }
     } catch (error) {
-      console.error('[PWA] Failed to update service worker:', error)
+      if (process.env.NODE_ENV === 'development') {
+
+        console.error('[PWA] Failed to update service worker:', error);
+
+      }
     }
   }
 
   // Sigma: Handle app installation
   async installApp(): Promise<boolean> {
     if (!this.installPrompt) {
-      console.warn('[PWA] Install prompt not available')
+      if (process.env.NODE_ENV === 'development') {
+
+        console.warn('[PWA] Install prompt not available');
+
+      }
       return false
     }
 
     try {
       this.installPrompt.prompt()
       const result = await this.installPrompt.userChoice
-      
-      console.log('[PWA] Install prompt result:', result.outcome)
-      
       if (result.outcome === 'accepted') {
         this.installPrompt = null
         return true
@@ -100,7 +112,11 @@ export class PWAManager {
       
       return false
     } catch (error) {
-      console.error('[PWA] Failed to install app:', error)
+      if (process.env.NODE_ENV === 'development') {
+
+        console.error('[PWA] Failed to install app:', error);
+
+      }
       return false
     }
   }
@@ -120,7 +136,6 @@ export class PWAManager {
   handleInstallPrompt(event: BeforeInstallPromptEvent): void {
     event.preventDefault()
     this.installPrompt = event
-    console.log('[PWA] Install prompt available')
   }
 
   // Sigma: Setup PWA event listeners
@@ -132,25 +147,26 @@ export class PWAManager {
 
     // App installed
     window.addEventListener('appinstalled', () => {
-      console.log('[PWA] App installed successfully')
       this.installPrompt = null
     })
 
     // Online/offline status
     window.addEventListener('online', () => {
-      console.log('[PWA] App came online')
       this.syncOfflineActions()
     })
 
     window.addEventListener('offline', () => {
-      console.log('[PWA] App went offline')
     })
   }
 
   // Sigma: Send message to service worker
   async sendMessageToSW(message: any): Promise<void> {
     if (!this.registration?.active) {
-      console.warn('[PWA] No active service worker')
+      if (process.env.NODE_ENV === 'development') {
+
+        console.warn('[PWA] No active service worker');
+
+      }
       return
     }
 
@@ -189,9 +205,12 @@ export class PWAManager {
       try {
         const registration = await navigator.serviceWorker.ready
         await registration.sync.register('sync-offline-actions')
-        console.log('[PWA] Background sync registered')
       } catch (error) {
-        console.error('[PWA] Background sync registration failed:', error)
+        if (process.env.NODE_ENV === 'development') {
+
+          console.error('[PWA] Background sync registration failed:', error);
+
+        }
       }
     }
   }
@@ -205,7 +224,11 @@ export class PWAManager {
   // Sigma: Request notification permission
   async requestNotificationPermission(): Promise<boolean> {
     if (!('Notification' in window)) {
-      console.warn('[PWA] Notifications not supported')
+      if (process.env.NODE_ENV === 'development') {
+
+        console.warn('[PWA] Notifications not supported');
+
+      }
       return false
     }
 
@@ -224,7 +247,11 @@ export class PWAManager {
   // Sigma: Show local notification
   async showNotification(title: string, options?: NotificationOptions): Promise<void> {
     if (!await this.requestNotificationPermission()) {
-      console.warn('[PWA] Notification permission denied')
+      if (process.env.NODE_ENV === 'development') {
+
+        console.warn('[PWA] Notification permission denied');
+
+      }
       return
     }
 
@@ -384,7 +411,11 @@ export function useOfflineStorage() {
         }
       })
     } catch (error) {
-      console.error('[PWA] Failed to store offline data:', error)
+      if (process.env.NODE_ENV === 'development') {
+
+        console.error('[PWA] Failed to store offline data:', error);
+
+      }
       return false
     }
   }, [isSupported])
@@ -412,7 +443,11 @@ export function useOfflineStorage() {
         }
       })
     } catch (error) {
-      console.error('[PWA] Failed to retrieve offline data:', error)
+      if (process.env.NODE_ENV === 'development') {
+
+        console.error('[PWA] Failed to retrieve offline data:', error);
+
+      }
       return null
     }
   }, [isSupported])
@@ -438,7 +473,11 @@ export function useOfflineStorage() {
         }
       })
     } catch (error) {
-      console.error('[PWA] Failed to remove offline data:', error)
+      if (process.env.NODE_ENV === 'development') {
+
+        console.error('[PWA] Failed to remove offline data:', error);
+
+      }
       return false
     }
   }, [isSupported])
@@ -464,7 +503,11 @@ export function useOfflineStorage() {
         }
       })
     } catch (error) {
-      console.error('[PWA] Failed to clear offline data:', error)
+      if (process.env.NODE_ENV === 'development') {
+
+        console.error('[PWA] Failed to clear offline data:', error);
+
+      }
       return false
     }
   }, [isSupported])

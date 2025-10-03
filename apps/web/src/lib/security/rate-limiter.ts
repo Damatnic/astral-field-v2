@@ -156,14 +156,17 @@ export class GuardianRateLimiter {
       this.metrics.suspiciousActivity++
       
       // Log security event
-      console.warn(`Rate limit exceeded for ${identifier} on ${ruleKey}`, {
+      if (process.env.NODE_ENV === 'development') {
+
+        console.warn(`Rate limit exceeded for ${identifier} on ${ruleKey}`, {
         count: entry.count,
         limit: rule.maxRequests,
         violations: entry.violations,
         blockDuration: blockDuration / 1000,
         metadata
-      })
-      
+      });
+
+      }
       return {
         allowed: false,
         limit: rule.maxRequests,
@@ -179,12 +182,16 @@ export class GuardianRateLimiter {
     
     // Log high-risk activity
     if (riskScore > 0.8) {
-      console.warn(`High-risk activity detected for ${identifier}`, {
+      if (process.env.NODE_ENV === 'development') {
+
+        console.warn(`High-risk activity detected for ${identifier}`, {
         riskScore,
         count: entry.count,
         violations: entry.violations,
         metadata
-      })
+      });
+
+      }
     }
     
     return {
@@ -318,10 +325,16 @@ export class GuardianRateLimiter {
       lastSeen: now
     })
     
-    console.warn(`Emergency block activated for ${identifier}`, {
+    if (process.env.NODE_ENV === 'development') {
+
+    
+      console.warn(`Emergency block activated for ${identifier}`, {
       duration: durationMs / 1000,
       reason: 'Manual block'
-    })
+    });
+
+    
+    }
   }
 
   /**

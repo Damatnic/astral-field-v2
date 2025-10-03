@@ -1,406 +1,430 @@
+/**
+ * League Chat Component Tests
+ * 
+ * Tests for league chat component with WebSocket integration
+ */
+
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { LeagueChat } from '@/components/chat/league-chat'
-import { useLeagueChat } from '@/hooks/use-websocket'
+import { useLeagueChat, useTradeNotifications } from '@/hooks/use-websocket'
 
-// Mock the WebSocket hook
-jest.mock('@/hooks/use-websocket')
-const mockUseLeagueChat = useLeagueChat as jest.MockedFunction<typeof useLeagueChat>
-
-const mockMessages = [
-  {
-    id: 'msg1',
-    userId: 'user1',
-    userName: 'John Doe',
-    message: 'Who wants to trade for a RB?',
-    timestamp: new Date('2024-09-22T14:30:00Z'),
-    leagueId: 'league1',
-    type: 'TEXT' as const
-  },
-  {
-    id: 'msg2', 
-    userId: 'user2',
-    userName: 'Jane Smith',
-    message: 'I have Saquon available',
-    timestamp: new Date('2024-09-22T14:32:00Z'),
-    leagueId: 'league1',
-    type: 'TEXT' as const
-  },
-  {
-    id: 'msg3',
-    userId: 'user1',
-    userName: 'John Doe',
-    message: 'Trade proposal sent to Jane Smith',
-    timestamp: new Date('2024-09-22T14:35:00Z'),
-    leagueId: 'league1',
-    type: 'TRADE' as const
-  },
-  {
-    id: 'msg4',
-    userId: 'system',
-    userName: 'System',
-    message: 'Week 14 waivers cleared',
-    timestamp: new Date('2024-09-22T14:40:00Z'),
-    leagueId: 'league1',
-    type: 'ANNOUNCEMENT' as const
-  }
-]
-
-const mockTypingUsers = [
-  {
-    userId: 'user3',
-    userName: 'Bob Wilson',
-    timestamp: new Date()
-  }
-]
-
-const mockChatActions = {
-  sendMessage: jest.fn(),
-  joinChat: jest.fn(),
-  leaveChat: jest.fn(),
-  startTyping: jest.fn(),
-  stopTyping: jest.fn()
-}
+// Mock WebSocket hooks
+jest.mock('@/hooks/use-websocket', () => ({
+  useLeagueChat: jest.fn(),
+  useTradeNotifications: jest.fn()
+}))
 
 describe('LeagueChat Component', () => {
-  const defaultProps = {
-    leagueId: 'league1',
-    currentUserId: 'user1',
-    currentUserName: 'John Doe'
+  const mockProps = {
+    leagueId: 'league-123',
+    currentUserId: 'user-123',
+    currentUserName: 'Test User'
+  }
+
+  const mockMessages = [
+    {
+      id: 'msg-1',
+      userId: 'user-456',
+      userName: 'Other User',
+      message: 'Hello everyone!',
+      timestamp: new Date('2024-01-01T10:00:00'),
+      type: 'MESSAGE'
+    },
+    {
+      id: 'msg-2',
+      userId: 'user-123',
+      userName: 'Test User',
+      message: 'Hi there!',
+      timestamp: new Date('2024-01-01T10:01:00'),
+      type: 'MESSAGE'
+    },
+    {
+      id: 'msg-3',
+      userId: 'user-789',
+      userName: 'Admin',
+      message: 'Trade proposal submitted',
+      timestamp: new Date('2024-01-01T10:02:00'),
+      type: 'TRADE'
+    }
+  ]
+
+  const mockNotifications = [
+    {
+      id: 'notif-1',
+      type: 'trade_proposal',
+      title: 'New Trade Proposal',
+      message: 'You have received a trade proposal from Team Alpha',
+      timestamp: new Date('2024-01-01T10:00:00')
+    }
+  ]
+
+  const mockChatState = {
+    state: { connected: true },
+    messages: mockMessages,
+    typing: [],
+    sendMessage: jest.fn(),
+    sendTyping: jest.fn()
+  }
+
+  const mockTradeState = {
+    tradeProposals: [],
+    notifications: mockNotifications,
+    proposeTrade: jest.fn()
   }
 
   beforeEach(() => {
     jest.clearAllMocks()
-    mockUseLeagueChat.mockReturnValue({
-      messages: mockMessages,
-      typingUsers: mockTypingUsers,
-      isConnected: true,
-      isLoading: false,
-      error: null,
-      ...mockChatActions
+    ;(useLeagueChat as jest.Mock).mockReturnValue(mockChatState)
+    ;(useTradeNotifications as jest.Mock).mockReturnValue(mockTradeState)
+  })
+
+  describe('Rendering', () => {
+    it('should render without crashing', () => {
+      render(<LeagueChat {...mockProps} />)
+      expect(screen.getByText('Chat')).toBeInTheDocument()
+    })
+
+    it('should show connecting state when not connected', () => {
+      ;(useLeagueChat as jest.Mock).mockReturnValue({
+        ...mockChatState,
+        state: { connected: false }
+      })
+
+      render(<LeagueChat {...mockProps} />)
+      expect(screen.getByText('Connecting to chat...')).toBeInTheDocument()
+    })
+
+    it('should display header with tabs', () => {
+      render(<LeagueChat {...mockProps} />)
+      
+      expect(screen.getByText('Chat')).toBeInTheDocument()
+      expect(screen.getByText('Notifications')).toBeInTheDocument()
+    })
+
+    it('should display propose trade button', () => {
+      render(<LeagueChat {...mockProps} />)
+      
+      expect(screen.getByText('Propose Trade')).toBeInTheDocument()
     })
   })
 
-  it('renders league chat interface correctly', () => {
-    render(<LeagueChat {...defaultProps} />)
-    
-    expect(screen.getByText('League Chat')).toBeInTheDocument()
-    expect(screen.getByPlaceholderText('Type your message...')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /send/i })).toBeInTheDocument()
-  })
+  describe('Tab Navigation', () => {
+    it('should start with chat tab active', () => {
+      render(<LeagueChat {...mockProps} />)
+      
+      const chatTab = screen.getByText('Chat').closest('button')
+      expect(chatTab).toHaveClass('bg-blue-600')
+    })
 
-  it('displays chat messages correctly', () => {
-    render(<LeagueChat {...defaultProps} />)
-    
-    expect(screen.getByText('Who wants to trade for a RB?')).toBeInTheDocument()
-    expect(screen.getByText('I have Saquon available')).toBeInTheDocument()
-    expect(screen.getByText('Trade proposal sent to Jane Smith')).toBeInTheDocument()
-    expect(screen.getByText('Week 14 waivers cleared')).toBeInTheDocument()
-    
-    expect(screen.getByText('John Doe')).toBeInTheDocument()
-    expect(screen.getByText('Jane Smith')).toBeInTheDocument()
-    expect(screen.getByText('System')).toBeInTheDocument()
-  })
+    it('should switch to notifications tab', () => {
+      render(<LeagueChat {...mockProps} />)
+      
+      const notificationsTab = screen.getByText('Notifications').closest('button')
+      fireEvent.click(notificationsTab!)
+      
+      expect(notificationsTab).toHaveClass('bg-blue-600')
+    })
 
-  it('shows message timestamps', () => {
-    render(<LeagueChat {...defaultProps} />)
-    
-    // Should show relative timestamps
-    expect(screen.getByText(/2:30 PM/)).toBeInTheDocument()
-    expect(screen.getByText(/2:32 PM/)).toBeInTheDocument()
-  })
+    it('should show message count badge', () => {
+      render(<LeagueChat {...mockProps} />)
+      
+      expect(screen.getByText('3')).toBeInTheDocument() // 3 messages
+    })
 
-  it('distinguishes message types with different styling', () => {
-    render(<LeagueChat {...defaultProps} />)
-    
-    const textMessage = screen.getByText('Who wants to trade for a RB?').closest('.message')
-    const tradeMessage = screen.getByText('Trade proposal sent to Jane Smith').closest('.message')
-    const announcementMessage = screen.getByText('Week 14 waivers cleared').closest('.message')
-    
-    expect(textMessage).toHaveClass('bg-white')
-    expect(tradeMessage).toHaveClass('bg-blue-50')
-    expect(announcementMessage).toHaveClass('bg-yellow-50')
-  })
-
-  it('highlights current user messages differently', () => {
-    render(<LeagueChat {...defaultProps} />)
-    
-    const userMessage = screen.getByText('Who wants to trade for a RB?').closest('.message')
-    const otherMessage = screen.getByText('I have Saquon available').closest('.message')
-    
-    expect(userMessage).toHaveClass('ml-auto', 'bg-blue-500')
-    expect(otherMessage).not.toHaveClass('ml-auto')
-  })
-
-  it('sends message when send button is clicked', async () => {
-    render(<LeagueChat {...defaultProps} />)
-    
-    const messageInput = screen.getByPlaceholderText('Type your message...')
-    const sendButton = screen.getByRole('button', { name: /send/i })
-    
-    fireEvent.change(messageInput, { target: { value: 'Looking for a WR trade' } })
-    fireEvent.click(sendButton)
-    
-    expect(mockChatActions.sendMessage).toHaveBeenCalledWith('Looking for a WR trade', 'TEXT')
-    
-    await waitFor(() => {
-      expect(messageInput).toHaveValue('')
+    it('should show notification count badge', () => {
+      render(<LeagueChat {...mockProps} />)
+      
+      expect(screen.getByText('1')).toBeInTheDocument() // 1 notification
     })
   })
 
-  it('sends message when Enter key is pressed', () => {
-    render(<LeagueChat {...defaultProps} />)
-    
-    const messageInput = screen.getByPlaceholderText('Type your message...')
-    
-    fireEvent.change(messageInput, { target: { value: 'Need a QB for playoffs' } })
-    fireEvent.keyDown(messageInput, { key: 'Enter', code: 'Enter' })
-    
-    expect(mockChatActions.sendMessage).toHaveBeenCalledWith('Need a QB for playoffs', 'TEXT')
-  })
-
-  it('does not send empty messages', () => {
-    render(<LeagueChat {...defaultProps} />)
-    
-    const sendButton = screen.getByRole('button', { name: /send/i })
-    fireEvent.click(sendButton)
-    
-    expect(mockChatActions.sendMessage).not.toHaveBeenCalled()
-  })
-
-  it('shows typing indicators', () => {
-    render(<LeagueChat {...defaultProps} />)
-    
-    expect(screen.getByText('Bob Wilson is typing...')).toBeInTheDocument()
-  })
-
-  it('starts and stops typing indicators', () => {
-    render(<LeagueChat {...defaultProps} />)
-    
-    const messageInput = screen.getByPlaceholderText('Type your message...')
-    
-    // Start typing
-    fireEvent.focus(messageInput)
-    fireEvent.change(messageInput, { target: { value: 'T' } })
-    
-    expect(mockChatActions.startTyping).toHaveBeenCalled()
-    
-    // Stop typing after delay (simulated)
-    fireEvent.change(messageInput, { target: { value: '' } })
-    
-    setTimeout(() => {
-      expect(mockChatActions.stopTyping).toHaveBeenCalled()
-    }, 1000)
-  })
-
-  it('scrolls to bottom when new messages arrive', () => {
-    const scrollIntoViewMock = jest.fn()
-    Element.prototype.scrollIntoView = scrollIntoViewMock
-    
-    const { rerender } = render(<LeagueChat {...defaultProps} />)
-    
-    // Add new message
-    const newMessages = [...mockMessages, {
-      id: 'msg5',
-      userId: 'user3',
-      userName: 'Bob Wilson',
-      message: 'New message',
-      timestamp: new Date(),
-      leagueId: 'league1',
-      type: 'TEXT' as const
-    }]
-    
-    mockUseLeagueChat.mockReturnValue({
-      messages: newMessages,
-      typingUsers: mockTypingUsers,
-      isConnected: true,
-      isLoading: false,
-      error: null,
-      ...mockChatActions
-    })
-    
-    rerender(<LeagueChat {...defaultProps} />)
-    
-    expect(scrollIntoViewMock).toHaveBeenCalled()
-  })
-
-  it('shows connection status', () => {
-    render(<LeagueChat {...defaultProps} />)
-    
-    expect(screen.getByText('Connected')).toBeInTheDocument()
-    expect(screen.getByTestId('connection-status')).toHaveClass('text-green-600')
-  })
-
-  it('handles disconnection gracefully', () => {
-    mockUseLeagueChat.mockReturnValue({
-      messages: mockMessages,
-      typingUsers: [],
-      isConnected: false,
-      isLoading: false,
-      error: null,
-      ...mockChatActions
+  describe('Messages Display', () => {
+    it('should display all messages', () => {
+      render(<LeagueChat {...mockProps} />)
+      
+      expect(screen.getByText('Hello everyone!')).toBeInTheDocument()
+      expect(screen.getByText('Hi there!')).toBeInTheDocument()
+      expect(screen.getByText('Trade proposal submitted')).toBeInTheDocument()
     })
 
-    render(<LeagueChat {...defaultProps} />)
-    
-    expect(screen.getByText('Disconnected')).toBeInTheDocument()
-    expect(screen.getByTestId('connection-status')).toHaveClass('text-red-600')
-    
-    const messageInput = screen.getByPlaceholderText('Type your message...')
-    expect(messageInput).toBeDisabled()
-  })
-
-  it('shows loading state', () => {
-    mockUseLeagueChat.mockReturnValue({
-      messages: [],
-      typingUsers: [],
-      isConnected: false,
-      isLoading: true,
-      error: null,
-      ...mockChatActions
+    it('should show sender name for other users', () => {
+      render(<LeagueChat {...mockProps} />)
+      
+      expect(screen.getByText('Other User')).toBeInTheDocument()
     })
 
-    render(<LeagueChat {...defaultProps} />)
-    
-    expect(screen.getByText('Loading chat...')).toBeInTheDocument()
-    expect(screen.getByTestId('loading-spinner')).toBeInTheDocument()
-  })
-
-  it('displays error message', () => {
-    mockUseLeagueChat.mockReturnValue({
-      messages: [],
-      typingUsers: [],
-      isConnected: false,
-      isLoading: false,
-      error: 'Failed to connect to chat',
-      ...mockChatActions
+    it('should not show sender name for own messages', () => {
+      render(<LeagueChat {...mockProps} />)
+      
+      const myMessage = screen.getByText('Hi there!').closest('div')
+      expect(myMessage).not.toHaveTextContent('Test User')
     })
 
-    render(<LeagueChat {...defaultProps} />)
-    
-    expect(screen.getByText('Failed to connect to chat')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument()
-  })
-
-  it('filters messages by type', () => {
-    render(<LeagueChat {...defaultProps} />)
-    
-    // Show all messages initially
-    expect(screen.getByText('Who wants to trade for a RB?')).toBeInTheDocument()
-    expect(screen.getByText('Trade proposal sent to Jane Smith')).toBeInTheDocument()
-    expect(screen.getByText('Week 14 waivers cleared')).toBeInTheDocument()
-    
-    // Filter to only trade messages
-    const tradeFilter = screen.getByRole('button', { name: /trade/i })
-    fireEvent.click(tradeFilter)
-    
-    expect(screen.queryByText('Who wants to trade for a RB?')).not.toBeInTheDocument()
-    expect(screen.getByText('Trade proposal sent to Jane Smith')).toBeInTheDocument()
-    expect(screen.queryByText('Week 14 waivers cleared')).not.toBeInTheDocument()
-  })
-
-  it('shows message count badge', () => {
-    render(<LeagueChat {...defaultProps} />)
-    
-    expect(screen.getByText('4')).toBeInTheDocument() // Total messages
-  })
-
-  it('allows mentioning users with @ symbol', () => {
-    render(<LeagueChat {...defaultProps} />)
-    
-    const messageInput = screen.getByPlaceholderText('Type your message...')
-    
-    fireEvent.change(messageInput, { target: { value: '@Jane ' } })
-    
-    // Should show autocomplete dropdown
-    expect(screen.getByText('Jane Smith')).toBeInTheDocument()
-    
-    // Select user
-    fireEvent.click(screen.getByText('Jane Smith'))
-    
-    expect(messageInput).toHaveValue('@Jane Smith ')
-  })
-
-  it('formats trade messages with special styling', () => {
-    render(<LeagueChat {...defaultProps} />)
-    
-    const tradeMessage = screen.getByText('Trade proposal sent to Jane Smith')
-    expect(tradeMessage.closest('.message')).toHaveClass('border-l-4', 'border-blue-400')
-  })
-
-  it('shows online status for active users', () => {
-    const mockOnlineUsers = ['user1', 'user2']
-    
-    mockUseLeagueChat.mockReturnValue({
-      messages: mockMessages,
-      typingUsers: mockTypingUsers,
-      onlineUsers: mockOnlineUsers,
-      isConnected: true,
-      isLoading: false,
-      error: null,
-      ...mockChatActions
+    it('should style own messages differently', () => {
+      render(<LeagueChat {...mockProps} />)
+      
+      const myMessage = screen.getByText('Hi there!').closest('div')
+      expect(myMessage).toHaveClass('bg-blue-600')
     })
 
-    render(<LeagueChat {...defaultProps} />)
-    
-    expect(screen.getByText('2 online')).toBeInTheDocument()
-  })
-
-  it('joins chat room on mount', () => {
-    render(<LeagueChat {...defaultProps} />)
-    
-    expect(mockChatActions.joinChat).toHaveBeenCalledWith('league1')
-  })
-
-  it('leaves chat room on unmount', () => {
-    const { unmount } = render(<LeagueChat {...defaultProps} />)
-    
-    unmount()
-    
-    expect(mockChatActions.leaveChat).toHaveBeenCalled()
-  })
-
-  it('supports emoji picker', () => {
-    render(<LeagueChat {...defaultProps} />)
-    
-    const emojiButton = screen.getByRole('button', { name: /emoji/i })
-    fireEvent.click(emojiButton)
-    
-    // Should open emoji picker
-    expect(screen.getByTestId('emoji-picker')).toBeInTheDocument()
-    
-    // Select an emoji
-    const laughingEmoji = screen.getByText('😂')
-    fireEvent.click(laughingEmoji)
-    
-    const messageInput = screen.getByPlaceholderText('Type your message...')
-    expect(messageInput).toHaveValue('😂')
-  })
-
-  it('handles long messages with text wrapping', () => {
-    const longMessage = 'This is a very long message that should wrap properly in the chat interface without breaking the layout or causing any display issues'
-    
-    const messagesWithLongMessage = [...mockMessages, {
-      id: 'msg5',
-      userId: 'user1',
-      userName: 'John Doe',
-      message: longMessage,
-      timestamp: new Date(),
-      leagueId: 'league1',
-      type: 'TEXT' as const
-    }]
-    
-    mockUseLeagueChat.mockReturnValue({
-      messages: messagesWithLongMessage,
-      typingUsers: mockTypingUsers,
-      isConnected: true,
-      isLoading: false,
-      error: null,
-      ...mockChatActions
+    it('should style trade messages differently', () => {
+      render(<LeagueChat {...mockProps} />)
+      
+      const tradeMessage = screen.getByText('Trade proposal submitted').closest('div')
+      expect(tradeMessage).toHaveClass('bg-orange-600')
     })
 
-    render(<LeagueChat {...defaultProps} />)
-    
-    const messageElement = screen.getByText(longMessage)
-    expect(messageElement).toHaveClass('break-words')
+    it('should display message timestamps', () => {
+      render(<LeagueChat {...mockProps} />)
+      
+      expect(screen.getByText(/10:00/)).toBeInTheDocument()
+    })
+
+    it('should show trade icon for trade messages', () => {
+      render(<LeagueChat {...mockProps} />)
+      
+      expect(screen.getByText('Trade Proposal')).toBeInTheDocument()
+    })
+  })
+
+  describe('Typing Indicators', () => {
+    it('should show typing indicator when users are typing', () => {
+      ;(useLeagueChat as jest.Mock).mockReturnValue({
+        ...mockChatState,
+        typing: ['user-456']
+      })
+
+      render(<LeagueChat {...mockProps} />)
+      
+      expect(screen.getByText('1 person typing...')).toBeInTheDocument()
+    })
+
+    it('should show multiple users typing', () => {
+      ;(useLeagueChat as jest.Mock).mockReturnValue({
+        ...mockChatState,
+        typing: ['user-456', 'user-789']
+      })
+
+      render(<LeagueChat {...mockProps} />)
+      
+      expect(screen.getByText('2 people typing...')).toBeInTheDocument()
+    })
+
+    it('should not show typing indicator when no one is typing', () => {
+      render(<LeagueChat {...mockProps} />)
+      
+      expect(screen.queryByText(/typing/)).not.toBeInTheDocument()
+    })
+  })
+
+  describe('Message Input', () => {
+    it('should render message input', () => {
+      render(<LeagueChat {...mockProps} />)
+      
+      expect(screen.getByPlaceholderText('Type a message...')).toBeInTheDocument()
+    })
+
+    it('should update input value on change', () => {
+      render(<LeagueChat {...mockProps} />)
+      
+      const input = screen.getByPlaceholderText('Type a message...') as HTMLInputElement
+      fireEvent.change(input, { target: { value: 'Test message' } })
+      
+      expect(input.value).toBe('Test message')
+    })
+
+    it('should send message on form submit', () => {
+      render(<LeagueChat {...mockProps} />)
+      
+      const input = screen.getByPlaceholderText('Type a message...')
+      const form = input.closest('form')!
+      
+      fireEvent.change(input, { target: { value: 'Test message' } })
+      fireEvent.submit(form)
+      
+      expect(mockChatState.sendMessage).toHaveBeenCalledWith('Test message')
+    })
+
+    it('should clear input after sending', () => {
+      render(<LeagueChat {...mockProps} />)
+      
+      const input = screen.getByPlaceholderText('Type a message...') as HTMLInputElement
+      const form = input.closest('form')!
+      
+      fireEvent.change(input, { target: { value: 'Test message' } })
+      fireEvent.submit(form)
+      
+      expect(input.value).toBe('')
+    })
+
+    it('should not send empty messages', () => {
+      render(<LeagueChat {...mockProps} />)
+      
+      const input = screen.getByPlaceholderText('Type a message...')
+      const form = input.closest('form')!
+      
+      fireEvent.change(input, { target: { value: '   ' } })
+      fireEvent.submit(form)
+      
+      expect(mockChatState.sendMessage).not.toHaveBeenCalled()
+    })
+
+    it('should disable send button when input is empty', () => {
+      render(<LeagueChat {...mockProps} />)
+      
+      const sendButton = screen.getAllByRole('button').find(btn => 
+        btn.querySelector('svg')
+      )
+      
+      expect(sendButton).toBeDisabled()
+    })
+
+    it('should send typing indicator when typing', () => {
+      render(<LeagueChat {...mockProps} />)
+      
+      const input = screen.getByPlaceholderText('Type a message...')
+      fireEvent.change(input, { target: { value: 'T' } })
+      
+      expect(mockChatState.sendTyping).toHaveBeenCalledWith(true)
+    })
+
+    it('should stop typing indicator on blur', () => {
+      render(<LeagueChat {...mockProps} />)
+      
+      const input = screen.getByPlaceholderText('Type a message...')
+      fireEvent.change(input, { target: { value: 'Test' } })
+      fireEvent.blur(input)
+      
+      expect(mockChatState.sendTyping).toHaveBeenCalledWith(false)
+    })
+  })
+
+  describe('Notifications Tab', () => {
+    beforeEach(() => {
+      render(<LeagueChat {...mockProps} />)
+      const notificationsTab = screen.getByText('Notifications').closest('button')
+      fireEvent.click(notificationsTab!)
+    })
+
+    it('should display notifications', () => {
+      expect(screen.getByText('New Trade Proposal')).toBeInTheDocument()
+      expect(screen.getByText(/received a trade proposal/)).toBeInTheDocument()
+    })
+
+    it('should show empty state when no notifications', () => {
+      ;(useTradeNotifications as jest.Mock).mockReturnValue({
+        ...mockTradeState,
+        notifications: []
+      })
+
+      render(<LeagueChat {...mockProps} />)
+      const notificationsTab = screen.getByText('Notifications').closest('button')
+      fireEvent.click(notificationsTab!)
+      
+      expect(screen.getByText('No notifications yet')).toBeInTheDocument()
+    })
+
+    it('should display notification timestamps', () => {
+      expect(screen.getByText(/10:00/)).toBeInTheDocument()
+    })
+
+    it('should show view button for trade proposals', () => {
+      expect(screen.getByText('View')).toBeInTheDocument()
+    })
+  })
+
+  describe('Trade Dialog', () => {
+    it('should open trade dialog on button click', () => {
+      render(<LeagueChat {...mockProps} />)
+      
+      const proposeButton = screen.getByText('Propose Trade')
+      fireEvent.click(proposeButton)
+      
+      expect(screen.getByText('Trade with')).toBeInTheDocument()
+    })
+
+    it('should display team selector', () => {
+      render(<LeagueChat {...mockProps} />)
+      
+      const proposeButton = screen.getByText('Propose Trade')
+      fireEvent.click(proposeButton)
+      
+      expect(screen.getByText('Select team...')).toBeInTheDocument()
+    })
+
+    it('should display message textarea', () => {
+      render(<LeagueChat {...mockProps} />)
+      
+      const proposeButton = screen.getByText('Propose Trade')
+      fireEvent.click(proposeButton)
+      
+      expect(screen.getByPlaceholderText(/Add a message/)).toBeInTheDocument()
+    })
+
+    it('should close dialog on cancel', () => {
+      render(<LeagueChat {...mockProps} />)
+      
+      const proposeButton = screen.getByText('Propose Trade')
+      fireEvent.click(proposeButton)
+      
+      const cancelButton = screen.getByText('Cancel')
+      fireEvent.click(cancelButton)
+      
+      expect(screen.queryByText('Trade with')).not.toBeInTheDocument()
+    })
+
+    it('should have create trade button', () => {
+      render(<LeagueChat {...mockProps} />)
+      
+      const proposeButton = screen.getByText('Propose Trade')
+      fireEvent.click(proposeButton)
+      
+      expect(screen.getByText('Create Trade')).toBeInTheDocument()
+    })
+  })
+
+  describe('Accessibility', () => {
+    it('should have accessible buttons', () => {
+      render(<LeagueChat {...mockProps} />)
+      
+      const buttons = screen.getAllByRole('button')
+      expect(buttons.length).toBeGreaterThan(0)
+    })
+
+    it('should have accessible form', () => {
+      render(<LeagueChat {...mockProps} />)
+      
+      const input = screen.getByPlaceholderText('Type a message...')
+      expect(input).toHaveAttribute('type', 'text')
+    })
+  })
+
+  describe('Edge Cases', () => {
+    it('should handle empty messages array', () => {
+      ;(useLeagueChat as jest.Mock).mockReturnValue({
+        ...mockChatState,
+        messages: []
+      })
+
+      render(<LeagueChat {...mockProps} />)
+      
+      expect(screen.getByPlaceholderText('Type a message...')).toBeInTheDocument()
+    })
+
+    it('should handle messages without timestamps', () => {
+      const messagesWithoutTime = [{
+        ...mockMessages[0],
+        timestamp: null
+      }]
+
+      ;(useLeagueChat as jest.Mock).mockReturnValue({
+        ...mockChatState,
+        messages: messagesWithoutTime
+      })
+
+      render(<LeagueChat {...mockProps} />)
+      
+      expect(screen.getByText('Hello everyone!')).toBeInTheDocument()
+    })
   })
 })

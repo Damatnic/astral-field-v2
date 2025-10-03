@@ -64,7 +64,6 @@ class CatalystDatabaseOptimizer {
   private setupConnectionPool() {
     // Connection pool is configured via Prisma schema and environment variables
     // This method sets up monitoring and health checks
-    console.log('[DB Optimizer] Connection pool configured:', this.connectionConfig)
   }
 
   private setupPerformanceLogging() {
@@ -360,7 +359,11 @@ class CatalystDatabaseOptimizer {
         })
         results.push(result)
       } catch (error) {
-        console.error('[DB Optimizer] Batch insert failed:', error)
+        if (process.env.NODE_ENV === 'development') {
+
+          console.error('[DB Optimizer] Batch insert failed:', error);
+
+        }
         // Try individual inserts for this batch
         for (const player of batch) {
           try {
@@ -370,7 +373,11 @@ class CatalystDatabaseOptimizer {
               create: player
             })
           } catch (playerError) {
-            console.error('[DB Optimizer] Individual insert failed:', player.id, playerError)
+            if (process.env.NODE_ENV === 'development') {
+
+              console.error('[DB Optimizer] Individual insert failed:', player.id, playerError);
+
+            }
           }
         }
       }
@@ -517,7 +524,6 @@ class CatalystDatabaseOptimizer {
 
   public clearCache() {
     this.queryCache.clear()
-    console.log('[DB Optimizer] Cache cleared')
   }
 
   private recordQueryMetric(metric: QueryMetrics) {
@@ -564,7 +570,11 @@ class CatalystDatabaseOptimizer {
       
       return { healthy: true, latency }
     } catch (error) {
-      console.error('[DB Optimizer] Health check failed:', error)
+      if (process.env.NODE_ENV === 'development') {
+
+        console.error('[DB Optimizer] Health check failed:', error);
+
+      }
       return { healthy: false, latency: Date.now() - start }
     }
   }

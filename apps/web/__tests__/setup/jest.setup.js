@@ -44,12 +44,12 @@ jest.mock('next/router', () => ({
 // Mock Next.js navigation
 jest.mock('next/navigation', () => ({
   useRouter: jest.fn(() => ({
-    push: jest.fn(),
-    replace: jest.fn(),
-    refresh: jest.fn(),
+    push: jest.fn(() => Promise.resolve()),
+    replace: jest.fn(() => Promise.resolve()),
+    refresh: jest.fn(() => Promise.resolve()),
     back: jest.fn(),
     forward: jest.fn(),
-    prefetch: jest.fn(),
+    prefetch: jest.fn(() => Promise.resolve()), // Fixed: Returns resolved promise
   })),
   usePathname: jest.fn(() => '/'),
   useSearchParams: jest.fn(() => ({
@@ -63,6 +63,8 @@ jest.mock('next/navigation', () => ({
     toString: jest.fn(),
   })),
   useParams: jest.fn(() => ({})),
+  redirect: jest.fn(),
+  notFound: jest.fn(),
 }))
 
 // Mock NextAuth v5 - Updated for proper v5 structure

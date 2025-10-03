@@ -59,8 +59,9 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ success: true })
 
   } catch (error) {
-    console.error('Settings update error:', error)
-    
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Settings update error:', error);
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: 'Invalid data', details: error.errors },

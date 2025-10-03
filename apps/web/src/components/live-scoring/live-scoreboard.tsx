@@ -9,7 +9,7 @@ import {
   ExclamationTriangleIcon,
   FireIcon,
   TrophyIcon
-} from '@heroicons/react/outline'
+} from '@heroicons/react/24/outline'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
@@ -70,7 +70,9 @@ export function LiveScoreboard({ leagueId, week, season = 2025 }: LiveScoreboard
           setLastUpdate(new Date(data.data.lastUpdated))
         }
       } catch (error) {
-        console.error('Failed to fetch live scores:', error)
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Failed to fetch live scores:', error);
+        }
       } finally {
         setLoading(false)
       }

@@ -36,7 +36,11 @@ const catalystQueryConfig: QueryClientConfig = {
       retry: 1, // Catalyst: Limited retries for mutations
       onError: (error: any) => {
         // Catalyst: Global error handling
-        console.error('Mutation error:', error)
+        if (process.env.NODE_ENV === 'development') {
+
+          console.error('Mutation error:', error);
+
+        }
         // Could integrate with error tracking service here
       },
       onSettled: () => {

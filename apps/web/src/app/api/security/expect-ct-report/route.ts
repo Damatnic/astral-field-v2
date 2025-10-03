@@ -75,17 +75,25 @@ export async function POST(request: NextRequest) {
 
     // In production, this should trigger immediate alerts
     if (process.env.NODE_ENV === 'production') {
-      console.error('CRITICAL: Certificate Transparency violation in production!', {
+      if (process.env.NODE_ENV === 'development') {
+
+        console.error('CRITICAL: Certificate Transparency violation in production!', {
         hostname: report.hostname,
         timestamp: report['date-time'],
         requiresImmediateAttention: true
-      })
+      });
+
+      }
     }
 
     return NextResponse.json({ received: true })
     
   } catch (error) {
-    console.error('Expect-CT report processing error:', error)
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('Expect-CT report processing error:', error);
+
+    }
     return NextResponse.json(
       { error: 'PROCESSING_ERROR', message: 'Failed to process Expect-CT report' },
       { status: 500 }

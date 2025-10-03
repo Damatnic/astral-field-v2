@@ -414,7 +414,11 @@ export function useMobilePerformance() {
             isLowBattery: battery.level < 0.2
           }))
         } catch (error) {
-          console.warn('Battery API not available')
+          if (process.env.NODE_ENV === 'development') {
+
+            console.warn('Battery API not available');
+
+          }
         }
       }
     }

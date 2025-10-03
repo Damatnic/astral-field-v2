@@ -186,7 +186,9 @@ export default function RootLayout({
                     const nav = performance.getEntriesByType('navigation')[0];
                     const loadTime = nav.loadEventEnd - nav.navigationStart;
                     if (loadTime > 3000) {
-                      console.warn('⚡ Catalyst: Page load time exceeds 3s budget:', loadTime + 'ms');
+                      if (process.env.NODE_ENV === 'development') {
+                        console.warn('⚡ Catalyst: Page load time exceeds 3s budget:', loadTime + 'ms');
+                      }
                     }
                     
                     const memInfo = performance.memory;
@@ -225,10 +227,10 @@ export default function RootLayout({
               window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js')
                   .then(registration => {
-                    console.log('SW registered:', registration);
+
                   })
                   .catch(error => {
-                    console.log('SW registration failed:', error);
+
                   });
               });
             }
@@ -285,7 +287,9 @@ export default function RootLayout({
                     }
                   }).observe({ entryTypes: ['layout-shift'] });
                 } catch (error) {
-                  console.warn('Performance observer setup failed:', error);
+                  if (process.env.NODE_ENV === 'development') {
+                    console.warn('Performance observer setup failed:', error);
+                  }
                 }
               }
             }

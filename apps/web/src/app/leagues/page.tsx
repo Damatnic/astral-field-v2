@@ -52,7 +52,9 @@ async function getLeaguesData(userId: string) {
       userLeagues: userTeams.map(team => team.league)
     }
   } catch (error) {
-    console.error('Failed to fetch leagues data:', error)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Failed to fetch leagues data:', error);
+    }
     return {
       allLeagues: [],
       userLeagues: []

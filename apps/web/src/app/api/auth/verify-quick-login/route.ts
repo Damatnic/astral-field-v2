@@ -31,7 +31,11 @@ const postHandler = async (request: NextRequest): Promise<NextResponse> => {
     })
     
   } catch (error) {
-    console.error('Quick login verification error:', error)
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('Quick login verification error:', error);
+
+    }
     return NextResponse.json(
       { error: 'INTERNAL_ERROR', message: 'Verification failed' },
       { status: 500 }

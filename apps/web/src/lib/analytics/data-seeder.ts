@@ -90,8 +90,6 @@ export class VortexDataSeeder {
    * Seed complete analytics data for weeks 1-3
    */
   async seedAnalyticsData(season: number = 2025): Promise<void> {
-    console.log('🌱 Starting Vortex Analytics data seeding...');
-    
     try {
       // Step 1: Create players
       await this.createPlayers();
@@ -104,16 +102,17 @@ export class VortexDataSeeder {
       
       // Step 4: Generate weeks 1-3 data
       for (let week = 1; week <= 3; week++) {
-        console.log(`📊 Generating Week ${week} data...`);
         await this.generateWeekData(week, season);
       }
       
       // Step 5: Calculate derived analytics
       await this.calculateDerivedAnalytics(season);
-      
-      console.log('✅ Vortex Analytics data seeding completed successfully!');
     } catch (error) {
-      console.error('❌ Data seeding failed:', error);
+      if (process.env.NODE_ENV === 'development') {
+
+        console.error('❌ Data seeding failed:', error);
+
+      }
       throw error;
     }
   }
@@ -122,8 +121,6 @@ export class VortexDataSeeder {
    * Create players in database
    */
   private async createPlayers(): Promise<void> {
-    console.log('👥 Creating players...');
-    
     for (const playerData of this.players) {
       await prisma.player.upsert({
         where: { name: playerData.name },
@@ -143,16 +140,12 @@ export class VortexDataSeeder {
         }
       });
     }
-    
-    console.log(`✅ Created ${this.players.length} players`);
   }
 
   /**
    * Create fantasy teams
    */
   private async createTeams(): Promise<void> {
-    console.log('🏈 Creating teams...');
-    
     const league = await prisma.league.findFirst() || await prisma.league.create({
       data: {
         name: 'AstralField Championship League',
@@ -188,16 +181,12 @@ export class VortexDataSeeder {
         }
       });
     }
-    
-    console.log(`✅ Created teams for league: ${league.name}`);
   }
 
   /**
    * Populate team rosters
    */
   private async populateRosters(): Promise<void> {
-    console.log('📋 Populating rosters...');
-    
     const teams = await prisma.team.findMany();
     const players = await prisma.player.findMany({
       orderBy: { adp: 'asc' }
@@ -240,8 +229,6 @@ export class VortexDataSeeder {
         }
       }
     }
-    
-    console.log('✅ Populated all team rosters');
   }
 
   /**
@@ -752,8 +739,6 @@ export class VortexDataSeeder {
   }
 
   private async calculateDerivedAnalytics(season: number): Promise<void> {
-    console.log('🧮 Calculating derived analytics...');
-    
     // Update team rankings
     for (let week = 1; week <= 3; week++) {
       const teamStats = await prisma.weeklyTeamStats.findMany({
@@ -823,8 +808,6 @@ export class VortexDataSeeder {
         });
       }
     }
-    
-    console.log('✅ Derived analytics calculated');
   }
 
   private determineStarterStatus(position: string, round: number): boolean {

@@ -36,7 +36,9 @@ const CatalystHydrationBoundary = memo(function CatalystHydrationBoundary({
       
       return () => cancelAnimationFrame(frame)
     } catch (error) {
-      console.error('Hydration boundary error:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Hydration boundary error:', error);
+      }
       setHasError(true)
     }
   }, [])

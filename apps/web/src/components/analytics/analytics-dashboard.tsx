@@ -9,7 +9,7 @@ import {
   ArrowTrendingDownIcon,
   UserGroupIcon,
   StarIcon
-} from '@heroicons/react/outline'
+} from '@heroicons/react/24/outline'
 
 interface AnalyticsData {
   teams: Array<{

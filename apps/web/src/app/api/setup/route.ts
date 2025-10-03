@@ -22,19 +22,22 @@ const DAMATO_DYNASTY_MEMBERS = [
 
 export async function GET() {
   try {
-    console.log('🚀 STARTING COMPLETE DATABASE SETUP...')
-    
     // STEP 1: Run database migration
-    console.log('🔄 Step 1: Running Prisma database migration...')
     try {
       const { stdout: migrationOutput, stderr: migrationErrors } = await execAsync('npx prisma db push --accept-data-loss')
-      console.log('✅ Migration completed successfully')
-      console.log('Migration output:', migrationOutput)
       if (migrationErrors) {
-        console.warn('Migration warnings:', migrationErrors)
+        if (process.env.NODE_ENV === 'development') {
+
+          console.warn('Migration warnings:', migrationErrors);
+
+        }
       }
     } catch (migrationError: any) {
-      console.error('💥 Migration failed:', migrationError)
+      if (process.env.NODE_ENV === 'development') {
+
+        console.error('💥 Migration failed:', migrationError);
+
+      }
       return NextResponse.json({ 
         error: 'Database migration failed', 
         details: migrationError.message,
@@ -43,8 +46,6 @@ export async function GET() {
     }
 
     // STEP 2: Seed database with users
-    console.log('🌱 Step 2: Seeding database with D\'Amato Dynasty users...')
-    
     const hashedPassword = await bcrypt.hash('Dynasty2025!', 10)
     const results = []
 
@@ -77,7 +78,11 @@ export async function GET() {
         console.log(`✅ ${member.name} (${member.teamName}) - ${member.role}`)
         
       } catch (userError: any) {
-        console.error(`Failed to create ${member.name}:`, userError)
+        if (process.env.NODE_ENV === 'development') {
+
+          console.error(`Failed to create ${member.name}:`, userError);
+
+        }
         results.push({ 
           success: false, 
           email: member.email, 
@@ -89,10 +94,6 @@ export async function GET() {
 
     const successful = results.filter(r => r.success)
     const failed = results.filter(r => !r.success)
-
-    console.log(`✅ Successfully created: ${successful.length}/${DAMATO_DYNASTY_MEMBERS.length} users`)
-    console.log(`❌ Failed: ${failed.length} users`)
-
     return NextResponse.json({ 
       message: 'Complete database setup completed successfully',
       migration: 'completed',
@@ -106,7 +107,11 @@ export async function GET() {
       ready: failed.length === 0
     })
   } catch (error: any) {
-    console.error('💥 Complete database setup failed:', error)
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('💥 Complete database setup failed:', error);
+
+    }
     return NextResponse.json({ 
       error: 'Complete database setup failed', 
       details: error.message 

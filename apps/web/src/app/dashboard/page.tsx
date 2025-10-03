@@ -4,6 +4,7 @@ import { DashboardLayout } from '@/components/dashboard/layout'
 import { phoenixDb, getOptimizedDashboardData } from '@/lib/optimized-prisma'
 import { ClientOnly, LazyHydrate } from '@/components/performance/catalyst-hydration-boundary'
 import { Suspense } from 'react'
+import { logger } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -20,15 +21,15 @@ const FireIcon = ({ className }: { className?: string }) => <span className={`w-
 // Catalyst: Optimized dashboard data fetching with caching and single query
 async function getDashboardData(userId: string) {
   try {
-    console.log('[Catalyst] Fetching optimized dashboard data for user:', userId)
+    logger.debug('[Catalyst] Fetching optimized dashboard data for user', { userId })
     const startTime = performance.now()
     
     // Try optimized single query first
     let optimizedData = await getOptimizedDashboardData(userId)
     
     if (optimizedData && Array.isArray(optimizedData) && optimizedData.length > 0) {
-      const endTime = performance.now()
-      console.log(`[Catalyst] Optimized query completed in ${(endTime - startTime).toFixed(2)}ms`)
+      const duration = performance.now() - startTime
+      logger.perf('[Catalyst] Optimized query', duration, { userId, dataPoints: optimizedData.length })
       
       // Transform optimized data
       const userTeams = optimizedData.map((row: any) => ({
@@ -56,11 +57,11 @@ async function getDashboardData(userId: string) {
     }
     
     // Fallback to Phoenix DB service
-    console.log('[Catalyst] Falling back to Phoenix service')
+    logger.debug('[Catalyst] Falling back to Phoenix service', { userId })
     const userWithRelations = await phoenixDb.findUserWithRelations(userId)
     
     if (!userWithRelations) {
-      console.log('[Catalyst] No user found, creating demo data')
+      logger.info('[Catalyst] No user found, creating demo data', { userId })
       // Create demo data using Phoenix service
       return {
         userTeams: [],
@@ -69,8 +70,8 @@ async function getDashboardData(userId: string) {
       }
     }
     
-    const endTime = performance.now()
-    console.log(`[Catalyst] Phoenix fallback completed in ${(endTime - startTime).toFixed(2)}ms`)
+    const duration = performance.now() - startTime
+    logger.perf('[Catalyst] Phoenix fallback', duration, { userId })
     
     return {
       userTeams: userWithRelations.teams || [],
@@ -79,7 +80,7 @@ async function getDashboardData(userId: string) {
     }
     
   } catch (error) {
-    console.error('[Catalyst] Dashboard data fetch error:', error)
+    logger.error('[Catalyst] Dashboard data fetch error', error as Error)
     return {
       userTeams: [],
       recentNews: [],
@@ -93,7 +94,7 @@ export default async function DashboardPage() {
   try {
     session = await auth()
   } catch (error) {
-    console.warn('Session fetch failed:', error)
+    logger.warn('Session fetch failed', error as Error)
   }
   
   if (!session || !session.user) {
@@ -103,7 +104,7 @@ export default async function DashboardPage() {
   // Ensure we have a user ID
   const userId = session.user.id || session.user.sub
   if (!userId) {
-    console.error('No user ID found in session:', session)
+    logger.error('No user ID found in session', { session })
     redirect('/auth/signin')
   }
 
@@ -111,7 +112,7 @@ export default async function DashboardPage() {
   try {
     data = await getDashboardData(userId)
   } catch (error) {
-    console.error('Failed to load dashboard data:', error)
+    logger.error('Failed to load dashboard data', error as Error)
     data = { userTeams: [], recentNews: [], standings: [] }
   }
 

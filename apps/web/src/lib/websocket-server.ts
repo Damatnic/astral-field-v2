@@ -72,7 +72,6 @@ class WebSocketManager {
     })
 
     this.io.on('connection', (socket) => {
-      console.log('Client connected:', socket.id)
 
       // Handle user authentication and join rooms
       socket.on('authenticate', async (data: { userId: string, token?: string }) => {
@@ -109,7 +108,9 @@ class WebSocketManager {
             socket.emit('authentication_error', { message: 'Invalid user' })
           }
         } catch (error) {
-          console.error('Authentication error:', error)
+          if (process.env.NODE_ENV === 'development') {
+            console.error('Authentication error:', error);
+          }
           socket.emit('authentication_error', { message: 'Authentication failed' })
         }
       })
@@ -206,7 +207,9 @@ class WebSocketManager {
           // Broadcast to league chat
           this.io!.to(`chat:${data.leagueId}`).emit('chat_message', messageEvent)
         } catch (error) {
-          console.error('Chat message error:', error)
+          if (process.env.NODE_ENV === 'development') {
+            console.error('Chat message error:', error);
+          }
         }
       })
 
@@ -249,12 +252,14 @@ class WebSocketManager {
             requestedPlayers: data.requestedPlayers
           })
         } catch (error) {
-          console.error('Trade proposal error:', error)
+          if (process.env.NODE_ENV === 'development') {
+            console.error('Trade proposal error:', error);
+          }
         }
       })
 
       socket.on('disconnect', () => {
-        console.log('Client disconnected:', socket.id)
+
         this.connectedUsers.delete(socket.id)
       })
     })

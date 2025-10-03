@@ -105,7 +105,11 @@ class CatalystDynamicLoader {
 
         return await importFn()
       } catch (error) {
-        console.error('Dynamic import failed:', error)
+        if (process.env.NODE_ENV === 'development') {
+
+          console.error('Dynamic import failed:', error);
+
+        }
         if (fallback) {
           return { default: fallback }
         }

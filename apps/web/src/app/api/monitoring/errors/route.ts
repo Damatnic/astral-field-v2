@@ -19,7 +19,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Log error (in production, send to logging service)
-    console.error('[Zenith Monitor] Client error:', {
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('[Zenith Monitor] Client error:', {
       id: error.id,
       type: error.type,
       message: error.message,
@@ -28,8 +30,9 @@ export async function POST(request: NextRequest) {
       userAgent: error.userAgent,
       timestamp: error.timestamp,
       metadata: error.metadata
-    })
+    });
 
+    }
     // Store in database (implement based on your needs)
     // await storeError(error)
 
@@ -40,7 +43,11 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, errorId: error.id })
   } catch (e) {
-    console.error('[Zenith Monitor] Failed to process error:', e)
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('[Zenith Monitor] Failed to process error:', e);
+
+    }
     return NextResponse.json(
       { error: 'Failed to process error' },
       { status: 500 }
@@ -50,12 +57,15 @@ export async function POST(request: NextRequest) {
 
 async function sendCriticalErrorAlert(error: ZenithError) {
   // Implement critical error alerting
-  console.error('[CRITICAL ERROR ALERT]', {
+  if (process.env.NODE_ENV === 'development') {
+
+    console.error('[CRITICAL ERROR ALERT]', {
     type: error.type,
     message: error.message,
     url: error.url,
     timestamp: error.timestamp
-  })
-  
+  });
+
+  }
   // Could send to Slack, Discord, email, etc.
 }

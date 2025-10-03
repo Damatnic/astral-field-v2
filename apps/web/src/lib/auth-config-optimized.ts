@@ -6,7 +6,11 @@ import bcrypt from 'bcryptjs'
 // Guardian Security: Simplified yet secure auth configuration for better compatibility
 const AUTH_SECRET = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET
 if (!AUTH_SECRET || AUTH_SECRET.length < 32) {
-  console.error('🚨 CRITICAL: AUTH_SECRET must be at least 32 characters long')
+  if (process.env.NODE_ENV === 'development') {
+
+    console.error('🚨 CRITICAL: AUTH_SECRET must be at least 32 characters long');
+
+  }
   throw new Error('Invalid AUTH_SECRET: Must be at least 32 characters for security')
 }
 
@@ -23,7 +27,11 @@ async function verifyPassword(password: string, hashedPassword: string): Promise
   try {
     return await bcrypt.compare(password, hashedPassword)
   } catch (error) {
-    console.error('Password verification error:', error)
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('Password verification error:', error);
+
+    }
     return false
   }
 }
@@ -41,7 +49,11 @@ export const authConfigOptimized = {
       async authorize(credentials) {
         // Enhanced input validation
         if (!credentials?.email || !credentials?.password) {
-          console.warn('Missing credentials in authorization attempt')
+          if (process.env.NODE_ENV === 'development') {
+
+            console.warn('Missing credentials in authorization attempt');
+
+          }
           throw new Error('INVALID_CREDENTIALS')
         }
 
@@ -126,7 +138,11 @@ export const authConfigOptimized = {
             teamName: user.teamName || undefined
           }
         } catch (error) {
-          console.error('Authentication error:', error?.message || error)
+          if (process.env.NODE_ENV === 'development') {
+
+            console.error('Authentication error:', error?.message || error);
+
+          }
           if (error instanceof Error) {
             throw error
           }
@@ -156,7 +172,11 @@ export const authConfigOptimized = {
       // Check token age for security
       const tokenAge = Date.now() / 1000 - (token.iat as number || 0)
       if (tokenAge > AUTH_CONFIG.jwtMaxAge) {
-        console.warn(`Token expired after ${tokenAge}s`)
+        if (process.env.NODE_ENV === 'development') {
+
+          console.warn(`Token expired after ${tokenAge}s`);
+
+        }
         return null // Force re-authentication
       }
 
@@ -181,7 +201,6 @@ export const authConfigOptimized = {
   },
   events: {
     async signIn({ user }) {
-      console.log(`User signed in: ${user.id}`)
     },
     async signOut({ token }) {
       if (token?.id) {

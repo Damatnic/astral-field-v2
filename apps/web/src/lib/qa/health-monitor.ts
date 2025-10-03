@@ -55,7 +55,11 @@ class ZenithHealthMonitor {
         const report = await this.runAllChecks()
         this.handleReport(report)
       } catch (error) {
-        console.error('[Zenith Health] Monitoring error:', error)
+        if (process.env.NODE_ENV === 'development') {
+
+          console.error('[Zenith Health] Monitoring error:', error);
+
+        }
       }
     }, intervalMinutes * 60 * 1000)
 
@@ -71,7 +75,6 @@ class ZenithHealthMonitor {
       this.intervalId = undefined
     }
     this.isRunning = false
-    console.log('[Zenith Health] Monitoring stopped')
   }
 
   /**
@@ -436,23 +439,37 @@ class ZenithHealthMonitor {
    */
   private async handleReport(report: HealthReport) {
     console.log(`[Zenith Health] Status: ${report.overall.toUpperCase()}`)
-    console.log(`[Zenith Health] Checks: ${report.summary.passed}✓ ${report.summary.warnings}⚠ ${report.summary.failed}✗`)
-
     // Log failed checks
     const failedChecks = report.checks.filter(c => c.status === 'fail')
     if (failedChecks.length > 0) {
-      console.error('[Zenith Health] Failed checks:')
+      if (process.env.NODE_ENV === 'development') {
+
+        console.error('[Zenith Health] Failed checks:');
+
+      }
       failedChecks.forEach(check => {
-        console.error(`  - ${check.name}: ${check.message}`)
+        if (process.env.NODE_ENV === 'development') {
+
+          console.error(`  - ${check.name}: ${check.message}`);
+
+        }
       })
     }
 
     // Log warnings
     const warningChecks = report.checks.filter(c => c.status === 'warning')
     if (warningChecks.length > 0) {
-      console.warn('[Zenith Health] Warnings:')
+      if (process.env.NODE_ENV === 'development') {
+
+        console.warn('[Zenith Health] Warnings:');
+
+      }
       warningChecks.forEach(check => {
-        console.warn(`  - ${check.name}: ${check.message}`)
+        if (process.env.NODE_ENV === 'development') {
+
+          console.warn(`  - ${check.name}: ${check.message}`);
+
+        }
       })
     }
 
@@ -469,7 +486,11 @@ class ZenithHealthMonitor {
         body: JSON.stringify(report)
       })
     } catch (error) {
-      console.error('[Zenith Health] Failed to store report:', error)
+      if (process.env.NODE_ENV === 'development') {
+
+        console.error('[Zenith Health] Failed to store report:', error);
+
+      }
     }
   }
 

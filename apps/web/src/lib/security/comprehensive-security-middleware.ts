@@ -181,8 +181,11 @@ export class GuardianSecurityMiddleware {
       return response
 
     } catch (error) {
-      console.error('Security middleware error:', error)
-      
+      if (process.env.NODE_ENV === 'development') {
+
+        console.error('Security middleware error:', error);
+
+      }
       // Fail securely - block request on error
       this.securityMetrics.blockedRequests++
       return {
@@ -387,7 +390,11 @@ export class GuardianSecurityMiddleware {
         }
       )
     } catch (error) {
-      console.error('Failed to log security event:', error)
+      if (process.env.NODE_ENV === 'development') {
+
+        console.error('Failed to log security event:', error);
+
+      }
     }
   }
 
@@ -452,7 +459,6 @@ export class GuardianSecurityMiddleware {
    */
   updateConfig(newConfig: Partial<SecurityMiddlewareConfig>): void {
     this.config = { ...this.config, ...newConfig }
-    console.log('Guardian Security Middleware configuration updated')
   }
 
   /**
@@ -466,8 +472,11 @@ export class GuardianSecurityMiddleware {
    * Emergency security lockdown
    */
   emergencyLockdown(reason: string, durationMs: number = 60 * 60 * 1000): void {
-    console.error(`EMERGENCY SECURITY LOCKDOWN ACTIVATED: ${reason}`)
-    
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error(`EMERGENCY SECURITY LOCKDOWN ACTIVATED: ${reason}`);
+
+    }
     // Block all requests temporarily
     this.config.customRules = {
       ...this.config.customRules,
@@ -476,7 +485,6 @@ export class GuardianSecurityMiddleware {
 
     // Schedule lockdown removal
     setTimeout(() => {
-      console.log('Emergency lockdown lifted')
       this.config.customRules = {
         ...this.config.customRules,
         blockPatterns: []

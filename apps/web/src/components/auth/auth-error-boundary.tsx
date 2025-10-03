@@ -27,8 +27,9 @@ export class AuthErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Auth Error Boundary caught an error:', error, errorInfo)
-    
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Auth Error Boundary caught an error:', error, errorInfo);
+    }
     this.setState({ errorInfo })
     
     // Call custom error handler if provided
@@ -51,7 +52,9 @@ export class AuthErrorBoundary extends Component<Props, State> {
     try {
       await signOut({ callbackUrl: '/' })
     } catch (error) {
-      console.error('Failed to sign out:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to sign out:', error);
+      }
       // Force refresh as fallback
       window.location.href = '/'
     }
@@ -185,8 +188,9 @@ export function withAuthErrorBoundary<T extends object>(
 // Specific error boundary for session-related errors
 export function SessionErrorBoundary({ children }: { children: ReactNode }) {
   const handleSessionError = (error: Error, errorInfo: ErrorInfo) => {
-    console.error('Session-specific error:', error, errorInfo)
-    
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Session-specific error:', error, errorInfo);
+    }
     // Check if it's a session-related error
     if (error.message.includes('session') || error.message.includes('auth')) {
       // Force a session refresh

@@ -79,7 +79,11 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Lineup optimization error:', error)
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('Lineup optimization error:', error);
+
+    }
     return NextResponse.json(
       { success: false, error: 'Failed to optimize lineup' },
       { status: 500 }
@@ -148,7 +152,11 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Strategy comparison error:', error)
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('Strategy comparison error:', error);
+
+    }
     return NextResponse.json(
       { success: false, error: 'Failed to generate strategy comparison' },
       { status: 500 }

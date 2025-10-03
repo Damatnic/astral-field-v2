@@ -9,7 +9,7 @@ import {
   ExclamationTriangleIcon,
   LightBulbIcon,
   FireIcon
-} from '@heroicons/react/outline'
+} from '@heroicons/react/24/outline'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 
@@ -41,7 +41,9 @@ export function AICoachDashboard({ userId }: AICoachDashboardProps) {
       const data = await response.json()
       setRecommendations(data.recommendations || [])
     } catch (error) {
-      console.error('Failed to fetch AI recommendations:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Failed to fetch AI recommendations:', error);
+      }
       // Mock data for demo
       setRecommendations([
         {

@@ -43,7 +43,11 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json({ status: 'received', timestamp: new Date().toISOString() }, { status: 200 })
   } catch (error) {
-    console.error('❌ Error processing CSP report:', error)
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('❌ Error processing CSP report:', error);
+
+    }
     return NextResponse.json({ error: 'Invalid report', details: error instanceof Error ? error.message : String(error) }, { status: 400 })
   }
 }

@@ -267,7 +267,9 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('AI recommendations error:', error)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('AI recommendations error:', error);
+    }
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

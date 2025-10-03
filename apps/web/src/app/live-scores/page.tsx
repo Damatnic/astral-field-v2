@@ -38,7 +38,9 @@ async function getUserLeagues(userId: string) {
       teamCount: team.league._count.teams
     }))
   } catch (error) {
-    console.error('Failed to fetch user leagues:', error)
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Failed to fetch user leagues:', error);
+    }
     return []
   }
 }

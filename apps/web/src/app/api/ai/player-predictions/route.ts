@@ -88,7 +88,11 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Player prediction error:', error)
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('Player prediction error:', error);
+
+    }
     return NextResponse.json(
       { success: false, error: 'Failed to generate prediction' },
       { status: 500 }
@@ -155,7 +159,11 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Bulk predictions error:', error)
+    if (process.env.NODE_ENV === 'development') {
+
+      console.error('Bulk predictions error:', error);
+
+    }
     return NextResponse.json(
       { success: false, error: 'Failed to generate predictions' },
       { status: 500 }
