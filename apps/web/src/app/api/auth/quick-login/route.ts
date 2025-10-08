@@ -1,35 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { signIn } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import bcrypt from 'bcryptjs'
-import { withRateLimit } from '@/lib/security/rate-limit-middleware'
 
 export const dynamic = 'force-dynamic'
-
-
-// Guardian Security: Force Node.js runtime for secure operations
 export const runtime = 'nodejs'
 
-// Guardian Security: Demo account credentials (server-side only)
+// Demo account credentials (server-side only)
 const DEMO_ACCOUNTS = {
-  'nicholas@damato-dynasty.com': 'Dynasty2025!',
-  'nick@damato-dynasty.com': 'Dynasty2025!',
-  'jack@damato-dynasty.com': 'Dynasty2025!',
-  'larry@damato-dynasty.com': 'Dynasty2025!',
-  'renee@damato-dynasty.com': 'Dynasty2025!',
-  'jon@damato-dynasty.com': 'Dynasty2025!',
-  'david@damato-dynasty.com': 'Dynasty2025!',
-  'kaity@damato-dynasty.com': 'Dynasty2025!',
-  'cason@damato-dynasty.com': 'Dynasty2025!',
-  'brittany@damato-dynasty.com': 'Dynasty2025!'
+  'nicholas@damato-dynasty.com': { name: "Nicholas D'Amato", team: "D'Amato Dynasty", role: 'Commissioner' },
+  'nick@damato-dynasty.com': { name: "Nick Hartley", team: "Hartley's Heroes", role: 'Player' },
+  'jack@damato-dynasty.com': { name: "Jack McCaigue", team: "McCaigue Mayhem", role: 'Player' },
+  'larry@damato-dynasty.com': { name: "Larry McCaigue", team: "Larry Legends", role: 'Player' },
+  'renee@damato-dynasty.com': { name: "Renee McCaigue", team: "Renee's Reign", role: 'Player' },
+  'jon@damato-dynasty.com': { name: "Jon Kornbeck", team: "Kornbeck Crushers", role: 'Player' },
+  'david@damato-dynasty.com': { name: "David Jarvey", team: "Jarvey's Juggernauts", role: 'Player' },
+  'kaity@damato-dynasty.com': { name: "Kaity Lorbecki", team: "Lorbecki Lions", role: 'Player' },
+  'cason@damato-dynasty.com': { name: "Cason Minor", team: "Minor Miracles", role: 'Player' },
+  'brittany@damato-dynasty.com': { name: "Brittany Bergum", team: "Bergum Blitz", role: 'Player' }
 } as const
 
-// Guardian Security: Enhanced POST handler with rate limiting
-const postHandler = async (request: NextRequest): Promise<NextResponse> => {
+export async function POST(request: NextRequest) {
   try {
     const { email } = await request.json()
     
-    // Guardian Security: Input validation
+    // Input validation
     if (!email || typeof email !== 'string') {
       return NextResponse.json(
         { error: 'INVALID_INPUT', message: 'Email is required' },
@@ -37,9 +29,9 @@ const postHandler = async (request: NextRequest): Promise<NextResponse> => {
       )
     }
     
-    const normalizedEmail = email.toLowerCase().trim()
+    const normalizedEmail = email.toLowerCase().trim() as keyof typeof DEMO_ACCOUNTS
     
-    // Guardian Security: Check if email is a valid demo account
+    // Check if email is a valid demo account
     if (!(normalizedEmail in DEMO_ACCOUNTS)) {
       // Timing attack prevention - delay response
       await new Promise(resolve => setTimeout(resolve, 100))
@@ -49,51 +41,26 @@ const postHandler = async (request: NextRequest): Promise<NextResponse> => {
       )
     }
     
-    // Guardian Security: Verify user exists in database
-    const user = await prisma.user.findUnique({
-      where: { email: normalizedEmail },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        teamName: true,
-        role: true
-      }
-    })
+    const account = DEMO_ACCOUNTS[normalizedEmail]
     
-    if (!user) {
-      return NextResponse.json(
-        { error: 'USER_NOT_FOUND', message: 'User not found in database' },
-        { status: 404 }
-      )
-    }
-    
-    // Guardian Security: Generate secure session token for quick login
+    // Generate secure session token for quick login
     const sessionToken = crypto.randomUUID()
     
-    // Guardian Security: Log security event
-    const forwarded = request.headers.get('x-forwarded-for')
-    const realIp = request.headers.get('x-real-ip')
-    const clientIP = forwarded?.split(',')[0] || realIp || request.ip || 'unknown'
     return NextResponse.json({
       success: true,
       user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        teamName: user.teamName,
-        role: user.role
+        id: normalizedEmail,
+        email: normalizedEmail,
+        name: account.name,
+        teamName: account.team,
+        role: account.role
       },
       sessionToken,
       timestamp: new Date().toISOString()
     })
     
   } catch (error) {
-    if (process.env.NODE_ENV === 'development') {
-
-      console.error('Quick login error:', error);
-
-    }
+    console.error('Quick login error:', error)
     return NextResponse.json(
       { error: 'INTERNAL_ERROR', message: 'Quick login failed' },
       { status: 500 }
@@ -101,13 +68,6 @@ const postHandler = async (request: NextRequest): Promise<NextResponse> => {
   }
 }
 
-// Guardian Security: Apply rate limiting to POST requests
-export async function POST(request: NextRequest) {
-  const rateLimitMiddleware = withRateLimit({ ruleKey: 'auth:quick-login' })
-  return rateLimitMiddleware(request, postHandler)
-}
-
-// Guardian Security: Only allow POST requests
 export async function GET() {
   return NextResponse.json(
     { error: 'METHOD_NOT_ALLOWED', message: 'Only POST requests allowed' },
