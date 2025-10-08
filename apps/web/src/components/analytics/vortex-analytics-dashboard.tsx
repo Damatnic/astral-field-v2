@@ -50,7 +50,7 @@ import {
   LineChart as LineChartIcon,
   Filter,
   Download,
-  Refresh,
+  RefreshCw as Refresh,
   Settings,
   Eye,
   Brain

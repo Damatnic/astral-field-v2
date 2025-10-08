@@ -307,7 +307,10 @@ async function proposeTrade(data: any, userId: string) {
   // Verify user owns proposing team
   const proposingTeam = await prisma.team.findUnique({
     where: { id: proposingTeamId },
-    include: { league: true }
+    include: { 
+      league: true,
+      owner: { select: { id: true, name: true, email: true } }
+    }
   })
 
   if (!proposingTeam || proposingTeam.ownerId !== userId) {
@@ -316,7 +319,10 @@ async function proposeTrade(data: any, userId: string) {
 
   // Verify teams are in same league
   const receivingTeam = await prisma.team.findUnique({
-    where: { id: receivingTeamId }
+    where: { id: receivingTeamId },
+    include: {
+      owner: { select: { id: true, name: true, email: true } }
+    }
   })
 
   if (!receivingTeam || receivingTeam.leagueId !== proposingTeam.leagueId) {

@@ -1,13 +1,12 @@
 /**
  * Vortex Analytics API - High-Performance Fantasy Analytics Endpoints
- * Production-ready analytics using existing database models
+ * Simplified to use existing database models only
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 
 export const dynamic = 'force-dynamic'
-
 
 const prisma = new PrismaClient();
 
@@ -17,6 +16,7 @@ export async function GET(request: NextRequest) {
     const endpoint = searchParams.get('endpoint');
     const week = parseInt(searchParams.get('week') || '3');
     const season = parseInt(searchParams.get('season') || '2025');
+    
     switch (endpoint) {
       case 'overview':
         return await handleOverviewRequest(week, season);
@@ -41,9 +41,7 @@ export async function GET(request: NextRequest) {
     }
   } catch (error) {
     if (process.env.NODE_ENV === 'development') {
-
       console.error('❌ Vortex Analytics API Error:', error);
-
     }
     return NextResponse.json(
       { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
@@ -83,9 +81,7 @@ async function handleOverviewRequest(week: number, season: number) {
     return NextResponse.json(overview);
   } catch (error) {
     if (process.env.NODE_ENV === 'development') {
-
       console.error('Overview request error:', error);
-
     }
     return NextResponse.json({ error: 'Failed to fetch overview' }, { status: 500 });
   }
@@ -99,16 +95,17 @@ async function handlePlayersRequest(week: number, season: number, searchParams: 
     const players = await prisma.player.findMany({
       where: position ? { position } : undefined,
       take: limit,
-      orderBy: { projectedPoints: 'desc' },
-      select: {
-        id: true,
-        name: true,
-        position: true,
-        team: true,
-        projectedPoints: true,
-        averagePoints: true,
-        isInjured: true,
-        injuryStatus: true
+      orderBy: { rank: 'asc' },
+      include: {
+        stats: {
+          where: { week, season },
+          take: 1,
+          orderBy: { week: 'desc' }
+        },
+        projections: {
+          where: { week, season },
+          take: 1
+        }
       }
     });
 
@@ -117,28 +114,39 @@ async function handlePlayersRequest(week: number, season: number, searchParams: 
       week,
       season,
       filters: { position, limit },
-      players: players.map(player => ({
-        ...player,
-        analytics: {
-          consistency: Math.random() * 100, // Mock consistency score
-          trend: Math.random() > 0.5 ? 'up' : 'down',
-          matchupRating: Math.random() * 10,
-          ownership: Math.random() * 100
-        }
-      })),
+      players: players.map(player => {
+        const weeklyStats = player.stats[0];
+        const projection = player.projections[0];
+        
+        return {
+          id: player.id,
+          name: player.name,
+          position: player.position,
+          nflTeam: player.nflTeam,
+          rank: player.rank,
+          adp: player.adp,
+          weeklyPoints: weeklyStats?.fantasyPoints || 0,
+          projectedPoints: projection?.projectedPoints || 0,
+          analytics: {
+            consistency: 75 + Math.random() * 25, // Mock for now
+            trend: Math.random() > 0.5 ? 'up' : 'down',
+            matchupRating: 5 + Math.random() * 5
+          }
+        };
+      }),
       summary: {
         totalPlayers: players.length,
-        averageProjection: players.reduce((sum, p) => sum + (p.projectedPoints || 0), 0) / players.length,
-        injuredCount: players.filter(p => p.isInjured).length
+        averageProjection: players.reduce((sum, p) => {
+          const proj = p.projections[0]?.projectedPoints || 0;
+          return sum + proj;
+        }, 0) / (players.length || 1)
       }
     };
 
     return NextResponse.json(analytics);
   } catch (error) {
     if (process.env.NODE_ENV === 'development') {
-
       console.error('Players request error:', error);
-
     }
     return NextResponse.json({ error: 'Failed to fetch player analytics' }, { status: 500 });
   }
@@ -151,11 +159,18 @@ async function handleTeamsRequest(week: number, season: number, searchParams: UR
     const teams = await prisma.team.findMany({
       where: leagueId ? { leagueId } : undefined,
       include: {
-        owner: { select: { name: true, email: true } },
-        league: { select: { name: true, currentWeek: true } },
+        owner: { select: { id: true, name: true, email: true } },
+        league: { select: { id: true, name: true, currentWeek: true } },
         roster: {
           include: {
-            player: { select: { name: true, position: true, projectedPoints: true } }
+            player: {
+              include: {
+                projections: {
+                  where: { week, season },
+                  take: 1
+                }
+              }
+            }
           }
         }
       }
@@ -168,7 +183,10 @@ async function handleTeamsRequest(week: number, season: number, searchParams: UR
       filters: { leagueId },
       teams: teams.map(team => {
         const totalProjectedPoints = team.roster.reduce(
-          (sum, rp) => sum + (rp.player.projectedPoints || 0), 0
+          (sum: number, rp: any) => {
+            const proj = rp.player.projections[0]?.projectedPoints || 0;
+            return sum + proj;
+          }, 0
         );
         
         return {
@@ -176,28 +194,30 @@ async function handleTeamsRequest(week: number, season: number, searchParams: UR
           name: team.name,
           owner: team.owner.name,
           league: team.league.name,
-          record: `${team.wins}-${team.losses}-${team.ties}`,
+          record: {
+            wins: team.wins,
+            losses: team.losses,
+            ties: team.ties
+          },
           rosterSize: team.roster.length,
+          projectedPoints: totalProjectedPoints,
           analytics: {
-            projectedPoints: totalProjectedPoints,
-            strength: Math.random() * 100,
-            efficiency: Math.random() * 100,
-            trend: Math.random() > 0.5 ? 'improving' : 'declining'
+            powerRanking: Math.floor(Math.random() * 10) + 1,
+            strength: 50 + Math.random() * 50,
+            consistency: 60 + Math.random() * 40
           }
         };
       }),
       summary: {
         totalTeams: teams.length,
-        averageRosterSize: teams.reduce((sum, t) => sum + t.roster.length, 0) / teams.length
+        averageRosterSize: teams.reduce((sum, t) => sum + t.roster.length, 0) / (teams.length || 1)
       }
     };
 
     return NextResponse.json(analytics);
   } catch (error) {
     if (process.env.NODE_ENV === 'development') {
-
       console.error('Teams request error:', error);
-
     }
     return NextResponse.json({ error: 'Failed to fetch team analytics' }, { status: 500 });
   }
@@ -206,27 +226,42 @@ async function handleTeamsRequest(week: number, season: number, searchParams: UR
 async function handleMatchupsRequest(week: number, season: number) {
   try {
     const matchups = await prisma.matchup.findMany({
-      where: { week },
+      where: { week, season },
       include: {
-        homeTeam: { 
-          select: { 
-            name: true, 
+        homeTeam: {
+          include: {
             owner: { select: { name: true } },
             roster: {
-              include: { player: { select: { projectedPoints: true } } }
+              include: {
+                player: {
+                  include: {
+                    stats: {
+                      where: { week, season },
+                      take: 1
+                    }
+                  }
+                }
+              }
             }
-          } 
+          }
         },
-        awayTeam: { 
-          select: { 
-            name: true, 
+        awayTeam: {
+          include: {
             owner: { select: { name: true } },
             roster: {
-              include: { player: { select: { projectedPoints: true } } }
+              include: {
+                player: {
+                  include: {
+                    stats: {
+                      where: { week, season },
+                      take: 1
+                    }
+                  }
+                }
+              }
             }
-          } 
-        },
-        league: { select: { name: true } }
+          }
+        }
       }
     });
 
@@ -235,49 +270,39 @@ async function handleMatchupsRequest(week: number, season: number) {
       week,
       season,
       matchups: matchups.map(matchup => {
-        const homeProjected = matchup.homeTeam.roster.reduce(
-          (sum, rp) => sum + (rp.player.projectedPoints || 0), 0
+        const homePoints = matchup.homeTeam.roster.reduce(
+          (sum: number, rp: any) => sum + (rp.player.stats[0]?.fantasyPoints || 0), 0
         );
-        const awayProjected = matchup.awayTeam.roster.reduce(
-          (sum, rp) => sum + (rp.player.projectedPoints || 0), 0
+        const awayPoints = matchup.awayTeam.roster.reduce(
+          (sum: number, rp: any) => sum + (rp.player.stats[0]?.fantasyPoints || 0), 0
         );
         
         return {
           id: matchup.id,
-          league: matchup.league.name,
           homeTeam: {
             name: matchup.homeTeam.name,
             owner: matchup.homeTeam.owner.name,
-            projectedPoints: homeProjected
+            score: homePoints
           },
           awayTeam: {
             name: matchup.awayTeam.name,
             owner: matchup.awayTeam.owner.name,
-            projectedPoints: awayProjected
+            score: awayPoints
           },
-          analytics: {
-            competitiveness: Math.abs(homeProjected - awayProjected) < 10 ? 'high' : 'low',
-            favorite: homeProjected > awayProjected ? 'home' : 'away',
-            spreadPrediction: Math.abs(homeProjected - awayProjected).toFixed(1)
-          }
+          isComplete: matchup.isComplete,
+          winner: homePoints > awayPoints ? 'home' : awayPoints > homePoints ? 'away' : 'tie'
         };
       }),
       summary: {
         totalMatchups: matchups.length,
-        competitiveMatchups: matchups.filter(m => {
-          const homeProj = m.homeTeam.roster.reduce((s, rp) => s + (rp.player.projectedPoints || 0), 0);
-          const awayProj = m.awayTeam.roster.reduce((s, rp) => s + (rp.player.projectedPoints || 0), 0);
-          return Math.abs(homeProj - awayProj) < 10;
-        }).length
+        completedMatchups: matchups.filter(m => m.isComplete).length
       }
     };
 
     return NextResponse.json(analytics);
   } catch (error) {
     if (process.env.NODE_ENV === 'development') {
-
       console.error('Matchups request error:', error);
-
     }
     return NextResponse.json({ error: 'Failed to fetch matchup analytics' }, { status: 500 });
   }
@@ -285,68 +310,50 @@ async function handleMatchupsRequest(week: number, season: number) {
 
 async function handleInsightsRequest(week: number, season: number) {
   try {
-    // Generate insights based on actual data
-    const [playerCount, teamCount, leagueCount] = await Promise.all([
-      prisma.player.count(),
-      prisma.team.count(),
-      prisma.league.count({ where: { isActive: true } })
+    // Generate basic insights from existing data
+    const [topPlayers, activeLeagues, recentMatchups] = await Promise.all([
+      prisma.player.findMany({
+        take: 5,
+        orderBy: { rank: 'asc' },
+        include: {
+          stats: {
+            where: { week, season },
+            take: 1
+          }
+        }
+      }),
+      prisma.league.count({ where: { isActive: true } }),
+      prisma.matchup.count({ where: { week, season } })
     ]);
 
     const insights = {
       timestamp: new Date().toISOString(),
       week,
       season,
-      insights: [
-        {
-          type: 'performance',
-          title: 'Top Performer Trends',
-          description: `Analyzing ${playerCount} players across ${teamCount} teams`,
-          impact: 'high',
-          actionable: true
-        },
-        {
-          type: 'waiver',
-          title: 'Waiver Wire Opportunities',
-          description: 'Emerging players showing upward trends',
-          impact: 'medium',
-          actionable: true
-        },
-        {
-          type: 'matchup',
-          title: 'Competitive Week Analysis',
-          description: `Week ${week} features several close matchups`,
-          impact: 'medium',
-          actionable: false
-        },
-        {
-          type: 'league',
-          title: 'League Health Status',
-          description: `${leagueCount} active leagues with strong engagement`,
-          impact: 'low',
-          actionable: false
-        }
+      keyInsights: [
+        `${activeLeagues} active leagues this week`,
+        `${recentMatchups} matchups scheduled`,
+        `Top performer: ${topPlayers[0]?.name || 'N/A'}`,
+        'Fantasy analytics running smoothly'
       ],
-      recommendations: [
-        'Monitor emerging players for waiver wire pickups',
-        'Consider trade opportunities before deadline',
-        'Review lineup optimizations for close matchups'
-      ]
+      topPerformers: topPlayers.map(player => ({
+        name: player.name,
+        position: player.position,
+        nflTeam: player.nflTeam,
+        points: player.stats[0]?.fantasyPoints || 0
+      })),
+      trends: {
+        mostOwned: 'QB position trending up',
+        breakout: 'Watch for RB opportunities',
+        injuries: 'Monitor injury reports'
+      }
     };
 
     return NextResponse.json(insights);
   } catch (error) {
     if (process.env.NODE_ENV === 'development') {
-
       console.error('Insights request error:', error);
-
     }
     return NextResponse.json({ error: 'Failed to fetch insights' }, { status: 500 });
   }
-}
-
-export async function POST(request: NextRequest) {
-  return NextResponse.json(
-    { error: 'Method not allowed. Use GET for analytics data.' },
-    { status: 405 }
-  );
 }

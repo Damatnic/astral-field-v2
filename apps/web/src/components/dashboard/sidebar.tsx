@@ -5,20 +5,20 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
 // Emoji-based icons to replace heroicons
-const HomeIcon = () => <span className="w-5 h-5 flex items-center justify-center">🏠</span>
-const UserGroupIcon = () => <span className="w-5 h-5 flex items-center justify-center">👥</span>
-const ChartBarIcon = () => <span className="w-5 h-5 flex items-center justify-center">📊</span>
-const SparklesIcon = () => <span className="w-5 h-5 flex items-center justify-center">✨</span>
-const CogIcon = () => <span className="w-5 h-5 flex items-center justify-center">⚙️</span>
-const ArrowRightEndOnRectangleIcon = () => <span className="w-5 h-5 flex items-center justify-center">🚪</span>
-const Bars3Icon = () => <span className="w-5 h-5 flex items-center justify-center">☰</span>
-const XMarkIcon = () => <span className="w-5 h-5 flex items-center justify-center">✖️</span>
-const TrophyIcon = () => <span className="w-5 h-5 flex items-center justify-center">🏆</span>
-const ChatBubbleLeftRightIcon = () => <span className="w-5 h-5 flex items-center justify-center">💬</span>
-const ClipboardDocumentListIcon = () => <span className="w-5 h-5 flex items-center justify-center">📋</span>
-const TvIcon = () => <span className="w-5 h-5 flex items-center justify-center">📺</span>
-const ClockIcon = () => <span className="w-5 h-5 flex items-center justify-center">⏰</span>
-const BuildingOfficeIcon = () => <span className="w-5 h-5 flex items-center justify-center">🏢</span>
+const HomeIcon = ({ className }: { className?: string }) => <span className={`w-5 h-5 flex items-center justify-center ${className || ''}`}>🏠</span>
+const UserGroupIcon = ({ className }: { className?: string }) => <span className={`w-5 h-5 flex items-center justify-center ${className || ''}`}>👥</span>
+const ChartBarIcon = ({ className }: { className?: string }) => <span className={`w-5 h-5 flex items-center justify-center ${className || ''}`}>📊</span>
+const SparklesIcon = ({ className }: { className?: string }) => <span className={`w-5 h-5 flex items-center justify-center ${className || ''}`}>✨</span>
+const CogIcon = ({ className }: { className?: string }) => <span className={`w-5 h-5 flex items-center justify-center ${className || ''}`}>⚙️</span>
+const ArrowRightEndOnRectangleIcon = ({ className }: { className?: string }) => <span className={`w-5 h-5 flex items-center justify-center ${className || ''}`}>🚪</span>
+const Bars3Icon = ({ className }: { className?: string }) => <span className={`w-5 h-5 flex items-center justify-center ${className || ''}`}>☰</span>
+const XMarkIcon = ({ className }: { className?: string }) => <span className={`w-5 h-5 flex items-center justify-center ${className || ''}`}>✖️</span>
+const TrophyIcon = ({ className }: { className?: string }) => <span className={`w-5 h-5 flex items-center justify-center ${className || ''}`}>🏆</span>
+const ChatBubbleLeftRightIcon = ({ className }: { className?: string }) => <span className={`w-5 h-5 flex items-center justify-center ${className || ''}`}>💬</span>
+const ClipboardDocumentListIcon = ({ className }: { className?: string }) => <span className={`w-5 h-5 flex items-center justify-center ${className || ''}`}>📋</span>
+const TvIcon = ({ className }: { className?: string }) => <span className={`w-5 h-5 flex items-center justify-center ${className || ''}`}>📺</span>
+const ClockIcon = ({ className }: { className?: string }) => <span className={`w-5 h-5 flex items-center justify-center ${className || ''}`}>⏰</span>
+const BuildingOfficeIcon = ({ className }: { className?: string }) => <span className={`w-5 h-5 flex items-center justify-center ${className || ''}`}>🏢</span>
 
 import { Button } from '@/components/ui/button'
 
