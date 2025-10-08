@@ -126,10 +126,10 @@ export default async function middleware(req: NextRequest) {
     // Development CSP - more permissive for debugging
     securityHeaders['Content-Security-Policy'] = [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: https: blob:",
-      "font-src 'self' https://fonts.gstatic.com https://r2cdn.perplexity.ai data:",
+      "font-src 'self' https://fonts.gstatic.com https://r2cdn.perplexity.ai https://use.typekit.net data:",
       "connect-src 'self' https: wss: ws:",
       "media-src 'self' data: blob:",
       "object-src 'none'",

@@ -47,10 +47,7 @@ async function getPlayers(params: PlayersPageProps['searchParams']) {
   const pageSize = 50
   const skip = (page - 1) * pageSize
 
-  const where: any = {
-    isActive: true,
-    isFantasyRelevant: true
-  }
+  const where: any = {}
 
   if (params.search) {
     where.name = {
