@@ -53,7 +53,9 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "axios": "^1.12.2",
+    "bcryptjs": "^3.0.2",
     "dotenv": "^17.2.2"
   }
 }
