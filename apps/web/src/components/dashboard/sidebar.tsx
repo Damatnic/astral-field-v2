@@ -33,6 +33,7 @@ const MockIcon = ({ className }: { className?: string }) => <span className={`w-
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
   { name: 'My Team', href: '/team', icon: UserGroupIcon },
+  { name: 'Team Overview', href: '/team-overview', icon: ChartBarIcon },
   { name: 'Matchups', href: '/matchups', icon: TrophyIcon },
   { name: 'Schedule', href: '/schedule', icon: CalendarIcon },
   { name: 'Playoffs', href: '/playoffs', icon: PlayoffIcon },
@@ -43,6 +44,7 @@ const navigation = [
   { name: 'Mock Draft', href: '/mock-draft', icon: MockIcon },
   { name: 'Live Scoring', href: '/live', icon: TvIcon },
   { name: 'Draft Room', href: '/draft', icon: ClockIcon },
+  { name: 'Draft Enhanced', href: '/draft-enhanced', icon: ClockIcon },
   { name: 'AI Coach', href: '/ai-coach', icon: SparklesIcon },
   { name: 'Analytics', href: '/analytics', icon: ChartBarIcon },
   { name: 'Settings', href: '/settings', icon: CogIcon },

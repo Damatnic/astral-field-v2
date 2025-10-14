@@ -6,4 +6,5 @@ export { TabNavigation } from './TabNavigation'
 export type { Tab } from './TabNavigation'
 export { ProgressBar } from './ProgressBar'
 export { PlayerCard } from './PlayerCard'
+export { BarChart, LineChart } from './SimpleChart'
 
