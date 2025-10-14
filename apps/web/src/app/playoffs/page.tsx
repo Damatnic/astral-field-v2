@@ -1,121 +1,80 @@
-import { Metadata } from 'next'
+/**
+ * Playoffs Page - Rebuilt
+ * League playoff bracket and standings
+ */
+
+import { auth } from '@/lib/auth'
+import { redirect } from 'next/navigation'
+import { DashboardLayout } from '@/components/dashboard/layout'
+import { PageHeader } from '@/components/ui/page-header'
+import { ModernCard, ModernCardContent } from '@/components/ui/modern-card'
+import { EmptyState } from '@/components/ui/empty-state'
+import { Trophy } from 'lucide-react'
 import { prisma } from '@/lib/database/prisma'
-import { PlayoffsView } from '@/components/playoffs/PlayoffsView'
 
-export const metadata: Metadata = {
-  title: 'Playoff Picture | AstralField',
-  description: 'View playoff seeding and bracket',
-}
-
-async function getPlayoffsData() {
+async function getPlayoffsData(userId: string) {
   try {
-    // Get current league
-    const league = await prisma.league.findFirst({
-      where: {
-        status: 'active',
-      },
-      select: {
-        id: true,
-        name: true,
-        season: true,
-        currentWeek: true,
-        settings: true,
-      },
-    })
-
-    if (!league) {
-      return {
-        league: null,
-        teams: [],
-        playoffMatchups: [],
-      }
-    }
-
-    // Get all teams sorted by wins
-    const teams = await prisma.team.findMany({
-      where: {
-        leagueId: league.id,
-      },
-      select: {
-        id: true,
-        name: true,
-        wins: true,
-        losses: true,
-        ties: true,
-        pointsFor: true,
-        pointsAgainst: true,
-        User: {
-          select: {
-            name: true,
-          },
-        },
-      },
-      orderBy: [
-        { wins: 'desc' },
-        { pointsFor: 'desc' },
-      ],
-    })
-
-    // Get playoff matchups
-    const regularSeasonWeeks = league.settings?.regularSeasonWeeks || 14
-    const playoffMatchups = await prisma.matchup.findMany({
-      where: {
-        leagueId: league.id,
-        week: {
-          gt: regularSeasonWeeks,
-        },
-      },
+    const team = await prisma.team.findFirst({
+      where: { userId },
       include: {
-        team1: {
+        league: {
           select: {
-            id: true,
-            name: true,
-            wins: true,
-            losses: true,
-            User: {
-              select: {
-                name: true,
-              },
-            },
+            playoffs: true,
+            currentWeek: true,
           },
         },
-        team2: {
-          select: {
-            id: true,
-            name: true,
-            wins: true,
-            losses: true,
-            User: {
-              select: {
-                name: true,
-              },
-            },
-          },
-        },
-      },
-      orderBy: {
-        week: 'asc',
       },
     })
 
-    return {
-      league,
-      teams,
-      playoffMatchups,
-    }
+    return { team }
   } catch (error) {
     console.error('Error fetching playoffs data:', error)
-    return {
-      league: null,
-      teams: [],
-      playoffMatchups: [],
-    }
+    return { team: null }
   }
 }
 
 export default async function PlayoffsPage() {
-  const data = await getPlayoffsData()
+  const session = await auth()
+  
+  if (!session?.user) {
+    redirect('/auth/signin')
+  }
 
-  return <PlayoffsView {...data} />
+  const { team } = await getPlayoffsData(session.user.id)
+
+  return (
+    <DashboardLayout>
+      <div className="p-6 lg:p-8 space-y-6 pt-16 lg:pt-8">
+        <PageHeader
+          title="Playoffs"
+          description="League championship bracket and results"
+          icon={Trophy}
+          breadcrumbs={[
+            { label: 'Dashboard', href: '/dashboard' },
+            { label: 'Playoffs' },
+          ]}
+        />
+
+        {team?.league?.playoffs ? (
+          <ModernCard variant="gradient" glow>
+            <ModernCardContent className="p-12 text-center">
+              <Trophy className="w-16 h-16 mx-auto mb-4 text-yellow-400" />
+              <h2 className="text-2xl font-bold text-white mb-2">Playoffs Active!</h2>
+              <p className="text-slate-400">The championship bracket is underway.</p>
+            </ModernCardContent>
+          </ModernCard>
+        ) : (
+          <EmptyState
+            icon={Trophy}
+            title="Playoffs haven't started"
+            description="The playoff bracket will appear here once the regular season concludes."
+            action={{
+              label: "View Standings",
+              onClick: () => window.location.href = '/league-stats',
+            }}
+          />
+        )}
+      </div>
+    </DashboardLayout>
+  )
 }
-

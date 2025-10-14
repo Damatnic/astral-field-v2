@@ -1,111 +1,105 @@
-import { Metadata } from 'next'
+/**
+ * Matchups Page - Rebuilt
+ * Weekly matchup display
+ */
+
+import { auth } from '@/lib/auth'
+import { redirect } from 'next/navigation'
+import { DashboardLayout } from '@/components/dashboard/layout'
+import { PageHeader } from '@/components/ui/page-header'
+import { ModernCard, ModernCardContent, ModernCardHeader, ModernCardTitle } from '@/components/ui/modern-card'
+import { EmptyState } from '@/components/ui/empty-state'
+import { Users, Trophy } from 'lucide-react'
 import { prisma } from '@/lib/database/prisma'
-import { MatchupsView } from '@/components/matchups/MatchupsView'
 
-export const metadata: Metadata = {
-  title: 'Matchups | AstralField',
-  description: 'View all fantasy football matchups and live scores',
-}
-
-async function getMatchupsData() {
+async function getMatchupsData(userId: string) {
   try {
-    // Get current league (first active league for now)
-    const league = await prisma.league.findFirst({
-      where: {
-        status: 'active',
-      },
-      select: {
-        id: true,
-        name: true,
-        season: true,
-        currentWeek: true,
-        settings: true,
-      },
+    const team = await prisma.team.findFirst({
+      where: { userId },
     })
 
-    if (!league) {
-      return {
-        league: null,
-        matchups: [],
-        teams: [],
-      }
-    }
+    if (!team) return { matchups: [] }
 
-    // Get all teams in the league
-    const teams = await prisma.team.findMany({
-      where: {
-        leagueId: league.id,
-      },
-      select: {
-        id: true,
-        name: true,
-        wins: true,
-        losses: true,
-        ties: true,
-        pointsFor: true,
-        pointsAgainst: true,
-        User: {
-          select: {
-            name: true,
-            email: true,
-          },
-        },
-      },
-    })
-
-    // Get current week matchups
     const matchups = await prisma.matchup.findMany({
       where: {
-        leagueId: league.id,
-        week: league.currentWeek,
+        OR: [
+          { team1Id: team.id },
+          { team2Id: team.id },
+        ],
       },
       include: {
-        team1: {
-          select: {
-            id: true,
-            name: true,
-            User: {
-              select: {
-                name: true,
-              },
-            },
-          },
-        },
-        team2: {
-          select: {
-            id: true,
-            name: true,
-            User: {
-              select: {
-                name: true,
-              },
-            },
-          },
-        },
+        team1: { select: { name: true } },
+        team2: { select: { name: true } },
       },
-      orderBy: {
-        createdAt: 'asc',
-      },
+      orderBy: { week: 'desc' },
+      take: 10,
     })
 
-    return {
-      league,
-      matchups,
-      teams,
-    }
+    return { matchups }
   } catch (error) {
-    console.error('Error fetching matchups data:', error)
-    return {
-      league: null,
-      matchups: [],
-      teams: [],
-    }
+    console.error('Error fetching matchups:', error)
+    return { matchups: [] }
   }
 }
 
 export default async function MatchupsPage() {
-  const data = await getMatchupsData()
+  const session = await auth()
+  
+  if (!session?.user) {
+    redirect('/auth/signin')
+  }
 
-  return <MatchupsView {...data} />
+  const { matchups } = await getMatchupsData(session.user.id)
+
+  return (
+    <DashboardLayout>
+      <div className="p-6 lg:p-8 space-y-6 pt-16 lg:pt-8">
+        <PageHeader
+          title="Matchups"
+          description="View your weekly head-to-head matchups"
+          icon={Users}
+          breadcrumbs={[
+            { label: 'Dashboard', href: '/dashboard' },
+            { label: 'Matchups' },
+          ]}
+        />
+
+        {matchups.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {matchups.map((matchup) => (
+              <ModernCard key={matchup.id} variant="glass" hover>
+                <ModernCardHeader>
+                  <ModernCardTitle className="text-base">
+                    Week {matchup.week}
+                  </ModernCardTitle>
+                </ModernCardHeader>
+                <ModernCardContent>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-white">{matchup.team1.name}</span>
+                      <span className="text-2xl font-bold text-white tabular-nums">
+                        {matchup.team1Score?.toFixed(1) || '0.0'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-white">{matchup.team2.name}</span>
+                      <span className="text-2xl font-bold text-white tabular-nums">
+                        {matchup.team2Score?.toFixed(1) || '0.0'}
+                      </span>
+                    </div>
+                  </div>
+                </ModernCardContent>
+              </ModernCard>
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            icon={Trophy}
+            title="No matchups yet"
+            description="Your matchup history will appear here once the season starts."
+          />
+        )}
+      </div>
+    </DashboardLayout>
+  )
 }
-
