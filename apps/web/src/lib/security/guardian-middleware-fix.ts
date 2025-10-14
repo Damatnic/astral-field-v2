@@ -44,7 +44,8 @@ export class GuardianMiddlewareManager {
       return this.performCookieFallback(req, debugInfo)
 
     } catch (error) {
-      debugInfo.primaryError = error?.message || 'Unknown error'
+      const err = error as Error
+      debugInfo.primaryError = err?.message || 'Unknown error'
       debugInfo.method = 'fallback_due_to_error'
       
       // Fallback authentication

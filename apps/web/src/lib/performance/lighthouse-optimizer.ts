@@ -181,7 +181,7 @@ export class LighthouseOptimizer {
       const nav = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming
       
       // Calculate additional metrics
-      const timeToInteractive = nav.domInteractive - nav.navigationStart
+      const timeToInteractive = nav.domInteractive - nav.fetchStart
       const totalBlockingTime = this.calculateTotalBlockingTime()
       
       this.updateCustomMetrics({

@@ -229,7 +229,7 @@ const quickLoginHandler = async (request: NextRequest): Promise<NextResponse> =>
       user: validation.user,
       sessionToken,
       sessionType: 'demo',
-      expiresAt: new Date(Date.now() + demoAuth.config.sessionTimeout).toISOString(),
+      expiresAt: new Date(Date.now() + 86400000).toISOString(), // 24 hours
       timestamp: new Date().toISOString()
     })
     
@@ -252,8 +252,8 @@ const quickLoginHandler = async (request: NextRequest): Promise<NextResponse> =>
 export async function POST(request: NextRequest) {
   const rateLimitMiddleware = withRateLimit({ 
     ruleKey: 'auth:quick-login',
-    requests: 5,
-    window: 60000 // 1 minute
+    maxRequests: 5,
+    windowMs: 60000 // 1 minute
   })
   return rateLimitMiddleware(request, quickLoginHandler)
 }
