@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getOptimizedLeagueData, phoenixDb } from '@/lib/optimized-prisma'
 import { leagueCache } from '@/lib/cache/catalyst-cache'
-import { prisma } from '@/lib/prisma'
+import { prisma } from '@/lib/database/prisma'
 
 // Catalyst: Ultra-fast league data endpoint with comprehensive caching
 export async function GET(

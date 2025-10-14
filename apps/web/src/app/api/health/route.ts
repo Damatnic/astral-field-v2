@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { prisma, checkDatabaseHealth } from '@/lib/prisma'
+import { prisma, checkDatabaseHealth } from '@/lib/database/prisma'
 
 export const dynamic = 'force-dynamic'
 

@@ -1,5 +1,5 @@
 import { PrismaClient, Prisma } from '@prisma/client'
-import { prisma, withRetry, timedQuery } from './prisma'
+import { prisma, withRetry, timedQuery } from './database/prisma'
 
 // Phoenix: Advanced query optimization service
 export class PhoenixDatabaseService {

@@ -2,7 +2,7 @@ import { Suspense } from 'react'
 import type { Viewport } from 'next'
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
-import { prisma } from '@/lib/prisma'
+import { prisma } from '@/lib/database/prisma'
 import { LiveScoringDashboard } from '@/components/live/live-scoring-dashboard'
 import { LeagueChat } from '@/components/chat/league-chat'
 

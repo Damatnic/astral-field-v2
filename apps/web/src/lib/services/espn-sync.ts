@@ -3,7 +3,7 @@
  * High-performance NFL player data, live scores, and news synchronization
  */
 
-import { prisma, withRetry, bulkOperation, timedQuery } from '../prisma'
+import { prisma, withRetry, bulkOperation, timedQuery } from '../database/prisma'
 import { phoenixDb } from '../optimized-prisma'
 import { ESPNService } from './espn'
 import { NFLDataService } from './espn'

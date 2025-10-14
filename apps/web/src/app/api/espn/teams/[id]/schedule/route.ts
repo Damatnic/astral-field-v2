@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { abbr: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
     const searchParams = request.nextUrl.searchParams;
@@ -22,11 +22,13 @@ export async function GET(
       );
     }
     
-    const data = await espn.getTeamSchedule(params.abbr, weekNumber);
+    // The id parameter can be either a team abbreviation (e.g., "KC") or a team ID
+    // getTeamSchedule accepts abbreviation, so we can pass it directly
+    const data = await espn.getTeamSchedule(params.id, weekNumber);
     
     if (!data) {
       return NextResponse.json(
-        { error: `Team ${params.abbr} not found` },
+        { error: `Team ${params.id} not found` },
         { status: 404 }
       );
     }
@@ -38,7 +40,7 @@ export async function GET(
     });
   } catch (error) {
     if (process.env.NODE_ENV === 'development') {
-      console.error(`ESPN team schedule API failed for ${params.abbr}:`, error);
+      console.error(`ESPN team schedule API failed for ${params.id}:`, error);
     }
     return NextResponse.json(
       { error: 'Failed to fetch team schedule' },
@@ -46,5 +48,4 @@ export async function GET(
     );
   }
 }
-
 

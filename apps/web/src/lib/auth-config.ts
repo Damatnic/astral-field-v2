@@ -1,6 +1,6 @@
 import { NextAuthConfig } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
-import { prisma } from "./prisma"
+import { prisma } from "./database/prisma"
 // Import bcrypt for password verification - use Node.js runtime for auth
 import bcrypt from 'bcryptjs'
 import { guardianSessionManager } from "./security/session-manager"

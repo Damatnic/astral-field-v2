@@ -3,7 +3,7 @@ import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { DashboardLayout } from '@/components/dashboard/layout'
 import { LiveScoreboard } from '@/components/live-scoring/live-scoreboard'
-import { prisma } from '@/lib/prisma'
+import { prisma } from '@/lib/database/prisma'
 
 export const metadata = {
   title: 'Live Scores - AstralField',

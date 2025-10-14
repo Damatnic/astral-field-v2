@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { phoenixDb } from '@/lib/optimized-prisma'
-import { withRetry, timedQuery } from '@/lib/prisma'
+import { withRetry, timedQuery } from '@/lib/database/prisma'
 import { z } from 'zod'
 import { logger } from '@/lib/logger'
 

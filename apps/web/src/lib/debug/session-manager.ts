@@ -1,6 +1,6 @@
 // Sentinel's Session Management Debug Utilities
 import { auth } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { prisma } from '@/lib/database/prisma'
 
 export interface SessionDiagnostics {
   sessionExists: boolean

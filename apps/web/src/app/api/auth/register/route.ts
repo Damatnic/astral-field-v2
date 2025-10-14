@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
-import { prisma } from '@/lib/prisma'
+import { prisma } from '@/lib/database/prisma'
 import { z } from 'zod'
 import { withRateLimit } from '@/lib/security/rate-limit-middleware'
 import { guardianAuditLogger, SecurityEventType } from '@/lib/security/audit-logger'

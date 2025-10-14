@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { checkDatabaseHealth, timedQuery } from '@/lib/prisma'
+import { checkDatabaseHealth, timedQuery } from '@/lib/database/prisma'
 import { phoenixDb } from '@/lib/optimized-prisma'
 
 export const dynamic = 'force-dynamic'

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Server as NetServer } from 'http'
 import { Server as SocketIOServer } from 'socket.io'
 import { auth } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { prisma } from '@/lib/database/prisma'
 
 export const dynamic = 'force-dynamic'
 

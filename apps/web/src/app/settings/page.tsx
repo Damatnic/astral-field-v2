@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { DashboardLayout } from '@/components/dashboard/layout'
-import { prisma } from '@/lib/prisma'
+import { prisma } from '@/lib/database/prisma'
 import { SettingsForm } from '@/components/settings/settings-form'
 
 async function getUserSettings(userId: string) {
