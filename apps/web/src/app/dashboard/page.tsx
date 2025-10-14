@@ -29,7 +29,7 @@ async function getDashboardData(userId: string) {
     // Get user's teams
     const teams = await prisma.team.findMany({
       where: {
-        userId,
+        ownerId: userId,
       },
       include: {
         league: {
@@ -45,7 +45,7 @@ async function getDashboardData(userId: string) {
               select: {
                 name: true,
                 position: true,
-                team: true,
+                nflTeam: true,
               },
             },
           },
@@ -64,8 +64,8 @@ async function getDashboardData(userId: string) {
     const recentMatchups = await prisma.matchup.findMany({
       where: {
         OR: [
-          { team1Id: primaryTeam?.id },
-          { team2Id: primaryTeam?.id },
+          { homeTeamId: primaryTeam?.id },
+          { awayTeamId: primaryTeam?.id },
         ],
       },
       orderBy: {
@@ -73,16 +73,16 @@ async function getDashboardData(userId: string) {
       },
       take: 5,
       include: {
-        team1: {
+        homeTeam: {
           select: {
             name: true,
-            points: true,
+            pointsFor: true,
           },
         },
-        team2: {
+        awayTeam: {
           select: {
             name: true,
-            points: true,
+            pointsFor: true,
           },
         },
       },
@@ -350,15 +350,15 @@ export default async function DashboardPage() {
                       </div>
                       <div>
                         <div className="text-sm font-medium text-white">
-                          {matchup.team1.name} vs {matchup.team2.name}
+                          {matchup.homeTeam.name} vs {matchup.awayTeam.name}
                         </div>
                         <div className="text-xs text-slate-400">
-                          {matchup.team1Score?.toFixed(1)} - {matchup.team2Score?.toFixed(1)}
+                          {matchup.homeScore?.toFixed(1)} - {matchup.awayScore?.toFixed(1)}
                         </div>
                       </div>
                     </div>
                     <div className="text-xs font-medium text-emerald-400">
-                      {matchup.team1Score && matchup.team2Score && matchup.team1Score > matchup.team2Score ? 'W' : 'L'}
+                      {matchup.homeScore && matchup.awayScore && matchup.homeScore > matchup.awayScore ? 'W' : 'L'}
                     </div>
                   </div>
                 ))
