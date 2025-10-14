@@ -1,100 +1,136 @@
-import { Suspense } from 'react'
-import type { Viewport } from 'next'
-import { auth } from '@/lib/auth'
-import { redirect } from 'next/navigation'
-import { prisma } from '@/lib/prisma'
-import { DraftRoom } from '@/components/draft/draft-room'
+import { Metadata } from 'next'
+import { prisma } from '@/lib/database/prisma'
+import { EnhancedDraftRoom } from '@/components/draft/EnhancedDraftRoom'
 
-export const metadata = {
-  title: 'Draft Room - AstralField',
-  description: 'Live fantasy football draft room'
+export const metadata: Metadata = {
+  title: 'Draft Room | AstralField',
+  description: 'Live fantasy football draft with AI coach',
 }
 
-export const viewport: Viewport = {
-  themeColor: '#0f172a'
-}
+async function getDraftData() {
+  try {
+    // Get current league
+    const league = await prisma.league.findFirst({
+      where: {
+        status: 'active',
+      },
+      select: {
+        id: true,
+        name: true,
+      },
+    })
 
-async function getDraftData(userId: string) {
-  // Get user's active draft (first league with draft status)
-  const userTeams = await prisma.team.findMany({
-    where: { ownerId: userId },
-    include: {
-      league: {
-        select: {
-          id: true,
-          name: true,
-          isActive: true,
-          playoffs: true
-        }
+    if (!league) {
+      return {
+        league: null,
+        teams: [],
+        availablePlayers: [],
+        draftPicks: [],
+        userTeam: null,
+        currentPick: null,
+        isUserTurn: false,
       }
     }
-  })
 
-  const activeDraft = userTeams.find((team: any) => 
-    team.league.isActive && 
-    !team.league.playoffs
-  )
+    // Get all teams in the league
+    const teams = await prisma.team.findMany({
+      where: {
+        leagueId: league.id,
+      },
+      select: {
+        id: true,
+        name: true,
+        User: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    })
 
-  return {
-    userTeams,
-    activeDraft,
-    leagueId: activeDraft?.league.id
+    // Get available players (mock - in real app would filter out drafted players)
+    const availablePlayers = await prisma.player.findMany({
+      take: 200,
+      orderBy: {
+        adp: 'asc',
+      },
+      select: {
+        id: true,
+        name: true,
+        position: true,
+        nflTeam: true,
+        adp: true,
+        rank: true,
+      },
+    })
+
+    // Mock draft picks (in real app would query DraftPick model)
+    const draftPicks: any[] = []
+
+    // For demo, use first team as user's team
+    const userTeam = teams[0] || null
+
+    // Mock current pick
+    const currentPick = {
+      id: 'pick-1',
+      pickNumber: 1,
+      round: 1,
+      teamId: userTeam?.id || '',
+      playerId: null,
+      player: null,
+      team: userTeam || { id: '', name: '' },
+    }
+
+    const isUserTurn = currentPick.teamId === userTeam?.id
+
+    return {
+      league,
+      teams,
+      availablePlayers,
+      draftPicks,
+      userTeam,
+      currentPick,
+      isUserTurn,
+    }
+  } catch (error) {
+    console.error('Error fetching draft data:', error)
+    return {
+      league: null,
+      teams: [],
+      availablePlayers: [],
+      draftPicks: [],
+      userTeam: null,
+      currentPick: null,
+      isUserTurn: false,
+    }
   }
 }
 
-export default async function DraftPage() {
-  const session = await auth()
-  
-  if (!session?.user?.id) {
-    redirect('/auth/signin')
-  }
+export default async function DraftEnhancedPage() {
+  const data = await getDraftData()
 
-  const data = await getDraftData(session.user.id)
-
-  if (!data.activeDraft) {
+  if (!data.league || !data.userTeam) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-white mb-4">No Active Drafts</h1>
-          <p className="text-gray-400 mb-6">
-            You don't have any active or scheduled drafts at this time.
-          </p>
-          <div className="space-y-4">
-            {data.userTeams.length > 0 ? (
-              <div>
-                <h2 className="text-lg font-semibold text-white mb-2">Your Leagues</h2>
-                <div className="space-y-2">
-                  {data.userTeams.map((team: any) => (
-                    <div key={team.id} className="bg-slate-800 rounded p-4 text-left">
-                      <p className="font-medium text-white">{team.league.name}</p>
-                      <p className="text-sm text-gray-400">
-                        Status: {team.league.isActive ? (team.league.playoffs ? 'Playoffs' : 'Active') : 'Inactive'}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <p className="text-gray-400">
-                Join a league to participate in drafts.
-              </p>
-            )}
-          </div>
+          <h1 className="text-2xl font-bold text-white mb-4">No Active Draft</h1>
+          <p className="text-gray-400">No draft is currently in progress.</p>
         </div>
       </div>
     )
   }
 
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="loading-spinner h-8 w-8"></div>
-      </div>
-    }>
-      <DraftRoom 
-        leagueId={data.leagueId!}
-        currentUserId={session.user.id}
-      />
-    </Suspense>
+    <EnhancedDraftRoom
+      leagueId={data.league.id}
+      currentUserId="demo-user" // In real app, get from session
+      teams={data.teams}
+      availablePlayers={data.availablePlayers}
+      draftPicks={data.draftPicks}
+      userTeam={data.userTeam}
+      currentPick={data.currentPick}
+      isUserTurn={data.isUserTurn}
+    />
   )
 }
+

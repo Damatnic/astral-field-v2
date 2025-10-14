@@ -7,13 +7,17 @@ export class ESPNService {
   private baseURL = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl';
   private fantasyURL = 'https://fantasy.espn.com/apis/v3/games/ffl';
   
-  // Cache for 5 minutes
+  // Cache for 5 minutes (non-live data)
   private cache = new Map<string, { data: any; timestamp: number }>();
   private cacheTime = 5 * 60 * 1000;
   
-  private async fetchWithCache(url: string): Promise<any> {
+  // Live scores cache for 30 seconds during game time
+  private liveCacheTime = 30 * 1000;
+  
+  private async fetchWithCache(url: string, useLiveCache = false): Promise<any> {
+    const cacheTimeout = useLiveCache ? this.liveCacheTime : this.cacheTime;
     const cached = this.cache.get(url);
-    if (cached && Date.now() - cached.timestamp < this.cacheTime) {
+    if (cached && Date.now() - cached.timestamp < cacheTimeout) {
       return cached.data;
     }
     
@@ -42,7 +46,43 @@ export class ESPNService {
   }
   
   async getScoreboard(): Promise<any> {
-    return this.fetchWithCache(`${this.baseURL}/scoreboard`);
+    return this.fetchWithCache(`${this.baseURL}/scoreboard`, true); // Use live cache
+  }
+  
+  async getLivePlayerStats(playerId: string): Promise<any> {
+    try {
+      const playerInfo = await this.getPlayerInfo(playerId);
+      const scoreboard = await this.getScoreboard();
+      
+      // Find if player's team is currently playing
+      const activeGame = scoreboard.events?.find((event: any) => {
+        const competition = event.competitions[0];
+        return competition.competitors.some((comp: any) => 
+          comp.team.abbreviation === playerInfo.team?.abbreviation
+        );
+      });
+      
+      if (activeGame) {
+        // Return live stats if game is in progress
+        return {
+          playerId,
+          isLive: true,
+          gameStatus: activeGame.status.type.state,
+          ...playerInfo
+        };
+      }
+      
+      return {
+        playerId,
+        isLive: false,
+        ...playerInfo
+      };
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error(`Failed to get live stats for player ${playerId}:`, error);
+      }
+      return { playerId, isLive: false };
+    }
   }
   
   async getTeams(): Promise<any> {
@@ -59,6 +99,67 @@ export class ESPNService {
   
   async getPlayerStats(playerId: string): Promise<any> {
     return this.fetchWithCache(`${this.baseURL}/athletes/${playerId}/stats`);
+  }
+  
+  async getPlayerStatsByWeek(playerId: string, week: number, season: number = 2024): Promise<any> {
+    try {
+      const stats = await this.getPlayerStats(playerId);
+      
+      // ESPN stats are usually seasonal, we need to estimate weekly
+      // This would need to be enhanced with actual weekly data if available
+      return {
+        playerId,
+        week,
+        season,
+        stats: stats,
+        source: 'espn'
+      };
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error(`Failed to get weekly stats for player ${playerId}, week ${week}:`, error);
+      }
+      return null;
+    }
+  }
+  
+  async getFantasyProjections(playerId: string, week: number): Promise<any> {
+    return this.getPlayerProjections(playerId, week);
+  }
+  
+  async getTeamSchedule(teamAbbr: string, week?: number): Promise<any> {
+    try {
+      const teams = await this.getTeams();
+      const team = teams.sports[0].leagues[0].teams.find(
+        (t: any) => t.team.abbreviation === teamAbbr
+      );
+      
+      if (!team) {
+        throw new Error(`Team ${teamAbbr} not found`);
+      }
+      
+      const schedule = await this.fetchWithCache(
+        `${this.baseURL}/teams/${team.team.id}/schedule`
+      );
+      
+      if (week) {
+        // Filter to specific week
+        return {
+          team: team.team,
+          week,
+          games: schedule.events?.filter((e: any) => e.week?.number === week) || []
+        };
+      }
+      
+      return {
+        team: team.team,
+        schedule: schedule.events || []
+      };
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error(`Failed to get schedule for team ${teamAbbr}:`, error);
+      }
+      return null;
+    }
   }
   
   async getNews(): Promise<any> {
