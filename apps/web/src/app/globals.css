@@ -27,25 +27,27 @@
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
+    /* Updated for fantasy football dark theme with purple/blue gradients */
+    --background: 237 35% 10%;  /* Deep blue-purple */
     --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
+    --card: 243 30% 15%;  /* Slightly lighter than background */
     --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
+    --popover: 243 30% 15%;
     --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 84% 4.9%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 94.1%;
+    --primary: 258 90% 66%;  /* Vibrant purple from mockups */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 217 91% 60%;  /* Bright blue from mockups */
+    --secondary-foreground: 0 0% 100%;
+    --muted: 243 20% 20%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 258 90% 66%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 85% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 243 20% 25%;
+    --input: 243 20% 20%;
+    --ring: 258 90% 66%;
+    --radius: 0.75rem;
   }
 }
 

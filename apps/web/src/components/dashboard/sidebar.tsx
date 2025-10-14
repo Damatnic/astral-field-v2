@@ -22,16 +22,29 @@ const BuildingOfficeIcon = ({ className }: { className?: string }) => <span clas
 
 import { Button } from '@/components/ui/button'
 
+// Additional icons for new pages
+const CalendarIcon = ({ className }: { className?: string }) => <span className={`w-5 h-5 flex items-center justify-center ${className || ''}`}>📅</span>
+const PlayoffIcon = ({ className }: { className?: string }) => <span className={`w-5 h-5 flex items-center justify-center ${className || ''}`}>🏆</span>
+const TradeIcon = ({ className }: { className?: string }) => <span className={`w-5 h-5 flex items-center justify-center ${className || ''}`}>🔄</span>
+const WaiverIcon = ({ className }: { className?: string }) => <span className={`w-5 h-5 flex items-center justify-center ${className || ''}`}>📝</span>
+const StatsIcon = ({ className }: { className?: string }) => <span className={`w-5 h-5 flex items-center justify-center ${className || ''}`}>📈</span>
+const MockIcon = ({ className }: { className?: string }) => <span className={`w-5 h-5 flex items-center justify-center ${className || ''}`}>🎮</span>
+
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
   { name: 'My Team', href: '/team', icon: UserGroupIcon },
-  { name: 'Leagues', href: '/leagues', icon: BuildingOfficeIcon },
+  { name: 'Matchups', href: '/matchups', icon: TrophyIcon },
+  { name: 'Schedule', href: '/schedule', icon: CalendarIcon },
+  { name: 'Playoffs', href: '/playoffs', icon: PlayoffIcon },
+  { name: 'Trading Center', href: '/trades-redesign', icon: TradeIcon },
+  { name: 'Waiver Wire', href: '/waivers', icon: WaiverIcon },
   { name: 'Players', href: '/players', icon: ClipboardDocumentListIcon },
+  { name: 'League Stats', href: '/league-stats', icon: StatsIcon },
+  { name: 'Mock Draft', href: '/mock-draft', icon: MockIcon },
   { name: 'Live Scoring', href: '/live', icon: TvIcon },
   { name: 'Draft Room', href: '/draft', icon: ClockIcon },
   { name: 'AI Coach', href: '/ai-coach', icon: SparklesIcon },
   { name: 'Analytics', href: '/analytics', icon: ChartBarIcon },
-  { name: 'League Chat', href: '/live#chat', icon: ChatBubbleLeftRightIcon },
   { name: 'Settings', href: '/settings', icon: CogIcon },
 ]
 
