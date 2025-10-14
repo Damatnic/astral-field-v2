@@ -1,171 +1,287 @@
+/**
+ * Team Management Page - Complete Rebuild
+ * Manage your roster and set your lineup
+ */
+
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { DashboardLayout } from '@/components/dashboard/layout'
+import { PageHeader } from '@/components/ui/page-header'
+import { ModernCard, ModernCardContent, ModernCardHeader, ModernCardTitle } from '@/components/ui/modern-card'
+import { StatCard } from '@/components/ui/stat-card'
+import { PlayerCard } from '@/components/ui/player-card'
+import { ActionButton } from '@/components/ui/action-button'
+import { EmptyState } from '@/components/ui/empty-state'
+import { 
+  Users, 
+  Target,
+  TrendingUp,
+  Zap,
+  CheckCircle2,
+  AlertCircle,
+  Clock
+} from 'lucide-react'
 import { prisma } from '@/lib/database/prisma'
-import { TeamSelector } from '@/components/team/team-selector'
-import { LineupManager } from '@/components/team/lineup-manager'
 
-interface TeamPageProps {
-  searchParams: {
-    teamId?: string
-  }
-}
-
-async function getUserTeamsAndRoster(userId: string, selectedTeamId?: string) {
-  // Get all user teams
-  const userTeams = await prisma.team.findMany({
-    where: { ownerId: userId },
-    include: {
-      league: {
-        select: {
-          id: true,
-          name: true,
-          currentWeek: true
-        }
-      }
-    }
-  })
-
-  if (userTeams.length === 0) {
-    return { userTeams: [], selectedTeam: null, roster: [] }
-  }
-
-  // Select team (either specified or first available)
-  const selectedTeam = selectedTeamId 
-    ? userTeams.find((t: any) => t.id === selectedTeamId) || userTeams[0]
-    : userTeams[0]
-
-  // Get roster for selected team
-  const roster = await prisma.rosterPlayer.findMany({
-    where: { teamId: selectedTeam.id },
-    include: {
-      player: {
-        include: {
-          stats: {
-            where: {
-              season: 2024,
-              week: { lte: selectedTeam.league.currentWeek }
+async function getTeamData(userId: string) {
+  try {
+    const team = await prisma.team.findFirst({
+      where: { userId },
+      include: {
+        roster: {
+          include: {
+            player: {
+              select: {
+                id: true,
+                name: true,
+                position: true,
+                team: true,
+                fantasyPoints: true,
+                projectedPoints: true,
+                status: true,
+              },
             },
-            orderBy: { week: 'desc' },
-            take: 3
           },
-          projections: {
-            where: {
-              season: 2024,
-              week: selectedTeam.league.currentWeek + 1
-            },
-            take: 1
-          }
-        }
-      }
-    },
-    orderBy: [
-      { isStarter: 'desc' },
-      { position: 'asc' },
-      { player: { rank: 'asc' } }
-    ]
-  })
+        },
+        league: {
+          select: {
+            name: true,
+            currentWeek: true,
+          },
+        },
+      },
+    })
 
-  // Transform teams to match interface
-  const transformedTeams = userTeams.map((team: any) => ({
-    ...team,
-    pointsFor: 0, // Default value - would need to calculate from stats
-    league: {
-      ...team.league,
-      season: '2024', // Add the season string
-      rosterSettings: {} // Default empty roster settings
-    }
-  }))
-
-  const transformedSelectedTeam = selectedTeam ? {
-    ...selectedTeam,
-    pointsFor: 0,
-    league: {
-      ...selectedTeam.league,
-      season: '2024',
-      rosterSettings: {} // Default empty roster settings
-    }
-  } : null
-
-  // Transform roster to match RosterPlayer interface
-  const transformedRoster = roster.map((rosterPlayer: any) => ({
-    ...rosterPlayer,
-    isLocked: false, // Default value
-    player: {
-      ...rosterPlayer.player,
-      status: 'ACTIVE', // Default status
-      age: null // Not available
-    }
-  }))
-
-  return { 
-    userTeams: transformedTeams, 
-    selectedTeam: transformedSelectedTeam, 
-    roster: transformedRoster 
+    return { team }
+  } catch (error) {
+    console.error('Error fetching team data:', error)
+    return { team: null }
   }
 }
 
-export default async function TeamPage({ searchParams }: TeamPageProps) {
+export default async function TeamPage() {
   const session = await auth()
   
-  if (!session) {
+  if (!session?.user) {
     redirect('/auth/signin')
   }
 
-  const data = await getUserTeamsAndRoster(session.user.id, searchParams.teamId)
+  const { team } = await getTeamData(session.user.id)
 
-  if (data.userTeams.length === 0) {
+  if (!team) {
     return (
       <DashboardLayout>
         <div className="p-6 lg:p-8 pt-16 lg:pt-8">
-          <div className="text-center py-12">
-            <div className="text-6xl mb-4">🏆</div>
-            <h1 className="text-3xl font-bold text-white mb-4">No Teams Found</h1>
-            <p className="text-gray-400 mb-8">
-              You're not currently part of any fantasy leagues. Join a league to start managing your team!
-            </p>
-            <div className="space-x-4">
-              <a href="/leagues/join" className="inline-block">
-                <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md font-medium">
-                  Join League
-                </button>
-              </a>
-              <a href="/leagues/create" className="inline-block">
-                <button className="border border-slate-600 hover:border-slate-500 text-white px-6 py-3 rounded-md font-medium">
-                  Create League
-                </button>
-              </a>
-            </div>
-          </div>
+          <EmptyState
+            icon={Users}
+            title="No team found"
+            description="Join a league to start managing your team"
+            action={{
+              label: "Find a League",
+              onClick: () => window.location.href = '/leagues',
+            }}
+          />
         </div>
       </DashboardLayout>
     )
   }
 
+  // Group players by position
+  const rosterByPosition = {
+    QB: team.roster.filter(r => r.player.position === 'QB'),
+    RB: team.roster.filter(r => r.player.position === 'RB'),
+    WR: team.roster.filter(r => r.player.position === 'WR'),
+    TE: team.roster.filter(r => r.player.position === 'TE'),
+    K: team.roster.filter(r => r.player.position === 'K'),
+    DEF: team.roster.filter(r => r.player.position === 'DEF'),
+  }
+
+  // Calculate roster stats
+  const totalPoints = team.roster.reduce((sum, r) => sum + (r.player.fantasyPoints || 0), 0)
+  const projectedPoints = team.roster.reduce((sum, r) => sum + (r.player.projectedPoints || 0), 0)
+  const activeStarters = team.roster.filter(r => r.isStarter).length
+  const benchPlayers = team.roster.filter(r => !r.isStarter).length
+
   return (
     <DashboardLayout>
-      <div className="p-6 lg:p-8 pt-16 lg:pt-8">
+      <div className="p-6 lg:p-8 space-y-6 pt-16 lg:pt-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white">Team Management</h1>
-          <p className="text-gray-400 mt-2">
-            Set your lineup, make roster moves, and optimize your team
-          </p>
-        </div>
-
-        {/* Team Selector */}
-        <TeamSelector 
-          teams={data.userTeams} 
-          selectedTeamId={data.selectedTeam?.id}
+        <PageHeader
+          title={team.name}
+          description={`${team.league.name} • Week ${team.league.currentWeek}`}
+          icon={Users}
+          breadcrumbs={[
+            { label: 'Dashboard', href: '/dashboard' },
+            { label: 'My Team' },
+          ]}
+          actions={
+            <div className="flex items-center gap-2">
+              <ActionButton variant="outline" size="sm" icon={Zap}>
+                Auto-Optimize
+              </ActionButton>
+              <ActionButton variant="primary" size="sm" icon={CheckCircle2}>
+                Save Lineup
+              </ActionButton>
+            </div>
+          }
         />
 
-        {/* Lineup Manager */}
-        {data.selectedTeam && (
-          <LineupManager 
-            team={data.selectedTeam}
-            roster={data.roster}
+        {/* Quick Stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard
+            label="Total Points"
+            value={totalPoints.toFixed(1)}
+            icon={Target}
+            trend="up"
+            description="season total"
+            variant="success"
           />
-        )}
+
+          <StatCard
+            label="Projected"
+            value={projectedPoints.toFixed(1)}
+            icon={TrendingUp}
+            description={`Week ${team.league.currentWeek}`}
+            variant="info"
+          />
+
+          <StatCard
+            label="Active"
+            value={activeStarters}
+            icon={CheckCircle2}
+            description="starters set"
+            variant="success"
+          />
+
+          <StatCard
+            label="Bench"
+            value={benchPlayers}
+            icon={Users}
+            description="players"
+            variant="default"
+          />
+        </div>
+
+        {/* Lineup Editor */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Starting Lineup */}
+          <ModernCard variant="gradient" glow className="lg:col-span-2">
+            <ModernCardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-emerald-500/20">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                  </div>
+                  <ModernCardTitle>Starting Lineup</ModernCardTitle>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-slate-400" />
+                  <span className="text-sm text-slate-400">
+                    Locks Sunday 1:00 PM ET
+                  </span>
+                </div>
+              </div>
+            </ModernCardHeader>
+            <ModernCardContent>
+              <div className="space-y-4">
+                {/* Position Slots */}
+                {(['QB', 'RB', 'WR', 'TE', 'K', 'DEF'] as const).map((position) => {
+                  const positionPlayers = rosterByPosition[position]
+                  const starter = positionPlayers.find(r => r.isStarter)
+                  
+                  return (
+                    <div key={position} className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <div className="px-2 py-1 rounded bg-slate-800 border border-slate-700">
+                          <span className="text-xs font-bold text-slate-300">{position}</span>
+                        </div>
+                      </div>
+                      
+                      {starter ? (
+                        <PlayerCard
+                          player={{
+                            id: starter.player.id,
+                            name: starter.player.name,
+                            position: starter.player.position,
+                            team: starter.player.team || '',
+                            points: starter.player.fantasyPoints || 0,
+                            projected: starter.player.projectedPoints || 0,
+                            status: (starter.player.status as any) || 'active',
+                          }}
+                          selected
+                        />
+                      ) : (
+                        <div className="p-6 rounded-xl border-2 border-dashed border-slate-700 bg-slate-900/30 text-center">
+                          <p className="text-sm text-slate-500">Empty slot - Select a player</p>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </ModernCardContent>
+          </ModernCard>
+
+          {/* Bench */}
+          <ModernCard variant="glass">
+            <ModernCardHeader>
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-slate-800">
+                  <Users className="w-5 h-5 text-slate-400" />
+                </div>
+                <ModernCardTitle>Bench</ModernCardTitle>
+              </div>
+            </ModernCardHeader>
+            <ModernCardContent>
+              <div className="space-y-2">
+                {team.roster
+                  .filter(r => !r.isStarter)
+                  .map((roster) => (
+                    <div
+                      key={roster.id}
+                      className="p-3 rounded-lg border border-slate-800 hover:border-slate-700 hover:bg-slate-800/30 transition-all cursor-pointer"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="font-medium text-white text-sm">{roster.player.name}</h3>
+                          <p className="text-xs text-slate-400">{roster.player.position} • {roster.player.team}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold text-white tabular-nums">
+                            {roster.player.fantasyPoints?.toFixed(1) || '0.0'}
+                          </p>
+                          <p className="text-xs text-slate-500">pts</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                {benchPlayers === 0 && (
+                  <div className="text-center py-8 text-slate-500">
+                    <Users className="w-12 h-12 mx-auto mb-3 text-slate-700" />
+                    <p className="text-sm">No bench players</p>
+                  </div>
+                )}
+              </div>
+            </ModernCardContent>
+          </ModernCard>
+        </div>
+
+        {/* Quick Tips */}
+        <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
+            <div>
+              <h3 className="font-medium text-blue-400 mb-1">Lineup Tips</h3>
+              <ul className="text-sm text-blue-400/80 space-y-1">
+                <li>• Click players to swap between starting lineup and bench</li>
+                <li>• Use Auto-Optimize to let AI set your best lineup</li>
+                <li>• Check injury reports before games lock</li>
+                <li>• Make sure all starting slots are filled</li>
+              </ul>
+            </div>
+          </div>
+        </div>
       </div>
     </DashboardLayout>
   )

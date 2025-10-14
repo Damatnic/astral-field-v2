@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useLiveScoring } from '@/hooks/use-websocket'
+import { useLiveScores } from '@/hooks/use-live-scores'
 import { 
   ClockIcon, 
   PlayIcon, 

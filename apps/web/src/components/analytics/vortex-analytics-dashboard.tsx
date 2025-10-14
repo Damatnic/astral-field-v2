@@ -232,8 +232,11 @@ const VortexAnalyticsDashboard: React.FC = () => {
     }
   ];
 
-  // WebSocket connection for live updates
+  // SSE connection for live updates (WebSocket removed - doesn't work on Vercel)
   useEffect(() => {
+    // Live updates disabled - WebSocket doesn't work on serverless
+    // TODO: Implement SSE-based live analytics updates if needed
+    /* Commented out WebSocket code:
     let ws: WebSocket;
     
     if (isLive) {
@@ -255,11 +258,10 @@ const VortexAnalyticsDashboard: React.FC = () => {
 
       };
     }
+    */
     
     return () => {
-      if (ws) {
-        ws.close();
-      }
+      // Cleanup if SSE implemented
     };
   }, [isLive]);
 
