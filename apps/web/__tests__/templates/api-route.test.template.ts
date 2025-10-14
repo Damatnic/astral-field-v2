@@ -19,10 +19,10 @@
 
 import { NextRequest } from 'next/server'
 import { GET, POST, PUT, DELETE } from '@/app/api/path/to/route'
-import { prisma } from '@/lib/prisma'
+import { prisma } from '@/lib/database/prisma'
 
 // Mock dependencies
-jest.mock('@/lib/prisma')
+jest.mock('@/lib/database/prisma')
 jest.mock('@/lib/auth')
 
 describe('API Route: /api/path/to/route', () => {

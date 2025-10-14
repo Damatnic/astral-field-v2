@@ -104,9 +104,13 @@ const mockPrismaClient = {
   $extends: jest.fn(),
 }
 
-// Mock the Prisma module
-jest.mock('@/lib/prisma', () => ({
+// Mock the Prisma module (updated path to /database/prisma)
+jest.mock('@/lib/database/prisma', () => ({
   prisma: mockPrismaClient,
+  checkDatabaseHealth: jest.fn(() => Promise.resolve(true)),
+  withRetry: jest.fn((operation) => operation()),
+  bulkOperation: jest.fn((items, operation) => Promise.resolve([])),
+  timedQuery: jest.fn((name, query) => query()),
   __esModule: true,
   default: mockPrismaClient,
 }))

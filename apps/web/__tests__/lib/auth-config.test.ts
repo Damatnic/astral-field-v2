@@ -12,7 +12,7 @@ import { guardianAuditLogger } from '@/lib/security/audit-logger'
 import { guardianAccountProtection } from '@/lib/security/account-protection'
 
 // Mock dependencies
-jest.mock('@/lib/prisma')
+jest.mock('@/lib/database/prisma')
 jest.mock('bcryptjs')
 jest.mock('@/lib/security/session-manager')
 jest.mock('@/lib/security/audit-logger')

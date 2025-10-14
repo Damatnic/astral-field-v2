@@ -148,8 +148,8 @@ jest.mock('next-auth/next', () => ({
 // Export the mock for use in tests
 global.mockGetServerSession = mockGetServerSession
 
-// Mock Prisma client
-jest.mock('@/lib/prisma', () => ({
+// Mock Prisma client (updated path to /database/prisma)
+jest.mock('@/lib/database/prisma', () => ({
   prisma: {
     user: {
       findUnique: jest.fn(),
@@ -190,7 +190,20 @@ jest.mock('@/lib/prisma', () => ({
       create: jest.fn(),
       findMany: jest.fn(),
     },
+    trade: {
+      create: jest.fn(),
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+    },
+    waiverClaim: {
+      create: jest.fn(),
+      findMany: jest.fn(),
+    },
   },
+  checkDatabaseHealth: jest.fn(() => Promise.resolve(true)),
+  withRetry: jest.fn((operation) => operation()),
+  bulkOperation: jest.fn((items, operation) => Promise.resolve([])),
+  timedQuery: jest.fn((name, query) => query()),
 }))
 
 // Mock Socket.IO

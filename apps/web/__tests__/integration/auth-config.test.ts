@@ -22,7 +22,7 @@ jest.mock('bcryptjs', () => ({
 }))
 
 // Mock Prisma import
-jest.mock('@/lib/prisma', () => ({
+jest.mock('@/lib/database/prisma', () => ({
   prisma: mockPrisma
 }))
 

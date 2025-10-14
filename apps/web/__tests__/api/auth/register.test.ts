@@ -12,7 +12,7 @@ import { guardianAuditLogger } from '@/lib/security/audit-logger'
 import bcrypt from 'bcryptjs'
 
 // Mock dependencies
-jest.mock('@/lib/prisma', () => ({
+jest.mock('@/lib/database/prisma', () => ({
   prisma: {
     user: {
       findUnique: jest.fn(),

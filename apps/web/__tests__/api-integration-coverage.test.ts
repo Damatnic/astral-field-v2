@@ -8,7 +8,7 @@ import { createMocks } from 'node-mocks-http'
 import type { NextApiRequest, NextApiResponse } from 'next'
 
 // Mock external dependencies
-jest.mock('@/lib/prisma', () => ({
+jest.mock('@/lib/database/prisma', () => ({
   prisma: {
     user: {
       findUnique: jest.fn(),

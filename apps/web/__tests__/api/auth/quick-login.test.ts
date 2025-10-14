@@ -9,7 +9,7 @@ import { POST, GET } from '@/app/api/auth/quick-login/route'
 import { prisma } from '@/lib/prisma'
 import { withRateLimit } from '@/lib/security/rate-limit-middleware'
 
-jest.mock('@/lib/prisma')
+jest.mock('@/lib/database/prisma')
 jest.mock('@/lib/security/rate-limit-middleware')
 
 describe('API Route: /api/auth/quick-login', () => {

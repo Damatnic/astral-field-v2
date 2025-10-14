@@ -12,7 +12,7 @@ import { prisma } from '@/lib/prisma'
 
 // Mock dependencies
 jest.mock('@/lib/auth')
-jest.mock('@/lib/prisma', () => ({
+jest.mock('@/lib/database/prisma', () => ({
   prisma: {
     league: {
       create: jest.fn()

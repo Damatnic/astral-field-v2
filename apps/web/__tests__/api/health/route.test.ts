@@ -7,7 +7,7 @@
 import { GET } from '@/app/api/health/route'
 import { prisma, checkDatabaseHealth } from '@/lib/prisma'
 
-jest.mock('@/lib/prisma', () => ({
+jest.mock('@/lib/database/prisma', () => ({
   prisma: {
     $queryRaw: jest.fn(),
     user: {

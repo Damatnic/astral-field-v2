@@ -12,8 +12,7 @@ const customJestConfig = {
   // Test environment setup
   setupFilesAfterEnv: [
     '<rootDir>/__tests__/setup/jest.setup.js',
-    '<rootDir>/__tests__/setup/prisma.setup.js',
-    '<rootDir>/__tests__/setup/websocket.setup.js'
+    '<rootDir>/__tests__/setup/prisma.setup.js'
   ],
   setupFiles: ['<rootDir>/__tests__/setup/env.setup.js'],
   testEnvironment: 'jsdom',

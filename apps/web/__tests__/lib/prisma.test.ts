@@ -1,10 +1,10 @@
 /**
  * Prisma Helpers Tests
  * 
- * Tests for lib/prisma.ts
+ * Tests for lib/database/prisma.ts
  */
 
-import { prisma, checkDatabaseHealth, withRetry, bulkOperation, timedQuery } from '@/lib/prisma'
+import { prisma, checkDatabaseHealth, withRetry, bulkOperation, timedQuery } from '@/lib/database/prisma'
 
 jest.mock('@prisma/client', () => ({
   PrismaClient: jest.fn().mockImplementation(() => ({
