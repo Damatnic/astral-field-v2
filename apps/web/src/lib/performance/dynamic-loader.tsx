@@ -187,28 +187,10 @@ export const dynamicLoader = new CatalystDynamicLoader()
 
 // Catalyst: Pre-configured component loaders for common patterns
 export const CatalystComponents = {
-  // Dashboard components (high priority)
-  DashboardStats: dynamicLoader.load(
-    () => import('@/components/dashboard/stats'),
-    { key: 'dashboard-stats', priority: 'high', ssr: false }
-  ),
-
   // Analytics components (normal priority)
   AnalyticsDashboard: dynamicLoader.load(
-    () => import('@/components/analytics/dashboard'),
+    () => import('@/components/analytics/analytics-dashboard'),
     { key: 'analytics-dashboard', priority: 'normal', loading: LoadingIndicators.skeleton }
-  ),
-
-  // Charts (low priority, heavy bundle)
-  LeagueCharts: dynamicLoader.load(
-    () => import('@/components/charts/league-charts'),
-    { key: 'league-charts', priority: 'low', loading: LoadingIndicators.skeleton }
-  ),
-
-  // Trade components (on-demand)
-  TradeInterface: dynamicLoader.load(
-    () => import('@/components/trades/trade-interface'),
-    { key: 'trade-interface', priority: 'normal', preload: false }
   ),
 
   // AI Coach (low priority, ML heavy)
@@ -219,7 +201,7 @@ export const CatalystComponents = {
 
   // Live scoring (medium priority)
   LiveScoring: dynamicLoader.load(
-    () => import('@/components/live-scoring/live-scores'),
+    () => import('@/components/live-scoring/live-scoreboard'),
     { key: 'live-scoring', priority: 'normal', ssr: false }
   )
 }
@@ -239,11 +221,9 @@ export const PreloadStrategies = {
     componentsToPreload.forEach(key => {
       // Find and preload components by key
       const componentImports: Record<string, () => Promise<any>> = {
-        'analytics-dashboard': () => import('@/components/analytics/dashboard'),
-        'league-charts': () => import('@/components/charts/league-charts'),
-        'trade-interface': () => import('@/components/trades/trade-interface'),
+        'analytics-dashboard': () => import('@/components/analytics/analytics-dashboard'),
         'ai-coach': () => import('@/components/ai/ai-coach'),
-        'live-scoring': () => import('@/components/live-scoring/live-scores')
+        'live-scoring': () => import('@/components/live-scoring/live-scoreboard')
       }
 
       if (componentImports[key]) {
@@ -255,9 +235,8 @@ export const PreloadStrategies = {
   // Preload on user interaction
   preloadOnHover: (componentKey: string) => {
     const componentImports: Record<string, () => Promise<any>> = {
-      'trade-interface': () => import('@/components/trades/trade-interface'),
       'ai-coach': () => import('@/components/ai/ai-coach'),
-      'analytics-dashboard': () => import('@/components/analytics/dashboard')
+      'analytics-dashboard': () => import('@/components/analytics/analytics-dashboard')
     }
 
     if (componentImports[componentKey]) {
@@ -271,14 +250,7 @@ export const PreloadStrategies = {
     usesAICoach: boolean
     viewsAnalytics: boolean
   }) => {
-    const { usesTrading, usesAICoach, viewsAnalytics } = userPreferences
-
-    if (usesTrading) {
-      dynamicLoader.preloadComponent(
-        'trade-interface',
-        () => import('@/components/trades/trade-interface')
-      )
-    }
+    const { usesAICoach, viewsAnalytics } = userPreferences
 
     if (usesAICoach) {
       dynamicLoader.preloadComponent(
@@ -290,7 +262,7 @@ export const PreloadStrategies = {
     if (viewsAnalytics) {
       dynamicLoader.preloadComponent(
         'analytics-dashboard',
-        () => import('@/components/analytics/dashboard')
+        () => import('@/components/analytics/analytics-dashboard')
       )
     }
   }

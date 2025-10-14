@@ -3,11 +3,13 @@
  * Maps ESPN API data structures to our Prisma schema
  */
 
-import { Position, PlayerStatus } from '@prisma/client';
+// Define types locally since they may not be exported from Prisma
+type Position = 'QB' | 'RB' | 'WR' | 'TE' | 'K' | 'DST';
+type PlayerStatus = 'ACTIVE' | 'INJURED' | 'OUT' | 'QUESTIONABLE' | 'DOUBTFUL' | 'SUSPENDED';
 
 export class ESPNMapper {
   /**
-   * Map ESPN position to our Position enum
+   * Map ESPN position to our Position type
    */
   static mapPosition(espnPosition: string): Position {
     const positionMap: Record<string, Position> = {
@@ -65,9 +67,11 @@ export class ESPNMapper {
     const statusType = espnStatus.type?.toLowerCase();
     
     if (statusType === 'active') return 'ACTIVE';
-    if (statusType === 'injured' || statusType === 'out') return 'INJURED';
+    if (statusType === 'injured' || statusType === 'out') return 'OUT';
     if (statusType === 'suspended') return 'SUSPENDED';
-    if (statusType === 'inactive') return 'INACTIVE';
+    if (statusType === 'inactive') return 'ACTIVE'; // Map inactive to active
+    if (statusType === 'questionable') return 'QUESTIONABLE';
+    if (statusType === 'doubtful') return 'DOUBTFUL';
     
     return 'ACTIVE';
   }

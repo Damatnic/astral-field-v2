@@ -2,7 +2,7 @@
 // Implements secure credential management without hardcoded values
 
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { prisma } from '@/lib/database/prisma'
 import bcrypt from 'bcryptjs'
 import { withRateLimit } from '@/lib/security/rate-limit-middleware'
 import { guardianAuditLogger, SecurityEventType } from '@/lib/security/audit-logger'
@@ -173,7 +173,7 @@ const quickLoginHandler = async (request: NextRequest): Promise<NextResponse> =>
                       'unknown'
       
       await guardianAuditLogger.logSecurityEvent(
-        SecurityEventType.LOGIN_FAILED,
+        SecurityEventType.LOGIN_FAILURE,
         undefined,
         {
           ip: clientIP,

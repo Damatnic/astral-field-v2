@@ -88,13 +88,14 @@ class ZenithHealthMonitor {
         const result = await checkFn()
         results.push(result)
       } catch (error) {
+        const err = error as Error
         results.push({
           name,
           status: 'fail',
-          message: `Health check failed: ${error.message}`,
+          message: `Health check failed: ${err.message}`,
           timestamp: new Date(),
           duration: 0,
-          metadata: { error: error.stack }
+          metadata: { error: err.stack }
         })
       }
     }
@@ -157,13 +158,14 @@ class ZenithHealthMonitor {
           }
         }
       } catch (error) {
+        const err = error as Error
         return {
           name: 'database',
           status: 'fail',
-          message: `Database connection failed: ${error.message}`,
+          message: `Database connection failed: ${err.message}`,
           timestamp: new Date(),
           duration: Date.now() - start,
-          metadata: { error: error.message }
+          metadata: { error: err.message }
         }
       }
     })
@@ -184,10 +186,11 @@ class ZenithHealthMonitor {
           metadata: { status: response.status }
         }
       } catch (error) {
+        const err = error as Error
         return {
           name: 'auth',
           status: 'fail',
-          message: `Auth system error: ${error.message}`,
+          message: `Auth system error: ${err.message}`,
           timestamp: new Date(),
           duration: Date.now() - start
         }
