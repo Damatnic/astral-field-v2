@@ -15,44 +15,55 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    console.log('Searching for team with ownerId:', userId)
+    
+    // First try a simple query
     const team = await prisma.team.findFirst({
-      where: { ownerId: userId }, // Changed from userId to ownerId
-      include: {
-        roster: {
-          include: {
-            player: {
-              select: {
-                id: true,
-                name: true,
-                position: true,
-                nflTeam: true, // Changed from team to nflTeam
-                status: true,
-              },
-            },
-          },
-        },
-        league: {
-          select: {
-            name: true,
-            currentWeek: true,
-          },
-        },
-      },
+      where: { ownerId: userId }
     })
-
+    
+    console.log('Team found:', team ? 'Yes' : 'No')
+    
     if (!team) {
       return NextResponse.json(
         { error: 'Team not found' },
         { status: 404 }
       )
     }
+    
+    // Now get roster data separately
+    const roster = await prisma.rosterPlayer.findMany({
+      where: { teamId: team.id },
+      include: {
+        player: {
+          select: {
+            id: true,
+            name: true,
+            position: true,
+            nflTeam: true,
+            // status: true, // Temporarily removed due to type mismatch
+          },
+        },
+      },
+    })
+    
+    console.log('Roster found:', roster.length, 'players')
+    
+    // Get league data
+    const league = await prisma.league.findUnique({
+      where: { id: team.leagueId },
+      select: {
+        name: true,
+        currentWeek: true,
+      },
+    })
 
     // Calculate totals from PlayerStats if available
     const totalPoints = Number(team.pointsFor || 0)
     const projectedPoints = 0 // TODO: Calculate from projections
 
     // Add isStarter field based on rosterSlot
-    const rosterWithStarters = team.roster.map(r => ({
+    const rosterWithStarters = roster.map(r => ({
       ...r,
       isStarter: r.rosterSlot !== 'BENCH' && r.rosterSlot !== 'IR',
       player: {
@@ -66,6 +77,7 @@ export async function GET(request: NextRequest) {
     const responseData = {
       ...team,
       roster: rosterWithStarters,
+      league,
       totalPoints,
       projectedPoints,
     }

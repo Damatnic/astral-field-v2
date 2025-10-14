@@ -51,10 +51,17 @@ function createSSEResponse() {
       }, 10000) // Every 10 seconds
 
       // Cleanup on close
+      let isClosed = false
       const cleanup = () => {
+        if (isClosed) return
+        isClosed = true
         clearInterval(heartbeat)
         clearInterval(updateInterval)
-        controller.close()
+        try {
+          controller.close()
+        } catch (error) {
+          // Controller might already be closed
+        }
       }
 
       // Handle client disconnect

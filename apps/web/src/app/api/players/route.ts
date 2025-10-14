@@ -31,14 +31,14 @@ export async function GET(request: NextRequest) {
         take: pageSize,
         skip: (page - 1) * pageSize,
         orderBy: [
-          { searchRank: 'asc' }, // Changed from fantasyPoints to searchRank
+          { name: 'asc' }, // Changed from searchRank to name for now
         ],
         select: {
           id: true,
           name: true,
           position: true,
           nflTeam: true, // Changed from team to nflTeam
-          status: true,
+          // status: true, // Temporarily removed due to type mismatch
         },
       }),
       prisma.player.count({ where }),

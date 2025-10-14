@@ -15,25 +15,25 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Get available players not on any team
-    const availablePlayers = await prisma.player.findMany({
+    // Get available players not on any team (simplified approach)
+    const allPlayers = await prisma.player.findMany({
       where: {
-        rosterPlayers: {
-          none: {},
-        },
+        isFantasyRelevant: true,
       },
       orderBy: [
-        { searchRank: 'asc' }, // Changed from fantasyPoints to searchRank
+        { name: 'asc' },
       ],
       take: 100,
       select: {
         id: true,
         name: true,
         position: true,
-        nflTeam: true, // Changed from team to nflTeam
-        status: true,
+        nflTeam: true,
       },
     })
+    
+    // For now, return all players as "available" (simplified)
+    const availablePlayers = allPlayers
 
     // Map nflTeam to team for backwards compatibility
     const playersWithTeam = availablePlayers.map(p => ({
