@@ -1,93 +1,60 @@
+'use client'
+
 /**
  * Team Overview Page - Rebuilt
- * Comprehensive team statistics and insights
+ * Detailed team statistics and analysis
  */
 
-import { auth } from '@/lib/auth'
-import { redirect } from 'next/navigation'
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import { DashboardLayout } from '@/components/dashboard/layout'
 import { PageHeader } from '@/components/ui/page-header'
-import { StatCard } from '@/components/ui/stat-card'
-import { Users, Trophy, Target, TrendingUp } from 'lucide-react'
-import { prisma } from '@/lib/database/prisma'
+import { EmptyState } from '@/components/ui/empty-state'
+import { BarChart3, Loader2 } from 'lucide-react'
 
-async function getTeamOverview(userId: string) {
-  try {
-    const team = await prisma.team.findFirst({
-      where: { userId },
-      include: {
-        league: { select: { name: true, currentWeek: true } },
-        roster: {
-          include: {
-            player: { select: { name: true, position: true, fantasyPoints: true } },
-          },
-        },
-      },
-    })
+export default function TeamOverviewPage() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
+  const [loading, setLoading] = useState(true)
 
-    return { team }
-  } catch (error) {
-    console.error('Error fetching team overview:', error)
-    return { team: null }
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/auth/signin')
+    } else if (status === 'authenticated') {
+      setLoading(false)
+    }
+  }, [status, router])
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[calc(100vh-64px)] text-slate-400">
+          <Loader2 className="w-12 h-12 animate-spin text-blue-400" />
+          <p className="ml-4 text-lg">Loading team overview...</p>
+        </div>
+      </DashboardLayout>
+    )
   }
-}
-
-export default async function TeamOverviewPage() {
-  const session = await auth()
-  
-  if (!session?.user) {
-    redirect('/auth/signin')
-  }
-
-  const { team } = await getTeamOverview(session.user.id)
-
-  if (!team) {
-    redirect('/leagues')
-  }
-
-  const totalPoints = team.roster.reduce((sum, r) => sum + (r.player.fantasyPoints || 0), 0)
-  const avgPoints = team.roster.length > 0 ? totalPoints / team.roster.length : 0
 
   return (
     <DashboardLayout>
       <div className="p-6 lg:p-8 space-y-6 pt-16 lg:pt-8">
         <PageHeader
-          title={team.name}
-          description={`${team.league.name} • Week ${team.league.currentWeek}`}
-          icon={Users}
+          title="Team Overview"
+          description="Detailed statistics and analysis for your team"
+          icon={BarChart3}
           breadcrumbs={[
             { label: 'Dashboard', href: '/dashboard' },
             { label: 'Team Overview' },
           ]}
         />
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard
-            label="Total Points"
-            value={totalPoints.toFixed(1)}
-            icon={Target}
-            trend="up"
-            variant="success"
-          />
-          <StatCard
-            label="Rank"
-            value={`#${team.rank || '—'}`}
-            icon={Trophy}
-            variant="info"
-          />
-          <StatCard
-            label="Record"
-            value={`${team.wins || 0}-${team.losses || 0}`}
-            icon={TrendingUp}
-            variant="default"
-          />
-          <StatCard
-            label="Roster"
-            value={team.roster.length}
-            icon={Users}
-            variant="default"
-          />
-        </div>
+        <EmptyState
+          icon={BarChart3}
+          title="Team Statistics"
+          description="Detailed team analytics and performance metrics will appear here"
+        />
       </div>
     </DashboardLayout>
   )

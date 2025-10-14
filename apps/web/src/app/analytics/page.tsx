@@ -1,163 +1,60 @@
-import { auth } from '@/lib/auth'
-import type { Viewport } from 'next'
-import { redirect } from 'next/navigation'
+'use client'
+
+/**
+ * Analytics Page - Rebuilt
+ * Advanced analytics and insights
+ */
+
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import { DashboardLayout } from '@/components/dashboard/layout'
-import { prisma } from '@/lib/database/prisma'
-import { AnalyticsDashboard } from '@/components/analytics/analytics-dashboard'
+import { PageHeader } from '@/components/ui/page-header'
+import { EmptyState } from '@/components/ui/empty-state'
+import { BarChart3, Loader2 } from 'lucide-react'
 
-export const metadata = {
-  title: 'Analytics - AstralField',
-  description: 'Advanced fantasy football analytics and insights'
-}
+export default function AnalyticsPage() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
+  const [loading, setLoading] = useState(true)
 
-export const viewport: Viewport = {
-  themeColor: '#0f172a'
-}
-
-async function getAnalyticsData(userId: string) {
-  try {
-    // Get user's teams and performance data
-    const userTeams = await prisma.team.findMany({
-      where: { ownerId: userId },
-      include: {
-        league: {
-          select: {
-            id: true,
-            name: true,
-            currentWeek: true
-          }
-        },
-        roster: {
-          include: {
-            player: {
-              include: {
-                stats: {
-                  where: {
-                    season: 2024,
-                    week: { lte: 4 }
-                  },
-                  orderBy: { week: 'desc' }
-                },
-                projections: {
-                  where: {
-                    season: 2024,
-                    week: 5
-                  },
-                  take: 1
-                }
-              }
-            }
-          }
-        },
-        // Remove homeMatchups and awayMatchups - these don't exist in schema
-        // Will use simplified analytics without matchup data
-      }
-    })
-
-    // Calculate analytics data
-    const analyticsData = userTeams.map(team => {
-      const wins = team.wins || 0
-      const losses = team.losses || 0
-      const ties = team.ties || 0
-      const gamesPlayed = wins + losses + ties
-
-      // Calculate points for/against (simplified)
-      const pointsFor = team.roster?.reduce((total: number, rosterPlayer: any) => {
-        const playerStats = rosterPlayer.player.stats || []
-        const playerPoints = playerStats.reduce((sum: number, stat: any) => sum + (stat.fantasyPoints || 0), 0)
-        return total + playerPoints
-      }, 0) || 0
-
-      // Calculate projected points
-      const projectedPoints = team.roster?.reduce((total: number, rosterPlayer: any) => {
-        const projection = rosterPlayer.player.projections?.[0]
-        return total + (projection?.projectedPoints || 0)
-      }, 0) || 0
-
-      return {
-        teamId: team.id,
-        teamName: team.name,
-        leagueName: team.league?.name || 'Unknown League',
-        record: { wins, losses, ties },
-        pointsFor: Math.round(pointsFor * 100) / 100,
-        pointsAgainst: Math.round(pointsFor * 0.9 * 100) / 100, // Simplified calculation
-        projectedPoints: Math.round(projectedPoints * 100) / 100,
-        winPercentage: gamesPlayed > 0 ? Math.round((wins / gamesPlayed) * 100) : 0,
-        averagePointsFor: gamesPlayed > 0 ? Math.round((pointsFor / gamesPlayed) * 100) / 100 : 0,
-        roster: (team.roster || []).map((rp: any) => ({
-          player: {
-            id: rp.player.id,
-            name: rp.player.name,
-            position: rp.player.position,
-            nflTeam: rp.player.nflTeam,
-            totalPoints: (rp.player.stats || []).reduce((sum: number, stat: any) => sum + (stat.fantasyPoints || 0), 0),
-            averagePoints: rp.player.stats?.length > 0 
-              ? (rp.player.stats || []).reduce((sum: number, stat: any) => sum + (stat.fantasyPoints || 0), 0) / rp.player.stats.length
-              : 0,
-            projection: rp.player.projections?.[0]?.projectedPoints || 0
-          },
-          isStarter: rp.isStarter
-        }))
-      }
-    })
-
-    return {
-      teams: analyticsData,
-      summary: {
-        totalTeams: userTeams.length,
-        totalWins: analyticsData.reduce((sum, team) => sum + team.record.wins, 0),
-        totalLosses: analyticsData.reduce((sum, team) => sum + team.record.losses, 0),
-        totalPointsFor: analyticsData.reduce((sum, team) => sum + team.pointsFor, 0),
-        averageWinPercentage: analyticsData.length > 0 
-          ? Math.round(analyticsData.reduce((sum, team) => sum + team.winPercentage, 0) / analyticsData.length)
-          : 0
-      }
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/auth/signin')
+    } else if (status === 'authenticated') {
+      setLoading(false)
     }
-  } catch (error) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Analytics data fetch error:', error);
-    }
-    return {
-      teams: [],
-      summary: {
-        totalTeams: 0,
-        totalWins: 0,
-        totalLosses: 0,
-        totalPointsFor: 0,
-        averageWinPercentage: 0
-      }
-    }
+  }, [status, router])
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[calc(100vh-64px)] text-slate-400">
+          <Loader2 className="w-12 h-12 animate-spin text-blue-400" />
+          <p className="ml-4 text-lg">Loading analytics...</p>
+        </div>
+      </DashboardLayout>
+    )
   }
-}
-
-export default async function AnalyticsPage() {
-  const session = await auth()
-  
-  if (!session?.user?.id) {
-    redirect('/auth/signin')
-  }
-
-  const analyticsData = await getAnalyticsData(session.user.id)
 
   return (
     <DashboardLayout>
-      <div className="p-6 lg:p-8 pt-16 lg:pt-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center mb-4">
-            <div className="h-12 w-12 rounded-full bg-gradient-to-r from-green-400 to-blue-400 flex items-center justify-center mr-4">
-              <span className="text-white font-bold text-lg">📊</span>
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-white">Analytics</h1>
-              <p className="text-gray-400">
-                Deep insights into your fantasy football performance
-              </p>
-            </div>
-          </div>
-        </div>
+      <div className="p-6 lg:p-8 space-y-6 pt-16 lg:pt-8">
+        <PageHeader
+          title="Analytics"
+          description="Advanced team and league analytics"
+          icon={BarChart3}
+          breadcrumbs={[
+            { label: 'Dashboard', href: '/dashboard' },
+            { label: 'Analytics' },
+          ]}
+        />
 
-        <AnalyticsDashboard data={analyticsData} />
+        <EmptyState
+          icon={BarChart3}
+          title="Advanced Analytics"
+          description="Deep statistical analysis and performance insights will appear here"
+        />
       </div>
     </DashboardLayout>
   )

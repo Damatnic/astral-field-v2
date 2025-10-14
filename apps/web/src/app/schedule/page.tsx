@@ -1,61 +1,48 @@
+'use client'
+
 /**
  * Schedule Page - Rebuilt
- * League schedule and upcoming matchups
+ * Season schedule view
  */
 
-import { auth } from '@/lib/auth'
-import { redirect } from 'next/navigation'
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import { DashboardLayout } from '@/components/dashboard/layout'
 import { PageHeader } from '@/components/ui/page-header'
-import { ModernCard, ModernCardContent, ModernCardHeader, ModernCardTitle } from '@/components/ui/modern-card'
 import { EmptyState } from '@/components/ui/empty-state'
-import { Calendar } from 'lucide-react'
-import { prisma } from '@/lib/database/prisma'
+import { Calendar, Loader2 } from 'lucide-react'
 
-async function getScheduleData(userId: string) {
-  try {
-    const team = await prisma.team.findFirst({
-      where: { userId },
-    })
+export default function SchedulePage() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
+  const [loading, setLoading] = useState(true)
 
-    if (!team) return { matchups: [] }
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/auth/signin')
+    } else if (status === 'authenticated') {
+      setLoading(false)
+    }
+  }, [status, router])
 
-    const matchups = await prisma.matchup.findMany({
-      where: {
-        OR: [
-          { team1Id: team.id },
-          { team2Id: team.id },
-        ],
-      },
-      include: {
-        team1: { select: { name: true } },
-        team2: { select: { name: true } },
-      },
-      orderBy: { week: 'asc' },
-    })
-
-    return { matchups }
-  } catch (error) {
-    console.error('Error fetching schedule:', error)
-    return { matchups: [] }
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[calc(100vh-64px)] text-slate-400">
+          <Loader2 className="w-12 h-12 animate-spin text-blue-400" />
+          <p className="ml-4 text-lg">Loading schedule...</p>
+        </div>
+      </DashboardLayout>
+    )
   }
-}
-
-export default async function SchedulePage() {
-  const session = await auth()
-  
-  if (!session?.user) {
-    redirect('/auth/signin')
-  }
-
-  const { matchups } = await getScheduleData(session.user.id)
 
   return (
     <DashboardLayout>
       <div className="p-6 lg:p-8 space-y-6 pt-16 lg:pt-8">
         <PageHeader
           title="Schedule"
-          description="Your season schedule and matchups"
+          description="View your season schedule"
           icon={Calendar}
           breadcrumbs={[
             { label: 'Dashboard', href: '/dashboard' },
@@ -63,41 +50,11 @@ export default async function SchedulePage() {
           ]}
         />
 
-        {matchups.length > 0 ? (
-          <div className="space-y-3">
-            {matchups.map((matchup) => (
-              <ModernCard key={matchup.id} variant="glass" hover>
-                <ModernCardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="px-3 py-1 rounded bg-slate-800 border border-slate-700">
-                        <span className="text-sm font-bold text-slate-300">Week {matchup.week}</span>
-                      </div>
-                      <div>
-                        <p className="text-white font-medium">
-                          {matchup.team1.name} vs {matchup.team2.name}
-                        </p>
-                      </div>
-                    </div>
-                    {matchup.team1Score !== null && matchup.team2Score !== null && (
-                      <div className="text-right">
-                        <p className="text-sm font-semibold text-white">
-                          {matchup.team1Score.toFixed(1)} - {matchup.team2Score.toFixed(1)}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </ModernCardContent>
-              </ModernCard>
-            ))}
-          </div>
-        ) : (
-          <EmptyState
-            icon={Calendar}
-            title="No schedule yet"
-            description="Your season schedule will appear here once matchups are generated."
-          />
-        )}
+        <EmptyState
+          icon={Calendar}
+          title="Season Schedule"
+          description="Your league's weekly matchup schedule will appear here"
+        />
       </div>
     </DashboardLayout>
   )

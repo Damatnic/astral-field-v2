@@ -1,53 +1,48 @@
+'use client'
+
 /**
  * Playoffs Page - Rebuilt
- * League playoff bracket and standings
+ * Playoff bracket and standings
  */
 
-import { auth } from '@/lib/auth'
-import { redirect } from 'next/navigation'
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import { DashboardLayout } from '@/components/dashboard/layout'
 import { PageHeader } from '@/components/ui/page-header'
-import { ModernCard, ModernCardContent } from '@/components/ui/modern-card'
 import { EmptyState } from '@/components/ui/empty-state'
-import { Trophy } from 'lucide-react'
-import { prisma } from '@/lib/database/prisma'
+import { Trophy, Loader2 } from 'lucide-react'
 
-async function getPlayoffsData(userId: string) {
-  try {
-    const team = await prisma.team.findFirst({
-      where: { userId },
-      include: {
-        league: {
-          select: {
-            playoffs: true,
-            currentWeek: true,
-          },
-        },
-      },
-    })
+export default function PlayoffsPage() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
+  const [loading, setLoading] = useState(true)
 
-    return { team }
-  } catch (error) {
-    console.error('Error fetching playoffs data:', error)
-    return { team: null }
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/auth/signin')
+    } else if (status === 'authenticated') {
+      setLoading(false)
+    }
+  }, [status, router])
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[calc(100vh-64px)] text-slate-400">
+          <Loader2 className="w-12 h-12 animate-spin text-blue-400" />
+          <p className="ml-4 text-lg">Loading playoffs...</p>
+        </div>
+      </DashboardLayout>
+    )
   }
-}
-
-export default async function PlayoffsPage() {
-  const session = await auth()
-  
-  if (!session?.user) {
-    redirect('/auth/signin')
-  }
-
-  const { team } = await getPlayoffsData(session.user.id)
 
   return (
     <DashboardLayout>
       <div className="p-6 lg:p-8 space-y-6 pt-16 lg:pt-8">
         <PageHeader
           title="Playoffs"
-          description="League championship bracket and results"
+          description="Playoff bracket and standings"
           icon={Trophy}
           breadcrumbs={[
             { label: 'Dashboard', href: '/dashboard' },
@@ -55,25 +50,11 @@ export default async function PlayoffsPage() {
           ]}
         />
 
-        {team?.league?.playoffs ? (
-          <ModernCard variant="gradient" glow>
-            <ModernCardContent className="p-12 text-center">
-              <Trophy className="w-16 h-16 mx-auto mb-4 text-yellow-400" />
-              <h2 className="text-2xl font-bold text-white mb-2">Playoffs Active!</h2>
-              <p className="text-slate-400">The championship bracket is underway.</p>
-            </ModernCardContent>
-          </ModernCard>
-        ) : (
-          <EmptyState
-            icon={Trophy}
-            title="Playoffs haven't started"
-            description="The playoff bracket will appear here once the regular season concludes."
-            action={{
-              label: "View Standings",
-              onClick: () => window.location.href = '/league-stats',
-            }}
-          />
-        )}
+        <EmptyState
+          icon={Trophy}
+          title="Playoff Bracket"
+          description="The playoff bracket will be available once the regular season ends"
+        />
       </div>
     </DashboardLayout>
   )
