@@ -6,139 +6,73 @@ export const dynamic = 'force-dynamic'
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const teamId = searchParams.get('teamId')
-    const status = searchParams.get('status')
+    const userId = searchParams.get('userId')
 
-    if (!teamId) {
+    if (!userId) {
       return NextResponse.json(
-        { error: 'Team ID is required' },
+        { error: 'User ID is required' },
         { status: 400 }
       )
     }
 
-    const whereClause: any = {
-      teamId,
-    }
-
-    if (status) {
-      whereClause.status = status
-    }
-
-    const waiverClaims = await prisma.waiverClaim.findMany({
-      where: whereClause,
-      include: {
-        player: {
-          select: {
-            id: true,
-            name: true,
-            position: true,
-            nflTeam: true,
-          },
-        },
-        dropPlayer: {
-          select: {
-            id: true,
-            name: true,
-            position: true,
-            nflTeam: true,
-          },
+    // Get available players not on any team
+    const availablePlayers = await prisma.player.findMany({
+      where: {
+        rosterPlayers: {
+          none: {},
         },
       },
-      orderBy: {
-        priority: 'asc',
+      orderBy: [
+        { searchRank: 'asc' }, // Changed from fantasyPoints to searchRank
+      ],
+      take: 100,
+      select: {
+        id: true,
+        name: true,
+        position: true,
+        nflTeam: true, // Changed from team to nflTeam
+        status: true,
       },
     })
 
-    return NextResponse.json({ waiverClaims })
-  } catch (error) {
-    console.error('Error fetching waiver claims:', error)
+    // Map nflTeam to team for backwards compatibility
+    const playersWithTeam = availablePlayers.map(p => ({
+      ...p,
+      team: p.nflTeam,
+      fantasyPoints: 0, // TODO: Get from PlayerStats
+      projectedPoints: 0, // TODO: Get from PlayerProjection
+    }))
+
+    // Get user's team to determine waiver priority
+    const userTeam = await prisma.team.findFirst({
+      where: { ownerId: userId }, // Changed from userId to ownerId
+      select: { waiverPriority: true }, // Changed from waiverOrder to waiverPriority
+    })
+
+    // Simple AI recommendations based on top performers
+    const recommendations = playersWithTeam
+      .slice(0, 10)
+
+    const responseData = {
+      availablePlayers: playersWithTeam,
+      recommendations,
+      waiverOrder: userTeam?.waiverPriority || 1, // Changed from waiverOrder to waiverPriority
+    }
+
+    return NextResponse.json(responseData, {
+      headers: {
+        'Cache-Control': 'private, max-age=300', // 5 minutes
+      },
+    })
+  } catch (error: any) {
+    console.error('Detailed error fetching waivers data:', {
+      message: error?.message,
+      stack: error?.stack,
+      name: error?.name
+    })
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: error?.message || 'Unknown error' },
       { status: 500 }
     )
   }
 }
-
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json()
-    const { teamId, playerId, dropPlayerId, faabBid, priority } = body
-
-    if (!teamId || !playerId) {
-      return NextResponse.json(
-        { error: 'Team ID and Player ID are required' },
-        { status: 400 }
-      )
-    }
-
-    // Get the team to check FAAB budget
-    const team = await prisma.team.findUnique({
-      where: { id: teamId },
-      select: { faabBudget: true },
-    })
-
-    if (!team) {
-      return NextResponse.json(
-        { error: 'Team not found' },
-        { status: 404 }
-      )
-    }
-
-    if (faabBid && team.faabBudget !== null && faabBid > team.faabBudget) {
-      return NextResponse.json(
-        { error: 'Insufficient FAAB budget' },
-        { status: 400 }
-      )
-    }
-
-    const waiverClaim = await prisma.waiverClaim.create({
-      data: {
-        teamId,
-        playerId,
-        dropPlayerId,
-        faabBid,
-        priority: priority || 1,
-        status: 'pending',
-      },
-      include: {
-        player: true,
-        dropPlayer: true,
-      },
-    })
-
-    return NextResponse.json({ waiverClaim }, { status: 201 })
-  } catch (error) {
-    console.error('Error creating waiver claim:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
-  }
-}
-
-export async function DELETE(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url)
-    const claimId = searchParams.get('claimId')
-
-    if (!claimId) {
-      return NextResponse.json(
-        { error: 'Claim ID is required' },
-        { status: 400 }
-      )
-    }
-
-    await prisma.waiverClaim.delete({
-      where: { id: claimId },
-    })
-
-    return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error('Error deleting waiver claim:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
-  }
-}
-

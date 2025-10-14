@@ -1,21 +1,26 @@
+'use client'
+
 /**
  * Live Page - Rebuilt
  * Live fantasy scoring and updates
  */
 
-import { auth } from '@/lib/auth'
-import { redirect } from 'next/navigation'
-import { DashboardLayout } from '@/components/dashboard/layout'
-import { PageHeader } from '@/components/ui/page-header'
-import { Activity } from 'lucide-react'
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 
-export default async function LivePage() {
-  const session = await auth()
-  
-  if (!session?.user) {
-    redirect('/auth/signin')
-  }
+export default function LivePage() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
 
-  // Redirect to live-scores page (consolidated functionality)
-  redirect('/live-scores')
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/auth/signin')
+    } else if (status === 'authenticated') {
+      // Redirect to live-scores page (consolidated functionality)
+      router.push('/live-scores')
+    }
+  }, [status, router])
+
+  return null
 }

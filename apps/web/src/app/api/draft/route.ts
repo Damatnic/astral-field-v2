@@ -509,8 +509,9 @@ async function draftPlayer(leagueId: string, data: any, userId: string) {
     data: {
       teamId,
       playerId,
-      position: 'BENCH',
-      isStarter: false
+      rosterSlot: 'BENCH', // Changed from position to rosterSlot
+      position: 'BENCH', // Set default position
+      acquisitionType: 'DRAFT'
     }
   })
 

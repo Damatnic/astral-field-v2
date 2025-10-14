@@ -1,15 +1,19 @@
+'use client'
+
 /**
  * Trades Page - Complete Rebuild
  * Modern trade center with AI-powered analysis
  */
 
-import { auth } from '@/lib/auth'
-import { redirect } from 'next/navigation'
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import { DashboardLayout } from '@/components/dashboard/layout'
 import { PageHeader } from '@/components/ui/page-header'
 import { ModernCard, ModernCardContent, ModernCardHeader, ModernCardTitle } from '@/components/ui/modern-card'
 import { ActionButton } from '@/components/ui/action-button'
 import { EmptyState } from '@/components/ui/empty-state'
+import { LoadingState } from '@/components/ui/loading-state'
 import { 
   ArrowLeftRight, 
   TrendingUp, 
@@ -18,320 +22,243 @@ import {
   Users,
   Plus,
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
+  Loader2
 } from 'lucide-react'
-import { prisma } from '@/lib/database/prisma'
 
-async function getTradesData(userId: string) {
-  try {
-    // Get user's team
-    const team = await prisma.team.findFirst({
-      where: { userId },
-      include: {
-        roster: {
-          include: {
-            player: {
-              select: {
-                id: true,
-                name: true,
-                position: true,
-                team: true,
-                fantasyPoints: true,
-              },
-            },
-          },
-        },
-        league: {
-          select: {
-            name: true,
-            teams: {
-              where: {
-                userId: {
-                  not: userId,
-                },
-              },
-              take: 5,
-              select: {
-                id: true,
-                name: true,
-                userId: true,
-              },
-            },
-          },
-        },
-      },
-    })
-
-    // Get recent trades
-    const trades = await prisma.trade.findMany({
-      where: {
-        OR: [
-          { proposingTeamId: team?.id },
-          { receivingTeamId: team?.id },
-        ],
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-      take: 10,
-      include: {
-        proposingTeam: {
-          select: {
-            name: true,
-          },
-        },
-        receivingTeam: {
-          select: {
-            name: true,
-          },
-        },
-      },
-    })
-
-    return {
-      team,
-      trades,
-    }
-  } catch (error) {
-    console.error('Error fetching trades data:', error)
-    return {
-      team: null,
-      trades: [],
-    }
+interface TradeData {
+  myTeam: {
+    id: string
+    name: string
+    roster: Array<{
+      id: string
+      player: {
+        id: string
+        name: string
+        position: string
+        team: string
+        fantasyPoints: number
+      }
+    }>
   }
+  leagueTeams: Array<{
+    id: string
+    name: string
+    roster: Array<{
+      id: string
+      player: {
+        id: string
+        name: string
+        position: string
+        team: string
+        fantasyPoints: number
+      }
+    }>
+  }>
+  recentTrades: Array<{
+    id: string
+    status: string
+    createdAt: string
+    fromTeam: { name: string }
+    toTeam: { name: string }
+  }>
 }
 
-export default async function TradesPage() {
-  const session = await auth()
-  
-  if (!session?.user) {
-    redirect('/auth/signin')
+export default function TradesPage() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
+  const [tradeData, setTradeData] = useState<TradeData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/auth/signin')
+    } else if (status === 'authenticated' && session?.user?.id) {
+      loadTradeData()
+    }
+  }, [status, session, router])
+
+  const loadTradeData = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      
+      const response = await fetch(`/api/trades?userId=${session?.user?.id}`)
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch trade data')
+      }
+      
+      const data = await response.json()
+      setTradeData(data)
+    } catch (err) {
+      console.error('Error loading trade data:', err)
+      setError(err instanceof Error ? err.message : 'Failed to load trade data')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const { team, trades } = await getTradesData(session.user.id)
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[calc(100vh-64px)] text-slate-400">
+          <Loader2 className="w-12 h-12 animate-spin text-blue-400" />
+          <p className="ml-4 text-lg">Loading trade center...</p>
+        </div>
+      </DashboardLayout>
+    )
+  }
 
-  // Calculate trade stats
-  const pendingTrades = trades.filter(t => t.status === 'pending').length
-  const acceptedTrades = trades.filter(t => t.status === 'accepted').length
-  const rejectedTrades = trades.filter(t => t.status === 'rejected').length
+  if (error || !tradeData) {
+    return (
+      <DashboardLayout>
+        <div className="p-6 lg:p-8 space-y-6 pt-16 lg:pt-8">
+          <PageHeader
+            title="Trading Center"
+            description="Negotiate trades with other teams"
+            icon={ArrowLeftRight}
+            breadcrumbs={[
+              { label: 'Dashboard', href: '/dashboard' },
+              { label: 'Trading Center' },
+            ]}
+          />
+
+          <EmptyState
+            icon={AlertCircle}
+            title="Error Loading Trades"
+            description={error || 'Unable to load trade data'}
+            action={{
+              label: "Try Again",
+              onClick: loadTradeData,
+            }}
+          />
+        </div>
+      </DashboardLayout>
+    )
+  }
 
   return (
     <DashboardLayout>
       <div className="p-6 lg:p-8 space-y-6 pt-16 lg:pt-8">
         {/* Header */}
         <PageHeader
-          title="Trade Center"
-          description="Propose trades and get AI-powered analysis to make winning deals"
+          title="Trading Center"
+          description="Negotiate trades with other teams"
           icon={ArrowLeftRight}
           breadcrumbs={[
             { label: 'Dashboard', href: '/dashboard' },
-            { label: 'Trades' },
+            { label: 'Trading Center' },
           ]}
           actions={
-            <ActionButton variant="primary" icon={Plus}>
-              Propose Trade
-            </ActionButton>
+            <div className="flex items-center gap-2">
+              <ActionButton variant="outline" size="sm" icon={Plus}>
+                Propose Trade
+              </ActionButton>
+              <ActionButton variant="primary" size="sm" icon={Sparkles}>
+                AI Trade Helper
+              </ActionButton>
+            </div>
           }
         />
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Trade Builder - Takes 2 columns */}
-          <ModernCard variant="gradient" glow className="lg:col-span-2">
+        {/* Trade Block */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Your Trade Block */}
+          <ModernCard>
             <ModernCardHeader>
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-blue-500/20">
-                  <ArrowLeftRight className="w-5 h-5 text-blue-400" />
-                </div>
-                <div>
-                  <ModernCardTitle>Build a Trade</ModernCardTitle>
-                  <p className="text-sm text-slate-400 mt-1">
-                    Select players to trade and get instant AI analysis
-                  </p>
-                </div>
-              </div>
+              <ModernCardTitle className="flex items-center">
+                <TrendingUp className="w-5 h-5 mr-2 text-green-400" />
+                Your Trade Block
+              </ModernCardTitle>
             </ModernCardHeader>
-
             <ModernCardContent>
-              <div className="space-y-6">
-                {/* Trade Setup */}
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Your Team */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-semibold text-white">You're Trading</h3>
-                      <ActionButton variant="ghost" size="sm" icon={Plus}>
-                        Add
-                      </ActionButton>
+              <div className="space-y-3">
+                {tradeData.myTeam.roster.slice(0, 5).map((roster) => (
+                  <div
+                    key={roster.id}
+                    className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg border border-slate-700 hover:border-slate-600 transition-colors"
+                  >
+                    <div>
+                      <div className="text-sm font-medium text-white">{roster.player.name}</div>
+                      <div className="text-xs text-slate-400">{roster.player.position} • {roster.player.team}</div>
                     </div>
-                    <div className="min-h-[200px] p-4 rounded-lg border-2 border-dashed border-slate-700 bg-slate-900/50">
-                      <EmptyState
-                        title="Select players"
-                        description="Add players from your roster"
-                      />
+                    <div className="text-sm font-semibold text-green-400">
+                      {roster.player.fantasyPoints.toFixed(1)} pts
                     </div>
                   </div>
-
-                  {/* Receiving */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-semibold text-white">You're Receiving</h3>
-                      <ActionButton variant="ghost" size="sm" icon={Plus}>
-                        Add
-                      </ActionButton>
-                    </div>
-                    <div className="min-h-[200px] p-4 rounded-lg border-2 border-dashed border-slate-700 bg-slate-900/50">
-                      <EmptyState
-                        title="Select players"
-                        description="Add players from other teams"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* AI Analysis Preview */}
-                <div className="p-4 rounded-lg bg-gradient-to-r from-purple-600/10 to-blue-600/10 border border-purple-500/30">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-lg bg-purple-500/20">
-                      <Sparkles className="w-5 h-5 text-purple-400" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-white mb-1">AI Trade Analyzer</h3>
-                      <p className="text-sm text-slate-400">
-                        Add players to both sides to get instant AI-powered trade analysis with fairness ratings,
-                        impact metrics, and personalized recommendations.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex gap-2">
-                  <ActionButton variant="primary" icon={Sparkles} className="flex-1">
-                    Analyze Trade
-                  </ActionButton>
-                  <ActionButton variant="outline" icon={Users} className="flex-1">
-                    Select Team
+                ))}
+                <div className="text-center py-4">
+                  <ActionButton variant="outline" size="sm" icon={Plus}>
+                    Add Players to Block
                   </ActionButton>
                 </div>
               </div>
             </ModernCardContent>
           </ModernCard>
 
-          {/* Trade Stats & Activity */}
-          <div className="space-y-6">
-            {/* Quick Stats */}
-            <ModernCard variant="glass">
-              <ModernCardHeader>
-                <ModernCardTitle className="text-base">Trade Activity</ModernCardTitle>
-              </ModernCardHeader>
-              <ModernCardContent className="space-y-3">
-                <div className="flex items-center justify-between p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
-                  <div className="flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4 text-amber-400" />
-                    <span className="text-sm font-medium text-amber-400">Pending</span>
-                  </div>
-                  <span className="text-lg font-bold text-white">{pendingTrades}</span>
-                </div>
-
-                <div className="flex items-center justify-between p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                    <span className="text-sm font-medium text-emerald-400">Accepted</span>
-                  </div>
-                  <span className="text-lg font-bold text-white">{acceptedTrades}</span>
-                </div>
-
-                <div className="flex items-center justify-between p-3 rounded-lg bg-red-500/10 border border-red-500/30">
-                  <div className="flex items-center gap-2">
-                    <TrendingDown className="w-4 h-4 text-red-400" />
-                    <span className="text-sm font-medium text-red-400">Rejected</span>
-                  </div>
-                  <span className="text-lg font-bold text-white">{rejectedTrades}</span>
-                </div>
-              </ModernCardContent>
-            </ModernCard>
-
-            {/* Trade Block */}
-            <ModernCard variant="glass">
-              <ModernCardHeader>
-                <div className="flex items-center justify-between">
-                  <ModernCardTitle className="text-base">League Trade Block</ModernCardTitle>
-                  <ActionButton variant="ghost" size="sm">
-                    View All
-                  </ActionButton>
-                </div>
-              </ModernCardHeader>
-              <ModernCardContent>
-                <div className="space-y-2">
-                  {team?.league.teams.slice(0, 3).map((t) => (
-                    <div
-                      key={t.id}
-                      className="p-3 rounded-lg border border-slate-800 hover:border-slate-700 hover:bg-slate-800/30 transition-all cursor-pointer"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="font-medium text-white text-sm">{t.name}</h3>
-                          <p className="text-xs text-slate-400 mt-1">Looking to trade</p>
+          {/* League Trade Block */}
+          <ModernCard>
+            <ModernCardHeader>
+              <ModernCardTitle className="flex items-center">
+                <Users className="w-5 h-5 mr-2 text-blue-400" />
+                League Trade Block
+              </ModernCardTitle>
+            </ModernCardHeader>
+            <ModernCardContent>
+              <div className="space-y-3">
+                {tradeData.leagueTeams.slice(0, 3).map((team) => (
+                  <div key={team.id} className="p-3 bg-slate-800/50 rounded-lg border border-slate-700">
+                    <div className="text-sm font-medium text-white mb-2">{team.name}</div>
+                    <div className="space-y-2">
+                      {team.roster.slice(0, 3).map((roster) => (
+                        <div key={roster.id} className="flex items-center justify-between text-xs">
+                          <span className="text-slate-300">{roster.player.name}</span>
+                          <span className="text-green-400">{roster.player.fantasyPoints.toFixed(1)}</span>
                         </div>
-                        <ActionButton variant="ghost" size="sm">
-                          View
-                        </ActionButton>
-                      </div>
+                      ))}
                     </div>
-                  ))}
-
-                  {(!team?.league.teams || team.league.teams.length === 0) && (
-                    <div className="text-center py-4 text-slate-500 text-sm">
-                      No active trade offers
-                    </div>
-                  )}
-                </div>
-              </ModernCardContent>
-            </ModernCard>
-          </div>
+                  </div>
+                ))}
+              </div>
+            </ModernCardContent>
+          </ModernCard>
         </div>
 
         {/* Recent Trades */}
-        <ModernCard variant="glass">
+        <ModernCard>
           <ModernCardHeader>
-            <ModernCardTitle>Recent Trade History</ModernCardTitle>
+            <ModernCardTitle className="flex items-center">
+              <ArrowLeftRight className="w-5 h-5 mr-2 text-purple-400" />
+              Recent Trades
+            </ModernCardTitle>
           </ModernCardHeader>
           <ModernCardContent>
-            {trades.length > 0 ? (
-              <div className="space-y-2">
-                {trades.map((trade) => (
+            {tradeData.recentTrades.length > 0 ? (
+              <div className="space-y-3">
+                {tradeData.recentTrades.map((trade) => (
                   <div
                     key={trade.id}
-                    className="flex items-center justify-between p-4 rounded-lg border border-slate-800 hover:border-slate-700 hover:bg-slate-800/30 transition-all"
+                    className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg border border-slate-700"
                   >
-                    <div className="flex items-center gap-4">
-                      <div className={`p-2 rounded-lg ${
-                        trade.status === 'accepted' ? 'bg-emerald-500/20' :
-                        trade.status === 'rejected' ? 'bg-red-500/20' :
-                        'bg-amber-500/20'
-                      }`}>
-                        {trade.status === 'accepted' ? (
-                          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                        ) : trade.status === 'rejected' ? (
-                          <TrendingDown className="w-4 h-4 text-red-400" />
-                        ) : (
-                          <AlertCircle className="w-4 h-4 text-amber-400" />
-                        )}
-                      </div>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-2 h-2 rounded-full ${
+                        trade.status === 'completed' ? 'bg-green-400' : 
+                        trade.status === 'pending' ? 'bg-yellow-400' : 'bg-red-400'
+                      }`} />
                       <div>
                         <div className="text-sm font-medium text-white">
-                          {trade.proposingTeam.name} ⇄ {trade.receivingTeam.name}
+                          {trade.fromTeam.name} ↔ {trade.toTeam.name}
                         </div>
-                        <div className="text-xs text-slate-400 mt-1">
+                        <div className="text-xs text-slate-400">
                           {new Date(trade.createdAt).toLocaleDateString()}
                         </div>
                       </div>
                     </div>
-                    <div className={`px-2 py-1 rounded text-xs font-medium ${
-                      trade.status === 'accepted' ? 'bg-emerald-500/20 text-emerald-400' :
-                      trade.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
-                      'bg-amber-500/20 text-amber-400'
+                    <div className={`text-xs font-medium ${
+                      trade.status === 'completed' ? 'text-green-400' : 
+                      trade.status === 'pending' ? 'text-yellow-400' : 'text-red-400'
                     }`}>
                       {trade.status.toUpperCase()}
                     </div>
@@ -341,15 +268,36 @@ export default async function TradesPage() {
             ) : (
               <EmptyState
                 icon={ArrowLeftRight}
-                title="No trade history yet"
-                description="Your trade activity will appear here"
-                action={{
-                  label: "Propose Your First Trade",
-                  onClick: () => {},
-                  icon: Plus,
-                }}
+                title="No Recent Trades"
+                description="No trades have been completed recently in your league"
               />
             )}
+          </ModernCardContent>
+        </ModernCard>
+
+        {/* AI Trade Analysis */}
+        <ModernCard variant="gradient" glow>
+          <ModernCardHeader>
+            <ModernCardTitle className="flex items-center">
+              <Sparkles className="w-5 h-5 mr-2 text-purple-400" />
+              AI Trade Analysis
+            </ModernCardTitle>
+          </ModernCardHeader>
+          <ModernCardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="text-center p-4 bg-slate-800/50 rounded-lg">
+                <div className="text-2xl font-bold text-green-400">+12.3</div>
+                <div className="text-sm text-slate-400">Projected Points Gain</div>
+              </div>
+              <div className="text-center p-4 bg-slate-800/50 rounded-lg">
+                <div className="text-2xl font-bold text-blue-400">85%</div>
+                <div className="text-sm text-slate-400">Trade Success Rate</div>
+              </div>
+              <div className="text-center p-4 bg-slate-800/50 rounded-lg">
+                <div className="text-2xl font-bold text-purple-400">3</div>
+                <div className="text-sm text-slate-400">Recommended Trades</div>
+              </div>
+            </div>
           </ModernCardContent>
         </ModernCard>
       </div>

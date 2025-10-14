@@ -1,45 +1,112 @@
+'use client'
+
 /**
  * Draft Page - Rebuilt
  * Modern draft interface
  */
 
-import { auth } from '@/lib/auth'
-import { redirect } from 'next/navigation'
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import { DashboardLayout } from '@/components/dashboard/layout'
 import { PageHeader } from '@/components/ui/page-header'
 import { ModernCard, ModernCardContent, ModernCardHeader, ModernCardTitle } from '@/components/ui/modern-card'
 import { EmptyState } from '@/components/ui/empty-state'
-import { Users, Clock, Trophy } from 'lucide-react'
-import { prisma } from '@/lib/database/prisma'
+import { LoadingState } from '@/components/ui/loading-state'
+import { Users, Clock, Trophy, Loader2 } from 'lucide-react'
 
-async function getDraftData(userId: string) {
-  try {
-    const team = await prisma.team.findFirst({
-      where: { userId },
-      include: {
-        league: {
-          include: {
-            draft: true,
-          },
-        },
-      },
-    })
-
-    return { team }
-  } catch (error) {
-    console.error('Error fetching draft data:', error)
-    return { team: null }
-  }
+interface DraftData {
+  team: {
+    id: string
+    name: string
+    league: {
+      name: string
+      draft: {
+        status: string
+        currentRound: number
+        currentPick: number
+      } | null
+    }
+  } | null
 }
 
-export default async function DraftPage() {
-  const session = await auth()
-  
-  if (!session?.user) {
-    redirect('/auth/signin')
+export default function DraftPage() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
+  const [draftData, setDraftData] = useState<DraftData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/auth/signin')
+    } else if (status === 'authenticated' && session?.user?.id) {
+      loadDraftData()
+    }
+  }, [status, session, router])
+
+  const loadDraftData = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      
+      const response = await fetch(`/api/draft?userId=${session?.user?.id}`)
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch draft data')
+      }
+      
+      const data = await response.json()
+      setDraftData(data)
+    } catch (err) {
+      console.error('Error loading draft data:', err)
+      setError(err instanceof Error ? err.message : 'Failed to load draft data')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const { team } = await getDraftData(session.user.id)
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[calc(100vh-64px)] text-slate-400">
+          <Loader2 className="w-12 h-12 animate-spin text-blue-400" />
+          <p className="ml-4 text-lg">Loading draft room...</p>
+        </div>
+      </DashboardLayout>
+    )
+  }
+
+  if (error || !draftData?.team) {
+    return (
+      <DashboardLayout>
+        <div className="p-6 lg:p-8 space-y-6 pt-16 lg:pt-8">
+          <PageHeader
+            title="Draft Room"
+            description="Live draft interface for your fantasy league"
+            icon={Trophy}
+            breadcrumbs={[
+              { label: 'Dashboard', href: '/dashboard' },
+              { label: 'Draft Room' },
+            ]}
+          />
+
+          <EmptyState
+            icon={Trophy}
+            title="Draft Not Available"
+            description="No active draft found for your league"
+            action={{
+              label: "Go to Dashboard",
+              onClick: () => router.push('/dashboard'),
+            }}
+          />
+        </div>
+      </DashboardLayout>
+    )
+  }
+
+  const { team } = draftData
+  const isDraftActive = team.league.draft?.status === 'active'
 
   return (
     <DashboardLayout>
@@ -50,31 +117,73 @@ export default async function DraftPage() {
           icon={Trophy}
           breadcrumbs={[
             { label: 'Dashboard', href: '/dashboard' },
-            { label: 'Draft' },
+            { label: 'Draft Room' },
           ]}
         />
 
-        {team?.league?.draft ? (
-          <ModernCard variant="gradient" glow>
+        {/* Draft Status */}
+        <ModernCard variant={isDraftActive ? "gradient" : "default"}>
+          <ModernCardHeader>
+            <ModernCardTitle className="flex items-center">
+              <Clock className="w-5 h-5 mr-2 text-blue-400" />
+              Draft Status
+            </ModernCardTitle>
+          </ModernCardHeader>
+          <ModernCardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="text-center p-4 bg-slate-800/50 rounded-lg">
+                <div className="text-2xl font-bold text-blue-400">
+                  {team.league.draft?.currentRound || '—'}
+                </div>
+                <div className="text-sm text-slate-400">Current Round</div>
+              </div>
+              <div className="text-center p-4 bg-slate-800/50 rounded-lg">
+                <div className="text-2xl font-bold text-green-400">
+                  {team.league.draft?.currentPick || '—'}
+                </div>
+                <div className="text-sm text-slate-400">Current Pick</div>
+              </div>
+              <div className="text-center p-4 bg-slate-800/50 rounded-lg">
+                <div className={`text-2xl font-bold ${
+                  isDraftActive ? 'text-green-400' : 'text-slate-400'
+                }`}>
+                  {team.league.draft?.status?.toUpperCase() || 'NOT STARTED'}
+                </div>
+                <div className="text-sm text-slate-400">Status</div>
+              </div>
+            </div>
+          </ModernCardContent>
+        </ModernCard>
+
+        {/* Draft Interface */}
+        {isDraftActive ? (
+          <ModernCard>
             <ModernCardHeader>
-              <ModernCardTitle>Draft in Progress</ModernCardTitle>
+              <ModernCardTitle className="flex items-center">
+                <Users className="w-5 h-5 mr-2 text-purple-400" />
+                Live Draft
+              </ModernCardTitle>
             </ModernCardHeader>
             <ModernCardContent>
-              <div className="text-center py-12">
-                <Clock className="w-16 h-16 mx-auto mb-4 text-blue-400" />
-                <p className="text-slate-300">Draft room is currently active</p>
-              </div>
+              <EmptyState
+                icon={Trophy}
+                title="Draft in Progress"
+                description="The live draft interface will be available when it's your turn to pick"
+                action={{
+                  label: "View Available Players",
+                  onClick: () => router.push('/players'),
+                }}
+              />
             </ModernCardContent>
           </ModernCard>
         ) : (
           <EmptyState
-            icon={Trophy}
-            title="No active draft"
-            description="Your league draft hasn't started yet. Check back when your commissioner schedules the draft."
+            icon={Clock}
+            title="Draft Not Started"
+            description="Your league draft hasn't started yet. Check back when the commissioner begins the draft."
             action={{
-              label: "View League Info",
-              onClick: () => window.location.href = '/leagues',
-              icon: Users,
+              label: "Prepare for Draft",
+              onClick: () => router.push('/players'),
             }}
           />
         )}

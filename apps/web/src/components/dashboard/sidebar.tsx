@@ -4,49 +4,46 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
-// Emoji-based icons to replace heroicons
-const HomeIcon = ({ className }: { className?: string }) => <span className={`w-5 h-5 flex items-center justify-center ${className || ''}`}>🏠</span>
-const UserGroupIcon = ({ className }: { className?: string }) => <span className={`w-5 h-5 flex items-center justify-center ${className || ''}`}>👥</span>
-const ChartBarIcon = ({ className }: { className?: string }) => <span className={`w-5 h-5 flex items-center justify-center ${className || ''}`}>📊</span>
-const SparklesIcon = ({ className }: { className?: string }) => <span className={`w-5 h-5 flex items-center justify-center ${className || ''}`}>✨</span>
-const CogIcon = ({ className }: { className?: string }) => <span className={`w-5 h-5 flex items-center justify-center ${className || ''}`}>⚙️</span>
-const ArrowRightEndOnRectangleIcon = ({ className }: { className?: string }) => <span className={`w-5 h-5 flex items-center justify-center ${className || ''}`}>🚪</span>
-const Bars3Icon = ({ className }: { className?: string }) => <span className={`w-5 h-5 flex items-center justify-center ${className || ''}`}>☰</span>
-const XMarkIcon = ({ className }: { className?: string }) => <span className={`w-5 h-5 flex items-center justify-center ${className || ''}`}>✖️</span>
-const TrophyIcon = ({ className }: { className?: string }) => <span className={`w-5 h-5 flex items-center justify-center ${className || ''}`}>🏆</span>
-const ChatBubbleLeftRightIcon = ({ className }: { className?: string }) => <span className={`w-5 h-5 flex items-center justify-center ${className || ''}`}>💬</span>
-const ClipboardDocumentListIcon = ({ className }: { className?: string }) => <span className={`w-5 h-5 flex items-center justify-center ${className || ''}`}>📋</span>
-const TvIcon = ({ className }: { className?: string }) => <span className={`w-5 h-5 flex items-center justify-center ${className || ''}`}>📺</span>
-const ClockIcon = ({ className }: { className?: string }) => <span className={`w-5 h-5 flex items-center justify-center ${className || ''}`}>⏰</span>
-const BuildingOfficeIcon = ({ className }: { className?: string }) => <span className={`w-5 h-5 flex items-center justify-center ${className || ''}`}>🏢</span>
-
 import { Button } from '@/components/ui/button'
-
-// Additional icons for new pages
-const CalendarIcon = ({ className }: { className?: string }) => <span className={`w-5 h-5 flex items-center justify-center ${className || ''}`}>📅</span>
-const PlayoffIcon = ({ className }: { className?: string }) => <span className={`w-5 h-5 flex items-center justify-center ${className || ''}`}>🏆</span>
-const TradeIcon = ({ className }: { className?: string }) => <span className={`w-5 h-5 flex items-center justify-center ${className || ''}`}>🔄</span>
-const WaiverIcon = ({ className }: { className?: string }) => <span className={`w-5 h-5 flex items-center justify-center ${className || ''}`}>📝</span>
-const StatsIcon = ({ className }: { className?: string }) => <span className={`w-5 h-5 flex items-center justify-center ${className || ''}`}>📈</span>
-const MockIcon = ({ className }: { className?: string }) => <span className={`w-5 h-5 flex items-center justify-center ${className || ''}`}>🎮</span>
+import {
+  Home,
+  Users,
+  BarChart3,
+  Sparkles,
+  Cog,
+  ArrowRightEndOnRectangle,
+  Bars3,
+  X,
+  Trophy,
+  MessageSquare,
+  ClipboardList,
+  Tv,
+  Clock,
+  Building2,
+  Calendar,
+  RotateCcw,
+  FileText,
+  TrendingUp,
+  Gamepad2
+} from 'lucide-react'
 
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
-  { name: 'My Team', href: '/team', icon: UserGroupIcon },
-  { name: 'Team Overview', href: '/team-overview', icon: ChartBarIcon },
-  { name: 'Matchups', href: '/matchups', icon: TrophyIcon },
-  { name: 'Schedule', href: '/schedule', icon: CalendarIcon },
-  { name: 'Playoffs', href: '/playoffs', icon: PlayoffIcon },
-  { name: 'Trading Center', href: '/trades', icon: TradeIcon },
-  { name: 'Waiver Wire', href: '/waivers', icon: WaiverIcon },
-  { name: 'Players', href: '/players', icon: ClipboardDocumentListIcon },
-  { name: 'League Stats', href: '/league-stats', icon: StatsIcon },
-  { name: 'Mock Draft', href: '/mock-draft', icon: MockIcon },
-  { name: 'Live Scoring', href: '/live', icon: TvIcon },
-  { name: 'Draft Room', href: '/draft', icon: ClockIcon },
-  { name: 'AI Coach', href: '/ai-coach', icon: SparklesIcon },
-  { name: 'Analytics', href: '/analytics', icon: ChartBarIcon },
-  { name: 'Settings', href: '/settings', icon: CogIcon },
+  { name: 'Dashboard', href: '/dashboard', icon: Home },
+  { name: 'My Team', href: '/team', icon: Users },
+  { name: 'Team Overview', href: '/team-overview', icon: BarChart3 },
+  { name: 'Matchups', href: '/matchups', icon: Trophy },
+  { name: 'Schedule', href: '/schedule', icon: Calendar },
+  { name: 'Playoffs', href: '/playoffs', icon: Trophy },
+  { name: 'Trading Center', href: '/trades', icon: RotateCcw },
+  { name: 'Waiver Wire', href: '/waivers', icon: FileText },
+  { name: 'Players', href: '/players', icon: ClipboardList },
+  { name: 'League Stats', href: '/league-stats', icon: TrendingUp },
+  { name: 'Mock Draft', href: '/mock-draft', icon: Gamepad2 },
+  { name: 'Live Scoring', href: '/live', icon: Tv },
+  { name: 'Draft Room', href: '/draft', icon: Clock },
+  { name: 'AI Coach', href: '/ai-coach', icon: Sparkles },
+  { name: 'Analytics', href: '/analytics', icon: BarChart3 },
+  { name: 'Settings', href: '/settings', icon: Cog },
 ]
 
 interface SidebarProps {
@@ -82,10 +79,10 @@ export function Sidebar({ user }: SidebarProps) {
             AstralField
           </h1>
           <button
-            className="lg:hidden text-gray-400 hover:text-white"
+            className="lg:hidden text-gray-400 hover:text-white transition-colors"
             onClick={() => setSidebarOpen(false)}
           >
-            <XMarkIcon className="h-6 w-6" />
+            <X className="h-6 w-6" />
           </button>
         </div>
 
@@ -103,60 +100,63 @@ export function Sidebar({ user }: SidebarProps) {
                   {user.name || 'User'}
                 </p>
                 <p className="text-xs text-gray-400 truncate">
-                  {user.teamName || user.email}
+                  {user.teamName || 'No Team'}
                 </p>
               </div>
             </div>
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 px-4 py-4 space-y-1">
-            {navigation.map((item: any) => {
-              const isActive = pathname === item.href || (pathname?.startsWith(item.href + '/') ?? false)
+          <nav className="flex-1 px-4 py-4 space-y-2 overflow-y-auto">
+            {navigation.map((item) => {
+              const isActive = pathname === item.href
+              const IconComponent = item.icon
+              
               return (
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors ${
+                  className={`group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
                     isActive
-                      ? 'bg-slate-800 text-white border-r-2 border-blue-500'
-                      : 'text-gray-300 hover:bg-slate-800 hover:text-white'
+                      ? 'bg-blue-600/20 text-blue-400 border-l-4 border-blue-400 shadow-lg'
+                      : 'text-gray-300 hover:bg-slate-800/50 hover:text-white border-l-4 border-transparent hover:border-slate-700'
                   }`}
                   onClick={() => setSidebarOpen(false)}
                 >
-                  <item.icon 
-                    className={`mr-3 h-5 w-5 ${isActive ? 'text-blue-400' : 'text-gray-400 group-hover:text-white'}`}
+                  <IconComponent 
+                    className={`mr-3 h-5 w-5 flex-shrink-0 transition-colors ${
+                      isActive ? 'text-blue-400' : 'text-gray-400 group-hover:text-white'
+                    }`} 
                   />
-                  {item.name}
+                  <span className="truncate">{item.name}</span>
                 </Link>
               )
             })}
           </nav>
 
-          {/* Sign out */}
-          <div className="px-4 py-4 border-t border-slate-800">
+          {/* Footer */}
+          <div className="p-4 border-t border-slate-800">
             <Button
               variant="ghost"
-              className="w-full justify-start text-gray-300 hover:text-white hover:bg-slate-800"
-              onClick={() => signOut({ callbackUrl: '/' })}
+              size="sm"
+              className="w-full justify-start text-gray-400 hover:text-white hover:bg-slate-800/50"
+              onClick={() => signOut()}
             >
-              <ArrowRightEndOnRectangleIcon className="mr-3 h-5 w-5" />
-              Sign Out
+              <ArrowRightEndOnRectangle className="mr-3 h-4 w-4" />
+              Sign out
             </Button>
           </div>
         </div>
       </div>
 
-      {/* Mobile sidebar trigger */}
-      <div className="lg:hidden fixed top-4 left-4 z-30">
-        <Button
-          variant="ghost"
-          size="sm"
+      {/* Mobile menu button */}
+      <div className="lg:hidden fixed top-4 left-4 z-50">
+        <button
+          className="p-2 rounded-lg bg-slate-900/90 border border-slate-800 text-gray-400 hover:text-white hover:bg-slate-800 transition-all"
           onClick={() => setSidebarOpen(true)}
-          className="bg-slate-800/50 backdrop-blur-sm border border-slate-700"
         >
-          <Bars3Icon className="h-5 w-5" />
-        </Button>
+          <Bars3 className="h-6 w-6" />
+        </button>
       </div>
     </>
   )

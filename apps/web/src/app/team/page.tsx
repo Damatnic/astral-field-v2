@@ -1,10 +1,13 @@
+'use client'
+
 /**
  * Team Management Page - Complete Rebuild
  * Manage your roster and set your lineup
  */
 
-import { auth } from '@/lib/auth'
-import { redirect } from 'next/navigation'
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import { DashboardLayout } from '@/components/dashboard/layout'
 import { PageHeader } from '@/components/ui/page-header'
 import { ModernCard, ModernCardContent, ModernCardHeader, ModernCardTitle } from '@/components/ui/modern-card'
@@ -12,6 +15,7 @@ import { StatCard } from '@/components/ui/stat-card'
 import { PlayerCard } from '@/components/ui/player-card'
 import { ActionButton } from '@/components/ui/action-button'
 import { EmptyState } from '@/components/ui/empty-state'
+import { LoadingState } from '@/components/ui/loading-state'
 import { 
   Users, 
   Target,
@@ -19,56 +23,80 @@ import {
   Zap,
   CheckCircle2,
   AlertCircle,
-  Clock
+  Clock,
+  Loader2
 } from 'lucide-react'
-import { prisma } from '@/lib/database/prisma'
 
-async function getTeamData(userId: string) {
-  try {
-    const team = await prisma.team.findFirst({
-      where: { userId },
-      include: {
-        roster: {
-          include: {
-            player: {
-              select: {
-                id: true,
-                name: true,
-                position: true,
-                team: true,
-                fantasyPoints: true,
-                projectedPoints: true,
-                status: true,
-              },
-            },
-          },
-        },
-        league: {
-          select: {
-            name: true,
-            currentWeek: true,
-          },
-        },
-      },
-    })
-
-    return { team }
-  } catch (error) {
-    console.error('Error fetching team data:', error)
-    return { team: null }
+interface TeamData {
+  id: string
+  name: string
+  roster: Array<{
+    id: string
+    isStarter: boolean
+    player: {
+      id: string
+      name: string
+      position: string
+      team: string
+      fantasyPoints: number
+      projectedPoints: number
+      status: string
+    }
+  }>
+  league: {
+    name: string
+    currentWeek: number
   }
 }
 
-export default async function TeamPage() {
-  const session = await auth()
-  
-  if (!session?.user) {
-    redirect('/auth/signin')
+export default function TeamPage() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
+  const [teamData, setTeamData] = useState<TeamData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/auth/signin')
+    } else if (status === 'authenticated' && session?.user?.id) {
+      loadTeamData()
+    }
+  }, [status, session, router])
+
+  const loadTeamData = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      
+      const response = await fetch(`/api/teams?userId=${session?.user?.id}`)
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch team data')
+      }
+      
+      const data = await response.json()
+      setTeamData(data)
+    } catch (err) {
+      console.error('Error loading team data:', err)
+      setError(err instanceof Error ? err.message : 'Failed to load team data')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const { team } = await getTeamData(session.user.id)
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[calc(100vh-64px)] text-slate-400">
+          <Loader2 className="w-12 h-12 animate-spin text-blue-400" />
+          <p className="ml-4 text-lg">Loading your team...</p>
+        </div>
+      </DashboardLayout>
+    )
+  }
 
-  if (!team) {
+  if (error || !teamData) {
     return (
       <DashboardLayout>
         <div className="p-6 lg:p-8 pt-16 lg:pt-8">
@@ -78,7 +106,7 @@ export default async function TeamPage() {
             description="Join a league to start managing your team"
             action={{
               label: "Find a League",
-              onClick: () => window.location.href = '/leagues',
+              onClick: () => router.push('/leagues'),
             }}
           />
         </div>
@@ -88,27 +116,27 @@ export default async function TeamPage() {
 
   // Group players by position
   const rosterByPosition = {
-    QB: team.roster.filter(r => r.player.position === 'QB'),
-    RB: team.roster.filter(r => r.player.position === 'RB'),
-    WR: team.roster.filter(r => r.player.position === 'WR'),
-    TE: team.roster.filter(r => r.player.position === 'TE'),
-    K: team.roster.filter(r => r.player.position === 'K'),
-    DEF: team.roster.filter(r => r.player.position === 'DEF'),
+    QB: teamData.roster.filter(r => r.player.position === 'QB'),
+    RB: teamData.roster.filter(r => r.player.position === 'RB'),
+    WR: teamData.roster.filter(r => r.player.position === 'WR'),
+    TE: teamData.roster.filter(r => r.player.position === 'TE'),
+    K: teamData.roster.filter(r => r.player.position === 'K'),
+    DEF: teamData.roster.filter(r => r.player.position === 'DEF'),
   }
 
   // Calculate roster stats
-  const totalPoints = team.roster.reduce((sum, r) => sum + (r.player.fantasyPoints || 0), 0)
-  const projectedPoints = team.roster.reduce((sum, r) => sum + (r.player.projectedPoints || 0), 0)
-  const activeStarters = team.roster.filter(r => r.isStarter).length
-  const benchPlayers = team.roster.filter(r => !r.isStarter).length
+  const totalPoints = teamData.roster.reduce((sum, r) => sum + (r.player.fantasyPoints || 0), 0)
+  const projectedPoints = teamData.roster.reduce((sum, r) => sum + (r.player.projectedPoints || 0), 0)
+  const activeStarters = teamData.roster.filter(r => r.isStarter).length
+  const benchPlayers = teamData.roster.filter(r => !r.isStarter).length
 
   return (
     <DashboardLayout>
       <div className="p-6 lg:p-8 space-y-6 pt-16 lg:pt-8">
         {/* Header */}
         <PageHeader
-          title={team.name}
-          description={`${team.league.name} • Week ${team.league.currentWeek}`}
+          title={teamData.name}
+          description={`${teamData.league.name} • Week ${teamData.league.currentWeek}`}
           icon={Users}
           breadcrumbs={[
             { label: 'Dashboard', href: '/dashboard' },
@@ -141,7 +169,7 @@ export default async function TeamPage() {
             label="Projected"
             value={projectedPoints.toFixed(1)}
             icon={TrendingUp}
-            description={`Week ${team.league.currentWeek}`}
+            description={`Week ${teamData.league.currentWeek}`}
             variant="info"
           />
 
@@ -234,7 +262,7 @@ export default async function TeamPage() {
             </ModernCardHeader>
             <ModernCardContent>
               <div className="space-y-2">
-                {team.roster
+                {teamData.roster
                   .filter(r => !r.isStarter)
                   .map((roster) => (
                     <div
