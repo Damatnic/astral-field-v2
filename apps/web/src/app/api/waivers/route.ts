@@ -15,10 +15,13 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    const currentWeek = 1 // Default to week 1 for now
+
     // Get available players not on any team (simplified approach)
     const allPlayers = await prisma.player.findMany({
       where: {
         isFantasyRelevant: true,
+        roster: { none: {} } // Only players not on any roster
       },
       orderBy: [
         { name: 'asc' },
@@ -29,18 +32,31 @@ export async function GET(request: NextRequest) {
         name: true,
         position: true,
         nflTeam: true,
+        stats: {
+          where: { week: currentWeek, season: 2025 },
+          take: 1,
+          select: { fantasyPoints: true }
+        },
+        projections: {
+          where: { week: currentWeek, season: 2025 },
+          take: 1,
+          select: { projectedPoints: true }
+        }
       },
     })
     
     // For now, return all players as "available" (simplified)
     const availablePlayers = allPlayers
 
-    // Map nflTeam to team for backwards compatibility
+    // Map nflTeam to team for backwards compatibility and extract stats
     const playersWithTeam = availablePlayers.map(p => ({
-      ...p,
+      id: p.id,
+      name: p.name,
+      position: p.position,
+      nflTeam: p.nflTeam,
       team: p.nflTeam,
-      fantasyPoints: 0, // TODO: Get from PlayerStats
-      projectedPoints: 0, // TODO: Get from PlayerProjection
+      fantasyPoints: p.stats[0]?.fantasyPoints || 0,
+      projectedPoints: p.projections[0]?.projectedPoints || 0,
     }))
 
     // Get user's team to determine waiver priority

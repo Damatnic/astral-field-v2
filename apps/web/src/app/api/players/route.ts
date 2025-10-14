@@ -25,6 +25,8 @@ export async function GET(request: NextRequest) {
       ],
     }
 
+    const currentWeek = 1 // Default to week 1 for now
+
     const [players, total] = await Promise.all([
       prisma.player.findMany({
         where,
@@ -37,20 +39,32 @@ export async function GET(request: NextRequest) {
           id: true,
           name: true,
           position: true,
-          nflTeam: true, // Changed from team to nflTeam
-          // status: true, // Temporarily removed due to type mismatch
+          nflTeam: true,
+          stats: {
+            where: { week: currentWeek, season: 2025 },
+            take: 1,
+            select: { fantasyPoints: true }
+          },
+          projections: {
+            where: { week: currentWeek, season: 2025 },
+            take: 1,
+            select: { projectedPoints: true }
+          }
         },
       }),
       prisma.player.count({ where }),
     ])
 
-    // Map nflTeam to team for backwards compatibility
+    // Map nflTeam to team for backwards compatibility and extract stats
     const playersWithTeam = players.map(p => ({
-      ...p,
+      id: p.id,
+      name: p.name,
+      position: p.position,
+      nflTeam: p.nflTeam,
       team: p.nflTeam,
-      jerseyNumber: 0, // TODO: Add jersey number to schema
-      fantasyPoints: 0, // TODO: Get from PlayerStats
-      projectedPoints: 0, // TODO: Get from PlayerProjection
+      jerseyNumber: 0,
+      fantasyPoints: p.stats[0]?.fantasyPoints || 0,
+      projectedPoints: p.projections[0]?.projectedPoints || 0,
     }))
 
     const responseData = {

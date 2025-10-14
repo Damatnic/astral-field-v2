@@ -1,477 +1,406 @@
 'use client'
 
-import { useState, useEffect, useMemo, useCallback, memo } from 'react'
-import { useLiveScores } from '@/hooks/use-live-scores'
-import { Button } from '@/components/ui/button'
+import { useState, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
-  TvIcon,
-  BoltIcon,
-  ClockIcon,
-  TrophyIcon,
-  ChartBarIcon
-} from '@heroicons/react/24/outline'
+  Tv,
+  TrendingUp,
+  TrendingDown,
+  Zap,
+  Trophy,
+  AlertCircle,
+  Clock,
+  Play,
+  Pause,
+  CheckCircle2,
+  Activity
+} from 'lucide-react'
+import { cn } from '@/lib/utils'
 
-interface LiveScoringDashboardProps {
-  leagueId: string
-  week: number
-}
-
-interface Matchup {
+interface LiveGame {
   id: string
-  homeTeam: {
-    id: string
-    name: string
-    owner: { name: string }
-    projectedScore: number
-    liveScore: number
-    players: Player[]
-  }
-  awayTeam: {
-    id: string
-    name: string
-    owner: { name: string }
-    projectedScore: number
-    liveScore: number
-    players: Player[]
-  }
-  status: 'upcoming' | 'live' | 'completed'
-  gameInfo?: {
-    quarter: number
-    timeRemaining: string
-    lastUpdate: Date
-  }
+  homeTeam: string
+  awayTeam: string
+  homeScore: number
+  awayScore: number
+  quarter: string
+  timeRemaining: string
+  status: 'pregame' | 'in_progress' | 'final' | 'halftime'
+  possession?: 'home' | 'away'
 }
 
-interface Player {
+interface LivePlayer {
   id: string
   name: string
   position: string
-  nflTeam: string
-  isStarting: boolean
+  team: string
+  currentPoints: number
   projectedPoints: number
-  livePoints: number
-  stats: {
-    passingYards?: number
-    rushingYards?: number
-    receivingYards?: number
-    touchdowns?: number
-    fieldGoals?: number
-  }
-  gameStatus: 'not_started' | 'playing' | 'completed'
-  lastUpdate: Date
+  gameStatus: 'active' | 'inactive' | 'complete'
+  lastUpdate?: string
+  recentPlays?: string[]
 }
 
-// Utility function for game status colors
-const getGameStatusColor = (status: string): string => {
-  switch (status) {
-    case 'playing':
-      return 'bg-green-500 text-white'
-    case 'completed':
-      return 'bg-gray-500 text-white'
-    default:
-      return 'bg-blue-500 text-white'
-  }
+interface LiveScoringDashboardProps {
+  games: LiveGame[]
+  myPlayers: LivePlayer[]
+  opponentScore?: number
+  onPlayerClick?: (playerId: string) => void
 }
 
-// Memoized MatchupCard component
-const MatchupCard = memo(function MatchupCard({ 
-  matchup, 
-  viewMode, 
-  selectedMatchup, 
-  onToggleDetails 
-}: {
-  matchup: Matchup
-  viewMode: 'overview' | 'detailed'
-  selectedMatchup: string | null
-  onToggleDetails: (id: string) => void
-}) {
-  const handleToggle = useCallback(() => {
-    onToggleDetails(matchup.id)
-  }, [matchup.id, onToggleDetails])
+export function LiveScoringDashboard({
+  games,
+  myPlayers,
+  opponentScore = 0,
+  onPlayerClick
+}: LiveScoringDashboardProps) {
+  const [liveUpdates, setLiveUpdates] = useState<Map<string, number>>(new Map())
+  const [lastScoreUpdate, setLastScoreUpdate] = useState<{playerId: string, points: number} | null>(null)
 
-  return (
-    <div className="bg-slate-700 rounded-lg p-6">
-      <div className="flex items-center justify-between mb-4">
-        <div className="text-sm text-gray-400">
-          Q{matchup.gameInfo?.quarter} • {matchup.gameInfo?.timeRemaining} remaining
-        </div>
-        <div className="text-sm text-gray-400">
-          Updated {matchup.gameInfo?.lastUpdate.toLocaleTimeString()}
-        </div>
-      </div>
+  const myTotalScore = myPlayers.reduce((sum, p) => sum + p.currentPoints, 0)
+  const myProjected = myPlayers.reduce((sum, p) => sum + p.projectedPoints, 0)
+  const activePlayers = myPlayers.filter(p => p.gameStatus === 'active').length
+  const completePlayers = myPlayers.filter(p => p.gameStatus === 'complete').length
 
-      <div className="grid grid-cols-2 gap-6">
-        {/* Home Team */}
-        <div className="text-center">
-          <h3 className="font-semibold text-white text-lg">{matchup.homeTeam.name}</h3>
-          <p className="text-sm text-gray-400">{matchup.homeTeam.owner.name}</p>
-          <div className="mt-2">
-            <p className="text-3xl font-bold text-green-400">
-              {matchup.homeTeam.liveScore.toFixed(1)}
-            </p>
-            <p className="text-sm text-gray-400">
-              Projected: {matchup.homeTeam.projectedScore.toFixed(1)}
-            </p>
-          </div>
-        </div>
+  const isWinning = myTotalScore > opponentScore
+  const scoreDiff = Math.abs(myTotalScore - opponentScore)
 
-        {/* Away Team */}
-        <div className="text-center">
-          <h3 className="font-semibold text-white text-lg">{matchup.awayTeam.name}</h3>
-          <p className="text-sm text-gray-400">{matchup.awayTeam.owner.name}</p>
-          <div className="mt-2">
-            <p className="text-3xl font-bold text-green-400">
-              {matchup.awayTeam.liveScore.toFixed(1)}
-            </p>
-            <p className="text-sm text-gray-400">
-              Projected: {matchup.awayTeam.projectedScore.toFixed(1)}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {viewMode === 'detailed' && (
-        <div className="mt-6 pt-6 border-t border-slate-600">
-          <div className="grid grid-cols-2 gap-6">
-            {/* Home Team Players */}
-            <div>
-              <h4 className="text-sm font-medium text-gray-400 mb-3">Starting Lineup</h4>
-              <div className="space-y-2">
-                {matchup.homeTeam.players.slice(0, 5).map(player => (
-                  <PlayerRow key={player.id} player={player} />
-                ))}
-              </div>
-            </div>
-
-            {/* Away Team Players */}
-            <div>
-              <h4 className="text-sm font-medium text-gray-400 mb-3">Starting Lineup</h4>
-              <div className="space-y-2">
-                {matchup.awayTeam.players.slice(0, 5).map(player => (
-                  <PlayerRow key={player.id} player={player} />
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="mt-4 flex justify-center">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleToggle}
-        >
-          <ChartBarIcon className="h-4 w-4 mr-2" />
-          {selectedMatchup === matchup.id ? 'Hide Details' : 'View Details'}
-        </Button>
-      </div>
-    </div>
-  )
-})
-
-// Memoized PlayerRow component
-const PlayerRow = memo(function PlayerRow({ player }: { player: Player }) {
-  return (
-  <div className="flex items-center justify-between text-sm">
-    <div className="flex items-center space-x-2">
-      <span className={`w-8 h-4 rounded text-xs text-center ${getGameStatusColor(player.gameStatus)}`}>
-        {player.gameStatus === 'playing' ? 'LIVE' : 
-         player.gameStatus === 'completed' ? 'DONE' : 'WAIT'}
-      </span>
-      <span className="text-white">{player.name}</span>
-      <span className="text-gray-400">({player.position})</span>
-    </div>
-    <span className="text-green-400 font-medium">
-      {player.livePoints.toFixed(1)}
-    </span>
-  </div>
-  )
-})
-
-// Memoized StatusCard component
-const StatusCard = memo(function StatusCard({ 
-  icon: Icon, 
-  iconColor, 
-  label, 
-  value 
-}: {
-  icon: any
-  iconColor: string
-  label: string
-  value: number
-}) {
-  return (
-  <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
-    <div className="flex items-center">
-      <Icon className={`h-8 w-8 ${iconColor} mr-3`} />
-      <div>
-        <p className="text-sm text-gray-400">{label}</p>
-        <p className="text-2xl font-bold text-white">{value}</p>
-      </div>
-    </div>
-  </div>
-  )
-})
-
-export const LiveScoringDashboard = memo(({ leagueId, week }: LiveScoringDashboardProps) => {
-  const { state, scores, liveEvents } = useLiveScoring(leagueId, week)
-  const [matchups, setMatchups] = useState<Matchup[]>([])
-  const [selectedMatchup, setSelectedMatchup] = useState<string | null>(null)
-  const [viewMode, setViewMode] = useState<'overview' | 'detailed'>('overview')
-  const [autoRefresh, setAutoRefresh] = useState(true)
-
-  // Mock data for demonstration
   useEffect(() => {
-    // In real implementation, this would come from the WebSocket or API
-    setMatchups([
-      {
-        id: '1',
-        homeTeam: {
-          id: 'team1',
-          name: 'Fire Breathing Rubber Ducks',
-          owner: { name: 'John Doe' },
-          projectedScore: 124.5,
-          liveScore: 89.7,
-          players: generateMockPlayers('home')
-        },
-        awayTeam: {
-          id: 'team2',
-          name: 'Victorious Secret',
-          owner: { name: 'Jane Smith' },
-          projectedScore: 118.2,
-          liveScore: 95.3,
-          players: generateMockPlayers('away')
-        },
-        status: 'live',
-        gameInfo: {
-          quarter: 3,
-          timeRemaining: '8:42',
-          lastUpdate: new Date()
-        }
-      },
-      {
-        id: '2',
-        homeTeam: {
-          id: 'team3',
-          name: 'The Replacements',
-          owner: { name: 'Mike Johnson' },
-          projectedScore: 108.9,
-          liveScore: 76.4,
-          players: generateMockPlayers('home')
-        },
-        awayTeam: {
-          id: 'team4',
-          name: 'Bench Warmers',
-          owner: { name: 'Sarah Wilson' },
-          projectedScore: 115.6,
-          liveScore: 82.1,
-          players: generateMockPlayers('away')
-        },
-        status: 'live',
-        gameInfo: {
-          quarter: 2,
-          timeRemaining: '3:15',
-          lastUpdate: new Date()
-        }
+    // Simulate live updates (replace with real SSE)
+    const interval = setInterval(() => {
+      const activePlayers = myPlayers.filter(p => p.gameStatus === 'active')
+      if (activePlayers.length > 0) {
+        const randomPlayer = activePlayers[Math.floor(Math.random() * activePlayers.length)]
+        const pointsGained = Math.random() * 5
+        
+        setLiveUpdates(prev => {
+          const newMap = new Map(prev)
+          newMap.set(randomPlayer.id, pointsGained)
+          return newMap
+        })
+        
+        setLastScoreUpdate({ playerId: randomPlayer.id, points: pointsGained })
+        
+        // Clear after animation
+        setTimeout(() => {
+          setLiveUpdates(prev => {
+            const newMap = new Map(prev)
+            newMap.delete(randomPlayer.id)
+            return newMap
+          })
+        }, 2000)
       }
-    ])
-  }, [])
+    }, 5000)
 
-  // Memoized callbacks
-  const handleToggleDetails = useCallback((matchupId: string) => {
-    setSelectedMatchup(prev => prev === matchupId ? null : matchupId)
-  }, [])
+    return () => clearInterval(interval)
+  }, [myPlayers])
 
-  const handleToggleAutoRefresh = useCallback(() => {
-    setAutoRefresh(prev => !prev)
-  }, [])
-
-  const handleViewModeChange = useCallback((mode: 'overview' | 'detailed') => {
-    setViewMode(mode)
-  }, [])
-
-  // Update scores based on live events
-  useEffect(() => {
-    liveEvents.forEach(event => {
-      if (event.type === 'SCORE_UPDATE' && event.matchupId) {
-        setMatchups(prev => prev.map(matchup => 
-          matchup.id === event.matchupId
-            ? {
-                ...matchup,
-                gameInfo: event.gameInfo ? {
-                  ...matchup.gameInfo!,
-                  ...event.gameInfo
-                } : matchup.gameInfo
-              }
-            : matchup
-        ))
-      }
-    })
-  }, [liveEvents])
-
-  // Memoized mock data generator
-  const generateMockPlayers = useCallback((team: 'home' | 'away'): Player[] => {
-    const positions = ['QB', 'RB', 'RB', 'WR', 'WR', 'TE', 'FLEX', 'K', 'DEF']
-    return positions.map((pos: any, index: number) => ({
-      id: `${team}-player-${index}`,
-      name: `Player ${index + 1}`,
-      position: pos,
-      nflTeam: ['BUF', 'MIA', 'NE', 'NYJ'][Math.floor(Math.random() * 4)],
-      isStarting: true,
-      projectedPoints: 8 + Math.random() * 15,
-      livePoints: Math.random() * 20,
-      stats: {
-        passingYards: pos === 'QB' ? Math.floor(Math.random() * 300) : undefined,
-        rushingYards: ['QB', 'RB'].includes(pos) ? Math.floor(Math.random() * 100) : undefined,
-        receivingYards: ['WR', 'TE'].includes(pos) ? Math.floor(Math.random() * 120) : undefined,
-        touchdowns: Math.floor(Math.random() * 3),
-        fieldGoals: pos === 'K' ? Math.floor(Math.random() * 4) : undefined
-      },
-      gameStatus: ['not_started', 'playing', 'completed'][Math.floor(Math.random() * 3)] as any,
-      lastUpdate: new Date()
-    }))
-  }, [])
-
-  // Memoized filtered matchups
-  const { liveMatchups, completedMatchups, upcomingMatchups } = useMemo(() => ({
-    liveMatchups: matchups.filter(m => m.status === 'live'),
-    completedMatchups: matchups.filter(m => m.status === 'completed'),
-    upcomingMatchups: matchups.filter(m => m.status === 'upcoming')
-  }), [matchups])
-
-  // Memoized recent events
-  const recentEvents = useMemo(() => 
-    liveEvents.slice(-10).reverse(), 
-    [liveEvents]
-  )
-
-  if (!state.connected) {
-    return (
-      <div className="flex items-center justify-center h-64 bg-slate-900">
-        <div className="text-center">
-          <div className="loading-spinner h-8 w-8 mx-auto mb-4"></div>
-          <p className="text-white">Connecting to live scoring...</p>
-        </div>
-      </div>
-    )
+  const getGameStatusColor = (status: string) => {
+    switch (status) {
+      case 'in_progress': return 'bg-red-500'
+      case 'halftime': return 'bg-yellow-500'
+      case 'final': return 'bg-slate-500'
+      default: return 'bg-slate-600'
+    }
   }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Live Scoring - Week {week}</h1>
-          <p className="text-gray-400">Real-time fantasy updates</p>
-        </div>
-
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2">
-            <BoltIcon className={`h-5 w-5 ${autoRefresh ? 'text-green-400' : 'text-gray-400'}`} />
-            <button
-              onClick={handleToggleAutoRefresh}
-              className={`text-sm font-medium ${
-                autoRefresh ? 'text-green-400' : 'text-gray-400'
-              }`}
-            >
-              Auto-refresh: {autoRefresh ? 'ON' : 'OFF'}
-            </button>
-          </div>
-
-          <div className="flex space-x-2">
-            <Button
-              variant={viewMode === 'overview' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => handleViewModeChange('overview')}
-            >
-              Overview
-            </Button>
-            <Button
-              variant={viewMode === 'detailed' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => handleViewModeChange('detailed')}
-            >
-              Detailed
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Live Games Status */}
+      {/* Score Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <StatusCard 
-          icon={TvIcon}
-          iconColor="text-red-400"
-          label="Live Games"
-          value={liveMatchups.length}
-        />
-        <StatusCard 
-          icon={ClockIcon}
-          iconColor="text-blue-400"
-          label="Upcoming"
-          value={upcomingMatchups.length}
-        />
-        <StatusCard 
-          icon={TrophyIcon}
-          iconColor="text-green-400"
-          label="Completed"
-          value={completedMatchups.length}
-        />
+        {/* My Score */}
+        <motion.div
+          animate={isWinning ? { scale: [1, 1.02, 1] } : {}}
+          transition={{ duration: 0.5 }}
+          className={cn(
+            'p-6 rounded-xl border-2',
+            'bg-gradient-to-br from-slate-800/50 to-slate-900/50',
+            isWinning 
+              ? 'border-emerald-500/50 shadow-lg shadow-emerald-500/20' 
+              : 'border-slate-700/50'
+          )}
+        >
+          <div className="text-sm text-slate-400 mb-2">My Team</div>
+          <div className="flex items-baseline gap-3">
+            <div className={cn(
+              'text-5xl font-bold tabular-nums',
+              isWinning ? 'text-emerald-400' : 'text-white'
+            )}>
+              {myTotalScore.toFixed(1)}
+            </div>
+            {isWinning && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="text-emerald-400"
+              >
+                <TrendingUp className="w-6 h-6" />
+              </motion.div>
+            )}
+          </div>
+          <div className="flex items-center gap-2 mt-2">
+            <span className="text-sm text-slate-400">Projected:</span>
+            <span className="text-sm font-semibold text-blue-400 tabular-nums">
+              {myProjected.toFixed(1)}
+            </span>
+          </div>
+        </motion.div>
+
+        {/* Score Difference */}
+        <div className="p-6 rounded-xl border-2 border-slate-700/50 bg-gradient-to-br from-slate-800/50 to-slate-900/50">
+          <div className="text-sm text-slate-400 mb-2">
+            {isWinning ? 'Leading By' : 'Trailing By'}
+          </div>
+          <div className="flex items-center gap-3">
+            <div className={cn(
+              'text-4xl font-bold tabular-nums',
+              isWinning ? 'text-emerald-400' : 'text-red-400'
+            )}>
+              {scoreDiff.toFixed(1)}
+            </div>
+            {isWinning ? (
+              <Trophy className="w-6 h-6 text-emerald-400" />
+            ) : (
+              <AlertCircle className="w-6 h-6 text-red-400" />
+            )}
+          </div>
+          <div className="mt-2 text-xs text-slate-500">
+            {activePlayers} active • {completePlayers} final
+          </div>
+        </div>
+
+        {/* Opponent Score */}
+        <div className={cn(
+          'p-6 rounded-xl border-2',
+          'bg-gradient-to-br from-slate-800/50 to-slate-900/50',
+          !isWinning 
+            ? 'border-red-500/50 shadow-lg shadow-red-500/20' 
+            : 'border-slate-700/50'
+        )}>
+          <div className="text-sm text-slate-400 mb-2">Opponent</div>
+          <div className="flex items-baseline gap-3">
+            <div className={cn(
+              'text-5xl font-bold tabular-nums',
+              !isWinning ? 'text-red-400' : 'text-white'
+            )}>
+              {opponentScore.toFixed(1)}
+            </div>
+            {!isWinning && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="text-red-400"
+              >
+                <TrendingUp className="w-6 h-6" />
+              </motion.div>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* Live Matchups */}
-      {liveMatchups.length > 0 && (
-        <div className="bg-slate-800 rounded-lg border border-slate-700">
-          <div className="p-6 border-b border-slate-700">
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-              <h2 className="text-xl font-semibold text-white">Live Games</h2>
-            </div>
-          </div>
-          <div className="p-6 space-y-4">
-            {liveMatchups.map(matchup => (
-              <MatchupCard
-                key={matchup.id}
-                matchup={matchup}
-                viewMode={viewMode}
-                selectedMatchup={selectedMatchup}
-                onToggleDetails={handleToggleDetails}
-              />
-            ))}
+      {/* Live Games Ticker */}
+      <div className="p-4 rounded-xl bg-slate-800/50 border border-slate-700/50">
+        <div className="flex items-center gap-3 mb-4">
+          <Tv className="w-5 h-5 text-blue-400" />
+          <h3 className="font-semibold text-white">Live Games</h3>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+            <span className="text-xs text-slate-400">LIVE</span>
           </div>
         </div>
-      )}
 
-      {/* Recent Score Updates */}
-      <div className="bg-slate-800 rounded-lg border border-slate-700">
-        <div className="p-6 border-b border-slate-700">
-          <h2 className="text-xl font-semibold text-white">Recent Updates</h2>
-        </div>
-        <div className="p-6">
-          <div className="space-y-3 max-h-64 overflow-y-auto">
-            {recentEvents.map((event: any, index: number) => (
-              <div key={index} className="flex items-center space-x-3 p-3 bg-slate-700 rounded-lg">
-                <BoltIcon className="h-5 w-5 text-yellow-400 flex-shrink-0" />
-                <div className="flex-1">
-                  <p className="text-sm text-white">
-                    {event.type === 'SCORE_UPDATE' ? 'Score Update' :
-                     event.type === 'PLAYER_STAT_UPDATE' ? 'Player Stat Update' :
-                     event.type}
-                  </p>
-                  <p className="text-xs text-gray-400">
-                    {new Date().toLocaleTimeString()}
-                  </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {games.map((game) => (
+            <motion.div
+              key={game.id}
+              whileHover={{ scale: 1.02 }}
+              className="p-3 rounded-lg bg-slate-900/50 border border-slate-700/50 hover:border-blue-500/50 transition-all cursor-pointer"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className={cn(
+                  'px-2 py-0.5 rounded text-xs font-semibold uppercase',
+                  getGameStatusColor(game.status)
+                )}>
+                  {game.status === 'in_progress' ? game.quarter : game.status}
+                </span>
+                {game.timeRemaining && (
+                  <span className="text-xs text-slate-400">{game.timeRemaining}</span>
+                )}
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className={cn(
+                      'font-medium text-sm',
+                      game.awayScore > game.homeScore ? 'text-white' : 'text-slate-400'
+                    )}>
+                      {game.awayTeam}
+                    </span>
+                    {game.possession === 'away' && (
+                      <div className="w-2 h-2 rounded-full bg-yellow-500" />
+                    )}
+                  </div>
+                  <span className={cn(
+                    'font-bold tabular-nums',
+                    game.awayScore > game.homeScore ? 'text-white' : 'text-slate-400'
+                  )}>
+                    {game.awayScore}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className={cn(
+                      'font-medium text-sm',
+                      game.homeScore > game.awayScore ? 'text-white' : 'text-slate-400'
+                    )}>
+                      {game.homeTeam}
+                    </span>
+                    {game.possession === 'home' && (
+                      <div className="w-2 h-2 rounded-full bg-yellow-500" />
+                    )}
+                  </div>
+                  <span className={cn(
+                    'font-bold tabular-nums',
+                    game.homeScore > game.awayScore ? 'text-white' : 'text-slate-400'
+                  )}>
+                    {game.homeScore}
+                  </span>
                 </div>
               </div>
-            ))}
+            </motion.div>
+          ))}
+        </div>
+      </div>
+
+      {/* Active Players */}
+      <div className="p-4 rounded-xl bg-slate-800/50 border border-slate-700/50">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <Activity className="w-5 h-5 text-emerald-400" />
+            <h3 className="font-semibold text-white">Active Players</h3>
+            <span className="text-xs text-slate-400">({activePlayers} playing)</span>
           </div>
+
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4 text-slate-400" />
+            <span className="text-xs text-slate-400">Updates every 5sec</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {myPlayers.filter(p => p.gameStatus !== 'inactive').map((player) => {
+            const hasUpdate = liveUpdates.has(player.id)
+            const updatePoints = liveUpdates.get(player.id) || 0
+
+            return (
+              <motion.div
+                key={player.id}
+                layout
+                onClick={() => onPlayerClick?.(player.id)}
+                className="relative p-3 rounded-lg bg-slate-900/50 border border-slate-700/50 hover:border-blue-500/50 transition-all cursor-pointer overflow-hidden"
+              >
+                {/* Score Update Animation */}
+                <AnimatePresence>
+                  {hasUpdate && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 20 }}
+                      className="absolute top-2 right-2 px-2 py-1 rounded-lg bg-emerald-500 text-white text-xs font-bold shadow-lg"
+                    >
+                      +{updatePoints.toFixed(1)}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Pulse effect on update */}
+                {hasUpdate && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: [0, 0.5, 0] }}
+                    transition={{ duration: 1 }}
+                    className="absolute inset-0 bg-emerald-500/20 rounded-lg"
+                  />
+                )}
+
+                <div className="relative z-10">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-white truncate">{player.name}</h4>
+                      <p className="text-xs text-slate-400">{player.position} • {player.team}</p>
+                    </div>
+
+                    <div className="ml-2">
+                      {player.gameStatus === 'active' ? (
+                        <Play className="w-4 h-4 text-emerald-400" />
+                      ) : player.gameStatus === 'complete' ? (
+                        <CheckCircle2 className="w-4 h-4 text-slate-500" />
+                      ) : (
+                        <Pause className="w-4 h-4 text-slate-600" />
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-2xl font-bold text-white tabular-nums">
+                        {player.currentPoints.toFixed(1)}
+                      </div>
+                      <div className="text-xs text-slate-500">
+                        proj: {player.projectedPoints.toFixed(1)}
+                      </div>
+                    </div>
+
+                    {player.currentPoints > player.projectedPoints ? (
+                      <TrendingUp className="w-5 h-5 text-emerald-400" />
+                    ) : player.currentPoints < player.projectedPoints * 0.5 ? (
+                      <TrendingDown className="w-5 h-5 text-red-400" />
+                    ) : null}
+                  </div>
+
+                  {/* Recent Play */}
+                  {player.lastUpdate && (
+                    <div className="mt-2 text-xs text-blue-400 truncate">
+                      {player.lastUpdate}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Bench Points Tracker */}
+      <div className="p-4 rounded-xl bg-slate-800/50 border border-slate-700/50">
+        <div className="flex items-center gap-3 mb-3">
+          <Zap className="w-5 h-5 text-yellow-400" />
+          <h3 className="font-semibold text-white">Bench Watch</h3>
+          <span className="text-xs text-slate-400">(points left on bench)</span>
+        </div>
+
+        <div className="space-y-2">
+          {myPlayers
+            .filter(p => !p.gameStatus)
+            .slice(0, 3)
+            .map((player) => (
+              <div
+                key={player.id}
+                className="flex items-center justify-between p-2 rounded-lg bg-slate-900/30"
+              >
+                <div>
+                  <span className="text-sm text-white">{player.name}</span>
+                  <span className="text-xs text-slate-400 ml-2">({player.position})</span>
+                </div>
+                <span className="text-sm font-semibold text-yellow-400 tabular-nums">
+                  {player.currentPoints.toFixed(1)}
+                </span>
+              </div>
+            ))}
         </div>
       </div>
     </div>
   )
-})
-
-LiveScoringDashboard.displayName = 'LiveScoringDashboard'
-
-
+}

@@ -1,8 +1,8 @@
 'use client'
 
 /**
- * Trades Page - Complete Rebuild
- * Modern trade center with AI-powered analysis
+ * Trades Page - Elite Trade Center
+ * AI-powered trade builder with fairness analysis
  */
 
 import { useSession } from 'next-auth/react'
@@ -10,21 +10,14 @@ import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { DashboardLayout } from '@/components/dashboard/layout'
 import { PageHeader } from '@/components/ui/page-header'
-import { ModernCard, ModernCardContent, ModernCardHeader, ModernCardTitle } from '@/components/ui/modern-card'
-import { ActionButton } from '@/components/ui/action-button'
 import { EmptyState } from '@/components/ui/empty-state'
-import { LoadingState } from '@/components/ui/loading-state'
+import { VisualTradeBuilder } from '@/components/trades/visual-trade-builder'
 import { 
   ArrowLeftRight, 
-  TrendingUp, 
-  TrendingDown, 
   Sparkles,
-  Users,
-  Plus,
-  AlertCircle,
-  CheckCircle2,
   Loader2
 } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface TradeData {
   myTeam: {

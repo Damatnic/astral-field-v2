@@ -5,6 +5,7 @@ import { CatalystPerformanceDashboard } from '@/components/performance/catalyst-
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { Analytics } from '@vercel/analytics/react'
 import { SessionWrapper } from '@/components/providers/session-provider'
+import { ToasterProvider } from '@/components/providers/toaster-provider'
 
 // Catalyst: Optimized font loading with display swap
 const inter = Inter({ 
@@ -174,7 +175,7 @@ export default function RootLayout({
           `
         }} />
       </head>
-      <body className={`${inter.className} antialiased min-h-screen bg-slate-900 text-white`}>
+      <body suppressHydrationWarning className={`${inter.className} antialiased min-h-screen bg-slate-900 text-white`}>
         {/* Catalyst: Performance budget warning for development */}
         {process.env.NODE_ENV === 'development' && (
           <script dangerouslySetInnerHTML={{
@@ -218,6 +219,9 @@ export default function RootLayout({
         {/* Catalyst: Analytics with performance impact minimization */}
         <SpeedInsights />
         <Analytics />
+
+        {/* Toast Notifications */}
+        <ToasterProvider />
 
         {/* Catalyst: Service worker registration for PWA capabilities */}
         <script dangerouslySetInnerHTML={{
