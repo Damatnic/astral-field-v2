@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { ShareButton } from '@/components/sharing/share-button'
 
 export default function PlayerDetailPage() {
   const params = useParams()
@@ -155,6 +156,16 @@ export default function PlayerDetailPage() {
             <Repeat className="w-5 h-5" />
             Propose Trade
           </button>
+          <ShareButton
+            data={{
+              title: `${player.name} - Fantasy Stats`,
+              text: `Check out ${player.name}'s performance on AstralField! ${player.fantasyPoints?.toFixed(1)} fantasy points this season.`,
+              url: `${typeof window !== 'undefined' ? window.location.origin : ''}/players/${player.id}`,
+              hashtags: ['FantasyFootball', 'NFL'],
+              imageUrl: `/api/og?type=player&title=${encodeURIComponent(player.name)}&subtitle=${encodeURIComponent(player.position + ' • ' + player.team)}&stat1=Points:${player.fantasyPoints?.toFixed(1)}&stat2=Avg:${(player.fantasyPoints / 8).toFixed(1)}&stat3=Proj:${player.projectedPoints?.toFixed(1)}`
+            }}
+            variant="minimal"
+          />
         </div>
 
         {/* Two Column Layout */}

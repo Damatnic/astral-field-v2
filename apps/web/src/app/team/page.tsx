@@ -7,6 +7,7 @@ import { ModernLayout } from '@/components/layout/modern-layout'
 import { Users } from 'lucide-react'
 import { toast } from 'sonner'
 import { DragDropLineupEditor } from '@/components/lineup/drag-drop-lineup-editor'
+import { ShareButton } from '@/components/sharing/share-button'
 
 export default function TeamPage() {
   const { data: session, status } = useSession()
@@ -119,16 +120,28 @@ export default function TeamPage() {
             </div>
           </div>
 
-          {/* Quick Stats */}
-          <div className="flex gap-4">
-            <div className="bg-slate-900 rounded-lg p-4 border border-slate-800">
-              <p className="text-xs text-slate-400 mb-1">Starting Points</p>
-              <p className="text-xl font-bold text-white">{totalPoints.toFixed(1)}</p>
+          {/* Quick Stats & Share */}
+          <div className="flex items-center gap-4">
+            <div className="flex gap-4">
+              <div className="bg-slate-900 rounded-lg p-4 border border-slate-800">
+                <p className="text-xs text-slate-400 mb-1">Starting Points</p>
+                <p className="text-xl font-bold text-white">{totalPoints.toFixed(1)}</p>
+              </div>
+              <div className="bg-slate-900 rounded-lg p-4 border border-slate-800">
+                <p className="text-xs text-slate-400 mb-1">Projected</p>
+                <p className="text-xl font-bold text-white">{projectedPoints.toFixed(1)}</p>
+              </div>
             </div>
-            <div className="bg-slate-900 rounded-lg p-4 border border-slate-800">
-              <p className="text-xs text-slate-400 mb-1">Projected</p>
-              <p className="text-xl font-bold text-white">{projectedPoints.toFixed(1)}</p>
-            </div>
+            <ShareButton
+              data={{
+                title: `${teamData.name} - Fantasy Team`,
+                text: `Check out my fantasy team! ${totalPoints.toFixed(1)} points scored with ${projectedPoints.toFixed(1)} projected.`,
+                url: `${typeof window !== 'undefined' ? window.location.origin : ''}/team`,
+                hashtags: ['FantasyFootball', 'MyTeam'],
+                imageUrl: `/api/og?type=team&title=${encodeURIComponent(teamData.name)}&subtitle=${teamData.wins || 0}-${teamData.losses || 0}&stat1=Points:${totalPoints.toFixed(1)}&stat2=Projected:${projectedPoints.toFixed(1)}&stat3=Rank:${teamData.rank || 'N/A'}`
+              }}
+              variant="icon"
+            />
           </div>
         </div>
 

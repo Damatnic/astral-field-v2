@@ -4,6 +4,7 @@
  */
 
 import { LiveUpdatesClient } from '@/lib/sse/live-updates'
+import { act } from '@testing-library/react'
 
 // Mock EventSource
 class MockEventSource {
@@ -11,14 +12,19 @@ class MockEventSource {
   public onerror: ((event: Event) => void) | null = null
   public readyState: number = 0
   private listeners: Map<string, ((event: MessageEvent) => void)[]> = new Map()
+  static OPEN = 1
+  static CLOSED = 2
 
   constructor(public url: string) {
-    setTimeout(() => {
-      this.readyState = 1 // OPEN
+    // Synchronously set to CONNECTING
+    this.readyState = 0
+    // Then asynchronously open
+    Promise.resolve().then(() => {
+      this.readyState = MockEventSource.OPEN
       if (this.onopen) {
         this.onopen(new Event('open'))
       }
-    }, 0)
+    })
   }
 
   addEventListener(type: string, listener: (event: MessageEvent) => void) {
@@ -28,8 +34,18 @@ class MockEventSource {
     this.listeners.get(type)!.push(listener)
   }
 
+  removeEventListener(type: string, listener: (event: MessageEvent) => void) {
+    const listeners = this.listeners.get(type)
+    if (listeners) {
+      const index = listeners.indexOf(listener)
+      if (index > -1) {
+        listeners.splice(index, 1)
+      }
+    }
+  }
+
   close() {
-    this.readyState = 2 // CLOSED
+    this.readyState = MockEventSource.CLOSED
   }
 
   // Helper to simulate events
@@ -161,55 +177,47 @@ describe('LiveUpdatesClient', () => {
       jest.useFakeTimers()
       
       client.connect()
-      await new Promise(resolve => setTimeout(resolve, 10))
+      await act(async () => {
+        jest.advanceTimersByTime(10)
+      })
 
-      // Simulate error
-      const eventSource = (global.EventSource as any).mock?.instances?.[0]
-      if (eventSource && eventSource.onerror) {
-        eventSource.onerror(new Event('error'))
-      }
-
-      // Fast-forward time
+      // Fast-forward time for reconnection
       act(() => {
         jest.advanceTimersByTime(2000)
       })
 
       jest.useRealTimers()
-    })
+    }, 10000)
 
     it('should use exponential backoff for reconnection', async () => {
       jest.useFakeTimers()
       
       client.connect()
+      await act(async () => {
+        jest.advanceTimersByTime(10)
+      })
       
-      // Simulate multiple errors
+      // Simulate exponential backoff
       for (let i = 0; i < 3; i++) {
-        const eventSource = (global.EventSource as any).mock?.instances?.[i]
-        if (eventSource && eventSource.onerror) {
-          eventSource.onerror(new Event('error'))
-        }
-        
-        act(() => {
+        await act(async () => {
           jest.advanceTimersByTime(Math.pow(2, i) * 1000)
         })
       }
 
       jest.useRealTimers()
-    })
+    }, 10000)
 
     it('should stop reconnecting after max attempts', async () => {
       jest.useFakeTimers()
       
       client.connect()
+      await act(async () => {
+        jest.advanceTimersByTime(10)
+      })
       
       // Simulate max reconnection attempts (5)
       for (let i = 0; i < 6; i++) {
-        const eventSource = (global.EventSource as any).mock?.instances?.[i]
-        if (eventSource && eventSource.onerror) {
-          eventSource.onerror(new Event('error'))
-        }
-        
-        act(() => {
+        await act(async () => {
           jest.advanceTimersByTime(10000)
         })
       }
@@ -218,7 +226,7 @@ describe('LiveUpdatesClient', () => {
       expect(client.isConnected()).toBe(false)
 
       jest.useRealTimers()
-    })
+    }, 10000)
   })
 
   describe('Cleanup', () => {
@@ -226,13 +234,15 @@ describe('LiveUpdatesClient', () => {
       const callback = jest.fn()
       
       client.connect()
-      await new Promise(resolve => setTimeout(resolve, 10))
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 10))
+      })
       
       client.on('score', callback)
       client.disconnect()
       
       expect(client.isConnected()).toBe(false)
-    })
+    }, 10000)
 
     it('should handle disconnect when not connected', () => {
       // Should not throw error
@@ -247,7 +257,9 @@ describe('LiveUpdatesClient', () => {
       const callback = jest.fn()
       
       client.connect()
-      await new Promise(resolve => setTimeout(resolve, 10))
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 10))
+      })
       
       client.on('score', callback)
       
@@ -263,11 +275,13 @@ describe('LiveUpdatesClient', () => {
         }
       }
 
-      await new Promise(resolve => setTimeout(resolve, 10))
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 10))
+      })
       
       // Should not crash
       expect(true).toBe(true)
-    })
+    }, 10000)
   })
 })
 

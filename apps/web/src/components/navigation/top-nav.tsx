@@ -1,8 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { Bell, ChevronDown, Search } from 'lucide-react'
+import { ChevronDown, Search } from 'lucide-react'
 import { useSession } from 'next-auth/react'
+import { NotificationCenter } from '@/components/notifications/notification-center'
 
 interface TopNavProps {
   currentWeek?: number
@@ -10,7 +11,6 @@ interface TopNavProps {
 }
 
 export function TopNav({ currentWeek = 1, leagueName = 'My League' }: TopNavProps) {
-  const [showNotifications, setShowNotifications] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const { data: session } = useSession()
 
@@ -40,35 +40,7 @@ export function TopNav({ currentWeek = 1, leagueName = 'My League' }: TopNavProp
           </div>
 
           {/* Notifications */}
-          <div className="relative">
-            <button
-              onClick={() => setShowNotifications(!showNotifications)}
-              className="relative p-2 rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
-            >
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
-            </button>
-
-            {/* Notifications Dropdown */}
-            {showNotifications && (
-              <>
-                <div
-                  className="fixed inset-0 z-10"
-                  onClick={() => setShowNotifications(false)}
-                />
-                <div className="absolute right-0 mt-2 w-80 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-20">
-                  <div className="p-4 border-b border-slate-700">
-                    <h3 className="text-sm font-semibold text-white">Notifications</h3>
-                  </div>
-                  <div className="p-4">
-                    <p className="text-sm text-slate-400 text-center">
-                      No new notifications
-                    </p>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
+          <NotificationCenter />
 
           {/* User Menu */}
           <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-slate-800 rounded-lg">

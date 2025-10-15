@@ -57,7 +57,10 @@ export default function PlayersPage() {
     setTeam('')
   }
 
-  const enhancedPlayers = players.map(p => enhancePlayerWithAdvancedStats(p))
+  const enhancedPlayers = players.map(p => ({
+    ...enhancePlayerWithAdvancedStats(p),
+    nflTeam: p.nflTeam || p.team
+  }))
 
   return (
     <ModernLayout>

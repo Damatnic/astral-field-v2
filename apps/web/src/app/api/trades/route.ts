@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/database/prisma'
 import { auth } from '@/lib/auth'
+import { sendNotificationToUser } from '@/app/api/notifications/sse/route'
 
 export const dynamic = 'force-dynamic'
 
@@ -401,6 +402,17 @@ async function proposeTrade(data: any, userId: string) {
     }
   })
 
+  // Send real-time notification via SSE
+  sendNotificationToUser(receivingTeam.ownerId, {
+    type: 'trade',
+    title: 'New Trade Proposal',
+    message: `${proposingTeam.owner.name} has proposed a trade`,
+    actionUrl: `/trades?id=${trade.id}`,
+    actionLabel: 'View Trade',
+    priority: 'high',
+    metadata: { tradeId: trade.id, proposingTeam: proposingTeam.name }
+  })
+
   return NextResponse.json({
     success: true,
     data: trade
@@ -478,6 +490,17 @@ async function respondToTrade(data: any, userId: string) {
         receivingTeam: trade.receivingTeam.name
       })
     }
+  })
+
+  // Send real-time notification via SSE
+  sendNotificationToUser(trade.proposingTeam.ownerId, {
+    type: 'trade',
+    title: `Trade ${response}`,
+    message: `${trade.receivingTeam.owner.name} has ${response.toLowerCase()} your trade proposal`,
+    actionUrl: `/trades?id=${tradeId}`,
+    actionLabel: 'View Trade',
+    priority: response === 'ACCEPTED' ? 'high' : 'normal',
+    metadata: { tradeId, response }
   })
 
   return NextResponse.json({

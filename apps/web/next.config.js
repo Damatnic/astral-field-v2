@@ -25,8 +25,30 @@ const nextConfig = {
     minimumCacheTTL: 60 * 60 * 24 * 365,
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384, 512, 1024],
-    dangerouslyAllowSVG: false,
-    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;"
+    dangerouslyAllowSVG: true,
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'a.espncdn.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'static.www.nfl.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.nfl.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'upload.wikimedia.org',
+        pathname: '/**',
+      },
+    ],
   },
   
   async headers() {

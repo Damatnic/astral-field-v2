@@ -5,19 +5,84 @@ import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { ModernLayout } from '@/components/layout/modern-layout'
 import { Sparkles, Lightbulb, TrendingUp, AlertCircle } from 'lucide-react'
+import { AdvancedInsightsPanel } from '@/components/ai-coach/advanced-insights-panel'
+import { findBreakoutCandidates } from '@/lib/ai/breakout-predictor'
+import { recommendQBStreaming, recommendTEStreaming, recommendDSTStreaming } from '@/lib/ai/streaming-advisor'
+import { identifyTradeTargets } from '@/lib/ai/trade-analyzer'
+import { fantasyDataGenerator } from '@/lib/ai/fantasy-data-generator'
 
 export default function AICoachPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const [loading, setLoading] = useState(true)
+  const [streamingTargets, setStreamingTargets] = useState<any[]>([])
+  const [breakoutCandidates, setBreakoutCandidates] = useState<any[]>([])
+  const [buyLowTargets, setBuyLowTargets] = useState<any[]>([])
+  const [sellHighCandidates, setSellHighCandidates] = useState<any[]>([])
 
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/auth/signin')
     } else if (status === 'authenticated') {
-      setLoading(false)
+      loadAIInsights()
     }
   }, [status, router])
+
+  const loadAIInsights = async () => {
+    try {
+      setLoading(true)
+      
+      // Get player data
+      const allPlayers = fantasyDataGenerator.getPlayers()
+      const currentWeek = 4
+      
+      // Generate streaming recommendations
+      const matchups = allPlayers.slice(0, 32).map((p, idx) => ({
+        team: p.nflTeam || 'UNK',
+        opponent: allPlayers[Math.floor(Math.random() * 32)]?.nflTeam || 'OPP',
+        homeAway: idx % 2 === 0 ? 'HOME' as const : 'AWAY' as const,
+        vegasTotal: 45 + Math.random() * 10,
+        vegasSpread: -7 + Math.random() * 14
+      }))
+      
+      const qbStreaming = recommendQBStreaming(
+        allPlayers.filter(p => p.position === 'QB'),
+        matchups,
+        currentWeek
+      )
+      const teStreaming = recommendTEStreaming(
+        allPlayers.filter(p => p.position === 'TE'),
+        matchups,
+        currentWeek
+      )
+      const dstStreaming = recommendDSTStreaming(
+        allPlayers.filter(p => p.position === 'DST' || p.position === 'DEF'),
+        matchups,
+        currentWeek
+      )
+      
+      setStreamingTargets([...qbStreaming, ...teStreaming, ...dstStreaming])
+      
+      // Find breakout candidates
+      const breakouts = findBreakoutCandidates(
+        allPlayers.filter(p => p.isFantasyRelevant),
+        currentWeek,
+        10
+      )
+      setBreakoutCandidates(breakouts)
+      
+      // Identify trade targets
+      const myRoster = allPlayers.slice(0, 16)
+      const { buyLow, sellHigh } = identifyTradeTargets(myRoster, allPlayers)
+      setBuyLowTargets(buyLow)
+      setSellHighCandidates(sellHigh)
+      
+    } catch (error) {
+      console.error('Error loading AI insights:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const recommendations = [
     {
@@ -115,6 +180,15 @@ export default function AICoachPage() {
             </div>
           ))}
         </div>
+
+        {/* Advanced Insights Panel */}
+        <AdvancedInsightsPanel
+          streamingTargets={streamingTargets}
+          breakoutCandidates={breakoutCandidates}
+          sellHighCandidates={sellHighCandidates}
+          buyLowTargets={buyLowTargets}
+          injuryImpacts={[]}
+        />
       </div>
     </ModernLayout>
   )

@@ -166,6 +166,7 @@ export function PlayerComparisonTool({
           <div className="flex items-center gap-2">
             <button
               onClick={handleExport}
+              data-testid="export-comparison-button"
               className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 transition-colors"
             >
               <Download className="w-4 h-4" />
@@ -174,7 +175,9 @@ export function PlayerComparisonTool({
 
             <button
               onClick={onClose}
+              data-testid="close-comparison-button"
               className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-400 transition-colors"
+              aria-label="Close"
             >
               <X className="w-5 h-5" />
             </button>
@@ -197,7 +200,9 @@ export function PlayerComparisonTool({
                         <div className="relative group">
                           <button
                             onClick={() => handleRemovePlayer(player.id)}
+                            data-testid={`remove-player-${player.id}`}
                             className="absolute -top-2 -right-2 p-1 rounded-full bg-red-500/20 border border-red-500/30 text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                            aria-label={`Remove ${player.name}`}
                           >
                             <X className="w-3 h-3" />
                           </button>
@@ -216,6 +221,7 @@ export function PlayerComparisonTool({
                     <th className="px-4 py-3">
                       <button
                         onClick={onAddPlayer}
+                        data-testid="add-player-button"
                         className="flex flex-col items-center gap-2 p-4 rounded-lg border-2 border-dashed border-slate-700 hover:border-blue-500/50 hover:bg-blue-500/5 transition-all"
                       >
                         <Plus className="w-6 h-6 text-slate-500" />

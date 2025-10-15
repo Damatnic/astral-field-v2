@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/database/prisma'
+import { sendNotificationToUser } from '@/app/api/notifications/sse/route'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,9 +16,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get user's team
+    // Get user's team with league data
     const team = await prisma.team.findFirst({
-      where: { ownerId: userId }
+      where: { ownerId: userId },
+      include: {
+        league: {
+          select: {
+            currentWeek: true
+          }
+        }
+      }
     })
 
     if (!team) {
@@ -33,6 +41,12 @@ export async function POST(request: NextRequest) {
       orderBy: { priority: 'asc' }
     })
 
+    // Get player name for notification
+    const player = await prisma.player.findUnique({
+      where: { id: playerId },
+      select: { name: true }
+    })
+
     // Create waiver claim
     const claim = await prisma.waiverClaim.create({
       data: {
@@ -40,8 +54,20 @@ export async function POST(request: NextRequest) {
         playerId,
         droppedPlayerId: dropPlayerId,
         status: 'PENDING',
-        priority: waiverPriority?.priority || 1
+        priority: waiverPriority?.priority || 1,
+        week: team.league?.currentWeek || 1
       }
+    })
+
+    // Send real-time notification via SSE
+    sendNotificationToUser(userId, {
+      type: 'waiver',
+      title: 'Waiver Claim Submitted',
+      message: `Your waiver claim for ${player?.name || 'player'} has been submitted`,
+      actionUrl: '/waivers',
+      actionLabel: 'View Waivers',
+      priority: 'normal',
+      metadata: { playerId, claimId: claim.id }
     })
 
     return NextResponse.json(

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { ModernLayout } from '@/components/layout/modern-layout'
 import { Trophy, TrendingUp } from 'lucide-react'
+import { ShareButton } from '@/components/sharing/share-button'
 
 export default function MatchupsPage() {
   const { data: session, status } = useSession()
@@ -60,14 +61,26 @@ export default function MatchupsPage() {
     <ModernLayout>
       <div className="p-4 lg:p-8 space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-3">
-          <div className="p-3 bg-orange-600 rounded-lg">
-            <Trophy className="w-6 h-6 text-white" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-orange-600 rounded-lg">
+              <Trophy className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-white">This Week's Matchup</h1>
+              <p className="text-slate-400">Head-to-head competition</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-white">This Week's Matchup</h1>
-            <p className="text-slate-400">Head-to-head competition</p>
-          </div>
+          <ShareButton
+            data={{
+              title: `${matchup.myTeam.name} vs ${matchup.opponent.name}`,
+              text: `Check out this epic matchup! ${matchup.myTeam.name} ${matchup.myTeam.score > matchup.opponent.score ? 'defeated' : 'faced'} ${matchup.opponent.name} ${matchup.myTeam.score.toFixed(1)} - ${matchup.opponent.score.toFixed(1)}`,
+              url: `${typeof window !== 'undefined' ? window.location.origin : ''}/matchups`,
+              hashtags: ['FantasyFootball', 'NFL'],
+              imageUrl: `/api/og?type=matchup&title=${encodeURIComponent(matchup.myTeam.name + ' vs ' + matchup.opponent.name)}&subtitle=Week 4&stat1=Score:${matchup.myTeam.score.toFixed(1)}&stat2=Score:${matchup.opponent.score.toFixed(1)}`
+            }}
+            variant="icon"
+          />
         </div>
 
         {/* Matchup Card */}

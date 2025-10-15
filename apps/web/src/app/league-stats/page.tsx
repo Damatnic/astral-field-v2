@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { ModernLayout } from '@/components/layout/modern-layout'
 import { Trophy, TrendingUp, TrendingDown } from 'lucide-react'
+import { ShareButton } from '@/components/sharing/share-button'
 
 export default function LeagueStatsPage() {
   const { data: session, status } = useSession()
@@ -46,14 +47,26 @@ export default function LeagueStatsPage() {
     <ModernLayout>
       <div className="p-4 lg:p-8 space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-3">
-          <div className="p-3 bg-yellow-600 rounded-lg">
-            <Trophy className="w-6 h-6 text-white" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-yellow-600 rounded-lg">
+              <Trophy className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-white">League Standings</h1>
+              <p className="text-slate-400">Current rankings and records</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-white">League Standings</h1>
-            <p className="text-slate-400">Current rankings and records</p>
-          </div>
+          <ShareButton
+            data={{
+              title: 'League Standings - Week 4',
+              text: `Check out our league standings! ${standings[0].name} leads with ${standings[0].points} points!`,
+              url: `${typeof window !== 'undefined' ? window.location.origin : ''}/league-stats`,
+              hashtags: ['FantasyFootball', 'LeagueStandings'],
+              imageUrl: `/api/og?type=team&title=League Standings&subtitle=Week 4&stat1=1st:${standings[0].name}&stat2=Points:${standings[0].points}&stat3=Record:${standings[0].record}`
+            }}
+            variant="icon"
+          />
         </div>
 
         {/* Standings Table */}
