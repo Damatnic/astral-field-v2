@@ -1,8 +1,8 @@
 'use client'
 
 /**
- * Playoffs Page - Rebuilt
- * Playoff bracket and standings
+ * Playoffs Page - Elite Playoff Bracket
+ * Interactive bracket with real-time updates
  */
 
 import { useSession } from 'next-auth/react'
@@ -10,8 +10,8 @@ import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { DashboardLayout } from '@/components/dashboard/layout'
 import { PageHeader } from '@/components/ui/page-header'
-import { EmptyState } from '@/components/ui/empty-state'
-import { Trophy, Loader2 } from 'lucide-react'
+import { PlayoffBracket } from '@/components/playoffs/playoff-bracket'
+import { Trophy, Loader2, Crown } from 'lucide-react'
 
 export default function PlayoffsPage() {
   const { data: session, status } = useSession()
@@ -37,23 +37,67 @@ export default function PlayoffsPage() {
     )
   }
 
+  // Mock playoff bracket data
+  const mockMatchups = [
+    // Quarterfinals
+    {
+      id: 'q1',
+      round: 1,
+      matchupNumber: 1,
+      team1: { id: '1', name: 'Dynasty Warriors', seed: 1, score: 145.3, isWinner: true },
+      team2: { id: '8', name: 'Underdogs', seed: 8, score: 132.1, isWinner: false },
+      status: 'complete' as const
+    },
+    {
+      id: 'q2',
+      round: 1,
+      matchupNumber: 2,
+      team1: { id: '4', name: 'Power Squad', seed: 4, score: 128.5, isWinner: false },
+      team2: { id: '5', name: 'Rising Stars', seed: 5, score: 135.2, isWinner: true },
+      status: 'complete' as const
+    },
+    // Semifinals
+    {
+      id: 's1',
+      round: 2,
+      matchupNumber: 1,
+      team1: { id: '1', name: 'Dynasty Warriors', seed: 1, score: 152.8, isWinner: true },
+      team2: { id: '5', name: 'Rising Stars', seed: 5, score: 148.3, isWinner: false },
+      status: 'complete' as const
+    },
+    // Championship
+    {
+      id: 'c1',
+      round: 3,
+      matchupNumber: 1,
+      team1: { id: '1', name: 'Dynasty Warriors', seed: 1, score: 165.7, isWinner: true },
+      team2: { id: '3', name: 'Championship Squad', seed: 3, score: 158.2, isWinner: false },
+      status: 'complete' as const
+    }
+  ]
+
+  const mockChampion = {
+    teamName: 'Dynasty Warriors',
+    ownerName: 'John Doe',
+    finalScore: 165.7
+  }
+
   return (
     <DashboardLayout>
       <div className="p-6 lg:p-8 space-y-6 pt-16 lg:pt-8">
         <PageHeader
-          title="Playoffs"
-          description="Playoff bracket and standings"
-          icon={Trophy}
+          title="Playoff Bracket"
+          description="Road to the championship"
+          icon={Crown}
           breadcrumbs={[
             { label: 'Dashboard', href: '/dashboard' },
             { label: 'Playoffs' },
           ]}
         />
 
-        <EmptyState
-          icon={Trophy}
-          title="Playoff Bracket"
-          description="The playoff bracket will be available once the regular season ends"
+        <PlayoffBracket
+          matchups={mockMatchups}
+          champion={mockChampion}
         />
       </div>
     </DashboardLayout>
