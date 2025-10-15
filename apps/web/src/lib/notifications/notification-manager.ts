@@ -46,7 +46,8 @@ class NotificationManager {
    */
   addNotification(notification: Omit<Notification, 'id' | 'timestamp' | 'read'>): Notification {
     // Check if notification type is enabled
-    if (!this.preferences[notification.type]) {
+    const typeKey = notification.type === 'waiver' ? 'waivers' : notification.type === 'matchup' ? 'matchup' : notification.type
+    if (!this.preferences[typeKey as keyof NotificationPreferences]) {
       return notification as Notification // Return dummy notification but don't add it
     }
 

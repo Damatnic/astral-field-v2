@@ -33,13 +33,38 @@ export default function AICoachPage() {
       setLoading(true)
       
       // Get player data
-      const allPlayers = fantasyDataGenerator.getPlayers()
+      const playerData = fantasyDataGenerator.getPlayers()
+      const weeklyStats = fantasyDataGenerator.getWeeklyStats()
       const currentWeek = 4
       
+      // Transform PlayerData to Player type with fantasy points
+      const allPlayers = playerData.map(p => {
+        const recentStats = weeklyStats
+          .filter(s => s.playerId === p.id)
+          .slice(-4) // Last 4 weeks
+        
+        const fantasyPoints = recentStats.length > 0
+          ? recentStats.reduce((sum, s) => sum + s.fantasyPoints, 0) / recentStats.length
+          : 0
+        
+        return {
+          id: p.id,
+          name: p.name,
+          position: p.position,
+          team: p.nflTeam,
+          fantasyPoints,
+          projectedPoints: fantasyPoints * 1.1, // Simple projection
+          adp: p.adp,
+          isFantasyRelevant: p.isFantasyRelevant,
+          ownership: Math.random() * 100, // Mock ownership
+          nflTeam: p.nflTeam
+        }
+      })
+      
       // Generate streaming recommendations
-      const matchups = allPlayers.slice(0, 32).map((p, idx) => ({
+      const matchups = playerData.slice(0, 32).map((p, idx) => ({
         team: p.nflTeam || 'UNK',
-        opponent: allPlayers[Math.floor(Math.random() * 32)]?.nflTeam || 'OPP',
+        opponent: playerData[Math.floor(Math.random() * 32)]?.nflTeam || 'OPP',
         homeAway: idx % 2 === 0 ? 'HOME' as const : 'AWAY' as const,
         vegasTotal: 45 + Math.random() * 10,
         vegasSpread: -7 + Math.random() * 14

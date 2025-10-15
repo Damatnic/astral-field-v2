@@ -56,12 +56,12 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <DashboardLayout>
+      <ModernLayout>
         <div className="flex items-center justify-center min-h-[calc(100vh-64px)] text-slate-400">
           <Loader2 className="w-12 h-12 animate-spin text-blue-400" />
           <p className="ml-4 text-lg">Loading settings...</p>
         </div>
-      </DashboardLayout>
+      </ModernLayout>
     )
   }
 
