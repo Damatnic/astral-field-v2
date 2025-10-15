@@ -1,17 +1,11 @@
 'use client'
 
-/**
- * Analytics Page - Elite Analytics Hub
- * Advanced performance visualization and insights
- */
-
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import { DashboardLayout } from '@/components/dashboard/layout'
-import { PageHeader } from '@/components/ui/page-header'
-import { PlayerPerformanceCharts } from '@/components/analytics/player-performance-charts'
-import { BarChart3, Loader2, TrendingUp } from 'lucide-react'
+import { ModernLayout } from '@/components/layout/modern-layout'
+import { BarChart3 } from 'lucide-react'
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
 export default function AnalyticsPage() {
   const { data: session, status } = useSession()
@@ -26,79 +20,98 @@ export default function AnalyticsPage() {
     }
   }, [status, router])
 
+  const weeklyData = [
+    { week: 'W1', points: 125.3, projected: 120.5 },
+    { week: 'W2', points: 142.8, projected: 135.2 },
+    { week: 'W3', points: 118.5, projected: 128.0 },
+    { week: 'W4', points: 156.2, projected: 145.5 },
+    { week: 'W5', points: 138.7, projected: 140.2 },
+    { week: 'W6', points: 147.3, projected: 142.8 },
+    { week: 'W7', points: 132.9, projected: 138.5 },
+    { week: 'W8', points: 149.4, projected: 148.2 }
+  ]
+
+  const positionBreakdown = [
+    { position: 'QB', points: 245.8 },
+    { position: 'RB', points: 312.5 },
+    { position: 'WR', points: 385.2 },
+    { position: 'TE', points: 142.3 },
+    { position: 'K', points: 85.7 },
+    { position: 'DEF', points: 95.4 }
+  ]
+
   if (loading) {
     return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center min-h-[calc(100vh-64px)] text-slate-400">
-          <Loader2 className="w-12 h-12 animate-spin text-blue-400" />
-          <p className="ml-4 text-lg">Loading analytics...</p>
+      <ModernLayout>
+        <div className="flex items-center justify-center h-screen">
+          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
         </div>
-      </DashboardLayout>
+      </ModernLayout>
     )
   }
 
-  // Mock weekly stats data
-  const mockWeeklyStats = Array.from({ length: 10 }, (_, i) => ({
-    week: i + 1,
-    points: Math.random() * 15 + 10,
-    projected: Math.random() * 15 + 10,
-    opponent: ['KC', 'SF', 'DAL', 'PHI', 'BUF', 'MIA', 'NYJ', 'NE', 'BAL', 'CIN'][i]
-  }))
-
   return (
-    <DashboardLayout>
-      <div className="p-6 lg:p-8 space-y-6 pt-16 lg:pt-8">
-        <PageHeader
-          title="Analytics Hub"
-          description="Advanced performance visualization and insights"
-          icon={BarChart3}
-          breadcrumbs={[
-            { label: 'Dashboard', href: '/dashboard' },
-            { label: 'Analytics' },
-          ]}
-        />
-
-        {/* Team Performance Overview */}
-        <div className="space-y-6">
-          <div className="flex items-center gap-3">
-            <TrendingUp className="w-6 h-6 text-blue-400" />
-            <h2 className="text-2xl font-bold text-white">Team Performance Trends</h2>
+    <ModernLayout>
+      <div className="p-4 lg:p-8 space-y-6">
+        {/* Header */}
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-purple-600 rounded-lg">
+            <BarChart3 className="w-6 h-6 text-white" />
           </div>
-
-          <PlayerPerformanceCharts
-            playerName="Team Total"
-            weeklyStats={mockWeeklyStats}
-            consistency={75}
-            ceiling={32.4}
-            floor={12.8}
-            averagePoints={21.3}
-          />
+          <div>
+            <h1 className="text-2xl font-bold text-white">Team Analytics</h1>
+            <p className="text-slate-400">Performance insights and trends</p>
+          </div>
         </div>
 
-        {/* More analytics sections can be added here */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="p-6 rounded-xl bg-slate-800/30 border border-slate-700/50">
-            <div className="text-sm text-slate-400 mb-2">Avg Points Per Week</div>
-            <div className="text-3xl font-bold text-white tabular-nums">21.3</div>
-            <div className="text-xs text-emerald-400 mt-1 flex items-center gap-1">
-              <TrendingUp className="w-3 h-3" />
-              +5.2% vs league avg
-            </div>
+        {/* Weekly Performance */}
+        <div className="bg-slate-900 rounded-xl p-6 border border-slate-800">
+          <h2 className="text-xl font-bold text-white mb-6">Weekly Performance</h2>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={weeklyData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                <XAxis dataKey="week" stroke="#94a3b8" />
+                <YAxis stroke="#94a3b8" />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#1e293b',
+                    border: '1px solid #334155',
+                    borderRadius: '8px',
+                    color: '#fff'
+                  }}
+                />
+                <Line type="monotone" dataKey="points" stroke="#3b82f6" strokeWidth={3} name="Actual" />
+                <Line type="monotone" dataKey="projected" stroke="#8b5cf6" strokeWidth={2} strokeDasharray="5 5" name="Projected" />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
+        </div>
 
-          <div className="p-6 rounded-xl bg-slate-800/30 border border-slate-700/50">
-            <div className="text-sm text-slate-400 mb-2">Consistency Score</div>
-            <div className="text-3xl font-bold text-blue-400 tabular-nums">75%</div>
-            <div className="text-xs text-slate-500 mt-1">Above average</div>
-          </div>
-
-          <div className="p-6 rounded-xl bg-slate-800/30 border border-slate-700/50">
-            <div className="text-sm text-slate-400 mb-2">Playoff Odds</div>
-            <div className="text-3xl font-bold text-purple-400 tabular-nums">82%</div>
-            <div className="text-xs text-purple-400 mt-1">Strong position</div>
+        {/* Position Breakdown */}
+        <div className="bg-slate-900 rounded-xl p-6 border border-slate-800">
+          <h2 className="text-xl font-bold text-white mb-6">Points by Position</h2>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={positionBreakdown}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                <XAxis dataKey="position" stroke="#94a3b8" />
+                <YAxis stroke="#94a3b8" />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#1e293b',
+                    border: '1px solid #334155',
+                    borderRadius: '8px',
+                    color: '#fff'
+                  }}
+                />
+                <Bar dataKey="points" fill="#3b82f6" radius={[8, 8, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </ModernLayout>
   )
 }
+

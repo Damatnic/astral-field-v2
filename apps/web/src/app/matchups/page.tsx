@@ -1,54 +1,46 @@
 'use client'
 
-/**
- * Matchups Page - Elite Matchup Center
- * Live head-to-head battles with real-time updates
- */
-
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import { DashboardLayout } from '@/components/dashboard/layout'
-import { PageHeader } from '@/components/ui/page-header'
-import { EmptyState } from '@/components/ui/empty-state'
-import { MatchupCenterLive } from '@/components/matchup/matchup-center-live'
-import { Trophy, Loader2, Activity } from 'lucide-react'
-import { toast } from 'sonner'
+import { ModernLayout } from '@/components/layout/modern-layout'
+import { Trophy, TrendingUp } from 'lucide-react'
 
 export default function MatchupsPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const [loading, setLoading] = useState(true)
-  const [matchupData, setMatchupData] = useState<any>(null)
+  const [matchup, setMatchup] = useState<any>(null)
 
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/auth/signin')
     } else if (status === 'authenticated') {
-      loadMatchupData()
+      loadMatchup()
     }
   }, [status, router])
 
-  const loadMatchupData = async () => {
+  const loadMatchup = async () => {
     try {
       setLoading(true)
-      const response = await fetch(`/api/matchups?userId=${session?.user?.id}`)
-      
-      if (response.ok) {
-        const data = await response.json()
-        setMatchupData(data)
-      } else {
-        // Use mock data for demonstration
-        setMatchupData({
-          myTeam: { name: 'My Team', score: 87.3, projected: 112.5 },
-          opponent: { name: 'Rival Squad', score: 94.1, projected: 108.2 },
-          winProbability: 45,
-          momentum: -15
-        })
-      }
-    } catch (error) {
-      console.error('Error loading matchup:', error)
-      toast.error('Failed to load matchup data')
+      // Mock matchup data
+      setMatchup({
+        myTeam: {
+          name: 'Your Team',
+          score: 145.2,
+          projected: 152.3,
+          players: []
+        },
+        opponent: {
+          name: 'Opponent Team',
+          score: 138.5,
+          projected: 142.1,
+          players: []
+        },
+        winProbability: 62
+      })
+    } catch (err) {
+      console.error('Error loading matchup:', err)
     } finally {
       setLoading(false)
     }
@@ -56,63 +48,73 @@ export default function MatchupsPage() {
 
   if (loading) {
     return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center min-h-[calc(100vh-64px)] text-slate-400">
-          <Loader2 className="w-12 h-12 animate-spin text-blue-400" />
-          <p className="ml-4 text-lg">Loading matchup...</p>
+      <ModernLayout>
+        <div className="flex items-center justify-center h-screen">
+          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
         </div>
-      </DashboardLayout>
+      </ModernLayout>
     )
   }
 
-  // Mock player battles data
-  const mockBattles = [
-    {
-      position: 'QB',
-      myPlayer: { id: '1', name: 'Josh Allen', team: 'BUF', points: 24.5, projected: 22.0 },
-      oppPlayer: { id: '2', name: 'Patrick Mahomes', team: 'KC', points: 21.3, projected: 23.5 }
-    },
-    {
-      position: 'RB1',
-      myPlayer: { id: '3', name: 'Christian McCaffrey', team: 'SF', points: 18.2, projected: 20.0 },
-      oppPlayer: { id: '4', name: 'Saquon Barkley', team: 'PHI', points: 22.5, projected: 18.5 }
-    },
-    {
-      position: 'RB2',
-      myPlayer: { id: '5', name: 'Breece Hall', team: 'NYJ', points: 12.5, projected: 15.0 },
-      oppPlayer: { id: '6', name: 'Derrick Henry', team: 'TEN', points: 16.8, projected: 14.0 }
-    }
-  ]
-
   return (
-    <DashboardLayout>
-      <div className="p-6 lg:p-8 space-y-6 pt-16 lg:pt-8">
-        <PageHeader
-          title="Live Matchup"
-          description="Head-to-head battle with real-time updates"
-          icon={Activity}
-          breadcrumbs={[
-            { label: 'Dashboard', href: '/dashboard' },
-            { label: 'Matchups' },
-          ]}
-        />
+    <ModernLayout>
+      <div className="p-4 lg:p-8 space-y-6">
+        {/* Header */}
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-orange-600 rounded-lg">
+            <Trophy className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-white">This Week's Matchup</h1>
+            <p className="text-slate-400">Head-to-head competition</p>
+          </div>
+        </div>
 
-        {matchupData ? (
-          <MatchupCenterLive
-            myTeam={matchupData.myTeam}
-            opponent={matchupData.opponent}
-            battles={mockBattles}
-            winProbability={matchupData.winProbability}
-            momentum={matchupData.momentum}
-          />
-        ) : (
-          <EmptyState
-            icon={Trophy}
-            title="No Active Matchup"
-            description="Your matchup will appear here during game weeks"
-          />
-        )}
+        {/* Matchup Card */}
+        <div className="bg-slate-900 rounded-xl p-8 border border-slate-800">
+          <div className="flex items-center justify-between mb-8">
+            {/* My Team */}
+            <div className="flex-1 text-center">
+              <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full mx-auto mb-4 flex items-center justify-center">
+                <span className="text-2xl font-bold text-white">Y</span>
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">{matchup.myTeam.name}</h3>
+              <p className="text-3xl font-bold text-white mb-1">{matchup.myTeam.score.toFixed(1)}</p>
+              <p className="text-sm text-slate-400">Proj: {matchup.myTeam.projected.toFixed(1)}</p>
+            </div>
+
+            {/* VS */}
+            <div className="px-8">
+              <div className="text-3xl font-bold text-slate-400">VS</div>
+            </div>
+
+            {/* Opponent */}
+            <div className="flex-1 text-center">
+              <div className="w-20 h-20 bg-gradient-to-br from-slate-700 to-slate-600 rounded-full mx-auto mb-4 flex items-center justify-center">
+                <span className="text-2xl font-bold text-white">O</span>
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">{matchup.opponent.name}</h3>
+              <p className="text-3xl font-bold text-white mb-1">{matchup.opponent.score.toFixed(1)}</p>
+              <p className="text-sm text-slate-400">Proj: {matchup.opponent.projected.toFixed(1)}</p>
+            </div>
+          </div>
+
+          {/* Win Probability */}
+          <div className="pt-6 border-t border-slate-800">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-slate-400">Your Win Probability</span>
+              <span className="font-bold text-green-400">{matchup.winProbability}%</span>
+            </div>
+            <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-green-500 to-emerald-500"
+                style={{ width: `${matchup.winProbability}%` }}
+              />
+            </div>
+          </div>
+        </div>
       </div>
-    </DashboardLayout>
+    </ModernLayout>
   )
 }
+

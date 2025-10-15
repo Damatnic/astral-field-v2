@@ -1,17 +1,10 @@
 'use client'
 
-/**
- * League Stats Page - Elite Standings & Analytics
- * Power rankings with AI-powered analysis
- */
-
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import { DashboardLayout } from '@/components/dashboard/layout'
-import { PageHeader } from '@/components/ui/page-header'
-import { PowerRankings } from '@/components/league/power-rankings'
-import { Trophy, Loader2, TrendingUp } from 'lucide-react'
+import { ModernLayout } from '@/components/layout/modern-layout'
+import { Trophy, TrendingUp, TrendingDown } from 'lucide-react'
 
 export default function LeagueStatsPage() {
   const { data: session, status } = useSession()
@@ -26,101 +19,108 @@ export default function LeagueStatsPage() {
     }
   }, [status, router])
 
+  const standings = [
+    { rank: 1, name: 'Thunder Bolts', record: '6-2-0', points: 1124.5, change: 0 },
+    { rank: 2, name: 'Gridiron Warriors', record: '5-3-0', points: 1089.3, change: 1 },
+    { rank: 3, name: 'Dynasty Squad', record: '5-3-0', points: 1076.8, change: -1 },
+    { rank: 4, name: 'Fantasy Kings', record: '4-4-0', points: 1045.2, change: 2 },
+    { rank: 5, name: 'League Legends', record: '4-4-0', points: 1038.7, change: 0 },
+    { rank: 6, name: 'Championship Chasers', record: '3-5-0', points: 998.5, change: -2 },
+    { rank: 7, name: 'Elite Eleven', record: '3-5-0', points: 985.3, change: 1 },
+    { rank: 8, name: 'Victory Vanguard', record: '3-5-0', points: 967.8, change: -1 },
+    { rank: 9, name: 'Playoff Bound', record: '2-6-0', points: 945.2, change: 0 },
+    { rank: 10, name: 'Point Machines', record: '1-7-0', points: 892.1, change: 0 }
+  ]
+
   if (loading) {
     return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center min-h-[calc(100vh-64px)] text-slate-400">
-          <Loader2 className="w-12 h-12 animate-spin text-blue-400" />
-          <p className="ml-4 text-lg">Loading league stats...</p>
+      <ModernLayout>
+        <div className="flex items-center justify-center h-screen">
+          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
         </div>
-      </DashboardLayout>
+      </ModernLayout>
     )
   }
 
-  // Mock power rankings data
-  const mockRankings = [
-    {
-      rank: 1,
-      previousRank: 2,
-      teamName: "Dynasty Warriors",
-      ownerName: "John Doe",
-      record: { wins: 3, losses: 0, ties: 0 },
-      pointsFor: 456.8,
-      pointsAgainst: 342.1,
-      powerScore: 94.5,
-      trend: 'up' as const,
-      strengthOfSchedule: 0.68
-    },
-    {
-      rank: 2,
-      previousRank: 1,
-      teamName: "Championship Squad",
-      ownerName: "Jane Smith",
-      record: { wins: 2, losses: 1, ties: 0 },
-      pointsFor: 442.3,
-      pointsAgainst: 398.5,
-      powerScore: 91.2,
-      trend: 'down' as const,
-      strengthOfSchedule: 0.72
-    },
-    {
-      rank: 3,
-      previousRank: 4,
-      teamName: "Rising Stars",
-      ownerName: "Mike Johnson",
-      record: { wins: 2, losses: 1, ties: 0 },
-      pointsFor: 428.9,
-      pointsAgainst: 385.2,
-      powerScore: 88.7,
-      trend: 'up' as const,
-      strengthOfSchedule: 0.65
-    }
-  ]
-
   return (
-    <DashboardLayout>
-      <div className="p-6 lg:p-8 space-y-6 pt-16 lg:pt-8">
-        <PageHeader
-          title="League Standings"
-          description="Power rankings with advanced analytics"
-          icon={Trophy}
-          breadcrumbs={[
-            { label: 'Dashboard', href: '/dashboard' },
-            { label: 'League Stats' },
-          ]}
-        />
-
-        {/* League Overview Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="p-6 rounded-xl bg-slate-800/30 border border-slate-700/50">
-            <div className="text-sm text-slate-400 mb-2">Total Teams</div>
-            <div className="text-3xl font-bold text-white">12</div>
+    <ModernLayout>
+      <div className="p-4 lg:p-8 space-y-6">
+        {/* Header */}
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-yellow-600 rounded-lg">
+            <Trophy className="w-6 h-6 text-white" />
           </div>
-          <div className="p-6 rounded-xl bg-slate-800/30 border border-slate-700/50">
-            <div className="text-sm text-slate-400 mb-2">Avg Points/Week</div>
-            <div className="text-3xl font-bold text-blue-400 tabular-nums">115.3</div>
-          </div>
-          <div className="p-6 rounded-xl bg-slate-800/30 border border-slate-700/50">
-            <div className="text-sm text-slate-400 mb-2">Highest Score</div>
-            <div className="text-3xl font-bold text-emerald-400 tabular-nums">178.5</div>
-          </div>
-          <div className="p-6 rounded-xl bg-slate-800/30 border border-slate-700/50">
-            <div className="text-sm text-slate-400 mb-2">Most Trades</div>
-            <div className="text-3xl font-bold text-purple-400">7</div>
+          <div>
+            <h1 className="text-2xl font-bold text-white">League Standings</h1>
+            <p className="text-slate-400">Current rankings and records</p>
           </div>
         </div>
 
-        {/* Power Rankings */}
-        <div>
-          <div className="flex items-center gap-3 mb-4">
-            <TrendingUp className="w-6 h-6 text-blue-400" />
-            <h2 className="text-2xl font-bold text-white">Power Rankings</h2>
-            <span className="text-sm text-slate-400">AI-powered team analysis</span>
-          </div>
-
-          <PowerRankings rankings={mockRankings} />
+        {/* Standings Table */}
+        <div className="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden">
+          <table className="w-full">
+            <thead className="bg-slate-800 border-b border-slate-700">
+              <tr>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase">Rank</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase">Team</th>
+                <th className="px-6 py-4 text-center text-xs font-semibold text-slate-400 uppercase">Record</th>
+                <th className="px-6 py-4 text-right text-xs font-semibold text-slate-400 uppercase">Points</th>
+                <th className="px-6 py-4 text-center text-xs font-semibold text-slate-400 uppercase">Trend</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800">
+              {standings.map((team, idx) => (
+                <tr
+                  key={team.rank}
+                  className={`hover:bg-slate-800 transition-colors ${
+                    idx === 0 ? 'bg-yellow-500/5' : idx === 1 ? 'bg-slate-700/30' : idx === 2 ? 'bg-orange-600/5' : ''
+                  }`}
+                >
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2">
+                      {idx < 3 && (
+                        <Trophy
+                          className={`w-5 h-5 ${
+                            idx === 0 ? 'text-yellow-400' : idx === 1 ? 'text-slate-400' : 'text-orange-500'
+                          }`}
+                        />
+                      )}
+                      <span className="text-lg font-bold text-white">#{team.rank}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <p className="font-medium text-white">{team.name}</p>
+                  </td>
+                  <td className="px-6 py-4 text-center">
+                    <span className="font-medium text-white">{team.record}</span>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <p className="font-bold text-white">{team.points.toFixed(1)}</p>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center justify-center">
+                      {team.change > 0 ? (
+                        <div className="flex items-center gap-1 text-green-400">
+                          <TrendingUp className="w-4 h-4" />
+                          <span className="text-sm font-medium">+{team.change}</span>
+                        </div>
+                      ) : team.change < 0 ? (
+                        <div className="flex items-center gap-1 text-red-400">
+                          <TrendingDown className="w-4 h-4" />
+                          <span className="text-sm font-medium">{team.change}</span>
+                        </div>
+                      ) : (
+                        <span className="text-slate-400 text-sm">-</span>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
-    </DashboardLayout>
+    </ModernLayout>
   )
 }
+
