@@ -14,7 +14,7 @@ export default function SchedulePage() {
   const [selectedWeek, setSelectedWeek] = useState(1)
   const [scheduleData, setScheduleData] = useState<any>(null)
 
-  useEffect() => {
+  useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/auth/signin')
     } else if (status === 'authenticated') {
