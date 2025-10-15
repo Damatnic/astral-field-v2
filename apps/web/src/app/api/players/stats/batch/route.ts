@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { phoenixDb } from '@/lib/optimized-prisma'
 import { leagueCache } from '@/lib/cache/catalyst-cache'
+import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
 export const dynamic = 'force-dynamic'
@@ -32,9 +33,10 @@ export async function POST(request: NextRequest) {
     
     // Catalyst: Check cache first
     const cacheKey = `batch_stats:${playerIds.slice(0,5).join(',')}:${weeks.join(',')}`
-    let statsData = await leagueCache.getPlayerStats(playerIds, weeks)
+    const cachedStats = await leagueCache.getPlayerStats(playerIds, weeks)
+    let statsData: any[] = Array.isArray(cachedStats) ? cachedStats : []
     
-    if (!statsData) {
+    if (statsData.length === 0) {
       // Catalyst: Cache miss - fetch with optimized batch query
       statsData = await phoenixDb.getPlayerStatsHistory(playerIds, weeks)
       
@@ -46,7 +48,7 @@ export async function POST(request: NextRequest) {
     // Catalyst: Organize data by player for efficient frontend consumption
     const organizedData = new Map()
     
-    statsData.forEach(stat => {
+    statsData.forEach((stat: any) => {
       if (!organizedData.has(stat.playerId)) {
         organizedData.set(stat.playerId, {
           player: stat.player,
@@ -79,11 +81,11 @@ export async function POST(request: NextRequest) {
     }
     
     // Catalyst: Add projections if requested
-    let projections = []
+    let projections: any[] = []
     if (includeProjections) {
-      projections = await phoenixDb.getCachedResult(`projections:batch:${playerIds.slice(0,5).join(',')}`)
+      projections = await phoenixDb.getCachedResult(`projections:batch:${playerIds.slice(0,5).join(',')}`) || []
       
-      if (!projections) {
+      if (projections.length === 0) {
         // Fetch current projections for these players
         projections = await prisma.playerProjection.findMany({
           where: {
@@ -142,7 +144,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { 
         error: 'Failed to fetch player stats',
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        details: process.env.NODE_ENV === 'development' ? (error as any).message : undefined
       },
       { status: 500 }
     )

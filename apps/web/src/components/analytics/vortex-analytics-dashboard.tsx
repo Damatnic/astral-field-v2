@@ -232,38 +232,34 @@ const VortexAnalyticsDashboard: React.FC = () => {
     }
   ];
 
-  // SSE connection for live updates (WebSocket removed - doesn't work on Vercel)
+  // Live updates via SSE (Server-Sent Events)
   useEffect(() => {
-    // Live updates disabled - WebSocket doesn't work on serverless
-    // TODO: Implement SSE-based live analytics updates if needed
-    /* Commented out WebSocket code:
-    let ws: WebSocket;
+    if (!isLive) return
+
+    const eventSource = new EventSource('/api/notifications/sse?userId=current')
     
-    if (isLive) {
-      ws = new WebSocket('ws://localhost:8080');
-      
-      ws.onopen = () => {
+    eventSource.addEventListener('notification', (event) => {
+      const data = JSON.parse(event.data)
+      if (data.type === 'analytics' || data.type === 'score_update') {
+        setLiveEvents(prev => [{
+          id: Date.now().toString(),
+          type: data.type,
+          timestamp: new Date(data.timestamp),
+          data: data,
+          priority: data.priority || 'NORMAL'
+        }, ...prev.slice(0, 49)])
+      }
+    })
 
-      };
-      
-      ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        
-        if (data.type === 'LIVE_EVENT') {
-          setLiveEvents(prev => [data.event, ...prev.slice(0, 49)]); // Keep last 50 events
-        }
-      };
-      
-      ws.onclose = () => {
-
-      };
+    eventSource.onerror = () => {
+      eventSource.close()
+      setIsLive(false)
     }
-    */
     
     return () => {
-      // Cleanup if SSE implemented
-    };
-  }, [isLive]);
+      eventSource.close()
+    }
+  }, [isLive])
 
   // Chart data preparation
   const weeklyTrendData = useMemo(() => {

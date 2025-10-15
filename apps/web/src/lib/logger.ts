@@ -56,13 +56,21 @@ class Logger {
    * Send log to monitoring service (Sentry, DataDog, etc.)
    */
   private async sendToMonitoring(entry: LogEntry): Promise<void> {
-    // TODO: Integrate with monitoring service
-    // Example: Sentry.captureMessage(entry.message, { level: entry.level, extra: entry.context })
-    
-    // For now, only send errors in production
-    if (!this.isDevelopment && entry.level === 'error' && entry.error) {
-      // Placeholder for Sentry integration
-      // Sentry.captureException(entry.error, { extra: entry.context })
+    if (this.isDevelopment) return
+
+    // Send to Sentry if configured
+    if (process.env.NEXT_PUBLIC_SENTRY_DSN && entry.level === 'error') {
+      try {
+        // @ts-ignore - Optional dependency
+        const Sentry = await import('@sentry/nextjs').catch(() => null)
+        if (Sentry && entry.error) {
+          Sentry.captureException(entry.error, { extra: entry.context })
+        } else if (Sentry) {
+          Sentry.captureMessage(entry.message, { level: entry.level as any, extra: entry.context })
+        }
+      } catch (e) {
+        // Silently fail
+      }
     }
   }
 

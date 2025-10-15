@@ -4,9 +4,7 @@
  */
 
 import { NextRequest } from 'next/server'
-
-// Store active connections
-const connections = new Map<string, ReadableStreamDefaultController>()
+import { registerConnection, unregisterConnection } from '@/lib/notifications/sse-manager'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs' // Changed from 'edge' due to auth requirements
@@ -24,7 +22,7 @@ export async function GET(request: NextRequest) {
   const stream = new ReadableStream({
     start(controller) {
       // Store connection
-      connections.set(userId, controller)
+      registerConnection(userId, controller)
 
       // Send initial connection message
       const data = `data: ${JSON.stringify({
@@ -47,14 +45,14 @@ export async function GET(request: NextRequest) {
         } catch (error) {
           console.error('Heartbeat error:', error)
           clearInterval(heartbeatInterval)
-          connections.delete(userId)
+          unregisterConnection(userId)
         }
       }, 30000)
 
       // Cleanup on close
       request.signal.addEventListener('abort', () => {
         clearInterval(heartbeatInterval)
-        connections.delete(userId)
+        unregisterConnection(userId)
         try {
           controller.close()
         } catch (e) {
@@ -64,7 +62,7 @@ export async function GET(request: NextRequest) {
     },
 
     cancel() {
-      connections.delete(userId)
+      unregisterConnection(userId)
     }
   })
 
@@ -78,73 +76,5 @@ export async function GET(request: NextRequest) {
   })
 }
 
-/**
- * Send a notification to a specific user
- * Called by other API routes to push notifications
- */
-export function sendNotificationToUser(
-  userId: string,
-  notification: {
-    type: string
-    title: string
-    message: string
-    actionUrl?: string
-    actionLabel?: string
-    priority?: string
-    metadata?: Record<string, any>
-  }
-): void {
-  const controller = connections.get(userId)
-  
-  if (!controller) {
-    console.log(`User ${userId} not connected to notification stream`)
-    return
-  }
 
-  try {
-    const data = `event: notification\ndata: ${JSON.stringify({
-      ...notification,
-      timestamp: new Date().toISOString()
-    })}\n\n`
-
-    controller.enqueue(new TextEncoder().encode(data))
-  } catch (error) {
-    console.error('Error sending notification:', error)
-    connections.delete(userId)
-  }
-}
-
-/**
- * Broadcast notification to all connected users
- */
-export function broadcastNotification(notification: {
-  type: string
-  title: string
-  message: string
-  actionUrl?: string
-  actionLabel?: string
-}): void {
-  const data = `event: notification\ndata: ${JSON.stringify({
-    ...notification,
-    timestamp: new Date().toISOString()
-  })}\n\n`
-
-  const encoded = new TextEncoder().encode(data)
-
-  connections.forEach((controller, userId) => {
-    try {
-      controller.enqueue(encoded)
-    } catch (error) {
-      console.error(`Error broadcasting to user ${userId}:`, error)
-      connections.delete(userId)
-    }
-  })
-}
-
-/**
- * Get active connection count
- */
-export function getActiveConnectionCount(): number {
-  return connections.size
-}
 

@@ -13,14 +13,17 @@ interface Team {
 
 interface LeagueStandingsProps {
   teams?: Team[]
+  data?: any[]
+  currentWeek?: number
 }
 
-export function LeagueStandings({ teams = [] }: LeagueStandingsProps) {
+export function LeagueStandings({ teams = [], data = [], currentWeek }: LeagueStandingsProps) {
+  const displayTeams = teams.length > 0 ? teams : data
   return (
     <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
       <h3 className="text-xl font-semibold text-white mb-4">League Standings</h3>
       
-      {teams.length === 0 ? (
+      {displayTeams.length === 0 ? (
         <div className="text-gray-400 text-center py-8">
           No standings data available
         </div>
@@ -36,7 +39,7 @@ export function LeagueStandings({ teams = [] }: LeagueStandingsProps) {
               </tr>
             </thead>
             <tbody>
-              {teams.map((team, index) => (
+              {displayTeams.map((team: any, index: number) => (
                 <tr key={team.id} className="border-t border-slate-700">
                   <td className="py-3 text-white">
                     <div className="flex items-center space-x-2">

@@ -14,6 +14,7 @@ interface Player {
   fantasyPoints: number
   projectedPoints: number
   adp?: number
+  age?: number
 }
 
 export interface InjuryReport {
@@ -220,8 +221,8 @@ export function recommendHandcuffs(
   })
   
   return recommendations.sort((a, b) => {
-    const priorityOrder = { 'HIGH': 3, 'MEDIUM': 2, 'LOW': 1 }
-    return priorityOrder[b.priority] - priorityOrder[a.priority]
+    const priorityOrder: Record<string, number> = { 'HIGH': 3, 'MEDIUM': 2, 'LOW': 1 }
+    return (priorityOrder[b.priority] || 0) - (priorityOrder[a.priority] || 0)
   })
 }
 
@@ -237,7 +238,8 @@ export function predictInjuryRisk(player: Player, currentWeek: number): {
   let riskScore = 20 // Base risk
   
   // Age factor
-  if (player.age && player.age > 30) {
+  const playerAge = (player as any).age
+  if (playerAge && playerAge > 30) {
     riskFactors.push('Veteran player (age 30+)')
     riskScore += 15
   }

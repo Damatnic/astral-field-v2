@@ -323,11 +323,6 @@ async function getAvailablePlayers(leagueId: string, searchParams: URLSearchPara
   const players = await prisma.player.findMany({
     where,
     include: {
-      projections: {
-        where: { week: null }, // Season projections
-        orderBy: { projectedPoints: 'desc' },
-        take: 1
-      },
       news: {
         orderBy: { publishedAt: 'desc' },
         take: 1
@@ -345,7 +340,7 @@ async function getAvailablePlayers(leagueId: string, searchParams: URLSearchPara
     success: true,
     data: players.map(player => ({
       ...player,
-      projectedPoints: player.projections[0]?.projectedPoints || 0,
+      projectedPoints: 0,
       latestNews: player.news[0] || null,
       injuryStatus: player.injuryReports[0]?.status || 'HEALTHY'
     }))
@@ -509,9 +504,8 @@ async function draftPlayer(leagueId: string, data: any, userId: string) {
     data: {
       teamId,
       playerId,
-      rosterSlot: 'BENCH', // Changed from position to rosterSlot
-      position: 'BENCH', // Set default position
-      acquisitionType: 'DRAFT'
+      rosterSlot: 'BENCH',
+      position: 'BENCH'
     }
   })
 

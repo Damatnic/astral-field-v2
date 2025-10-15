@@ -240,7 +240,7 @@ export const MobileModal = memo(({ isOpen, onClose, title, children, size = 'md'
   const { tapFeedback } = useHapticFeedback()
 
   useEffect(() => {
-    if (gesture?.type === 'swipe' && gesture.direction === 'down' && gesture.distance > 100) {
+    if (gesture?.type === 'swipe' && gesture.direction === 'down' && gesture.distance && gesture.distance > 100) {
       tapFeedback()
       onClose()
     }
@@ -329,7 +329,7 @@ export const MobileSheet = memo(({ isOpen, onClose, title, children, snapPoints 
 
   useEffect(() => {
     if (gesture?.type === 'swipe' && gesture.direction === 'down') {
-      if (gesture.distance > 100) {
+      if (gesture.distance && gesture.distance > 100) {
         tapFeedback()
         onClose()
       }

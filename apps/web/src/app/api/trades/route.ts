@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/database/prisma'
 import { auth } from '@/lib/auth'
-import { sendNotificationToUser } from '@/app/api/notifications/sse/route'
+import { sendNotificationToUser } from '@/lib/notifications/sse-manager'
 
 export const dynamic = 'force-dynamic'
 
@@ -151,7 +151,7 @@ async function getTradeProposals(userId: string, leagueId?: string | null, teamI
             take: 1
           },
           projections: {
-            where: { week: null }, // Season projections
+            where: { season: 2025 },
             take: 1
           }
         }
@@ -165,7 +165,7 @@ async function getTradeProposals(userId: string, leagueId?: string | null, teamI
             take: 1
           },
           projections: {
-            where: { week: null },
+            where: { season: 2025 },
             take: 1
           }
         }

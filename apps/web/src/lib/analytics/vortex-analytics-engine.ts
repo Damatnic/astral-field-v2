@@ -1098,7 +1098,7 @@ export class VortexAnalyticsEngine {
     rankings.sort((a, b) => b.powerScore - a.powerScore);
 
     // Add rank
-    rankings.forEach((r, i) => {
+    rankings.forEach((r: any, i) => {
       r.rank = i + 1;
     });
 

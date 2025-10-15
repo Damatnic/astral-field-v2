@@ -34,12 +34,13 @@ model User {
 }
 
 model UserPreferences {
-  id            String  @id @default(cuid())
-  userId        String  @unique
-  theme         String  @default("system")
-  notifications String?
-  emailUpdates  Boolean @default(true)
-  user          User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                   String  @id @default(cuid())
+  userId               String  @unique
+  theme                String  @default("system")
+  notifications        String?
+  emailNotifications   Boolean @default(true)
+  emailUpdates         Boolean @default(true)
+  user                 User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_preferences")
 }
@@ -61,37 +62,40 @@ model League {
   teams                 Team[]
   waiverSettings        WaiverSettings?
   waiverRecommendations WaiverWireRecommendations[]
+  analytics             LeagueAnalytics[]
 
   @@map("leagues")
 }
 
 model Team {
-  id                    String               @id @default(cuid())
+  id                    String                  @id @default(cuid())
   name                  String
   ownerId               String
   leagueId              String
-  wins                  Int                  @default(0)
-  losses                Int                  @default(0)
-  ties                  Int                  @default(0)
-  createdAt             DateTime             @default(now())
-  updatedAt             DateTime             @updatedAt
+  wins                  Int                     @default(0)
+  losses                Int                     @default(0)
+  ties                  Int                     @default(0)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
   draftOrder            DraftOrder[]
   draftPicks            DraftPick[]
   lineupOptimizations   LineupOptimization[]
-  awayMatchupAnalyses   MatchupAnalysis[]    @relation("MatchupAnalysisAway")
-  homeMatchupAnalyses   MatchupAnalysis[]    @relation("MatchupAnalysisHome")
+  awayMatchupAnalyses   MatchupAnalysis[]       @relation("MatchupAnalysisAway")
+  homeMatchupAnalyses   MatchupAnalysis[]       @relation("MatchupAnalysisHome")
   matchupScores         MatchupLiveScore[]
-  awayMatchups          Matchup[]            @relation("AwayTeam")
-  homeMatchups          Matchup[]            @relation("HomeTeam")
+  awayMatchups          Matchup[]               @relation("AwayTeam")
+  homeMatchups          Matchup[]               @relation("HomeTeam")
   roster                RosterPlayer[]
   waiverPriority        TeamWaiverPriority[]
-  league                League               @relation(fields: [leagueId], references: [id], onDelete: Cascade)
-  owner                 User                 @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  proposedTradeAnalyses TradeAnalysis[]      @relation("TradeAnalysisProposing")
-  receivedTradeAnalyses TradeAnalysis[]      @relation("TradeAnalysisReceiving")
-  proposedTrades        TradeProposal[]      @relation("ProposingTeam")
-  receivedTrades        TradeProposal[]      @relation("ReceivingTeam")
+  league                League                  @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  owner                 User                    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  proposedTradeAnalyses TradeAnalysis[]         @relation("TradeAnalysisProposing")
+  receivedTradeAnalyses TradeAnalysis[]         @relation("TradeAnalysisReceiving")
+  proposedTrades        TradeProposal[]         @relation("ProposingTeam")
+  receivedTrades        TradeProposal[]         @relation("ReceivingTeam")
   waiverClaims          WaiverClaim[]
+  weeklyStats           WeeklyTeamStats[]
+  scheduleStrength      StrengthOfSchedule[]
 
   @@unique([ownerId, leagueId])
   @@index([leagueId])
@@ -123,6 +127,9 @@ model Player {
   droppedFromWaivers    WaiverClaim[]               @relation("DroppedFromWaivers")
   waiverClaims          WaiverClaim[]               @relation("WaiverClaims")
   waiverRecommendations WaiverWireRecommendations[]
+  weeklyAnalytics       PlayerWeeklyAnalytics[]
+  waiverAnalytics       WaiverWireAnalytics[]
+  consistency           PlayerConsistency[]
 
   @@index([position, isFantasyRelevant])
   @@index([nflTeam, position])
@@ -155,12 +162,13 @@ model PlayerStats {
 model PlayerProjection {
   id              String @id @default(cuid())
   playerId        String
-  week            Int?
+  week            Int
   season          Int    @default(2025)
   projectedPoints Float
   confidence      Float  @default(0.5)
   player          Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
 
+  @@unique([playerId, week, season])
   @@index([playerId, week, season])
   @@index([week, season, projectedPoints])
   @@index([season, week])
@@ -182,13 +190,14 @@ model PlayerNews {
 }
 
 model RosterPlayer {
-  id        String  @id @default(cuid())
-  teamId    String
-  playerId  String
-  position  String  @default("BENCH")
-  isStarter Boolean @default(false)
-  player    Player  @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  team      Team    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  id         String  @id @default(cuid())
+  teamId     String
+  playerId   String
+  position   String  @default("BENCH")
+  rosterSlot String?
+  isStarter  Boolean @default(false)
+  player     Player  @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  team       Team    @relation(fields: [teamId], references: [id], onDelete: Cascade)
 
   @@unique([teamId, playerId])
   @@index([teamId, isStarter])
@@ -649,4 +658,220 @@ model SeasonProjections {
 
   @@unique([playerId, season])
   @@map("season_projections")
+}
+
+model PlayerWeeklyAnalytics {
+  id                String   @id @default(cuid())
+  playerId          String
+  player            Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  week              Int
+  season            Int
+  fantasyPoints     Float
+  projectedPoints   Float
+  target            Int      @default(0)
+  receptions        Int      @default(0)
+  rushingYards      Int      @default(0)
+  passingYards      Int      @default(0)
+  touchdowns        Int      @default(0)
+  snapPercentage    Float    @default(0)
+  redZoneTargets    Int      @default(0)
+  goalLineCarries   Int      @default(0)
+  ownership         Float    @default(0)
+  consistencyScore  Float    @default(0)
+  volumeScore       Float    @default(0)
+  efficiencyScore   Float    @default(0)
+  trendScore        Float    @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([playerId, week, season])
+  @@index([playerId])
+  @@index([week, season])
+  @@map("player_weekly_analytics")
+}
+
+model WeeklyTeamStats {
+  id              String   @id @default(cuid())
+  teamId          String
+  team            Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  week            Int
+  season          Int
+  totalPoints     Float
+  projectedPoints Float
+  benchPoints     Float    @default(0)
+  optimalPoints   Float    @default(0)
+  rank            Int      @default(0)
+  movingAverage   Float    @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([teamId, week, season])
+  @@index([teamId])
+  @@index([week, season])
+  @@map("weekly_team_stats")
+}
+
+model MatchupAnalytics {
+  id                  String   @id @default(cuid())
+  matchupId           String
+  week                Int
+  season              Int
+  homeTeamProjection  Float
+  awayTeamProjection  Float
+  winProbability      Float
+  volatility          Float
+  confidenceLevel     Float
+  keyPlayers          String
+  weatherImpact       Float    @default(0)
+  injuryRisk          Float    @default(0)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@unique([matchupId, week, season])
+  @@index([matchupId])
+  @@index([week, season])
+  @@map("matchup_analytics")
+}
+
+model WaiverWireAnalytics {
+  id                  String   @id @default(cuid())
+  playerId            String
+  player              Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  week                Int
+  season              Int
+  addPercentage       Float    @default(0)
+  dropPercentage      Float    @default(0)
+  faabSpent           Int      @default(0)
+  emergingPlayer      Boolean  @default(false)
+  breakoutCandidate   Boolean  @default(false)
+  sleeper             Boolean  @default(false)
+  injuryReplacement   Boolean  @default(false)
+  streamingOption     Boolean  @default(false)
+  priorityLevel       Int      @default(1)
+  reasonsToAdd        String
+  expectedOwnership   Float    @default(0)
+  upcomingSchedule    String
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@unique([playerId, week, season])
+  @@index([playerId])
+  @@index([week, season])
+  @@map("waiver_wire_analytics")
+}
+
+model PlayerConsistency {
+  id                String   @id @default(cuid())
+  playerId          String
+  player            Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  season            Int
+  weekCount         Int      @default(0)
+  totalPoints       Float    @default(0)
+  averagePoints     Float    @default(0)
+  standardDeviation Float    @default(0)
+  coefficient       Float    @default(0)
+  floorScore        Float    @default(0)
+  ceilingScore      Float    @default(0)
+  busts             Int      @default(0)
+  booms             Int      @default(0)
+  reliability       Float    @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([playerId, season])
+  @@index([playerId])
+  @@index([season])
+  @@map("player_consistency")
+}
+
+model StrengthOfSchedule {
+  id              String   @id @default(cuid())
+  teamId          String
+  team            Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  week            Int
+  season          Int
+  remainingSOS    Float    @default(0)
+  playedSOS       Float    @default(0)
+  positionSOS     String
+  fantasyPlayoffs Float    @default(0)
+  easyMatchups    Int      @default(0)
+  hardMatchups    Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([teamId, week, season])
+  @@index([teamId])
+  @@index([week, season])
+  @@map("strength_of_schedule")
+}
+
+model LeagueAnalytics {
+  id                  String   @id @default(cuid())
+  leagueId            String
+  league              League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  week                Int
+  season              Int
+  averageScore        Float    @default(0)
+  highScore           Float    @default(0)
+  lowScore            Float    @default(0)
+  scoringVariance     Float    @default(0)
+  competitiveBalance  Float    @default(0)
+  parity              Float    @default(0)
+  playoffRace         String
+  strengthOfSchedule  String
+  powerRankings       String
+  trendsAnalysis      String
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@unique([leagueId, week, season])
+  @@index([leagueId])
+  @@index([week, season])
+  @@map("league_analytics")
+}
+
+model RealTimeEvents {
+  id         String   @id @default(cuid())
+  eventType  String
+  entityType String
+  entityId   String
+  data       String
+  impact     Float    @default(0)
+  confidence Float    @default(1.0)
+  processed  Boolean  @default(false)
+  timestamp  DateTime @default(now())
+
+  @@index([eventType])
+  @@index([timestamp])
+  @@index([processed])
+  @@index([entityType, entityId])
+  @@map("real_time_events")
+}
+
+enum SecurityEventType {
+  login_success
+  login_failure
+  login_blocked
+  logout
+  password_change
+  password_reset_request
+  password_reset_complete
+  email_change
+  mfa_enabled
+  mfa_disabled
+  mfa_verified
+  mfa_failed
+  session_created
+  session_expired
+  session_revoked
+  account_locked
+  account_unlocked
+  suspicious_activity
+  rate_limit_exceeded
+  unauthorized_access
+  REGISTRATION_SUCCESS
+  REGISTRATION_FAILED
+  SECURITY_SCAN
+  THREAT_DETECTED
+  EMERGENCY_LOCKDOWN
 }

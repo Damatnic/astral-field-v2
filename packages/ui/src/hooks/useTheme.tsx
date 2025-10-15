@@ -5,6 +5,9 @@
 import { useContext, useEffect, useState, createContext, type ReactNode } from 'react';
 import { type ThemeMode, type TeamColor, type Theme, createTheme, applyTheme, getSystemTheme } from '../utils/theme';
 
+export type { ThemeMode, Theme };
+export type TeamTheme = TeamColor;
+
 /**
  * Theme context interface
  */

@@ -45,9 +45,9 @@ const quoteVariants = cva(
 /**
  * Quote component props
  */
-export interface QuoteProps
-  extends React.HTMLAttributes<HTMLElement>,
-    VariantProps<typeof quoteVariants> {
+type QuoteVariantProps = VariantProps<typeof quoteVariants>;
+
+export type QuoteProps = Omit<React.HTMLAttributes<HTMLElement>, 'color'> & QuoteVariantProps & {
   /**
    * Quote content
    */
@@ -128,10 +128,11 @@ export const Quote = React.forwardRef<HTMLElement, QuoteProps>(
   }, ref) => {
     const hasAuthorInfo = author || authorTitle || avatar;
     
+    const Comp = Component as any;
     return (
-      <Component
+      <Comp
         ref={ref as any}
-        className={cn(quoteVariants({ variant, size, color }), className)}
+        className={cn(quoteVariants({ variant, size, color: color as any }), className)}
         cite={cite}
         {...props}
       >
@@ -201,7 +202,7 @@ export const Quote = React.forwardRef<HTMLElement, QuoteProps>(
             "
           </span>
         )}
-      </Component>
+      </Comp>
     );
   }
 );
@@ -279,8 +280,9 @@ export const InlineQuote = React.forwardRef<HTMLElement, InlineQuoteProps>(
     cite,
     ...props 
   }, ref) => {
+    const Comp = Component as any;
     return (
-      <Component
+      <Comp
         ref={ref as any}
         className={cn(
           'italic text-text-primary',
@@ -292,7 +294,7 @@ export const InlineQuote = React.forwardRef<HTMLElement, InlineQuoteProps>(
         {...props}
       >
         {children}
-      </Component>
+      </Comp>
     );
   }
 );

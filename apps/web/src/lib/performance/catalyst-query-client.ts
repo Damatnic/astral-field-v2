@@ -68,7 +68,7 @@ export function createCatalystQueryClient(): QueryClient {
       if (cached) return cached
 
       // Fetch from API if not cached
-      const response = await fetch(`/api/leagues/${leagueId}/${action}?${new URLSearchParams(params)}`)
+      const response = await fetch(`/api/leagues/${leagueId}/${action}?${new URLSearchParams(params as any)}`)
       if (!response.ok) {
         throw new Error(`API error: ${response.status}`)
       }
@@ -96,7 +96,7 @@ export function createCatalystQueryClient(): QueryClient {
       if (cached) return cached
 
       const [, ...params] = queryKey as string[]
-      const response = await fetch(`/api/players?${new URLSearchParams(params)}`)
+      const response = await fetch(`/api/players?${new URLSearchParams(params as any)}`)
       if (!response.ok) {
         throw new Error(`Players API error: ${response.status}`)
       }

@@ -252,14 +252,14 @@ export class FantasyDataGenerator {
     
     if (gameContext) {
       // Game script impact
-      if (player.position === 'RB' && gameContext.gameScript > 0.3) {
+      if (player.position === 'RB' && gameContext.gameScript && gameContext.gameScript > 0.3) {
         contextModifier *= 1.2 // Positive game script helps RBs
-      } else if (player.position === 'QB' && gameContext.gameScript < -0.3) {
+      } else if (player.position === 'QB' && gameContext.gameScript && gameContext.gameScript < -0.3) {
         contextModifier *= 1.15 // Negative game script helps passing
       }
       
       // Weather impact
-      if (gameContext.weather === 'RAIN' || gameContext.windSpeed > 15) {
+      if (gameContext.weather === 'RAIN' || (gameContext.windSpeed && gameContext.windSpeed > 15)) {
         if (player.position === 'RB') contextModifier *= 1.1
         else if (['QB', 'WR'].includes(player.position)) contextModifier *= 0.9
       }
@@ -270,7 +270,7 @@ export class FantasyDataGenerator {
       }
       
       // High-scoring game bonus
-      if (gameContext.vegasTotal > 52) {
+      if (gameContext.vegasTotal && gameContext.vegasTotal > 52) {
         contextModifier *= 1.1
       }
     }

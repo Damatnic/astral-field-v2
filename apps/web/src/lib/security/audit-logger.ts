@@ -41,7 +41,16 @@ export enum SecurityEventType {
   USER_DELETED = 'user_deleted',
   ROLE_CHANGED = 'role_changed',
   PERMISSIONS_MODIFIED = 'permissions_modified',
-  SYSTEM_CONFIG_CHANGED = 'system_config_changed'
+  SYSTEM_CONFIG_CHANGED = 'system_config_changed',
+  
+  // Registration Events
+  REGISTRATION_SUCCESS = 'REGISTRATION_SUCCESS',
+  REGISTRATION_FAILED = 'REGISTRATION_FAILED',
+  
+  // Security Scanning
+  SECURITY_SCAN = 'SECURITY_SCAN',
+  THREAT_DETECTED = 'THREAT_DETECTED',
+  EMERGENCY_LOCKDOWN = 'EMERGENCY_LOCKDOWN'
 }
 
 export enum SeverityLevel {
@@ -516,7 +525,7 @@ export class GuardianAuditLogger {
   }
 
   private getDefaultDescription(eventType: SecurityEventType): string {
-    const descriptions: Record<SecurityEventType, string> = {
+    const descriptions: Partial<Record<SecurityEventType, string>> = {
       [SecurityEventType.LOGIN_SUCCESS]: 'User successfully authenticated',
       [SecurityEventType.LOGIN_FAILURE]: 'Failed authentication attempt',
       [SecurityEventType.LOGIN_BLOCKED]: 'Authentication attempt blocked',
@@ -545,7 +554,12 @@ export class GuardianAuditLogger {
       [SecurityEventType.USER_DELETED]: 'User account deleted',
       [SecurityEventType.ROLE_CHANGED]: 'User role changed',
       [SecurityEventType.PERMISSIONS_MODIFIED]: 'User permissions modified',
-      [SecurityEventType.SYSTEM_CONFIG_CHANGED]: 'System configuration changed'
+      [SecurityEventType.SYSTEM_CONFIG_CHANGED]: 'System configuration changed',
+      [SecurityEventType.REGISTRATION_SUCCESS]: 'User registration successful',
+      [SecurityEventType.REGISTRATION_FAILED]: 'User registration failed',
+      [SecurityEventType.SECURITY_SCAN]: 'Security scan performed',
+      [SecurityEventType.THREAT_DETECTED]: 'Security threat detected',
+      [SecurityEventType.EMERGENCY_LOCKDOWN]: 'Emergency lockdown activated'
     }
     
     return descriptions[eventType] || 'Security event occurred'
@@ -689,7 +703,7 @@ export class GuardianAuditLogger {
   }
 
   private generateIncidentTitle(event: SecurityEvent): string {
-    const titles: Record<SecurityEventType, string> = {
+    const titles: Partial<Record<SecurityEventType, string>> = {
       [SecurityEventType.BRUTE_FORCE_ATTEMPT]: 'Brute Force Attack Detected',
       [SecurityEventType.INTRUSION_DETECTED]: 'System Intrusion Detected',
       [SecurityEventType.PRIVILEGE_ESCALATION]: 'Privilege Escalation Attempt',

@@ -67,9 +67,7 @@ const registrationHandler = async (request: NextRequest): Promise<NextResponse> 
         preferences: {
           create: {
             emailNotifications: true,
-            pushNotifications: false,
-            theme: 'dark',
-            timezone: 'America/New_York'
+            theme: 'dark'
           }
         }
       },
@@ -137,9 +135,7 @@ const registrationHandler = async (request: NextRequest): Promise<NextResponse> 
 // Guardian Security: Apply rate limiting to registration endpoint
 export async function POST(request: NextRequest) {
   const rateLimitMiddleware = withRateLimit({ 
-    ruleKey: 'auth:register',
-    requests: 5,
-    window: 3600000 // 1 hour window
+    ruleKey: 'auth:register'
   })
   return rateLimitMiddleware(request, registrationHandler)
 }

@@ -3,12 +3,12 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 // Emoji-based icons to replace heroicons
-const ChartBarIcon = () => <span className="w-5 h-5 flex items-center justify-center">📊</span>
-const CpuChipIcon = () => <span className="w-5 h-5 flex items-center justify-center">🖥️</span>
-const ClockIcon = () => <span className="w-5 h-5 flex items-center justify-center">⏰</span>
-const ExclamationTriangleIcon = () => <span className="w-5 h-5 flex items-center justify-center">⚠️</span>
-const CheckCircleIcon = () => <span className="w-5 h-5 flex items-center justify-center">✅</span>
-const XCircleIcon = () => <span className="w-5 h-5 flex items-center justify-center">❌</span>
+const ChartBarIcon = ({ className }: { className?: string }) => <span className={className || "w-5 h-5 flex items-center justify-center"}>📊</span>
+const CpuChipIcon = ({ className }: { className?: string }) => <span className={className || "w-5 h-5 flex items-center justify-center"}>🖥️</span>
+const ClockIcon = ({ className }: { className?: string }) => <span className={className || "w-5 h-5 flex items-center justify-center"}>⏰</span>
+const ExclamationTriangleIcon = ({ className }: { className?: string }) => <span className={className || "w-5 h-5 flex items-center justify-center"}>⚠️</span>
+const CheckCircleIcon = ({ className }: { className?: string }) => <span className={className || "w-5 h-5 flex items-center justify-center"}>✅</span>
+const XCircleIcon = ({ className }: { className?: string }) => <span className={className || "w-5 h-5 flex items-center justify-center"}>❌</span>
 
 interface PerformanceMetrics {
   navigation: Array<{
@@ -95,11 +95,12 @@ export function CatalystPerformanceMonitor() {
           const entries = list.getEntries()
           const lastEntry = entries[entries.length - 1]
           if (lastEntry && 'renderTime' in lastEntry) {
+            const lcpEntry = lastEntry as any
             setMetrics(prev => ({
               ...prev,
               paint: {
                 ...prev.paint,
-                largestContentfulPaint: lastEntry.renderTime || lastEntry.loadTime
+                largestContentfulPaint: lcpEntry.renderTime || lcpEntry.startTime
               }
             }))
           }

@@ -133,7 +133,7 @@ class CatalystDynamicLoader {
       this.preloadComponent(key, importFn)
     }
 
-    return DynamicComponent
+    return DynamicComponent as any
   }
 
   /**
@@ -189,8 +189,8 @@ export const dynamicLoader = new CatalystDynamicLoader()
 export const CatalystComponents = {
   // Analytics components (normal priority)
   AnalyticsDashboard: dynamicLoader.load(
-    () => import('@/components/analytics/analytics-dashboard'),
-    { key: 'analytics-dashboard', priority: 'normal', loading: LoadingIndicators.skeleton }
+    () => import('@/components/analytics/analytics-dashboard').then(m => ({ default: (m as any).AnalyticsDashboard || (m as any).default || m })) as any,
+    { key: 'analytics-dashboard', priority: 'normal', loading: () => LoadingIndicators.skeleton({ size: 'md' }) }
   ),
 
   // AI Coach (low priority, ML heavy)
@@ -201,7 +201,7 @@ export const CatalystComponents = {
 
   // Live scoring (medium priority)
   LiveScoring: dynamicLoader.load(
-    () => import('@/components/live-scoring/live-scoreboard'),
+    () => import('@/components/live-scoring/live-scoreboard').then(m => ({ default: (m as any).LiveScoreboard || (m as any).default || m })) as any,
     { key: 'live-scoring', priority: 'normal', ssr: false }
   )
 }
@@ -262,7 +262,7 @@ export const PreloadStrategies = {
     if (viewsAnalytics) {
       dynamicLoader.preloadComponent(
         'analytics-dashboard',
-        () => import('@/components/analytics/analytics-dashboard')
+        () => import('@/components/analytics/analytics-dashboard').then(m => ({ default: (m as any).AnalyticsDashboard || (m as any).default || m })) as any
       )
     }
   }

@@ -71,7 +71,7 @@ export function OptimizedLeagueDashboard({
       if (useCache) {
         const cached = await leagueCache.getLeagueStandings(leagueId, currentWeek)
         if (cached) {
-          setLeagueData(cached)
+          setLeagueData(cached as LeagueData)
           setLoading(false)
           return
         }
@@ -91,9 +91,12 @@ export function OptimizedLeagueDashboard({
       const result = await response.json()
       
       // Cache the result
-      await leagueCache.setLeagueStandings(leagueId, currentWeek, result.data)
+      const leagueResult = result.data || null
+      if (leagueResult) {
+        await leagueCache.setLeagueStandings(leagueId, currentWeek, leagueResult)
+      }
       
-      setLeagueData(result.data)
+      setLeagueData(leagueResult)
     } catch (err) {
       if (process.env.NODE_ENV === 'development') {
         console.error('League data fetch error:', err);
@@ -225,7 +228,7 @@ export function OptimizedLeagueDashboard({
           >
             {activeTab === 'standings' && (
               <LeagueStandings 
-                standings={standingsData}
+                data={standingsData}
                 currentWeek={currentWeek}
               />
             )}
@@ -240,7 +243,7 @@ export function OptimizedLeagueDashboard({
             {activeTab === 'players' && (
               <PlayerStats 
                 players={topPlayersData}
-                weeks={[1, 2, 3, currentWeek]}
+                currentWeek={currentWeek}
               />
             )}
           </motion.div>

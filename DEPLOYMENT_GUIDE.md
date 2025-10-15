@@ -1,282 +1,194 @@
-# AstralField v3.0 - Deployment Guide 🚀
+# 🚀 AstralField v3.0 - Production Deployment Guide
 
-## 🎉 Production Ready Status: ✅ COMPLETE
+## Prerequisites
 
-AstralField has been transformed from an empty skeleton to a **complete, production-ready fantasy football platform** with zero placeholders, stubs, or TODOs.
+- Node.js 18+ installed
+- PostgreSQL database (Neon, Supabase, or self-hosted)
+- Auth0 account (free tier available)
+- Vercel account (recommended) or alternative hosting
 
-## 📋 Pre-Deployment Checklist
+## Step 1: Database Setup
 
-### ✅ **Build & Quality Assurance**
-- [x] **Production build passes**: `npm run build` ✅
-- [x] **TypeScript compilation**: `npm run typecheck` ✅  
-- [x] **Code linting**: `npm run lint` ✅ (warnings only)
-- [x] **Development server**: Running on port 3000 ✅
-- [x] **All pages render correctly**: 11 complete pages ✅
-- [x] **API endpoints functional**: 30+ endpoints with real logic ✅
-- [x] **Database schema ready**: Complete Prisma schema ✅
-- [x] **Authentication working**: NextAuth with email/OAuth ✅
-- [x] **WebSocket functionality**: Real-time features operational ✅
+### Option A: Neon (Recommended)
 
-### ✅ **Feature Completeness**
-- [x] **User Management**: Registration, login, profiles
-- [x] **League Management**: Creation, settings, standings
-- [x] **Team Management**: Roster, lineup, transactions
-- [x] **Draft System**: Real-time draft rooms with timers
-- [x] **Live Scoring**: Game-day updates and matchups
-- [x] **Player Database**: Stats, projections, news
-- [x] **AI Coach**: Smart recommendations and analysis
-- [x] **Chat System**: League communication
-- [x] **Trade System**: Proposals and notifications
-- [x] **Mobile Responsive**: Works on all devices
-
-## 🌐 Deployment Options
-
-### Option 1: Vercel (Recommended)
-```bash
-# Install Vercel CLI
-npm i -g vercel
-
-# Deploy from root directory
-cd C:\Users\damat\_REPOS\ASTRAL_FIELD_V1
-vercel --prod
+1. Create account at [neon.tech](https://neon.tech)
+2. Create new project
+3. Copy connection string
+4. Add to `.env.local`:
+```env
+DATABASE_URL="postgresql://user:password@host/database?sslmode=require"
+DIRECT_DATABASE_URL="postgresql://user:password@host/database?sslmode=require"
 ```
 
-**Environment Variables Required:**
-```
-DATABASE_URL=postgresql://username:password@host:port/database
-NEXTAUTH_SECRET=your-secret-key-here
-NEXTAUTH_URL=https://your-domain.com
-GOOGLE_CLIENT_ID=your-google-oauth-id (optional)
-GOOGLE_CLIENT_SECRET=your-google-oauth-secret (optional)
-GITHUB_ID=your-github-oauth-id (optional)
-GITHUB_SECRET=your-github-oauth-secret (optional)
-```
+### Option B: Supabase
 
-### Option 2: Netlify
-```bash
-# Build the application
-npm run build
+1. Create account at [supabase.com](https://supabase.com)
+2. Create new project
+3. Go to Settings > Database
+4. Copy connection string (use "Connection pooling" for DATABASE_URL)
+5. Add to `.env.local`
 
-# Deploy build folder to Netlify
-# Upload .next/static and .next/server folders
-```
+## Step 2: Authentication Setup
 
-### Option 3: Docker
-```dockerfile
-FROM node:18-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production
-COPY . .
-RUN npm run build
-EXPOSE 3000
-CMD ["npm", "start"]
+### Auth0 Configuration
+
+1. Create account at [auth0.com](https://auth0.com)
+2. Create new application (Regular Web Application)
+3. Configure settings:
+   - **Allowed Callback URLs**: `https://yourdomain.com/api/auth/callback/auth0`
+   - **Allowed Logout URLs**: `https://yourdomain.com`
+   - **Allowed Web Origins**: `https://yourdomain.com`
+
+4. Copy credentials to `.env.local`:
+```env
+AUTH0_DOMAIN="your-domain.auth0.com"
+AUTH0_CLIENT_ID="your-client-id"
+AUTH0_CLIENT_SECRET="your-client-secret"
+NEXTAUTH_URL="https://yourdomain.com"
+NEXTAUTH_SECRET="generate-with-openssl-rand-base64-32"
 ```
 
-## 🔧 Environment Setup
+## Step 3: Environment Variables
 
-### 1. Database Setup (PostgreSQL Recommended)
-```sql
--- Create database
-CREATE DATABASE astralfield;
+Create `.env.local` with all required variables:
 
--- Run Prisma migrations
-npx prisma migrate deploy
-npx prisma generate
-```
-
-### 2. Environment Variables
-Create `.env.production` file:
 ```env
 # Database
-DATABASE_URL="postgresql://username:password@localhost:5432/astralfield"
+DATABASE_URL="postgresql://..."
+DIRECT_DATABASE_URL="postgresql://..."
 
-# NextAuth
-NEXTAUTH_SECRET="your-super-secret-key-min-32-chars"
-NEXTAUTH_URL="https://your-domain.com"
+# Auth
+AUTH0_DOMAIN="..."
+AUTH0_CLIENT_ID="..."
+AUTH0_CLIENT_SECRET="..."
+NEXTAUTH_URL="https://yourdomain.com"
+NEXTAUTH_SECRET="..."
 
-# OAuth Providers (Optional)
-GOOGLE_CLIENT_ID="your-google-client-id"
-GOOGLE_CLIENT_SECRET="your-google-client-secret"
-GITHUB_ID="your-github-client-id"  
-GITHUB_SECRET="your-github-client-secret"
-
-# App Configuration
+# Application
 NODE_ENV="production"
 ```
 
-### 3. SSL Certificate
-Ensure HTTPS is enabled for:
-- Secure authentication flows
-- WebSocket connections (WSS)
-- OAuth redirects
-- Cookie security
+## Step 4: Database Migration
 
-## 🚀 Post-Deployment Steps
+Run Prisma migrations:
 
-### 1. Database Seeding
 ```bash
-# Run database migrations
-npx prisma migrate deploy
-
-# Seed with initial data (optional)
-npx prisma db seed
+cd apps/web
+npx prisma generate
+npx prisma db push
 ```
 
-### 2. Health Checks
-Verify these endpoints work:
-- `GET /api/health` - API health check
-- `GET /api/auth/session` - Authentication status
-- `WebSocket /api/socket` - Real-time functionality
+## Step 5: Deploy to Vercel
 
-### 3. Performance Monitoring
-- Set up error tracking (Sentry recommended)
-- Monitor performance (Vercel Analytics built-in)
-- Configure logging for production issues
+### Quick Deploy
 
-## 📊 Application Architecture
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new)
 
-### **Frontend (Next.js 14)**
-- **Pages**: 11 complete pages with full functionality
-- **Components**: 50+ React components with TypeScript
-- **Styling**: Tailwind CSS with custom design system
-- **State Management**: React hooks + Zustand for complex state
-- **Real-time**: Socket.IO client for live updates
+### Manual Deploy
 
-### **Backend (API Routes)**
-- **Authentication**: NextAuth with multiple providers
-- **Database**: Prisma ORM with PostgreSQL
-- **Real-time**: Socket.IO server for live features
-- **API**: RESTful endpoints with proper error handling
-- **Middleware**: Route protection and request validation
-
-### **Database Schema**
-Complete Prisma schema with 15+ models:
-- User, Team, League, Player, Stats
-- Matchup, Trade, Chat, News, Settings
-- Roster, Draft, Waiver, Transaction models
-
-## 🔒 Security Features
-
-- [x] **Authentication**: Secure email/password + OAuth
-- [x] **Authorization**: Route protection middleware  
-- [x] **Data Validation**: Zod schemas for all inputs
-- [x] **SQL Injection Prevention**: Prisma ORM protection
-- [x] **XSS Protection**: React built-in sanitization
-- [x] **CSRF Protection**: NextAuth CSRF tokens
-- [x] **Secure Headers**: Next.js security headers
-- [x] **Environment Secrets**: Proper secret management
-
-## 📈 Performance Optimizations
-
-- [x] **Code Splitting**: Automatic route-based splitting
-- [x] **Image Optimization**: Next.js Image component
-- [x] **Static Generation**: Where possible for performance
-- [x] **Bundle Analysis**: Optimized build output (87.3kB shared)
-- [x] **Lazy Loading**: Dynamic imports for heavy components
-- [x] **Caching**: Proper cache headers and strategies
-- [x] **Database Optimization**: Efficient Prisma queries
-
-## 🧪 Testing Strategy
-
-### Unit Tests (Jest + Testing Library)
+1. Install Vercel CLI:
 ```bash
-npm run test
+npm install -g vercel
 ```
-- Component testing for UI elements
-- Hook testing for custom React hooks
-- Utility function testing
 
-### Integration Tests
+2. Login to Vercel:
 ```bash
-npm run test:integration
+vercel login
 ```
-- API endpoint testing
-- Database interaction testing
-- Authentication flow testing
 
-### End-to-End Tests (Playwright)
+3. Deploy:
 ```bash
-npm run test:e2e
-```
-- Complete user journey testing
-- Multi-browser compatibility
-- Real user interaction simulation
-
-## 📱 Mobile & Responsive Design
-
-- [x] **Mobile First**: Designed for mobile devices
-- [x] **Touch Interactions**: Optimized for touch screens
-- [x] **Responsive Breakpoints**: Works on all screen sizes
-- [x] **Progressive Web App**: PWA capabilities ready
-- [x] **Performance**: Fast loading on mobile networks
-
-## 🎯 Key Features Ready
-
-### **Core Fantasy Football**
-- ✅ **Complete Team Management** - Roster, lineup, transactions
-- ✅ **Live Draft System** - Real-time drafting with timers
-- ✅ **Live Scoring** - Game-day updates and matchups  
-- ✅ **Player Database** - 500+ players with stats/projections
-- ✅ **Trade System** - Proposals, negotiations, completions
-- ✅ **Waiver Wire** - Claim system and processing
-- ✅ **League Settings** - Customizable scoring and rules
-
-### **Advanced Features**  
-- ✅ **AI Coach** - Smart recommendations and lineup optimization
-- ✅ **Real-time Chat** - League communication system
-- ✅ **Analytics Dashboard** - Performance metrics and insights
-- ✅ **Mobile App** - Full responsive design
-- ✅ **Push Notifications** - Trade alerts and updates (ready)
-
-### **Social Features**
-- ✅ **League Chat** - Real-time messaging with emoji support
-- ✅ **Trade Negotiations** - Interactive trade interface  
-- ✅ **Activity Feed** - League updates and notifications
-- ✅ **Player News** - Injury reports and updates
-- ✅ **Matchup Predictions** - AI-powered predictions
-
-## 🏆 Production Statistics
-
-### **Build Output**
-```
-Route (app)                               Size     First Load JS
-┌ ƒ /                                     175 B          96.2 kB
-├ ƒ /dashboard                            178 B           104 kB  
-├ ƒ /players                              3.1 kB          107 kB
-├ ƒ /draft                                4.29 kB         109 kB
-├ ƒ /live                                 6.73 kB         111 kB
-├ ƒ /ai-coach                             3.6 kB          116 kB
-└ ƒ /team                                 2.88 kB         116 kB
-+ First Load JS shared by all             87.3 kB
+vercel --prod
 ```
 
-### **Code Statistics**
-- **Total Files**: 150+ source files
-- **Components**: 50+ React components  
-- **API Routes**: 30+ endpoints
-- **Database Models**: 15+ Prisma models
-- **Test Files**: 25+ test suites
-- **Lines of Code**: 15,000+ lines (excluding tests)
+4. Add environment variables in Vercel dashboard:
+   - Go to Project Settings > Environment Variables
+   - Add all variables from `.env.local`
 
-## ✅ **DEPLOYMENT READY CONFIRMATION**
+## Step 6: Post-Deployment
 
-**🎉 AstralField v3.0 is 100% production-ready!**
+### Verify Deployment
 
-- ✅ **Zero placeholders or TODOs remaining**
-- ✅ **All features fully implemented**
-- ✅ **Production build successful**
-- ✅ **Security measures in place**
-- ✅ **Performance optimized**
-- ✅ **Testing coverage complete**
-- ✅ **Documentation provided**
+1. Check health endpoint: `https://yourdomain.com/api/health`
+2. Test authentication flow
+3. Create test league
+4. Verify all features work
 
-## 🚀 **Ready to Launch!**
+### Monitor Application
 
-The application can be deployed immediately to production and will provide a complete, professional-grade fantasy football platform for real users. All core functionality has been implemented with real business logic, proper error handling, and production-quality code.
+1. Check Vercel logs for errors
+2. Monitor database connections
+3. Test API endpoints
+4. Verify real-time features
 
-**Welcome to the future of fantasy football! 🏈**
+## Step 7: Custom Domain (Optional)
 
----
+1. Go to Vercel Project Settings > Domains
+2. Add your custom domain
+3. Configure DNS records as instructed
+4. Update `NEXTAUTH_URL` environment variable
 
-**For support or questions, refer to the codebase documentation or create an issue in the repository.**
+## Troubleshooting
+
+### Build Fails
+
+- Check Node.js version (18+)
+- Verify all dependencies installed
+- Check TypeScript errors: `npm run typecheck`
+
+### Database Connection Issues
+
+- Verify connection string format
+- Check SSL mode requirement
+- Test connection with Prisma Studio: `npx prisma studio`
+
+### Authentication Not Working
+
+- Verify Auth0 callback URLs match deployment URL
+- Check NEXTAUTH_SECRET is set
+- Verify NEXTAUTH_URL matches deployment URL
+
+### Performance Issues
+
+- Enable caching in Vercel
+- Check database query performance
+- Monitor API response times
+
+## Production Checklist
+
+- [ ] Database configured and migrated
+- [ ] Auth0 configured with production URLs
+- [ ] All environment variables set
+- [ ] Custom domain configured (optional)
+- [ ] SSL certificate active
+- [ ] Health check endpoint responding
+- [ ] Error tracking configured (Sentry)
+- [ ] Monitoring configured
+- [ ] Backup strategy in place
+- [ ] Test all critical user flows
+
+## Rollback Plan
+
+If issues occur:
+
+1. Revert to previous deployment in Vercel
+2. Check error logs
+3. Fix issues locally
+4. Test thoroughly
+5. Redeploy
+
+## Support
+
+- Documentation: `/docs`
+- GitHub Issues: [Report Issue](https://github.com/yourusername/astralfield/issues)
+- Email: support@astralfield.com
+
+## Next Steps
+
+After successful deployment:
+
+1. Monitor for 24 hours
+2. Gather user feedback
+3. Implement analytics
+4. Set up automated backups
+5. Configure CI/CD pipeline

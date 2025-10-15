@@ -105,9 +105,7 @@ export class GuardianInputSanitizer {
       sanitized = DOMPurify.sanitize(sanitized, {
         ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'p', 'br', 'ul', 'ol', 'li'],
         ALLOWED_ATTR: [],
-        KEEP_CONTENT: true,
-        REMOVE_DATA_ATTR: true,
-        REMOVE_UNKNOWN_PROTOCOLS: true
+        KEEP_CONTENT: true
       })
     } else {
       // Strip all HTML
@@ -354,8 +352,6 @@ export class GuardianInputSanitizer {
         'a', 'img'
       ],
       ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'target'],
-      ALLOW_DATA_ATTR: false,
-      REMOVE_UNKNOWN_PROTOCOLS: true,
       USE_PROFILES: { html: true }
     })
   }
@@ -405,7 +401,7 @@ export class GuardianInputSanitizer {
       recommendations.push('Apply input sanitization')
       recommendations.push('Use parameterized queries for database operations')
       recommendations.push('Validate input on both client and server side')
-      if (riskLevel === 'CRITICAL') {
+      if ((riskLevel as string) === 'CRITICAL' || (riskLevel as string) === 'HIGH') {
         recommendations.push('IMMEDIATE ACTION REQUIRED: Block this input')
       }
     }

@@ -102,7 +102,7 @@ export class GuardianPrivacyProtection {
   private consentRecords = new Map<string, ConsentRecord[]>()
   private processingRecords = new Map<string, DataProcessingRecord[]>()
   private privacyRequests = new Map<string, PrivacyRequest>()
-  private retentionPolicies: DataRetentionPolicy[]
+  private retentionPolicies: DataRetentionPolicy[] = []
 
   constructor() {
     this.initializeRetentionPolicies()

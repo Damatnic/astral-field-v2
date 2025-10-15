@@ -14,7 +14,8 @@ import {
   Target,
   Calendar,
   Activity,
-  Shield
+  Shield,
+  Trophy
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { EnhancedPlayerCard } from '@/components/player/enhanced-player-card'
@@ -170,6 +171,7 @@ export function SmartWaiverWire({
                 <EnhancedPlayerCard
                   player={{
                     ...player,
+                    status: player.status as 'ACTIVE' | 'INJURED' | 'OUT' | 'QUESTIONABLE' | 'DOUBTFUL' | undefined,
                     trending: player.trending || (player.aiScore && player.aiScore > 80 ? 'hot' : undefined)
                   }}
                   variant="expanded"
@@ -333,6 +335,7 @@ export function SmartWaiverWire({
               <EnhancedPlayerCard
                 player={{
                   ...player,
+                  status: player.status as 'ACTIVE' | 'INJURED' | 'OUT' | 'QUESTIONABLE' | 'DOUBTFUL' | undefined,
                   ownership: player.ownership
                 }}
                 variant="compact"

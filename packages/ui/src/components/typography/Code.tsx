@@ -44,9 +44,9 @@ const codeVariants = cva(
 /**
  * Code component props
  */
-export interface CodeProps
-  extends React.HTMLAttributes<HTMLElement>,
-    VariantProps<typeof codeVariants> {
+type CodeVariantProps = VariantProps<typeof codeVariants>;
+
+export type CodeProps = Omit<React.HTMLAttributes<HTMLElement>, 'color'> & CodeVariantProps & {
   /**
    * Code content
    */
@@ -182,7 +182,7 @@ export const Code = React.forwardRef<HTMLElement, CodeProps>(
           <Component
             ref={ref as any}
             className={cn(
-              codeVariants({ variant, size, color }),
+              codeVariants({ variant, size, color: color as any }),
               wrap ? 'whitespace-pre-wrap' : 'whitespace-pre',
               language && `language-${language}`,
               className
@@ -212,7 +212,7 @@ export const Code = React.forwardRef<HTMLElement, CodeProps>(
     return (
       <Component
         ref={ref as any}
-        className={cn(codeVariants({ variant, size, color }), className)}
+        className={cn(codeVariants({ variant, size, color: color as any }), className)}
         {...props}
       >
         {children}

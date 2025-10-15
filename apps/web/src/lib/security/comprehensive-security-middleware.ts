@@ -215,9 +215,9 @@ export class GuardianSecurityMiddleware {
 
     // Extract location from headers (Cloudflare or similar)
     const location = {
-      country: request.headers.get('cf-ipcountry') || request.headers.get('x-country'),
-      region: request.headers.get('cf-region') || request.headers.get('x-region'),
-      city: request.headers.get('cf-city') || request.headers.get('x-city')
+      country: request.headers.get('cf-ipcountry') || request.headers.get('x-country') || undefined,
+      region: request.headers.get('cf-region') || request.headers.get('x-region') || undefined,
+      city: request.headers.get('cf-city') || request.headers.get('x-city') || undefined
     }
 
     // Extract body for POST requests

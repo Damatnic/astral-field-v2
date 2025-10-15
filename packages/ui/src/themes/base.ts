@@ -89,7 +89,7 @@ export const lightTheme: BaseTheme = {
  */
 export const darkTheme: BaseTheme = {
   ...lightTheme,
-  colors: darkColors,
+  colors: darkColors as any,
 };
 
 /**
@@ -104,18 +104,18 @@ export function createTeamTheme(baseTheme: BaseTheme, teamKey: TeamColor): BaseT
       ...baseTheme.colors,
       interactive: {
         ...baseTheme.colors.interactive,
-        primary: teamColors.primary,
-        primaryHover: adjustColor(teamColors.primary, -10),
-        primaryActive: adjustColor(teamColors.primary, -20),
-        secondary: teamColors.secondary,
-        secondaryHover: adjustColor(teamColors.secondary, -10),
-        secondaryActive: adjustColor(teamColors.secondary, -20),
+        primary: teamColors.primary as any,
+        primaryHover: adjustColor(teamColors.primary, -10) as any,
+        primaryActive: adjustColor(teamColors.primary, -20) as any,
+        secondary: teamColors.secondary as any,
+        secondaryHover: adjustColor(teamColors.secondary, -10) as any,
+        secondaryActive: adjustColor(teamColors.secondary, -20) as any,
       },
       fantasy: {
         ...baseTheme.colors.fantasy,
         // Override fantasy colors with team colors where appropriate
-        trade: teamColors.primary,
-        waiver: teamColors.secondary,
+        trade: teamColors.primary as any,
+        waiver: teamColors.secondary as any,
       },
     },
   };
@@ -144,27 +144,27 @@ export const highContrastTheme: BaseTheme = {
   colors: {
     ...semanticColors,
     background: {
-      primary: '#ffffff',
-      secondary: '#f8f9fa',
-      tertiary: '#e9ecef',
-      inverse: '#000000',
+      primary: '#ffffff' as any,
+      secondary: '#f8f9fa' as any,
+      tertiary: '#e9ecef' as any,
+      inverse: '#000000' as any,
     },
     text: {
-      primary: '#000000',
-      secondary: '#212529',
-      tertiary: '#495057',
-      inverse: '#ffffff',
-      disabled: '#6c757d',
-      link: '#0d6efd',
-      linkHover: '#0a58ca',
+      primary: '#000000' as any,
+      secondary: '#212529' as any,
+      tertiary: '#495057' as any,
+      inverse: '#ffffff' as any,
+      disabled: '#6c757d' as any,
+      link: '#0d6efd' as any,
+      linkHover: '#0a58ca' as any,
     },
     border: {
-      primary: '#000000',
-      secondary: '#495057',
-      subtle: '#6c757d',
-      strong: '#212529',
+      primary: '#000000' as any,
+      secondary: '#495057' as any,
+      subtle: '#6c757d' as any,
+      strong: '#212529' as any,
     },
-  },
+  } as any,
 };
 
 /**

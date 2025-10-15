@@ -7,16 +7,13 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 // Using emoji icons instead of heroicons for compatibility
-const icons = {
-  ChartBarIcon: () => <span className="w-5 h-5 flex items-center justify-center">📊</span>,
-  ClockIcon: () => <span className="w-5 h-5 flex items-center justify-center">⏱️</span>,
-  CpuChipIcon: () => <span className="w-5 h-5 flex items-center justify-center">💾</span>,
-  ServerIcon: () => <span className="w-5 h-5 flex items-center justify-center">🖥️</span>,
-  BoltIcon: () => <span className="w-5 h-5 flex items-center justify-center">⚡</span>,
-  ExclamationTriangleIcon: () => <span className="w-5 h-5 flex items-center justify-center">⚠️</span>,
-  CheckCircleIcon: () => <span className="w-5 h-5 flex items-center justify-center">✅</span>
-}
-const { ChartBarIcon, ClockIcon, CpuChipIcon, ServerIcon, BoltIcon, ExclamationTriangleIcon, CheckCircleIcon } = icons
+const ChartBarIcon = ({ className }: { className?: string }) => <span className={className || "w-5 h-5 flex items-center justify-center"}>📊</span>
+const ClockIcon = ({ className }: { className?: string }) => <span className={className || "w-5 h-5 flex items-center justify-center"}>⏱️</span>
+const CpuChipIcon = ({ className }: { className?: string }) => <span className={className || "w-5 h-5 flex items-center justify-center"}>💾</span>
+const ServerIcon = ({ className }: { className?: string }) => <span className={className || "w-5 h-5 flex items-center justify-center"}>🖥️</span>
+const BoltIcon = ({ className }: { className?: string }) => <span className={className || "w-5 h-5 flex items-center justify-center"}>⚡</span>
+const ExclamationTriangleIcon = ({ className }: { className?: string }) => <span className={className || "w-5 h-5 flex items-center justify-center"}>⚠️</span>
+const CheckCircleIcon = ({ className }: { className?: string }) => <span className={className || "w-5 h-5 flex items-center justify-center"}>✅</span>
 import { catalystCache, leagueCache } from '@/lib/cache/catalyst-cache'
 import { useCatalystPerformanceMonitor } from './catalyst-hydration-boundary'
 
@@ -167,10 +164,10 @@ export function CatalystPerformanceDashboard() {
     // Check for alerts
     const newAlerts = PERFORMANCE_ALERTS.filter(alert => {
       const value = newMetrics[alert.metric]
-      return value !== undefined && value > alert.threshold
+      return typeof value === 'number' && value > alert.threshold
     }).map(alert => ({
       ...alert,
-      value: newMetrics[alert.metric]!
+      value: newMetrics[alert.metric] as number
     }))
 
     setAlerts(newAlerts)
@@ -195,8 +192,8 @@ export function CatalystPerformanceDashboard() {
     else if (metrics.fid > 100) score -= 10
     
     // CLS scoring
-    if (metrics.cls > 0.25) score -= 20
-    else if (metrics.cls > 0.1) score -= 10
+    if (metrics.cls && metrics.cls > 0.25) score -= 20
+    else if (metrics.cls && metrics.cls > 0.1) score -= 10
 
     if (score >= 90) return 'A+'
     if (score >= 80) return 'A'
@@ -280,10 +277,7 @@ export function CatalystPerformanceDashboard() {
                   <div className="flex justify-between">
                     <span>{alert.message}</span>
                     <span className="font-mono">
-                      {typeof alert.value === 'number' ? 
-                        (alert.value > 1000 ? `${(alert.value / 1000).toFixed(1)}s` : `${alert.value.toFixed(1)}ms`) 
-                        : alert.value
-                      }
+                      {alert.value > 1000 ? `${(alert.value / 1000).toFixed(1)}s` : `${alert.value.toFixed(1)}ms`}
                     </span>
                   </div>
                 </div>
@@ -358,7 +352,7 @@ export function CatalystPerformanceDashboard() {
                 value={metrics.memoryUsage} 
                 unit="MB" 
                 target={50000000}
-                formatter={(val) => `${((val || 0) / 1024 / 1024).toFixed(1)}`}
+                formatter={(val) => `${((Number(val) || 0) / 1024 / 1024).toFixed(1)}`}
                 description="JS heap memory usage"
               />
               <MetricRow 
@@ -373,7 +367,7 @@ export function CatalystPerformanceDashboard() {
                 value={metrics.bundleSize} 
                 unit="KB" 
                 target={500000}
-                formatter={(val) => `${((val || 0) / 1024).toFixed(1)}`}
+                formatter={(val) => `${((Number(val) || 0) / 1024).toFixed(1)}`}
                 description="JavaScript bundle size"
               />
             </div>
@@ -398,7 +392,7 @@ export function CatalystPerformanceDashboard() {
                 value={metrics.cacheHitRate} 
                 unit="%" 
                 target={70}
-                formatter={(val) => `${(val || 0).toFixed(1)}`}
+                formatter={(val) => `${(Number(val) || 0).toFixed(1)}`}
                 description="Catalyst cache efficiency"
               />
               <MetricRow 

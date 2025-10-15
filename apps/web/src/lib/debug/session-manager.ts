@@ -231,7 +231,7 @@ Generated: ${new Date().toISOString()}
 - Token Expiry: ${diagnostics.tokenExpiry ? new Date(diagnostics.tokenExpiry * 1000).toISOString() : 'Unknown'}
 
 🍪 COOKIES FOUND:
-${Object.entries(diagnostics.cookies)
+${Object.entries(diagnostics.cookies || {})
   .filter(([key]) => key.includes('auth') || key.includes('session'))
   .map(([key, value]) => `- ${key}: ${value.substring(0, 30)}${value.length > 30 ? '...' : ''}`)
   .join('\n') || '- No auth-related cookies found'}

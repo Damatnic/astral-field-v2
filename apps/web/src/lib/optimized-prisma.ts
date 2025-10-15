@@ -15,7 +15,7 @@ export class PhoenixDatabaseService {
   }
 
   // Phoenix: Intelligent caching with TTL
-  private getCachedResult<T>(key: string): T | null {
+  public getCachedResult<T>(key: string): T | null {
     const cached = this.queryCache.get(key)
     if (cached && Date.now() - cached.timestamp < cached.ttl) {
       return cached.data as T
@@ -24,7 +24,7 @@ export class PhoenixDatabaseService {
     return null
   }
 
-  private setCachedResult<T>(key: string, data: T, ttl: number = this.CACHE_TTL): void {
+  public setCachedResult<T>(key: string, data: T, ttl: number = this.CACHE_TTL): void {
     this.queryCache.set(key, {
       data,
       timestamp: Date.now(),
@@ -110,9 +110,7 @@ export class PhoenixDatabaseService {
       AND: [
         {
           OR: [
-            { name: { contains: query, mode: 'insensitive' } },
-            { firstName: { contains: query, mode: 'insensitive' } },
-            { lastName: { contains: query, mode: 'insensitive' } }
+            { name: { contains: query, mode: 'insensitive' } }
           ]
         },
         position ? { position } : {},
@@ -164,9 +162,7 @@ export class PhoenixDatabaseService {
           })
         ),
         {
-          isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted,
-          maxWait: 5000,
-          timeout: 10000
+          isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted
         }
       )
     })
@@ -344,9 +340,7 @@ export class PhoenixDatabaseService {
         
         return results
       }, {
-        isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted,
-        maxWait: 10000,
-        timeout: 20000
+        isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted
       })
     })
   }
@@ -528,7 +522,7 @@ export async function getOptimizedLeagueData(leagueId: string, currentWeek: numb
       CROSS JOIN top_performers tp;
     `
 
-    return leagueData[0] || null
+    return (leagueData as any)[0] || null
   } catch (error) {
     if (process.env.NODE_ENV === 'development') {
 
@@ -706,8 +700,6 @@ export async function updateWeeklyScoring(week: number, playerUpdates: Array<{
       )
 
       return { statUpdates, scoreUpdates }
-    }, {
-      timeout: 30000 // 30 second timeout for batch operations
     })
   } catch (error) {
     if (process.env.NODE_ENV === 'development') {

@@ -494,13 +494,13 @@ const CatalystVirtualList = memo(function CatalystVirtualList<T>({
       }, {} as Record<string, T[]>)
 
       // Flatten with group headers
-      const result: (T | { isGroupHeader: true; groupName: string })[] = []
+      const result: any[] = []
       Object.entries(grouped).forEach(([groupName, groupItems]) => {
-        result.push({ isGroupHeader: true, groupName } as any)
+        result.push({ isGroupHeader: true, groupName })
         result.push(...groupItems)
       })
       
-      return result
+      return result as T[]
     }
 
     return filtered
@@ -508,22 +508,22 @@ const CatalystVirtualList = memo(function CatalystVirtualList<T>({
 
   // Catalyst: Custom item renderer with group header support
   const enhancedRenderItem = useCallback((itemProps: { 
-    item: T | { isGroupHeader: true; groupName: string }
+    item: T
     index: number
     style: React.CSSProperties 
   }) => {
     const { item, index, style } = itemProps
     
     // Render group header
-    if ('isGroupHeader' in item && item.isGroupHeader) {
+    if ('isGroupHeader' in (item as any) && (item as any).isGroupHeader) {
       return (
         <div style={style} className="bg-slate-700 px-4 py-2 font-semibold text-slate-300">
-          {item.groupName}
+          {(item as any).groupName}
         </div>
       )
     }
 
-    return renderItem({ item: item as T, index, style })
+    return renderItem(itemProps)
   }, [renderItem])
 
   // Helper function to get nested object values

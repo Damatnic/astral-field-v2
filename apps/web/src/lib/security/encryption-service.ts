@@ -146,14 +146,14 @@ export class GuardianEncryptionService {
     const derivedKey = await scryptAsync(encryptionKey, salt, this.config.keyLength) as Buffer
     
     // Create cipher
-    const cipher = createCipheriv(this.config.algorithm, derivedKey, iv)
+    const cipher = createCipheriv(this.config.algorithm, derivedKey, iv) as any
     
     // Encrypt data
     let encrypted = cipher.update(plaintext, 'utf8', 'hex')
     encrypted += cipher.final('hex')
     
     // Get authentication tag
-    const tag = cipher.getAuthTag()
+    const tag = cipher.getAuthTag() as Buffer
     
     // Create encrypted data object
     const encryptedData: EncryptedData = {
@@ -194,7 +194,7 @@ export class GuardianEncryptionService {
       const derivedKey = await scryptAsync(encryptionKey, salt, this.config.keyLength) as Buffer
       
       // Create decipher
-      const decipher = createDecipheriv(encryptedData.algorithm, derivedKey, iv)
+      const decipher = createDecipheriv(encryptedData.algorithm, derivedKey, iv) as any
       decipher.setAuthTag(tag)
       
       // Decrypt data

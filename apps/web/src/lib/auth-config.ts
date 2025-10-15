@@ -251,6 +251,11 @@ export const authConfig = {
         return { ...token, ...session }
       }
 
+      // Type guard for token message
+      if (!('id' in token)) {
+        return token
+      }
+
       // Sentinel Security: Enhanced token age check with graceful handling
       const currentTime = Math.floor(Date.now() / 1000)
       const tokenIat = token.iat as number || currentTime
@@ -313,14 +318,14 @@ export const authConfig = {
     },
     async signOut(message) {
       // Guardian Security: Log sign-outs with audit trail
-      if (message?.token?.sessionId) {
+      if ('token' in message && message.token?.sessionId) {
         // Terminate session in session manager
-        guardianSessionManager.terminateSession(message.token.sessionId, 'user_logout')
+        guardianSessionManager.terminateSession(String(message.token.sessionId), 'user_logout')
         
         // Log security event
         await guardianAuditLogger.logSecurityEvent(
           SecurityEventType.LOGOUT,
-          message.token.id || message.token.sub,
+          (message.token.id || message.token.sub) as string,
           {
             ip: 'unknown', // Request context not available in signOut event
             userAgent: 'unknown'
@@ -334,7 +339,7 @@ export const authConfig = {
             }
           },
           undefined,
-          message.token.sessionId
+          String(message.token.sessionId)
         )
       }
 

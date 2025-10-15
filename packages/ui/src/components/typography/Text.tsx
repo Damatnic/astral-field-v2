@@ -188,8 +188,9 @@ export const Text = React.forwardRef<HTMLElement, TextProps>(
     const balanceStyles = balance ? { textWrap: 'balance' as any } : {};
     const selectableStyles = !selectable ? { userSelect: 'none' as any } : {};
 
+    const Comp = Component as any;
     return (
-      <Component
+      <Comp
         ref={ref as any}
         className={cn(
           textVariants({ 
@@ -211,7 +212,7 @@ export const Text = React.forwardRef<HTMLElement, TextProps>(
         {...props}
       >
         {children}
-      </Component>
+      </Comp>
     );
   }
 );

@@ -204,7 +204,7 @@ export class PWAManager {
     if ('serviceWorker' in navigator && 'sync' in window.ServiceWorkerRegistration.prototype) {
       try {
         const registration = await navigator.serviceWorker.ready
-        await registration.sync.register('sync-offline-actions')
+        await (registration as any).sync?.register('sync-offline-actions')
       } catch (error) {
         if (process.env.NODE_ENV === 'development') {
 

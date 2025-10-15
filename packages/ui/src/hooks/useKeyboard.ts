@@ -359,7 +359,7 @@ export function useKeyboardNavigation(
  * useEscapeKey(() => setIsOpen(false), isOpen);
  * ```
  */
-export function useEscapeKey(callback: () => void, enabled: boolean = true) {
+export function useEscapeKey(callback: () => void = () => {}, enabled: boolean = true) {
   useKeyboard('Escape', callback, { enabled });
 }
 
@@ -425,6 +425,8 @@ export function useFantasyKeyboard(
   handlers: Partial<Record<string, () => void>>
 ) {
   Object.entries(handlers).forEach(([shortcut, handler]) => {
-    useKeyboard(shortcut, handler, { preventDefault: true });
+    if (handler) {
+      useKeyboard(shortcut, handler, { preventDefault: true });
+    }
   });
 }

@@ -251,9 +251,7 @@ const quickLoginHandler = async (request: NextRequest): Promise<NextResponse> =>
  */
 export async function POST(request: NextRequest) {
   const rateLimitMiddleware = withRateLimit({ 
-    ruleKey: 'auth:quick-login',
-    maxRequests: 5,
-    windowMs: 60000 // 1 minute
+    ruleKey: 'auth:quick-login'
   })
   return rateLimitMiddleware(request, quickLoginHandler)
 }

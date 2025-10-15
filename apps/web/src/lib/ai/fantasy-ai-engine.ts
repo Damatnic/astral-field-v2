@@ -165,7 +165,7 @@ export class FantasyAIEngine {
     }
 
     // Weather adjustment
-    if (gameContext?.weather === 'RAIN' || gameContext?.windSpeed > 15) {
+    if (gameContext?.weather === 'RAIN' || (gameContext?.windSpeed && gameContext.windSpeed > 15)) {
       adjustedProjection *= 0.9 // 10% reduction for poor weather
       confidence -= 0.1
     }

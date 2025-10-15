@@ -36,9 +36,19 @@ export async function POST(request: NextRequest) {
     })
     
     // In production, send to monitoring service
-    if (process.env.NODE_ENV === 'production') {
-      // TODO: Integrate with monitoring service (Sentry, DataDog, etc.)
-      // await sendToMonitoringService(body)
+    if (process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_SENTRY_DSN) {
+      // @ts-ignore - Optional dependency
+      import('@sentry/nextjs').then(Sentry => {
+        Sentry.captureMessage('CSP Violation', {
+          level: 'warning',
+          extra: {
+            violation: body,
+            violatedDirective: body?.['csp-report']?.['violated-directive'] || body?.violatedDirective,
+            blockedUri: body?.['csp-report']?.['blocked-uri'] || body?.blockedUri,
+            userAgent: request.headers.get('user-agent')
+          }
+        })
+      }).catch(() => {})
     }
     
     return NextResponse.json({ status: 'received', timestamp: new Date().toISOString() }, { status: 200 })

@@ -63,12 +63,12 @@ export function useRealtimeLeague(leagueId: string, options: RealtimeOptions = {
       }
 
       // Handle different event types
-      eventSource.addEventListener('connected', (event) => {
+      eventSource.addEventListener('connected', (event: any) => {
         const eventData = JSON.parse(event.data)
         console.log('[Catalyst] Real-time connection confirmed:', eventData.message)
       })
 
-      eventSource.addEventListener('league-update', (event) => {
+      eventSource.addEventListener('league-update', (event: any) => {
         const eventData = JSON.parse(event.data)
         setData(prev => ({
           ...prev,
@@ -80,7 +80,7 @@ export function useRealtimeLeague(leagueId: string, options: RealtimeOptions = {
         leagueCache.setLeagueStandings(leagueId, 4, eventData.data)
       })
 
-      eventSource.addEventListener('score-update', (event) => {
+      eventSource.addEventListener('score-update', (event: any) => {
         const eventData = JSON.parse(event.data)
         setData(prev => ({
           ...prev,
@@ -89,7 +89,7 @@ export function useRealtimeLeague(leagueId: string, options: RealtimeOptions = {
         }))
       })
 
-      eventSource.addEventListener('live-scores', (event) => {
+      eventSource.addEventListener('live-scores', (event: any) => {
         const eventData = JSON.parse(event.data)
         setData(prev => ({
           ...prev,
@@ -98,13 +98,13 @@ export function useRealtimeLeague(leagueId: string, options: RealtimeOptions = {
         }))
       })
 
-      eventSource.addEventListener('heartbeat', (event) => {
+      eventSource.addEventListener('heartbeat', (event: any) => {
         // Keep connection alive - no action needed
         const eventData = JSON.parse(event.data)
         console.log('[Catalyst] Heartbeat received:', eventData.timestamp)
       })
 
-      eventSource.addEventListener('error', (event) => {
+      eventSource.addEventListener('error', (event: any) => {
         const eventData = JSON.parse(event.data)
         console.error('[Catalyst] Server error:', eventData.message)
         setConnectionError(eventData.message)

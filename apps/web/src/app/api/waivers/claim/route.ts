@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/database/prisma'
-import { sendNotificationToUser } from '@/app/api/notifications/sse/route'
+import { sendNotificationToUser } from '@/lib/notifications/sse-manager'
 
 export const dynamic = 'force-dynamic'
 

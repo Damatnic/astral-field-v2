@@ -200,7 +200,7 @@ class PhoenixAPIOptimizer {
     for (const req of requests) {
       const cached = await leagueCache.get(req.key)
       if (cached) {
-        results[req.key] = cached
+        results[req.key] = cached as T
         phoenixMonitor.recordCacheHit()
       } else {
         uncachedRequests.push(req)
@@ -277,7 +277,7 @@ class PhoenixAPIOptimizer {
       const cached = await leagueCache.get(cacheKey)
       if (cached) {
         phoenixMonitor.recordCacheHit()
-        return cached
+        return cached as any
       }
     }
 
@@ -285,7 +285,7 @@ class PhoenixAPIOptimizer {
     const [data, totalResult] = await Promise.all([
       phoenixPool.executeReadQuery(
         `${queryName}:data`,
-        (client) => client.findMany({
+        (client) => (client as any).findMany({
           ...baseQuery,
           skip: offset,
           take: limit,
@@ -294,19 +294,19 @@ class PhoenixAPIOptimizer {
       ),
       phoenixPool.executeReadQuery(
         `${queryName}:count`,
-        (client) => client.count({ where: baseQuery.where })
+        (client) => (client as any).count({ where: baseQuery.where })
       )
     ])
 
     const total = Array.isArray(totalResult) ? totalResult.length : totalResult
-    const pages = Math.ceil(total / limit)
+    const pages = Math.ceil(Number(total) / limit)
 
     const result = {
-      data,
+      data: data as T[],
       pagination: {
         page,
         limit,
-        total,
+        total: Number(total),
         pages,
         hasNext: page < pages,
         hasPrev: page > 1
@@ -340,7 +340,7 @@ class PhoenixAPIOptimizer {
       const cached = await leagueCache.get(cacheKey)
       if (cached) {
         phoenixMonitor.recordCacheHit()
-        return cached
+        return cached as any
       }
     }
 
@@ -366,7 +366,7 @@ class PhoenixAPIOptimizer {
       phoenixMonitor.recordCacheMiss()
     }
 
-    return result
+    return result as T
   }
 
   // Get API performance metrics
@@ -477,7 +477,6 @@ class PhoenixAPIOptimizer {
     const headers = this.getResponseHeaders(metrics)
     return NextResponse.json({
       success: true,
-      data,
       meta: {
         requestId: metrics.requestId,
         duration: metrics.duration,

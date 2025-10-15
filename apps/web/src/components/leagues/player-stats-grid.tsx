@@ -14,9 +14,10 @@ interface PlayerStat {
 interface PlayerStatsGridProps {
   players?: PlayerStat[]
   title?: string
+  currentWeek?: number
 }
 
-export function PlayerStatsGrid({ players = [], title = "Player Stats" }: PlayerStatsGridProps) {
+export function PlayerStatsGrid({ players = [], title = "Player Stats", currentWeek }: PlayerStatsGridProps) {
   return (
     <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
       <h3 className="text-xl font-semibold text-white mb-4">{title}</h3>

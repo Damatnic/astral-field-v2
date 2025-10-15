@@ -22,7 +22,7 @@ interface CacheMetrics {
 }
 
 class CatalystCache {
-  private l1Cache = new Map<string, { 
+  public l1Cache = new Map<string, { 
     data: any; 
     expiry: number; 
     tags: string[];
@@ -441,19 +441,19 @@ class CatalystCache {
 export const CacheConfigurations = {
   LEAGUE_DATA: {
     ttl: 300, // 5 minutes for league standings
-    tags: ['league', 'standings'],
+    tags: ['league', 'standings'] as string[],
     priority: 'high' as const,
     compress: true
   },
   PLAYER_STATS: {
     ttl: 600, // 10 minutes for player stats
-    tags: ['players', 'stats'],
+    tags: ['players', 'stats'] as string[],
     priority: 'normal' as const,
     compress: true
   },
   ROSTER_DATA: {
     ttl: 120, // 2 minutes for roster data
-    tags: ['roster', 'teams'],
+    tags: ['roster', 'teams'] as string[],
     priority: 'high' as const
   },
   MATCHUP_DATA: {

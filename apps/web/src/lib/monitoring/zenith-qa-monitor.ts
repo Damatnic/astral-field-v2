@@ -388,7 +388,7 @@ class ZenithQAMonitor {
    */
   private checkErrorThresholds(error: ZenithError) {
     const typeErrors = this.errors.filter(e => e.type === error.type)
-    const threshold = this.errorThresholds[error.type]
+    const threshold = (this.errorThresholds as any)[error.type]
     
     if (typeErrors.length >= threshold) {
       if (process.env.NODE_ENV === 'development') {

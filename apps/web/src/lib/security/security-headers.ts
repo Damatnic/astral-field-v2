@@ -479,10 +479,32 @@ export const guardianSecurityHeaders = new GuardianSecurityHeaders({
   csp: {
     enabled: true,
     reportOnly: false,
-    reportUri: '/api/security/csp-report'
+    sources: {
+      default: ["'self'"],
+      script: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      style: ["'self'", "'unsafe-inline'"],
+      img: ["'self'", "data:", "https:"],
+      font: ["'self'", "data:"],
+      connect: ["'self'", "https:", "wss:"],
+      media: ["'self'"],
+      object: ["'none'"],
+      frame: ["'self'"],
+      worker: ["'self'"],
+      manifest: ["'self'"]
+    },
+    reportUri: '/api/security/csp-report',
+    upgradeInsecureRequests: true
+  },
+  hsts: {
+    enabled: true,
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true
   },
   expectCT: {
     enabled: true,
+    maxAge: 86400,
+    enforce: true,
     reportUri: '/api/security/expect-ct-report'
   }
 })
@@ -491,44 +513,26 @@ export const guardianSecurityHeaders = new GuardianSecurityHeaders({
 export const guardianSecurityHeadersDev = new GuardianSecurityHeaders({
   csp: {
     enabled: true,
-    reportOnly: true, // Use report-only in development
+    reportOnly: true,
     sources: {
       default: ["'self'"],
-      script: [
-        "'self'",
-        "'unsafe-inline'",
-        "'unsafe-eval'",
-        "https://vercel.live",
-        "https://va.vercel-scripts.com"
-      ],
-      style: [
-        "'self'",
-        "'unsafe-inline'",
-        "https://fonts.googleapis.com"
-      ],
-      img: [
-        "'self'",
-        "data:",
-        "blob:",
-        "https:",
-        "http://localhost:*" // Allow local development assets
-      ],
-      connect: [
-        "'self'",
-        "ws:",
-        "wss:",
-        "http://localhost:*",
-        "https://api.vercel.com"
-      ],
-      font: ["'self'", "https://fonts.gstatic.com", "data:"],
-      media: ["'self'", "data:", "blob:"],
+      script: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      style: ["'self'", "'unsafe-inline'"],
+      img: ["'self'", "data:", "https:"],
+      font: ["'self'", "data:"],
+      connect: ["'self'", "ws:", "wss:"],
+      media: ["'self'"],
       object: ["'none'"],
       frame: ["'self'"],
-      worker: ["'self'", "blob:"],
+      worker: ["'self'"],
       manifest: ["'self'"]
-    }
+    },
+    upgradeInsecureRequests: false
   },
   hsts: {
-    enabled: false // Disable HSTS in development
+    enabled: false,
+    maxAge: 0,
+    includeSubDomains: false,
+    preload: false
   }
 })

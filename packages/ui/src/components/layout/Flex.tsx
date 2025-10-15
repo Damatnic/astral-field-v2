@@ -190,8 +190,9 @@ export const Flex = React.forwardRef<HTMLDivElement, FlexProps>(
 
     const customStyles = basis ? { ...style, flexBasis: basis } : style;
 
+    const Comp = Component as any;
     return (
-      <Component
+      <Comp
         ref={ref}
         className={cn(
           flexVariants({ 
@@ -213,7 +214,7 @@ export const Flex = React.forwardRef<HTMLDivElement, FlexProps>(
         {...props}
       >
         {children}
-      </Component>
+      </Comp>
     );
   }
 );
@@ -326,8 +327,9 @@ export const FlexItem = React.forwardRef<HTMLDivElement, FlexItemProps>(
       }
     }
 
+    const Comp = Component as any;
     return (
-      <Component
+      <Comp
         ref={ref}
         className={cn(
           getFlexGrowClass(grow),
@@ -341,7 +343,7 @@ export const FlexItem = React.forwardRef<HTMLDivElement, FlexItemProps>(
         {...props}
       >
         {children}
-      </Component>
+      </Comp>
     );
   }
 );

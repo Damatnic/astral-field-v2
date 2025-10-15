@@ -140,7 +140,7 @@ export const authConfigOptimized = {
         } catch (error) {
           if (process.env.NODE_ENV === 'development') {
 
-            console.error('Authentication error:', error?.message || error);
+            console.error('Authentication error:', (error as any)?.message || error);
 
           }
           if (error instanceof Error) {
@@ -193,7 +193,7 @@ export const authConfigOptimized = {
     },
     async signIn({ user, account }) {
       // Additional sign-in validation
-      if (account?.provider === 'google' && user.email && !user.emailVerified) {
+      if (account?.provider === 'google' && user.email && !(user as any).emailVerified) {
         return false
       }
       return true
@@ -202,9 +202,9 @@ export const authConfigOptimized = {
   events: {
     async signIn({ user }) {
     },
-    async signOut({ token }) {
-      if (token?.id) {
-        console.log(`User signed out: ${token.id}`)
+    async signOut(message) {
+      if ('token' in message && message.token?.id) {
+        console.log(`User signed out: ${message.token.id}`)
       }
     }
   },

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/database/prisma'
-import { getServerSession } from 'next-auth'
+import { auth } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,11 +28,11 @@ export async function GET(request: NextRequest) {
     const matchups = await prisma.matchup.findMany({
       where: whereClause,
       include: {
-        team1: {
+        homeTeam: {
           select: {
             id: true,
             name: true,
-            User: {
+            owner: {
               select: {
                 name: true,
                 email: true,
@@ -40,11 +40,11 @@ export async function GET(request: NextRequest) {
             },
           },
         },
-        team2: {
+        awayTeam: {
           select: {
             id: true,
             name: true,
-            User: {
+            owner: {
               select: {
                 name: true,
                 email: true,
@@ -84,17 +84,16 @@ export async function POST(request: NextRequest) {
       data: {
         leagueId,
         week: parseInt(week),
-        team1Id,
-        team2Id,
-        status: 'upcoming',
-        team1Score: 0,
-        team2Score: 0,
-        team1ProjectedScore: 0,
-        team2ProjectedScore: 0,
+        season: 2025,
+        homeTeamId: team1Id,
+        awayTeamId: team2Id,
+        homeScore: 0,
+        awayScore: 0,
+        isComplete: false,
       },
       include: {
-        team1: true,
-        team2: true,
+        homeTeam: true,
+        awayTeam: true,
       },
     })
 
@@ -122,16 +121,16 @@ export async function PATCH(request: NextRequest) {
 
     const updateData: any = {}
     
-    if (team1Score !== undefined) updateData.team1Score = team1Score
-    if (team2Score !== undefined) updateData.team2Score = team2Score
-    if (status) updateData.status = status
+    if (team1Score !== undefined) updateData.homeScore = team1Score
+    if (team2Score !== undefined) updateData.awayScore = team2Score
+    if (status) updateData.isComplete = status === 'complete'
 
     const matchup = await prisma.matchup.update({
       where: { id: matchupId },
       data: updateData,
       include: {
-        team1: true,
-        team2: true,
+        homeTeam: true,
+        awayTeam: true,
       },
     })
 

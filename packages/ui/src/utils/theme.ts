@@ -4,6 +4,8 @@
 
 import { colors, semanticColors, darkColors, type TeamColor } from '../tokens/colors';
 
+export type { TeamColor };
+
 /**
  * Theme mode type
  */
@@ -137,7 +139,7 @@ export function generateThemeCSS(mode: ThemeMode = 'light', teamKey?: TeamColor)
   // Generate CSS custom properties for semantic colors
   Object.entries(baseColors).forEach(([category, colorGroup]) => {
     Object.entries(colorGroup).forEach(([variant, value]) => {
-      css[`--color-${category}-${variant}`] = value;
+      css[`--color-${category}-${variant}`] = String(value);
     });
   });
   
@@ -199,7 +201,7 @@ export function createTheme(mode: ThemeMode = 'light', teamKey?: TeamColor): The
   return {
     mode,
     team: teamKey,
-    colors: themeColors,
+    colors: themeColors as any,
     teamColors: teamKey ? getTeamColors(teamKey) : undefined,
   };
 }

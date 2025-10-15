@@ -220,8 +220,9 @@ export const Grid = React.forwardRef<HTMLDivElement, GridProps>(
       customStyles.gridTemplateColumns = `repeat(auto-fill, minmax(${autoFillMinWidth}, 1fr))`;
     }
 
+    const Comp = Component as any;
     return (
-      <Component
+      <Comp
         ref={ref}
         className={cn(
           gridVariants({ 
@@ -239,7 +240,7 @@ export const Grid = React.forwardRef<HTMLDivElement, GridProps>(
         {...props}
       >
         {children}
-      </Component>
+      </Comp>
     );
   }
 );
@@ -371,8 +372,9 @@ export const GridItem = React.forwardRef<HTMLDivElement, GridItemProps>(
   }, ref) => {
     const customStyles = area ? { ...style, gridArea: area } : style;
 
+    const Comp = Component as any;
     return (
-      <Component
+      <Comp
         ref={ref}
         className={cn(
           getColSpanClass(colSpan),
@@ -387,7 +389,7 @@ export const GridItem = React.forwardRef<HTMLDivElement, GridItemProps>(
         {...props}
       >
         {children}
-      </Component>
+      </Comp>
     );
   }
 );

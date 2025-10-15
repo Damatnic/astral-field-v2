@@ -123,7 +123,7 @@ export class VortexDataSeeder {
   private async createPlayers(): Promise<void> {
     for (const playerData of this.players) {
       await prisma.player.upsert({
-        where: { name: playerData.name },
+        where: { id: playerData.name } as any,
         update: {
           position: playerData.position,
           nflTeam: playerData.nflTeam,
@@ -360,7 +360,8 @@ export class VortexDataSeeder {
       DST: { ELITE: 10, HIGH: 8, MID: 6, LOW: 3 }
     };
     
-    return baselines[position as keyof typeof baselines]?.[tier] || 5;
+    const posBaselines = baselines[position as keyof typeof baselines] as any
+    return posBaselines?.[tier] || 5;
   }
 
   private getVariance(position: string, tier: string): number {
@@ -374,7 +375,8 @@ export class VortexDataSeeder {
       DST: { ELITE: 0.5, HIGH: 0.6, MID: 0.7, LOW: 0.8 }
     };
     
-    return variances[position as keyof typeof variances]?.[tier] || 0.5;
+    const posVariances = variances[position as keyof typeof variances] as any
+    return posVariances?.[tier] || 0.5;
   }
 
   private generatePositionStats(position: string, fantasyPoints: number) {
@@ -701,7 +703,7 @@ export class VortexDataSeeder {
           faabSpent: Math.floor(addPercentage * 2),
           emergingPlayer: isEmerging,
           breakoutCandidate: isBreakout,
-          sleeper: player.adp > 150 && isEmerging,
+          sleeper: (player.adp ?? 0) > 150 && isEmerging,
           injuryReplacement: false,
           streamingOption: ['K', 'DST'].includes(player.position),
           priorityLevel: isBreakout ? 5 : isEmerging ? 4 : Math.floor(addPercentage / 7) + 1,
@@ -722,7 +724,7 @@ export class VortexDataSeeder {
           faabSpent: Math.floor(addPercentage * 2),
           emergingPlayer: isEmerging,
           breakoutCandidate: isBreakout,
-          sleeper: player.adp > 150 && isEmerging,
+          sleeper: (player.adp ?? 0) > 150 && isEmerging,
           injuryReplacement: false,
           streamingOption: ['K', 'DST'].includes(player.position),
           priorityLevel: isBreakout ? 5 : isEmerging ? 4 : Math.floor(addPercentage / 7) + 1,

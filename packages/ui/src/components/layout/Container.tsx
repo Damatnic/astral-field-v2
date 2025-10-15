@@ -116,8 +116,9 @@ export const Container = React.forwardRef<HTMLDivElement, ContainerProps>(
       })
       .join(' ') : '';
 
+    const Comp = Component as any;
     return (
-      <Component
+      <Comp
         ref={ref}
         className={cn(
           containerVariants({ 
@@ -132,7 +133,7 @@ export const Container = React.forwardRef<HTMLDivElement, ContainerProps>(
         {...props}
       >
         {children}
-      </Component>
+      </Comp>
     );
   }
 );

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { checkDatabaseHealth, timedQuery } from '@/lib/database/prisma'
 import { phoenixDb } from '@/lib/optimized-prisma'
+import { prisma } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
 
@@ -56,7 +57,15 @@ export async function GET() {
     // Phoenix: Parse results
     const [usersResult, teamsResult, playersResult, complexQueryResult] = metrics
     
-    const healthData = {
+    const healthData: {
+      status: string
+      connection: { isConnected: boolean; responseTime: number }
+      metrics: { users: number; teams: number; players: number; complexQuerySuccess: boolean }
+      cache: any
+      performance: { totalCheckTime: number; slowQueries: number }
+      timestamp: string
+      message?: string
+    } = {
       status: 'healthy',
       connection: {
         isConnected: true,

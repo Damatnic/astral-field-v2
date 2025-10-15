@@ -19,7 +19,7 @@ export function generateCSSVariables(theme: BaseTheme): Record<string, string> {
 
   // Typography variables
   Object.entries(theme.fonts.families).forEach(([name, family]) => {
-    variables[`--font-${name}`] = Array.isArray(family) ? family.join(', ') : family;
+    variables[`--font-${name}`] = Array.isArray(family) ? family.join(', ') : String(family);
   });
 
   Object.entries(theme.fonts.sizes).forEach(([size, value]) => {

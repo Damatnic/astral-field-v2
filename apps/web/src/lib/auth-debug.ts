@@ -88,7 +88,7 @@ export async function debugAuthentication(request?: Request): Promise<AuthDebugI
           role: session.user?.role
         },
         expires: session.expires,
-        sessionId: session.user?.sessionId
+        sessionId: (session.user as any)?.sessionId
       }
     }
   } catch (error) {

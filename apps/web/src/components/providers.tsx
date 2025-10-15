@@ -61,7 +61,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
               defaultTheme="dark"
               enableSystem
               disableTransitionOnChange
-              suppressHydrationWarning
             >
               {children}
               {process.env.NODE_ENV === 'development' && <ReactQueryDevtools initialIsOpen={false} />}

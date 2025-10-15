@@ -52,7 +52,7 @@ export interface LineupChange {
 
 export class RealTimeStreamProcessor extends EventEmitter {
   private analyticsEngine: VortexAnalyticsEngine;
-  private wsServer?: WebSocket.Server;
+  private wsServer?: any;
   private clients: Set<WebSocket> = new Set();
   private eventQueue: StreamEvent[] = [];
   private isProcessing: boolean = false;
@@ -69,7 +69,7 @@ export class RealTimeStreamProcessor extends EventEmitter {
    * Initialize WebSocket server for real-time updates
    */
   initializeWebSocketServer(port: number = 8080): void {
-    this.wsServer = new WebSocket.Server({ port });
+    this.wsServer = new (WebSocket as any).Server({ port });
     
     this.wsServer.on('connection', (ws: WebSocket) => {
       this.clients.add(ws);
@@ -290,10 +290,10 @@ export class RealTimeStreamProcessor extends EventEmitter {
     }, {} as Record<string, LineupChange[]>);
 
     // Process each team's changes
-    for (const [teamId, teamChanges] of Object.entries(teamChanges)) {
+    for (const [teamId, changes] of Object.entries(teamChanges)) {
       await this.updateTeamProjections(teamId);
       
-      for (const change of teamChanges) {
+      for (const change of changes) {
         await this.analyticsEngine.processRealTimeEvent(
           'LINEUP_CHANGE', 
           'TEAM', 

@@ -159,8 +159,9 @@ export const Stack = React.forwardRef<HTMLDivElement, StackProps>(
 
     const customStyles = spacing ? { ...style, gap: spacing } : style;
 
+    const Comp = Component as any;
     return (
-      <Component
+      <Comp
         ref={ref}
         className={cn(
           stackVariants({ 
@@ -179,7 +180,7 @@ export const Stack = React.forwardRef<HTMLDivElement, StackProps>(
         {...props}
       >
         {children}
-      </Component>
+      </Comp>
     );
   }
 );

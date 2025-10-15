@@ -73,22 +73,23 @@ class AICoach {
         }
       }
 
-      // TODO: Add player injury status check when status field is added to Player model
-      // Currently commented out as Player model doesn't have status field
-      // const questionablePlayers = starters.filter(rp => 
-      //   rp.player.status !== 'active' && rp.player.status !== ''
-      // )
-      
-      // for (const qPlayer of questionablePlayers) {
-      //   recommendations.push({
-      //     type: 'start_sit',
-      //     title: `Monitor ${qPlayer.player.name}`,
-      //     description: `${qPlayer.player.name} is listed as ${qPlayer.player.status}. Consider backup options.`,
-      //     confidence: 75,
-      //     impact: 'medium',
-      //     action: `Check injury report and have backup ready`
-      //   })
-      // }
+      // Check for low-performing starters
+      for (const starter of starters) {
+        const recentStats = starter.player.stats.slice(0, 2)
+        if (recentStats.length >= 2) {
+          const avgPoints = recentStats.reduce((sum: number, s: any) => sum + s.fantasyPoints, 0) / recentStats.length
+          if (avgPoints < 5) {
+            recommendations.push({
+              type: 'start_sit',
+              title: `Consider Benching ${starter.player.name}`,
+              description: `${starter.player.name} has averaged only ${avgPoints.toFixed(1)} points recently. Monitor performance.`,
+              confidence: 70,
+              impact: 'medium',
+              action: `Monitor ${starter.player.name} and consider alternatives`
+            })
+          }
+        }
+      }
     }
 
     return recommendations.slice(0, 5) // Limit to top 5

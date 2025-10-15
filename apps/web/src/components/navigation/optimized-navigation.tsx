@@ -5,19 +5,19 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { signOut } from 'next-auth/react'
 // Emoji-based icons to replace heroicons
-const HomeIcon = () => <span className="w-5 h-5 flex items-center justify-center">🏠</span>
-const UserGroupIcon = () => <span className="w-5 h-5 flex items-center justify-center">👥</span>
-const ChartBarIcon = () => <span className="w-5 h-5 flex items-center justify-center">📊</span>
-const SparklesIcon = () => <span className="w-5 h-5 flex items-center justify-center">✨</span>
-const CogIcon = () => <span className="w-5 h-5 flex items-center justify-center">⚙️</span>
-const ArrowRightEndOnRectangleIcon = () => <span className="w-5 h-5 flex items-center justify-center">🚪</span>
-const Bars3Icon = () => <span className="w-5 h-5 flex items-center justify-center">☰</span>
-const XMarkIcon = () => <span className="w-5 h-5 flex items-center justify-center">✖️</span>
-const TrophyIcon = () => <span className="w-5 h-5 flex items-center justify-center">🏆</span>
-const ChatBubbleLeftRightIcon = () => <span className="w-5 h-5 flex items-center justify-center">💬</span>
-const ClipboardDocumentListIcon = () => <span className="w-5 h-5 flex items-center justify-center">📋</span>
-const TvIcon = () => <span className="w-5 h-5 flex items-center justify-center">📺</span>
-const ClockIcon = () => <span className="w-5 h-5 flex items-center justify-center">⏰</span>
+const HomeIcon = ({ className }: { className?: string }) => <span className={className || "w-5 h-5 flex items-center justify-center"}>🏠</span>
+const UserGroupIcon = ({ className }: { className?: string }) => <span className={className || "w-5 h-5 flex items-center justify-center"}>👥</span>
+const ChartBarIcon = ({ className }: { className?: string }) => <span className={className || "w-5 h-5 flex items-center justify-center"}>📊</span>
+const SparklesIcon = ({ className }: { className?: string }) => <span className={className || "w-5 h-5 flex items-center justify-center"}>✨</span>
+const CogIcon = ({ className }: { className?: string }) => <span className={className || "w-5 h-5 flex items-center justify-center"}>⚙️</span>
+const ArrowRightEndOnRectangleIcon = ({ className }: { className?: string }) => <span className={className || "w-5 h-5 flex items-center justify-center"}>🚪</span>
+const Bars3Icon = ({ className }: { className?: string }) => <span className={className || "w-5 h-5 flex items-center justify-center"}>☰</span>
+const XMarkIcon = ({ className }: { className?: string }) => <span className={className || "w-5 h-5 flex items-center justify-center"}>✖️</span>
+const TrophyIcon = ({ className }: { className?: string }) => <span className={className || "w-5 h-5 flex items-center justify-center"}>🏆</span>
+const ChatBubbleLeftRightIcon = ({ className }: { className?: string }) => <span className={className || "w-5 h-5 flex items-center justify-center"}>💬</span>
+const ClipboardDocumentListIcon = ({ className }: { className?: string }) => <span className={className || "w-5 h-5 flex items-center justify-center"}>📋</span>
+const TvIcon = ({ className }: { className?: string }) => <span className={className || "w-5 h-5 flex items-center justify-center"}>📺</span>
+const ClockIcon = ({ className }: { className?: string }) => <span className={className || "w-5 h-5 flex items-center justify-center"}>⏰</span>
 import { Button } from '@/components/ui/button'
 
 const navigation = [
@@ -86,8 +86,8 @@ export const OptimizedNavigation = memo(({ user }: OptimizedNavigationProps) => 
       console.log(`[Catalyst] Navigation to ${name}: ${(endTime - startTime).toFixed(2)}ms`)
       
       // Send performance metric
-      if (window.gtag) {
-        window.gtag('event', 'page_navigation', {
+      if (typeof window !== 'undefined' && 'gtag' in window) {
+        (window as any).gtag('event', 'page_navigation', {
           page_title: name,
           page_location: href,
           custom_parameter: endTime - startTime

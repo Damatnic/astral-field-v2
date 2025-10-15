@@ -52,7 +52,7 @@ interface PlayerScore {
 }
 
 export function LiveScoreboard({ leagueId, week, season = 2025 }: LiveScoreboardProps) {
-  const { state, scores, liveEvents } = useLiveScoring(leagueId, week)
+  const { scores, connected, error, refresh } = useLiveScores()
   const [matchups, setMatchups] = useState<MatchupData[]>([])
   const [loading, setLoading] = useState(true)
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
@@ -85,19 +85,12 @@ export function LiveScoreboard({ leagueId, week, season = 2025 }: LiveScoreboard
     return () => clearInterval(interval)
   }, [leagueId, week, season])
 
-  // Handle live events from WebSocket
+  // Handle live score updates
   useEffect(() => {
-    liveEvents.forEach(event => {
-      if (event.type === 'SCORE_UPDATE') {
-        setLastUpdate(new Date())
-        // Trigger refresh of scores
-        setMatchups(prev => prev.map(matchup => ({
-          ...matchup,
-          lastUpdated: new Date().toISOString()
-        })))
-      }
-    })
-  }, [liveEvents])
+    if (scores && scores.length > 0) {
+      setLastUpdate(new Date())
+    }
+  }, [scores])
 
   if (loading) {
     return (
@@ -121,7 +114,7 @@ export function LiveScoreboard({ leagueId, week, season = 2025 }: LiveScoreboard
         <div className="flex items-center space-x-2 text-sm text-gray-400">
           <ClockIcon className="h-4 w-4" />
           <span>Last updated: {lastUpdate.toLocaleTimeString()}</span>
-          {state.connected && (
+          {connected && (
             <Badge variant="success" className="bg-green-600">
               Live
             </Badge>

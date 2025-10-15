@@ -136,8 +136,9 @@ export const Heading = React.forwardRef<HTMLHeadingElement, HeadingProps>(
 
     const balanceStyles = balance ? { textWrap: 'balance' as any } : {};
 
+    const Comp = Component as any;
     return (
-      <Component
+      <Comp
         ref={ref as any}
         className={cn(
           headingVariants({ size, variant, align, truncate }),
@@ -148,7 +149,7 @@ export const Heading = React.forwardRef<HTMLHeadingElement, HeadingProps>(
         {...props}
       >
         {children}
-      </Component>
+      </Comp>
     );
   }
 );

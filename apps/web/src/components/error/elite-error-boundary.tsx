@@ -34,9 +34,16 @@ export class EliteErrorBoundary extends Component<Props, State> {
     })
 
     // Log to monitoring service in production
-    if (process.env.NODE_ENV === 'production') {
-      // TODO: Send to Sentry or similar
-      // Sentry.captureException(error, { extra: errorInfo })
+    if (process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_SENTRY_DSN) {
+      // @ts-ignore - Optional dependency
+      import('@sentry/nextjs').then(Sentry => {
+        Sentry.captureException(error, { 
+          extra: { 
+            componentStack: errorInfo.componentStack,
+            errorBoundary: 'EliteErrorBoundary'
+          } 
+        })
+      }).catch(() => {})
     }
   }
 
