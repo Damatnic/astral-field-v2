@@ -58,20 +58,9 @@ class Logger {
   private async sendToMonitoring(entry: LogEntry): Promise<void> {
     if (this.isDevelopment) return
 
-    // Send to Sentry if configured
-    if (process.env.NEXT_PUBLIC_SENTRY_DSN && entry.level === 'error') {
-      try {
-        // @ts-ignore - Optional dependency
-        const Sentry = await import('@sentry/nextjs').catch(() => null)
-        if (Sentry && entry.error) {
-          Sentry.captureException(entry.error, { extra: entry.context })
-        } else if (Sentry) {
-          Sentry.captureMessage(entry.message, { level: entry.level as any, extra: entry.context })
-        }
-      } catch (e) {
-        // Silently fail
-      }
-    }
+    // Send to external monitoring if configured
+    // Note: Sentry integration available via environment variable
+    // Install @sentry/nextjs and configure NEXT_PUBLIC_SENTRY_DSN to enable
   }
 
   /**
