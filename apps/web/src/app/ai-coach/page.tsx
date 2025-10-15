@@ -208,7 +208,7 @@ export default function AICoachPage() {
                       {/* Metrics */}
                       <div className="flex items-center gap-6 mt-4">
                         <div className="flex items-center gap-2">
-                          <div className="w-full bg-slate-800 rounded-full h-2 w-24">
+                          <div className="bg-slate-800 rounded-full h-2 w-24">
                             <div
                               className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full"
                               style={{ width: `${rec.confidence}%` }}

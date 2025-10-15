@@ -27,6 +27,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Get team's waiver priority
+    const waiverPriority = await prisma.teamWaiverPriority.findFirst({
+      where: { teamId: team.id },
+      orderBy: { priority: 'asc' }
+    })
+
     // Create waiver claim
     const claim = await prisma.waiverClaim.create({
       data: {
@@ -34,7 +40,7 @@ export async function POST(request: NextRequest) {
         playerId,
         droppedPlayerId: dropPlayerId,
         status: 'PENDING',
-        priority: 1 // TODO: Get from team waiver priority
+        priority: waiverPriority?.priority || 1
       }
     })
 

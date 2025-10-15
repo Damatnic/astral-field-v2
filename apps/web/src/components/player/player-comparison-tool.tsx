@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   X,
@@ -50,6 +50,18 @@ export function PlayerComparisonTool({
   onAddPlayer
 }: PlayerComparisonToolProps) {
   const [players, setPlayers] = useState<Player[]>(initialPlayers.slice(0, 4))
+
+  // Keyboard support - ESC to close
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose?.()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [onClose])
 
   const handleRemovePlayer = (playerId: string) => {
     setPlayers(players.filter(p => p.id !== playerId))
@@ -128,6 +140,9 @@ export function PlayerComparisonTool({
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
       onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Player Comparison Tool"
     >
       <motion.div
         initial={{ scale: 0.9, y: 20 }}

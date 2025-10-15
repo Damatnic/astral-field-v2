@@ -75,6 +75,9 @@ export function BottomSheet({
             animate={{ y: '0%' }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+            role="dialog"
+            aria-modal="true"
+            aria-label={title || 'Bottom Sheet Modal'}
             className={cn(
               'fixed bottom-0 left-0 right-0 z-50',
               'bg-gradient-to-b from-slate-900 to-slate-950',
@@ -87,7 +90,10 @@ export function BottomSheet({
           >
             {/* Handle */}
             {showHandle && (
-              <div className="flex justify-center pt-3 pb-2 cursor-grab active:cursor-grabbing">
+              <div 
+                className="flex justify-center pt-3 pb-2 cursor-grab active:cursor-grabbing"
+                aria-label="Drag handle - swipe down to close"
+              >
                 <div className="w-12 h-1.5 rounded-full bg-slate-600" />
               </div>
             )}
@@ -98,6 +104,7 @@ export function BottomSheet({
                 <h2 className="text-xl font-bold text-white">{title}</h2>
                 <button
                   onClick={onClose}
+                  aria-label="Close modal"
                   className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors"
                 >
                   <X className="w-5 h-5 text-slate-400" />

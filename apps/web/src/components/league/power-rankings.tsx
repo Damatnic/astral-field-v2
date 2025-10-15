@@ -45,7 +45,7 @@ export function PowerRankings({ rankings, currentUserTeamId }: PowerRankingsProp
     <div className="space-y-4">
       {rankings.map((team, idx) => {
         const rankChange = team.previousRank - team.rank
-        const isMyTeam = false // TODO: Check against currentUserTeamId
+        const isMyTeam = currentUserTeamId ? team.teamName === currentUserTeamId : false
 
         return (
           <motion.div

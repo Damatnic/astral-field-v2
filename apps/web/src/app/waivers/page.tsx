@@ -73,6 +73,25 @@ export default function WaiversPage() {
     }
   }
 
+  // Calculate team needs based on roster
+  const calculateTeamNeeds = (roster: any[]): string[] => {
+    const positionCounts: Record<string, number> = {}
+    roster.forEach(r => {
+      positionCounts[r.position] = (positionCounts[r.position] || 0) + 1
+    })
+
+    const needs: string[] = []
+    const minCounts = { QB: 2, RB: 4, WR: 4, TE: 2, K: 1, DST: 1 }
+
+    Object.entries(minCounts).forEach(([position, min]) => {
+      if ((positionCounts[position] || 0) < min) {
+        needs.push(position)
+      }
+    })
+
+    return needs
+  }
+
   const handleClaimPlayer = async (playerId: string, dropPlayerId?: string) => {
     try {
       const response = await fetch('/api/waivers/claim', {
@@ -173,9 +192,9 @@ export default function WaiversPage() {
               opponents: ['KC', 'SF', 'DAL']
             }
           }))}
-          myTeamNeeds={['RB', 'WR']} // TODO: Calculate from actual roster
+          myTeamNeeds={waiversData.myRoster ? calculateTeamNeeds(waiversData.myRoster) : []}
           onClaim={handleClaimPlayer}
-          waiverBudget={100} // TODO: Get from team settings
+          waiverBudget={waiversData.waiverBudget || 100}
           onPlayerAction={handlePlayerAction}
         />
       </div>

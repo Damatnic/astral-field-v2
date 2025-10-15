@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, memo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   TrendingUp,
@@ -37,7 +37,7 @@ interface PlayerCardProps {
   showQuickActions?: boolean
 }
 
-export function EnhancedPlayerCard({
+export const EnhancedPlayerCard = memo(function EnhancedPlayerCard({
   player,
   variant = 'compact',
   onAction,
@@ -281,5 +281,5 @@ export function EnhancedPlayerCard({
       )}
     </motion.div>
   )
-}
+})
 
