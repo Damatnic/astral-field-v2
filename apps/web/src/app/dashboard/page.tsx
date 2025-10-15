@@ -1,6 +1,6 @@
 /**
- * Modern Dashboard - Client Component Version
- * Clean, fast, beautiful fantasy football command center
+ * Elite Dashboard - AI-Powered Command Center
+ * Your complete fantasy football headquarters
  */
 
 'use client'
@@ -10,21 +10,17 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { DashboardLayout } from '@/components/dashboard/layout'
 import { PageHeader } from '@/components/ui/page-header'
-import { StatCard } from '@/components/ui/stat-card'
-import { ModernCard, ModernCardContent, ModernCardHeader, ModernCardTitle } from '@/components/ui/modern-card'
-import { ActionButton } from '@/components/ui/action-button'
+import { EnhancedDashboardWidgets } from '@/components/dashboard/enhanced-dashboard-widgets'
+import { QuickActionsWidget } from '@/components/dashboard/quick-actions-widget'
+import { LeagueActivityFeed } from '@/components/league/activity-feed'
 import { 
   Trophy, 
   TrendingUp, 
   Users, 
   Target,
+  Loader2,
   Sparkles,
-  ChartBar,
-  UserPlus,
-  Calendar,
-  Clock,
-  ArrowRight,
-  Loader2
+  Activity
 } from 'lucide-react'
 
 export default function DashboardPage() {
@@ -96,204 +92,122 @@ export default function DashboardPage() {
   const rank = team?.rank || 0
   const totalPoints = team?.pointsFor || 0
 
+  // Mock data for top performers
+  const topPerformers = team?.roster?.slice(0, 3).map((r: any) => ({
+    playerId: r.player.id || '1',
+    name: r.player.name,
+    position: r.player.position,
+    team: r.player.nflTeam || 'FA',
+    points: Math.random() * 20 + 10,
+    trend: Math.random() > 0.7 ? 'hot' : Math.random() > 0.5 ? 'up' : 'down'
+  })) || []
+
+  // Mock activity data
+  const mockActivity = [
+    {
+      id: '1',
+      type: 'trade',
+      user: 'John Doe',
+      action: 'proposed a trade',
+      details: 'Offered DeAndre Hopkins for Travis Kelce',
+      timestamp: new Date(Date.now() - 1000 * 60 * 30),
+      reactions: []
+    },
+    {
+      id: '2',
+      type: 'add',
+      user: 'Jane Smith',
+      action: 'added',
+      details: 'Josh Jacobs from waivers',
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2),
+      reactions: [{ type: 'like', count: 3, users: ['user1', 'user2', 'user3'] }]
+    },
+    {
+      id: '3',
+      type: 'lineup',
+      user: 'Mike Johnson',
+      action: 'updated lineup',
+      details: 'Set starting roster for Week 4',
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5),
+      reactions: []
+    }
+  ]
+
+  const quickStats = [
+    {
+      label: 'Total Points',
+      value: totalPoints.toFixed(1),
+      change: 12.5,
+      trend: 'up' as const,
+      icon: Target,
+      color: 'bg-emerald-500/10'
+    },
+    {
+      label: 'League Rank',
+      value: `#${rank || '—'}`,
+      change: rank <= 3 ? 5 : -5,
+      trend: rank <= 3 ? 'up' as const : 'down' as const,
+      icon: Trophy,
+      color: 'bg-yellow-500/10'
+    },
+    {
+      label: 'Win Rate',
+      value: `${winPercentage.toFixed(0)}%`,
+      change: winPercentage >= 50 ? 10 : -10,
+      trend: winPercentage >= 50 ? 'up' as const : 'down' as const,
+      icon: TrendingUp,
+      color: 'bg-blue-500/10'
+    },
+    {
+      label: 'Roster',
+      value: team?.roster?.length || 0,
+      icon: Users,
+      color: 'bg-purple-500/10'
+    }
+  ]
+
+  const upcomingMatchup = {
+    opponent: 'Rival Squad',
+    week: 4,
+    projectedMyScore: 118.5,
+    projectedOppScore: 112.3,
+    winProbability: 62
+  }
+
   return (
     <DashboardLayout>
       <div className="p-6 lg:p-8 space-y-8 pt-16 lg:pt-8">
         {/* Header */}
         <PageHeader
           title={`Welcome back, ${session.user.name?.split(' ')[0] || 'Champion'}!`}
-          description="Your fantasy football command center"
+          description="Your elite fantasy football command center"
           icon={Trophy}
         />
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard
-            label="Total Points"
-            value={totalPoints.toFixed(1)}
-            icon={Target}
-            trend="up"
-            trendValue="+12.5%"
-            description="vs last week"
-            variant="success"
-          />
+        {/* Enhanced Widgets */}
+        <EnhancedDashboardWidgets
+          stats={quickStats}
+          upcomingMatchup={upcomingMatchup}
+          topPerformers={topPerformers}
+        />
 
-          <StatCard
-            label="League Rank"
-            value={`#${rank || '—'}`}
-            icon={Trophy}
-            trend={rank <= 3 ? 'up' : 'neutral'}
-            description={`Top ${Math.round((rank / 12) * 100)}%`}
-            variant="info"
-          />
+        {/* Quick Actions */}
+        <QuickActionsWidget />
 
-          <StatCard
-            label="Win Rate"
-            value={`${winPercentage.toFixed(0)}%`}
-            icon={TrendingUp}
-            trend={winPercentage >= 50 ? 'up' : 'down'}
-            trendValue={`${wins}-${losses}`}
-            description="this season"
-            variant={winPercentage >= 50 ? 'success' : 'warning'}
-          />
-
-          <StatCard
-            label="Roster"
-            value={team?.roster?.length || 0}
-            icon={Users}
-            description="active players"
-            variant="default"
-          />
-        </div>
-
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Team Overview */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Quick Actions */}
-            <ModernCard>
-              <ModernCardHeader>
-                <ModernCardTitle>Quick Actions</ModernCardTitle>
-              </ModernCardHeader>
-              <ModernCardContent>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <ActionButton
-                    icon={Users}
-                    label="Players"
-                    href="/players"
-                    variant="primary"
-                  />
-                  <ActionButton
-                    icon={ChartBar}
-                    label="Live Scores"
-                    href="/live-scores"
-                    variant="success"
-                  />
-                  <ActionButton
-                    icon={Sparkles}
-                    label="Trades"
-                    href="/trades"
-                    variant="info"
-                  />
-                  <ActionButton
-                    icon={UserPlus}
-                    label="Waivers"
-                    href="/waivers"
-                    variant="warning"
-                  />
-                </div>
-              </ModernCardContent>
-            </ModernCard>
-
-            {/* Recent Matchups */}
-            <ModernCard>
-              <ModernCardHeader>
-                <ModernCardTitle>Recent Matchups</ModernCardTitle>
-              </ModernCardHeader>
-              <ModernCardContent>
-                {recentMatchups && recentMatchups.length > 0 ? (
-                  <div className="space-y-3">
-                    {recentMatchups.slice(0, 5).map((matchup: any, index: number) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg border border-slate-700/50 hover:border-blue-500/50 transition-colors"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="text-sm font-medium text-slate-500">
-                            W{matchup.week}
-                          </div>
-                          <div>
-                            <div className="text-sm font-medium text-white">
-                              {matchup.homeTeam.name} vs {matchup.awayTeam.name}
-                            </div>
-                            <div className="text-xs text-slate-400">
-                              {matchup.homeScore?.toFixed(1)} - {matchup.awayScore?.toFixed(1)}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-xs font-medium text-emerald-400">
-                          {matchup.homeScore && matchup.awayScore && matchup.homeScore > matchup.awayScore ? 'W' : 'L'}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-slate-400">
-                    <Trophy className="w-12 h-12 mx-auto mb-3 text-slate-700" />
-                    <p className="text-sm">No recent matchups yet</p>
-                    <p className="text-xs text-slate-500 mt-1">Your season starts soon!</p>
-                  </div>
-                )}
-              </ModernCardContent>
-            </ModernCard>
+        {/* League Activity */}
+        <div>
+          <div className="flex items-center gap-3 mb-4">
+            <Activity className="w-6 h-6 text-blue-400" />
+            <h2 className="text-2xl font-bold text-white">League Activity</h2>
           </div>
-
-          {/* Right Column - Roster Preview */}
-          <div className="space-y-6">
-            <ModernCard>
-              <ModernCardHeader>
-                <ModernCardTitle>Your Top Players</ModernCardTitle>
-              </ModernCardHeader>
-              <ModernCardContent>
-                {team?.roster && team.roster.length > 0 ? (
-                  <div className="space-y-3">
-                    {team.roster.slice(0, 5).map((rosterPlayer: any, index: number) => (
-                      <div
-                        key={index}
-                        className="flex items-center gap-3 p-3 bg-slate-800/50 rounded-lg border border-slate-700/50"
-                      >
-                        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
-                          <span className="text-xs font-bold text-white">
-                            {rosterPlayer.player.position}
-                          </span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium text-white truncate">
-                            {rosterPlayer.player.name}
-                          </div>
-                          <div className="text-xs text-slate-400">
-                            {rosterPlayer.player.position} - {rosterPlayer.player.nflTeam}
-                          </div>
-                        </div>
-                        <ArrowRight className="w-4 h-4 text-slate-600" />
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-slate-400">
-                    <Users className="w-12 h-12 mx-auto mb-3 text-slate-700" />
-                    <p className="text-sm">No players yet</p>
-                    <p className="text-xs text-slate-500 mt-1">Build your roster!</p>
-                  </div>
-                )}
-              </ModernCardContent>
-            </ModernCard>
-
-            {/* Upcoming Events */}
-            <ModernCard>
-              <ModernCardHeader>
-                <ModernCardTitle>Upcoming</ModernCardTitle>
-              </ModernCardHeader>
-              <ModernCardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3 text-sm">
-                    <Calendar className="w-4 h-4 text-blue-400" />
-                    <div>
-                      <div className="text-white font-medium">Week 4 Matchup</div>
-                      <div className="text-xs text-slate-400">Starting Sunday</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm">
-                    <Clock className="w-4 h-4 text-purple-400" />
-                    <div>
-                      <div className="text-white font-medium">Waiver Deadline</div>
-                      <div className="text-xs text-slate-400">Wednesday 12:00 PM</div>
-                    </div>
-                  </div>
-                </div>
-              </ModernCardContent>
-            </ModernCard>
-          </div>
+          
+          <LeagueActivityFeed
+            activities={mockActivity as any}
+            currentUserId={session.user.id}
+            onReact={(activityId, reaction) => {
+              console.log('React:', activityId, reaction)
+            }}
+          />
         </div>
       </div>
     </DashboardLayout>
