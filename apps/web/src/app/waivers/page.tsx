@@ -12,6 +12,7 @@ import { DashboardLayout } from '@/components/dashboard/layout'
 import { PageHeader } from '@/components/ui/page-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { SmartWaiverWire } from '@/components/waivers/smart-waiver-wire'
+import { enhancePlayerWithAnalytics } from '@/lib/utils/player-analytics'
 import { 
   UserPlus, 
   Sparkles,
@@ -177,21 +178,7 @@ export default function WaiversPage() {
 
         {/* Smart Waiver Wire */}
         <SmartWaiverWire
-          players={waiversData.availablePlayers.map(p => ({
-            ...p,
-            trending: Math.random() > 0.7 ? 'hot' : Math.random() > 0.5 ? 'up' : undefined,
-            ownership: Math.floor(Math.random() * 100),
-            aiScore: Math.floor(Math.random() * 100),
-            breakoutProbability: Math.floor(Math.random() * 100),
-            opportunity: Math.random() > 0.7 ? {
-              score: Math.floor(Math.random() * 40) + 60,
-              reasons: ['Injury to starter', 'Increased target share', 'Favorable matchup']
-            } : undefined,
-            upcomingSchedule: {
-              difficulty: ['easy', 'medium', 'hard'][Math.floor(Math.random() * 3)] as any,
-              opponents: ['KC', 'SF', 'DAL']
-            }
-          }))}
+          players={waiversData.availablePlayers.map(p => enhancePlayerWithAnalytics(p))}
           myTeamNeeds={waiversData.myRoster ? calculateTeamNeeds(waiversData.myRoster) : []}
           onClaim={handleClaimPlayer}
           waiverBudget={waiversData.waiverBudget || 100}

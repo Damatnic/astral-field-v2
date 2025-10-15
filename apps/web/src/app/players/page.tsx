@@ -13,6 +13,7 @@ import { PageHeader } from '@/components/ui/page-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { LoadingState } from '@/components/ui/loading-state'
 import { ResearchCenter } from '@/components/research/research-center'
+import { enhancePlayerWithAdvancedStats } from '@/lib/utils/advanced-player-stats'
 import { Users, Loader2, BarChart3 } from 'lucide-react'
 
 interface Player {
@@ -159,13 +160,7 @@ function PlayersPageContent() {
           />
         ) : (
           <ResearchCenter
-            players={playersData.players.map(p => ({
-              ...p,
-              // Add mock advanced stats for now
-              targetShare: p.position === 'WR' || p.position === 'TE' ? Math.random() * 30 : undefined,
-              snapCount: Math.random() * 100,
-              redZoneTargets: Math.floor(Math.random() * 10)
-            }))}
+            players={playersData.players.map(p => enhancePlayerWithAdvancedStats(p))}
             onPlayerClick={(playerId) => router.push(`/players/${playerId}`)}
           />
         )}
