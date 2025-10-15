@@ -1,7 +1,7 @@
 import type { Viewport } from 'next'
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
-import { DashboardLayout } from '@/components/dashboard/layout'
+import { ModernLayout } from '@/components/layout/modern-layout'
 import { CreateLeagueForm } from '@/components/leagues/create-league-form'
 
 export const metadata = {
@@ -21,7 +21,7 @@ export default async function CreateLeaguePage() {
   }
 
   return (
-    <DashboardLayout>
+    <ModernLayout>
       <div className="p-6 lg:p-8 pt-16 lg:pt-8">
         {/* Header */}
         <div className="mb-8">
@@ -37,6 +37,6 @@ export default async function CreateLeaguePage() {
 
         <CreateLeagueForm userId={session.user.id} />
       </div>
-    </DashboardLayout>
+    </ModernLayout>
   )
 }

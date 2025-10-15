@@ -1,7 +1,7 @@
 import type { Viewport } from 'next'
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
-import { DashboardLayout } from '@/components/dashboard/layout'
+import { ModernLayout } from '@/components/layout/modern-layout'
 import { prisma } from '@/lib/database/prisma'
 import { LeaguesBrowser } from '@/components/leagues/leagues-browser'
 
@@ -72,7 +72,7 @@ export default async function LeaguesPage() {
   const data = await getLeaguesData(session.user.id)
 
   return (
-    <DashboardLayout>
+    <ModernLayout>
       <div className="p-6 lg:p-8 pt-16 lg:pt-8">
         {/* Header */}
         <div className="mb-8">
@@ -99,6 +99,6 @@ export default async function LeaguesPage() {
           currentUserId={session.user.id}
         />
       </div>
-    </DashboardLayout>
+    </ModernLayout>
   )
 }

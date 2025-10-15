@@ -5,7 +5,7 @@
 
 'use client'
 
-import { DashboardLayout } from '@/components/dashboard/layout'
+import { ModernLayout } from '@/components/layout/modern-layout'
 import { PageHeader } from '@/components/ui/page-header'
 import { StatCard } from '@/components/ui/stat-card'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -29,7 +29,7 @@ export default function LiveScoresPage() {
   const totalPoints = scores.reduce((sum, s) => sum + s.homeScore + s.awayScore, 0)
 
   return (
-    <DashboardLayout>
+    <ModernLayout>
       <div className="p-6 lg:p-8 space-y-6 pt-16 lg:pt-8">
         {/* Header */}
         <PageHeader
@@ -183,6 +183,6 @@ export default function LiveScoresPage() {
           )
         )}
       </div>
-    </DashboardLayout>
+    </ModernLayout>
   )
 }

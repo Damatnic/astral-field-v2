@@ -3,7 +3,7 @@
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import { DashboardLayout } from '@/components/dashboard/layout'
+import { ModernLayout } from '@/components/layout/modern-layout'
 import { SettingsForm } from '@/components/settings/settings-form'
 import { Loader2 } from 'lucide-react'
 
@@ -75,7 +75,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <DashboardLayout>
+    <ModernLayout>
       <div className="p-6 lg:p-8 pt-16 lg:pt-8">
         {/* Header */}
         <div className="mb-8">
@@ -87,6 +87,6 @@ export default function SettingsPage() {
 
         <SettingsForm user={user} />
       </div>
-    </DashboardLayout>
+    </ModernLayout>
   )
 }

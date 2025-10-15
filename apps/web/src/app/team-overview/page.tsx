@@ -8,7 +8,7 @@
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import { DashboardLayout } from '@/components/dashboard/layout'
+import { ModernLayout } from '@/components/layout/modern-layout'
 import { PageHeader } from '@/components/ui/page-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { BarChart3, Loader2 } from 'lucide-react'
@@ -28,17 +28,17 @@ export default function TeamOverviewPage() {
 
   if (loading) {
     return (
-      <DashboardLayout>
+      <ModernLayout>
         <div className="flex items-center justify-center min-h-[calc(100vh-64px)] text-slate-400">
           <Loader2 className="w-12 h-12 animate-spin text-blue-400" />
           <p className="ml-4 text-lg">Loading team overview...</p>
         </div>
-      </DashboardLayout>
+      </ModernLayout>
     )
   }
 
   return (
-    <DashboardLayout>
+    <ModernLayout>
       <div className="p-6 lg:p-8 space-y-6 pt-16 lg:pt-8">
         <PageHeader
           title="Team Overview"
@@ -56,6 +56,6 @@ export default function TeamOverviewPage() {
           description="Detailed team analytics and performance metrics will appear here"
         />
       </div>
-    </DashboardLayout>
+    </ModernLayout>
   )
 }

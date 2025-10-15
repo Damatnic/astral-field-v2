@@ -8,7 +8,7 @@
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import { DashboardLayout } from '@/components/dashboard/layout'
+import { ModernLayout } from '@/components/layout/modern-layout'
 import { PageHeader } from '@/components/ui/page-header'
 import { PlayoffBracket } from '@/components/playoffs/playoff-bracket'
 import { Trophy, Loader2, Crown } from 'lucide-react'
@@ -28,12 +28,12 @@ export default function PlayoffsPage() {
 
   if (loading) {
     return (
-      <DashboardLayout>
+      <ModernLayout>
         <div className="flex items-center justify-center min-h-[calc(100vh-64px)] text-slate-400">
           <Loader2 className="w-12 h-12 animate-spin text-blue-400" />
           <p className="ml-4 text-lg">Loading playoffs...</p>
         </div>
-      </DashboardLayout>
+      </ModernLayout>
     )
   }
 
@@ -83,7 +83,7 @@ export default function PlayoffsPage() {
   }
 
   return (
-    <DashboardLayout>
+    <ModernLayout>
       <div className="p-6 lg:p-8 space-y-6 pt-16 lg:pt-8">
         <PageHeader
           title="Playoff Bracket"
@@ -100,6 +100,6 @@ export default function PlayoffsPage() {
           champion={mockChampion}
         />
       </div>
-    </DashboardLayout>
+    </ModernLayout>
   )
 }
